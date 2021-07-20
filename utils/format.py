@@ -1,0 +1,109 @@
+import sys
+import discord
+import traceback
+from io import BytesIO
+from typing import Sequence, Iterator
+
+class plural:
+    """
+    Auto corrects text to show plural or singular depending on the size number.
+    """
+    def __init__(self, value):
+        self.value = value
+    def __format__(self, format_spec):
+        v = self.value
+        singular, sep, plural = format_spec.partition('|')
+        plural = plural or f'{singular}s'
+        if abs(v) != 1:
+            return f'{v} {plural}'
+        return f'{v} {singular}'
+
+def human_join(seq, delim=', ', final='or'):
+    """
+    Returns a str with <final> before the last word.
+    """
+    size = len(seq)
+    if size == 0:
+        return ''
+    if size == 1:
+        return seq[0]
+    if size == 2:
+        return f'{seq[0]} {final} {seq[1]}'
+    return delim.join(seq[:-1]) + f' {final} {seq[-1]}'
+
+def escape(text: str, *, mass_mentions: bool = False, formatting: bool = False) -> str:
+    """
+    Get text with all mass mentions or markdown escaped.
+    """
+    if mass_mentions:
+        text = text.replace("@everyone", "@\u200beveryone")
+        text = text.replace("@here", "@\u200bhere")
+    if formatting:
+        text = discord.utils.escape_markdown(text)
+    return text
+
+def text_to_file(text: str, filename: str = "file.txt", encoding: str = "utf-8"):
+    """
+    Prepares text to be sent as a file on Discord, without character limit.
+    """
+
+    file = BytesIO(text.encode(encoding))
+    return discord.File(file, filename)
+
+def box(text: str, lang: str = "") -> str:
+    """
+    Returns the given text inside a codeblock.
+    """
+    ret = "```{}\n{}\n```".format(lang, text)
+    return ret
+
+def inline(text: str) -> str:
+    """
+    Returns the given text as inline code.
+    """
+    if "`" in text:
+        return "``{}``".format(text)
+    else:
+        return "`{}`".format(text)
+
+def pagify(text: str, delims: Sequence[str] = ["\n"], *, priority: bool = False, escape_mass_mentions: bool = True, shorten_by: int = 8, page_length: int = 2000) -> Iterator[str]:
+    """
+    Generate multiple pages from the given text.
+    """
+    in_text = text
+    page_length -= shorten_by
+    while len(in_text) > page_length:
+        this_page_len = page_length
+        if escape_mass_mentions:
+            this_page_len -= in_text.count("@here", 0, page_length) + in_text.count(
+                "@everyone", 0, page_length
+            )
+        closest_delim = (in_text.rfind(d, 1, this_page_len) for d in delims)
+        if priority:
+            closest_delim = next((x for x in closest_delim if x > 0), -1)
+        else:
+            closest_delim = max(closest_delim)
+        closest_delim = closest_delim if closest_delim != -1 else this_page_len
+        if escape_mass_mentions:
+            to_send = escape(in_text[:closest_delim], mass_mentions=True)
+        else:
+            to_send = in_text[:closest_delim]
+        if len(to_send.strip()) > 0:
+            yield to_send
+        in_text = in_text[closest_delim:]
+
+    if len(in_text.strip()) > 0:
+        if escape_mass_mentions:
+            yield escape(in_text, mass_mentions=True)
+        else:
+            yield in_text
+
+def print_exception(text, error):
+    """
+    Prints the exception with proper traceback.
+    """
+    traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+    etype = type(error)
+    trace = error.__traceback__
+    lines = traceback.format_exception(etype, error, trace)
+    return ''.join(lines)

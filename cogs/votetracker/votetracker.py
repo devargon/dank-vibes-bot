@@ -1,0 +1,374 @@
+import time
+import topgg
+import discord
+import sqlite3
+import asyncio
+import datetime
+from discord.ext import commands, tasks
+from utils.format import print_exception
+
+vdanksterid = 683884762997587998 #Change this to the Vibing Dankster role ID.
+channelid = 754725833540894750 #Change this to where all the bot messages are sent.
+
+class VoteTracker(commands.Cog, name='votetracker'):
+    def __init__(self, client):
+        self.client = client
+        self.description = "Vote tracker" #If you are using a custom help command, this
+        self.vdankster.start()
+        self.reminders.start()
+        self.client.topgg_webhook = topgg.WebhookManager(client).dsl_webhook("/webhook", "ABCDE")
+        self.client.topgg_webhook.run(5000)
+
+    @tasks.loop(seconds=5.0) # this is the looping task that will remove the Vibing Dankster role from the person.
+    async def vdankster(self):
+        await self.client.wait_until_ready()
+        timenow = round(time.time()) # Gets the time now
+        temproles = sqlite3.connect('cogs/votetracker/votetracker.db')
+        cursor = temproles.cursor()
+        result = cursor.execute("SELECT * FROM roleremove WHERE roletime < ?", (timenow,)).fetchall() # Finds the users whose roletime has passed since 24 hours ago, which was added in the webhook event below
+        if len(result) == 0:
+            return # No one's roles need to be removed.
+        for row in result: #individually iterates through the list of people who have voted for dv more than 12 hours ago
+            guild = self.client.get_guild(595457764935991326)
+            member = guild.get_member(row[0])
+            role = guild.get_role(vdanksterid)
+            if guild is not None and member is not None and role is not None: #if a member leaves, it won't break this function
+                try:
+                    await member.remove_roles(role, reason="24 hours passed since voting") #removes the vibing dankster role
+                except discord.Forbidden:
+                    pass
+            cursor.execute("DELETE FROM roleremove WHERE member_id = ? and rmtime = ? and roletime = ?",(row[0], row[1], row[2])) # Removes the member from the database, but it is not published yet so it will not be overwritten
+        temproles.commit() #saves the deleted state of those members
+        cursor.close()
+        temproles.close()
+
+    @tasks.loop(seconds=5.0) # this is the looping task that will remind people to vote in 12 hours.
+    async def reminders(self):
+        try:
+            await self.client.wait_until_ready()
+            timenow = round(time.time())
+            votetracker = sqlite3.connect('cogs/votetracker/votetracker.db')
+            cursor = votetracker.cursor()
+            result = cursor.execute("SELECT * FROM roleremove WHERE rmtime < ?", (timenow,)).fetchall() # just like the task above, finds users who have voted since 12 hours ago
+            if len(result) == 0:
+                return
+            for row in result: # iterate through the list of members who have reminders.
+                preferences = cursor.execute("SELECT rmtype FROM rmpreference WHERE member_id = ?", (row[0],)).fetchall()
+                if len(preferences) == 0: # somehow there is no preference for this user, so i'll create an entry to prevent it from breaking
+                    sql = 'INSERT into rmpreference(member_id, rmtype) VALUES(?, ?)'  # creats a new row for first time vote count if user isn't in database
+                    val = (row[0], 'none')
+                    cursor.execute(sql, val)
+                    votetracker.commit()
+                    preferences = cursor.execute("SELECT rmtype FROM rmpreference WHERE member_id = ?", (row[0],)).fetchall() # refetch the configuration for this user after it has been added
+                member = self.client.get_user(row[0])
+                channel = self.client.get_channel(channelid)
+                await channel.send(preferences[0][0])
+                if preferences[0][0] == "dm":
+                    try:
+                        dmembed = discord.Embed(
+                            description="[Vote for Dank Vibes at top.gg](https://top.gg/servers/595457764935991326/vote)",
+                            color=0x57f0f0)
+                        await member.send("You can now vote for Dank Vibes again!", embed=dmembed) # tries to DM the user that it is time for him to vote again
+                    except discord.Forbidden:
+                        await channel.send(f"{member.mention} You can now vote for Dank Vibes again!", delete_after=5.0) # uses ping instead if the bot cannot DM this user
+                elif preferences[0][0] == "ping":
+                    await channel.send(f"{member.mention} You can now vote for Dank Vibes again!", delete_after=5.0) # self-explainable
+                elif preferences[0][0] != "none": # somehow this guy doesn't have "dm" "ping or "none" in his setting so i'll update it to show that
+                    cursor.execute('UPDATE rmpreference set rmtype = ? where member_id = ?', (row[0], 'none')) # changes his setting to none
+                    votetracker.commit()
+                    return
+                cursor.execute('UPDATE roleremove SET rmtime = ? WHERE member_id = ?',
+                               (9223372036854775807, row[0]))  # this is so that the user won't be reminded again; DO NOT CHANGE THIS VALUE as it is the maximum that the database can hold
+                votetracker.commit()
+            cursor.close()
+            votetracker.close()
+        except Exception as error:
+            traceback_error = print_exception(f'Error encountered on a command.\nUserID `:` {row[0]} \nfor the reminder`:` {row[1]}\nMore details:', error)
+            await self.client.get_guild(736324402236358677).get_channel(847756191346327614).send(embed=discord.Embed(description=traceback_error))
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        db = sqlite3.connect('cogs/votetracker/votetracker.db')
+        cursor = db.cursor()
+        cursor.execute(
+            "CREATE TABLE IF NOT EXISTS rmpreference(member_id integer, rmtype text)")  # first time setup, creates the database for saving configurations for reminder task
+        cursor.execute(
+            "CREATE TABLE IF NOT EXISTS votecount(member_id integer,count integer)") #first time setup, creates the database for vote count
+        cursor.execute(
+            "CREATE TABLE IF NOT EXISTS roleremove(member_id integer, rmtime integer, roletime integer)") #first time setup, creates the database for role removal, time is when the role is removed in epoch time
+        cursor.execute(
+            "CREATE TABLE IF NOT EXISTS milestones(votecount integer, roleid integer)")  # first time setup, creates the database for milestones to be referred to
+        print("Cogs \"VoteTracker\" has loaded")
+
+    @commands.Cog.listener()
+    async def on_dsl_vote(self, data):
+        print(data)
+        timenow = time.time()
+        timetoremove = timenow + 86400 # epoch time that role will be removed
+        timetoremind = timenow + 43200 # epoch time that member will be reminded
+        userid = int(data['user'])
+        guildid = int(data['guild'])
+        if data['type'] != 'upvote': #ignores webhook messages such as test
+            return
+        votingchannel = self.client.get_channel(channelid)  # gets the channel to send messages in
+        guild = self.client.get_guild(595457764935991326)
+        member = guild.get_member(userid)
+        if member is None:
+            return
+        vdankster = guild.get_role(vdanksterid)
+        rolesummary = "\u200b"  # If no roles are added, this will be in the section where the roles added are displayed.
+        db = sqlite3.connect('votetracker.db')  # opcogs/votetracker/ens the database
+        cursor = db.cursor()
+        result = cursor.execute('SELECT * FROM votecount where member_id = ?',
+                                (userid,)).fetchall()  # gets the vote count of the user
+        if len(result) == 0:
+            votecount = 1
+            sql = 'INSERT INTO votecount(member_id, count) VALUES(?, ?)'  # creats a new row for first time vote count if user isn't in database
+            val = (userid, votecount)
+            cursor.execute(sql, val)
+        else:
+            result = result[0]
+            votecount = result[1] + 1
+            cursor.execute('UPDATE votecount SET count = ? WHERE member_id = ?',(result[1] + 1, userid))  # addd one to vote count
+        db.commit()  # Done with updating count
+        try:
+            await member.add_roles(vdankster, reason="Voted for the server")
+            rolesummary = f"{member.name}#{member.discriminator} has received the role {vdankster.mention} for 24 hours."  # this is over here so that if the role is added properly, it will be shown in the embed
+        except discord.Forbidden:
+            pass # If it can't add the role, it won't be in the summary of roles added
+        roleremoves = cursor.execute('SELECT * FROM roleremove where member_id = ?', (
+            userid,)).fetchall()  # checks if a row has been set to remove the role so it won't be like carlbot's temprole
+        if len(roleremoves) != 0:
+            cursor.execute('UPDATE roleremove SET rmtime = ?, roletime = ? WHERE member_id = ?',(timetoremind, timetoremove, userid,)) # The user is voting before 24 hours, so instead of creating a new entry it will simply update the remind and role removal times in his old one.
+        else:
+            sql = 'INSERT INTO roleremove(member_id, rmtime, roletime) VALUES(?, ?, ?)' # The user hasn't voted in the previous 24 hours, so it's creating a new entry containing the remind time and role removal time.
+            val = (userid, timetoremind, timetoremove)
+            cursor.execute(sql, val)
+        db.commit()
+        milestones = cursor.execute("SELECT * FROM milestones").fetchall() # fetches milestones for adding the milestone roles
+        if len(milestones) != 0: # there are settings for milestones
+            for milestone in milestones:
+                role = guild.get_role(milestone[1]) # gets the milestone role
+                if (
+                    role is not None # successfully got the role
+                    and votecount >= milestone[0] # the user has gotten the required (or more than required) number of votes
+                    and role not in member.roles # the user doesn't have the role yet
+                ):
+                    try:
+                        await member.add_roles(role, reason = f"Milestone reached for user") # adds the role
+                        rolesummary += f"\n**In addition, {member.name}#{member.discriminator} has gotten the role {role.mention} for voting {milestone[0]} times!**" # adds on to the summary of roles added
+                    except discord.Forbidden:
+                        pass
+        embed = discord.Embed(title=f"Thank you for voting for __{guild.name}__ on Top.gg, {member.name}!",
+                              description=f"You have voted {guild.name} for **{votecount}** time(s).\n[You can vote for Dank Vibes here!](https://top.gg/servers/595457764935991326/vote)",
+                              # It will look like this: https://i.ibb.co/g4PvRsQ/Discord-ha-R7-Hsdzo-E.png
+                              timestamp=datetime.datetime.utcnow(), color=0x57f0f0)
+        embed.set_author(name=f"{member.name}#{member.discriminator} ({member.id})", icon_url=member.avatar_url)
+        embed.set_footer(text=f"{guild.name} • {self.client.user.name} • Created by Argon#0002", icon_url=guild.icon_url) # dory allowed me to credit myself c:
+        embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/830920902019514408.gif?v=1")
+        embed.add_field(name="\u200b", value=rolesummary)
+        await votingchannel.send(embed=embed)
+        cursor.close()
+        db.close()
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        pass
+
+    @commands.command(name="votereminder",
+                    brief="Manage your vote reminder here! Use this command without arguments to see how to use it.",
+                    description="Manage your vote reminder here! Use this command without arguments to see how to use it.", aliases = ["vrm"])
+    async def votereminder(self, ctx, argument=None):
+        """
+        Manage your vote reminder here! Use this command without arguments to see how to use it.
+        """
+        votetracker = sqlite3.connect('cogs/votetracker/votetracker.db')
+        cursor = votetracker.cursor()
+        preferences = cursor.execute("SELECT rmtype FROM rmpreference WHERE member_id = ?", (ctx.author.id,)).fetchall()
+        if len(preferences) == 0:  # if it's the first time for the user to invoke the command, it will create an entry automatically with the default setting "none".
+            sql = 'INSERT into rmpreference(member_id, rmtype) VALUES(?, ?)'
+            val = (ctx.author.id, 'none')
+            cursor.execute(sql, val)
+            votetracker.commit()
+            preferences = cursor.execute("SELECT rmtype FROM rmpreference WHERE member_id = ?",
+                                         (ctx.author.id,)).fetchall() # fetches the new settings after the user's entry containing the 'none' setting has been created
+        currentpreference = preferences[0][0]
+        if argument is None:
+            embed = discord.Embed(title=f"Dank Vibes vote reminder",
+                                  description=f"Every 12 hours after you vote, you can be reminded to [vote for Dank Vibes on top.gg](https://top.gg/servers/595457764935991326/vote).", timestamp=datetime.datetime.utcnow(), color=0x57f0f0)
+            embed.add_field(name="Your current reminder setting",
+                            value="DM" if currentpreference == "dm" else "Ping" if currentpreference == "ping" else "No reminder" if currentpreference == "none" else "Unknown; Please try to choose a reminder setting!", inline=False) #shows current reminder setting
+            embed.add_field(name = "How to configure the reminder?", value=f"`votereminder dm` will make {self.client.user.name} DM you to vote again.\n`votereminder ping/mention` will make {self.client.user.name} ping you to vote again.\n`votereminder none` will turn off reminders.", inline=False) # description on this command
+            embed.set_footer(text=f"{ctx.guild.name} • {self.client.user.name} • Created by Argon#0002")
+            embed.set_thumbnail(url=ctx.guild.icon_url)
+            await ctx.send(embed=embed)
+            return
+        if len(preferences) == 0:  # if it's the first time for the user to invoke the command, it will create an entry automatically.
+            sql = 'INSERT into rmpreference(member_id, rmtype) VALUES(?, ?)'
+            val = (ctx.author.id, 'none')
+            cursor.execute(sql, val)
+            votetracker.commit()
+        if argument.lower() in ["dm"]:
+            cursor.execute('UPDATE rmpreference SET rmtype = ? WHERE member_id = ?',("dm", ctx.author.id))  # changes the settings to dm
+            votetracker.commit()
+            await ctx.send("Your reminder settings have been changed. You will **now be DMed** to vote for Dank Vibes.")
+        elif argument.lower() in ["ping", "mention", "@"]:
+            cursor.execute('UPDATE rmpreference SET rmtype = ? WHERE member_id = ?', ("ping", ctx.author.id))  # changes the settings to ping
+            votetracker.commit()
+            await ctx.send("Your reminder settings have been changed. You will **now be pinged** to vote for Dank Vibes.")
+        elif argument.lower() in ["no", "null", "none"]:
+            cursor.execute('UPDATE rmpreference SET rmtype = ? WHERE member_id = ?', ("none", ctx.author.id))  # changes the settings to mention
+            votetracker.commit()
+            await ctx.send("Your reminder settings have been changed. You will **not be reminded** to vote for Dank Vibes.")
+        else:
+            await ctx.send("You provided an invalid option. You can change your reminder to `ping`, `dm` or `none`. Use this command without any arguments to see how to use it.") # the argument provided wasn't dm, mention or none
+        cursor.close()
+        votetracker.close()
+
+    @commands.group(invoke_without_command=True, name="voteroles", brief = "Configure the milestones for the roles.", description = "Configure the milestones for the roles.")
+    @commands.has_guild_permissions(administrator=True)
+    async def voteroles(self, ctx):
+        """
+        Configure the milestones for the roles.
+        """
+        embed = discord.Embed(title=f"Dank Vibes Vote Roles configuration",
+                              description=f"",
+                              timestamp=datetime.datetime.utcnow(), color=0x57f0f0)
+        embed.add_field(name="How to configure the vote roles?",
+                        value=f"`voteroles list` shows all milestones for vote roles.\n`votereminder add [votecount] [role]` adds a milestone for vote roles.\n`votereminder remove [votecount]` will remove the milestone for vote count.") # description on this command
+        embed.set_thumbnail(url=ctx.guild.icon_url)
+        embed.set_footer(text="Roles can be stated via a name, mention or ID. • Created by Argon#0002")
+        await ctx.send(embed=embed)
+
+    @voteroles.command(name="list", brief = "Lists milestones for vote roles.", description = "Lists milestones for vote roles.", aliases = ["show"])
+    @commands.has_guild_permissions(administrator=True)
+    async def rolelist(self, ctx):
+        """
+        Lists milestones for vote roles.
+        """
+        votetracker = sqlite3.connect('cogs/votetracker/votetracker.db')
+        cursor = votetracker.cursor()
+        milestones = cursor.execute("SELECT * FROM milestones").fetchall() # gets the milestones
+        if len(milestones) == 0:
+            embed = discord.Embed(title = "Vote count milestones", description = "There are no milestones set for now. Use `voteroles add [votecount] [role]` to add one.", color=0x57f0f0) # there are no milestones set
+            await ctx.send(embed=embed)
+            return
+        output = ''
+        for row in milestones:
+            if len(output) >= 3800: # the limit for the descripptino is 4096 characters, so just to play safe.
+                embed = discord.Embed(title="Vote count milestones",
+                                      description=output,
+                                      color=0x57f0f0)
+                await ctx.send(embed=embed) # I was kinda lazy to paginate this, and it's unlikely that they will ever pass the limit of characters anyways
+            role = ctx.guild.get_role(row[1]) # gets the milestone role
+            rolemention = role.mention if role is not None else "unknown-or-deleted-role" # if the role was deleted, it will show as that, otherwise it will be the role mention
+            output += f"**{row[0]} votes: **{rolemention}\n" # adds the milestone vote count and role to the descriptionn
+        embed = discord.Embed(title="Vote count milestones",
+                              description=output,
+                              color=0x57f0f0, timestamp=datetime.datetime.utcnow()) # final embed send after iterating throgh
+        embed.set_footer(text="To edit the milestones, use the subcommands `add` and `remove`. • Created by Argon#0002")
+        await ctx.send(embed=embed)
+        cursor.close()
+        votetracker.close()
+
+    @voteroles.command(name="add", brief="Add milestones for vote roles.",
+                       description="Adds milestones for vote roles.", aliases=["create"])
+    @commands.has_guild_permissions(administrator=True)
+    async def roleadd(self, ctx, votecount = None, role:discord.Role = None):
+        """
+        Adds milestones for vote roles.
+        """
+        if votecount is None or role is None: # missing arguments
+            await ctx.send("The correct usage of this command is `voteroles add [votecount] [role]`.")
+            return
+        try:
+            votecount = int(votecount)
+        except ValueError:
+            await ctx.send("`votecount` is not a valid number.")
+            return
+        votetracker = sqlite3.connect('cogs/votetracker/votetracker.db')
+        cursor = votetracker.cursor()
+        milestones = cursor.execute("SELECT * FROM milestones where votecount = ?", (votecount,)).fetchall()
+        if len(milestones) > 0: # oh this milestone exists already!
+            await ctx.send(f"You have already set a milestone for **{votecount} votes**. To set a new role, remove this milestone and add it again.")
+            cursor.close()
+            votetracker.close()
+            return
+        try:
+            sql = 'INSERT into milestones(votecount, roleid) VALUES(?, ?)'  # creates a milestone rule, with votecount and the roleid
+            val = (votecount, role.id)
+            cursor.execute(sql, val)
+            votetracker.commit()
+        except Exception as e:
+            await ctx.send(e)
+            return
+        cursor.close()
+        votetracker.close()
+        await ctx.send(f"**Done**\n**{role.name}** will be added to a member when they have voted **{votecount} time(s)**.")
+
+    @voteroles.command(name="remove", brief="Removes milestones for vote roles.",
+                       description="Removes milestones for vote roles.", aliases=["delete"])
+    @commands.has_guild_permissions(administrator=True)
+    async def roleremove(self, ctx, votecount=None):
+        """
+        Removess milestones for vote roles
+        """
+        if votecount is None:
+            await ctx.send("The correct usage of this command is `voteroles remove [votecount]`.")
+            return
+        try:
+            votecount = int(votecount)
+        except ValueError:
+            await ctx.send(f"`{votecount}` as the votecount is not a valid number.")
+            return
+        votetracker = sqlite3.connect('cogs/votetracker/votetracker.db')
+        cursor = votetracker.cursor()
+        milestones = cursor.execute("SELECT * FROM milestones where votecount = ?", (votecount,)).fetchall()
+        if len(milestones) == 0:
+            await ctx.send(
+                f"You do not have a milestone set for {votecount} votes. Use `voteroles add [votecount] [role]` to add one.")
+            return
+        try:
+            cursor.execute("DELETE FROM milestones WHERE votecount = ?",(votecount,)) # Removes the milestone rule
+            votetracker.commit()
+        except Exception as e:
+            await ctx.send(e)
+            return
+        cursor.close()
+        votetracker.close()
+        await ctx.send(
+            f"**Done**\nThe milestone for having voted **{votecount} time(s)** has been removed.")
+
+    @commands.command(name="votecountreset",
+                  brief="Reset the vote count database. **This action is irreversible.**",
+                  description="Reset the vote count database. **This action is irreversible.**")
+    @commands.has_guild_permissions(administrator=True)
+    async def vcreset(self, ctx):
+        """
+        Reset the vote count database. **This action is irreversible.**
+        """
+        votetracker = sqlite3.connect('databases/votetracker.sqlite')
+        cursor = votetracker.cursor()
+        votecount = cursor.execute("SELECT * FROM votecount").fetchall()
+        if len(votecount) == 0:  # if there's nothing to be deleted
+            await ctx.send("There's nothing in the database to be removed.")
+            cursor.close()
+            votetracker.close()
+            return
+        totalvote = sum(voter[1] for voter in votecount)
+        embed = discord.Embed(title="Database pending removal", description = f"There are **{len(votecount)}** entries (or users) currently in the database, amounting to a total of {totalvote} votes. \n Are you sure you want to remove them? **This action is irreversible**!\nStrictly send a `yes` or `no` in the next 20 seconds.", color=0x57f0f0, timestamp = datetime.datetime.utcnow()) # summary of what's going to be removed
+        await ctx.send(embed=embed)
+        try:
+            yn = await self.client.wait_for("message",
+                                            check=lambda m: m.channel == ctx.channel and m.author == ctx.author,
+                                            timeout=20.0) # waits for confirmation to ensure that whoever uses this command indeed wants to reset the votecount
+        except asyncio.TimeoutError:
+            await ctx.send("Aborting this operation.")
+            return
+        if yn.content.lower() == "yes":
+            cursor.execute("DELETE FROM votecount") # DELETES ALL ENTRIES FROM THE DATABASE
+            votetracker.commit()
+            cursor.close()
+            await ctx.send(f"All vote counts have been reset, and all entries in the database has been deleted...")
+        else:
+            await ctx.send("Aborting this operation.")
