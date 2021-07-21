@@ -1,4 +1,5 @@
 import re
+from utils.errors import ArgumentBaseError
 import discord
 import contextlib
 import more_itertools
@@ -13,13 +14,13 @@ async def group_help_source_format(self, menu: GroupMenu, entry):
     This is for the group help command ListPageSource
     """
     group, list_commands = entry
-    embed = discord.Embed(title=AstreaBotHelp.get_command_name(self, group))
+    embed = discord.Embed(title=DVBotHelp.get_command_name(self, group))
     embed.color = 0x57F0F0
-    embed.description = f"{AstreaBotHelp.get_help(self, group, False)}\nUsage: {AstreaBotHelp.get_command_usage(self, group, ctx=menu.ctx)}"
+    embed.description = f"{DVBotHelp.get_help(self, group, False, ctx=menu.ctx)}\nUsage: {DVBotHelp.get_command_usage(self, group, ctx=menu.ctx)}"
     embed.set_footer(text=f"Requested by {menu.ctx.author}", icon_url=menu.ctx.author.avatar_url)
     for command in list_commands:
-        value = f"{AstreaBotHelp.get_help(self, command)}\nUsage: {AstreaBotHelp.get_command_usage(self, command, ctx=menu.ctx)}"
-        embed.add_field(name=f"{AstreaBotHelp.get_command_name(self, command)}", value=value, inline=False)
+        value = f"{DVBotHelp.get_help(self, command, ctx=menu.ctx)}\nUsage: {DVBotHelp.get_command_usage(self, command, ctx=menu.ctx)}"
+        embed.add_field(name=f"{DVBotHelp.get_command_name(self, command)}", value=value, inline=False)
     return embed
 
 @pages()
@@ -32,10 +33,10 @@ async def cog_help_source_format(self, menu: CogMenu, entry):
     embed.color = 0x57F0F0
     embed.set_footer(text=f"Requested by {menu.ctx.author}", icon_url=menu.ctx.author.avatar_url)
     for command in list_commands:
-        value = f"{AstreaBotHelp.get_help(self, command)}\nUsage: {AstreaBotHelp.get_command_usage(self, command, ctx=menu.ctx)}"
+        value = f"{DVBotHelp.get_help(self, command, ctx=menu.ctx)}\nUsage: {DVBotHelp.get_command_usage(self, command, ctx=menu.ctx)}"
         if isinstance(command, commands.Group):
-            value += f"\n`{menu.ctx.clean_prefix}help {AstreaBotHelp.get_command_name(self, command)}` for subcommands."
-        embed.add_field(name=f"{AstreaBotHelp.get_command_name(self, command)}", value=value, inline=False)
+            value += f"\n`{menu.ctx.clean_prefix}help {DVBotHelp.get_command_name(self, command)}` for subcommands."
+        embed.add_field(name=f"{DVBotHelp.get_command_name(self, command)}", value=value, inline=False)
     return embed
 
 @pages()
@@ -43,7 +44,7 @@ def empty_page_format(_, __, entry):
     """This is for Code Block ListPageSource and for help Cog ListPageSource"""
     return entry
 
-class AstreaBotHelp(commands.DefaultHelpCommand):
+class DVBotHelp(commands.DefaultHelpCommand):
     def __init__(self, **options):
         super().__init__(**options)
 
@@ -96,10 +97,23 @@ class AstreaBotHelp(commands.DefaultHelpCommand):
             else:
                 return f"`{prefix}{command.parent}` `{command.name}` `{command.signature}`"
 
-    def get_help(self, command, brief = True):
+    def get_help(self, command, brief = True, ctx = None):
         """
         Gets the command short_doc if brief is True while getting the longer help if it is false
         """
+        context = ctx if ctx else self.context
+        if not command.description:
+            print("we're in not cmd desc")
+            db_desc = context.bot.cur.execute("SELECT description FROM config WHERE command=?", (command.name,)).fetchone()
+            if not db_desc:
+                print('not found in db')
+                real_help = command.help or "This command is not documented."
+                command.description = command.help or "This command is not documented."
+            else:
+                print('found in db')
+                real_help = db_desc[0]
+                command.help = db_desc[0]
+                command.description = db_desc[0]
         real_help = command.help or "This command is not documented."
         return real_help if not brief else command.short_doc or real_help
 
@@ -150,7 +164,7 @@ class AstreaBotHelp(commands.DefaultHelpCommand):
         with contextlib.suppress(commands.CommandError):
             await command.can_run(self.context)
             return await self.context.reply(embed=self.get_command_help(command), mention_author=False)
-        raise commands.CommandError("You don't have enough permission to see this help.") from None
+        raise ArgumentBaseError(message="You don't have enough permission to see this help.") from None
 
     async def send_command_help(self, command):
         """
@@ -216,7 +230,7 @@ class Help(commands.Cog):
     def __init__(self, client):
         self.client = client
         self.default_help_command = client.help_command
-        client.help_command = AstreaBotHelp()
+        client.help_command = DVBotHelp()
         self.current_help_command = client.help_command
         client.get_command('help').hidden = True
         client.help_command.cog = self
@@ -241,7 +255,6 @@ class Help(commands.Cog):
             await ctx.checkmark()
             await ctx.send("Extension was successfully loaded.", delete_after=5)
         await ctx.message.delete(delay=5)
-
 
     def cog_unload(self):
         self.client.help_command = self.default_help_command

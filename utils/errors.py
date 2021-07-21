@@ -15,3 +15,11 @@ class RoleNotFound(ArgumentBaseError):
 class UserNotFound(ArgumentBaseError):
     def __init__(self, arg, **kwargs):
         super().__init__(message=f"I couldn't find {arg}, is this even a valid user?", **kwargs)
+    
+class IntegratedRoleError(ArgumentBaseError):
+    def __init__(self, arg, **kwargs):
+        super().__init__(message=f"**{arg}** is an integrated role.", **kwargs)
+
+class DefaultRoleError(ArgumentBaseError):
+    def __init__(self, arg, **kwargs):
+        super().__init__(message=f"That's the default role.", **kwargs)

@@ -11,7 +11,7 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
 
 class Utility(Whois, commands.Cog, name='utility', metaclass=CompositeMetaClass):
     """
-    Some basic utility commands.
+    Utility commands.
     """
     def __init__(self, client):
         self.client = client
@@ -49,8 +49,8 @@ class Utility(Whois, commands.Cog, name='utility', metaclass=CompositeMetaClass)
             await ctx.send(embed=embed)
 
     @commands.guild_only()
-    @commands.command(name='prefix')
-    @commands.has_permissions(manage_guild=True)
+    @commands.command(name='prefix', usage='[prefix]')
+    @commands.has_guild_permissions(manage_guild=True)
     async def prefix(self, ctx, prefix: str = None):
         if prefix is None:
             embed = discord.Embed(color=self.client.embed_color)

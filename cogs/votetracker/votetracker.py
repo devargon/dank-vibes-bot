@@ -1,16 +1,23 @@
+import os
 import time
 import topgg
 import discord
 import sqlite3
 import asyncio
+import random
 import datetime
+from PIL import ImageFont, Image, ImageDraw
 from discord.ext import commands, tasks
+from utils.time import humanize_timedelta
 from utils.format import print_exception
 
 vdanksterid = 683884762997587998 #Change this to the Vibing Dankster role ID.
 channelid = 754725833540894750 #Change this to where all the bot messages are sent.
 
 class VoteTracker(commands.Cog, name='votetracker'):
+    """
+    Vote tracker commands
+    """
     def __init__(self, client):
         self.client = client
         self.description = "Vote tracker" #If you are using a custom help command, this
@@ -23,7 +30,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
     async def vdankster(self):
         await self.client.wait_until_ready()
         timenow = round(time.time()) # Gets the time now
-        temproles = sqlite3.connect('cogs/votetracker/votetracker.db')
+        temproles = sqlite3.connect('databases/votetracker.db')
         cursor = temproles.cursor()
         result = cursor.execute("SELECT * FROM roleremove WHERE roletime < ?", (timenow,)).fetchall() # Finds the users whose roletime has passed since 24 hours ago, which was added in the webhook event below
         if len(result) == 0:
@@ -47,7 +54,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         try:
             await self.client.wait_until_ready()
             timenow = round(time.time())
-            votetracker = sqlite3.connect('cogs/votetracker/votetracker.db')
+            votetracker = sqlite3.connect('databases/votetracker.db')
             cursor = votetracker.cursor()
             result = cursor.execute("SELECT * FROM roleremove WHERE rmtime < ?", (timenow,)).fetchall() # just like the task above, finds users who have voted since 12 hours ago
             if len(result) == 0:
@@ -83,12 +90,14 @@ class VoteTracker(commands.Cog, name='votetracker'):
             cursor.close()
             votetracker.close()
         except Exception as error:
-            traceback_error = print_exception(f'Error encountered on a command.\nUserID `:` {row[0]} \nfor the reminder`:` {row[1]}\nMore details:', error)
-            await self.client.get_guild(736324402236358677).get_channel(847756191346327614).send(embed=discord.Embed(description=traceback_error))
+            pass
+            # traceback_error = print_exception(f'Ignoring exception in Reminder task', error)
+            # embed = discord.Embed(color=0xffcccb, description=f"Error encountered on a Reminder task.\n**UserID:** {row[0]} \n**For the reminder:** {row[1]}\n**More details:**\n```py\n{traceback_error}```", timestamp=datetime.datetime.utcnow())
+            # await self.client.get_guild(736324402236358677).get_channel(847756191346327614).send(embed=embed)
 
     @commands.Cog.listener()
     async def on_ready(self):
-        db = sqlite3.connect('cogs/votetracker/votetracker.db')
+        db = sqlite3.connect('databases/votetracker.db')
         cursor = db.cursor()
         cursor.execute(
             "CREATE TABLE IF NOT EXISTS rmpreference(member_id integer, rmtype text)")  # first time setup, creates the database for saving configurations for reminder task
@@ -102,7 +111,6 @@ class VoteTracker(commands.Cog, name='votetracker'):
 
     @commands.Cog.listener()
     async def on_dsl_vote(self, data):
-        print(data)
         timenow = time.time()
         timetoremove = timenow + 86400 # epoch time that role will be removed
         timetoremind = timenow + 43200 # epoch time that member will be reminded
@@ -117,7 +125,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
             return
         vdankster = guild.get_role(vdanksterid)
         rolesummary = "\u200b"  # If no roles are added, this will be in the section where the roles added are displayed.
-        db = sqlite3.connect('votetracker.db')  # opcogs/votetracker/ens the database
+        db = sqlite3.connect('databases/votetracker.db')  # opcogs/votetracker/ens the database
         cursor = db.cursor()
         result = cursor.execute('SELECT * FROM votecount where member_id = ?',
                                 (userid,)).fetchall()  # gets the vote count of the user
@@ -182,7 +190,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         """
         Manage your vote reminder here! Use this command without arguments to see how to use it.
         """
-        votetracker = sqlite3.connect('cogs/votetracker/votetracker.db')
+        votetracker = sqlite3.connect('databases/votetracker.db')
         cursor = votetracker.cursor()
         preferences = cursor.execute("SELECT rmtype FROM rmpreference WHERE member_id = ?", (ctx.author.id,)).fetchall()
         if len(preferences) == 0:  # if it's the first time for the user to invoke the command, it will create an entry automatically with the default setting "none".
@@ -246,7 +254,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         """
         Lists milestones for vote roles.
         """
-        votetracker = sqlite3.connect('cogs/votetracker/votetracker.db')
+        votetracker = sqlite3.connect('databases/votetracker.db')
         cursor = votetracker.cursor()
         milestones = cursor.execute("SELECT * FROM milestones").fetchall() # gets the milestones
         if len(milestones) == 0:
@@ -286,7 +294,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         except ValueError:
             await ctx.send("`votecount` is not a valid number.")
             return
-        votetracker = sqlite3.connect('cogs/votetracker/votetracker.db')
+        votetracker = sqlite3.connect('databases/votetracker.db')
         cursor = votetracker.cursor()
         milestones = cursor.execute("SELECT * FROM milestones where votecount = ?", (votecount,)).fetchall()
         if len(milestones) > 0: # oh this milestone exists already!
@@ -321,7 +329,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         except ValueError:
             await ctx.send(f"`{votecount}` as the votecount is not a valid number.")
             return
-        votetracker = sqlite3.connect('cogs/votetracker/votetracker.db')
+        votetracker = sqlite3.connect('databases/votetracker.db')
         cursor = votetracker.cursor()
         milestones = cursor.execute("SELECT * FROM milestones where votecount = ?", (votecount,)).fetchall()
         if len(milestones) == 0:
@@ -347,7 +355,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         """
         Reset the vote count database. **This action is irreversible.**
         """
-        votetracker = sqlite3.connect('databases/votetracker.sqlite')
+        votetracker = sqlite3.connect('databases/votetracker.db')
         cursor = votetracker.cursor()
         votecount = cursor.execute("SELECT * FROM votecount").fetchall()
         if len(votecount) == 0:  # if there's nothing to be deleted
@@ -372,3 +380,68 @@ class VoteTracker(commands.Cog, name='votetracker'):
             await ctx.send(f"All vote counts have been reset, and all entries in the database has been deleted...")
         else:
             await ctx.send("Aborting this operation.")
+
+    @commands.command(name="leaderboard", brief="Shows the leaderboard for the top 10 voters for Dank Vibes.", description = "Shows the leaderboard for the top 10 voters for Dank Vibes.", aliases = ["lb"])
+    async def leaderboard(self, ctx):
+        """
+        Shows the leaderboard for the top 10 voters for Dank Vibes.
+        """
+        with ctx.typing():
+            votetracker = sqlite3.connect('databases/votetracker.db')
+            cursor = votetracker.cursor()
+            votecount = cursor.execute("SELECT * FROM votecount ORDER BY count DESC LIMIT 10").fetchall() # gets top 10 voters
+            leaderboard = []
+            for voter in votecount:
+                member = ctx.guild.get_member(voter[0])
+                name = member.display_name if member is not None else voter[0] # shows user id if the user left the server
+                name = (name[:12] + '...') if len(name) > 15 else name # shortens the nickname if it's too long
+                leaderboard.append((name, voter[1])) #this is the final list of leaderboard people
+            font_name = "assets/Gagalin.ttf" 
+            lbpositions = [(204, 240), (204, 390), (204, 550), (204, 710), (204, 870), (1150, 240), (1150, 390), (1150, 550), (1150, 710), (1150, 870)] # these are the positions for the nicknames in the leaderboard
+            countpositions = [(780, 240), (780, 390), (780, 550), (780, 710), (780, 870), (1730, 240), (1730, 390), (1730, 550), (1730, 710), (1730, 870)] # these are the positions for the number of votes
+            font = ImageFont.truetype(font_name, 60) # opens the font
+            ima = Image.open("assets/lbbg.png") # opens leaderboard background
+            ima = ima.convert("RGB") # Convert into RGB instead of RGBA so that it can be saved as a jpeg
+            draw = ImageDraw.Draw(ima) # starts the drawing process
+            for voter in leaderboard:
+                draw.text(lbpositions[leaderboard.index(voter)], voter[0], font=font, align="middle left") # Adds a user's nickname 
+                draw.text(countpositions[leaderboard.index(voter)], str(voter[1]), font=font, align="right") # adds a user's vote count
+            filename = f"temp/{random.randint(1, 9999999)}.jpg" 
+            ima.save(filename, optimize=True, quality=50) # saves the file under a temporary name
+            file = discord.File(filename) 
+        try:
+            print("Sending")
+            await ctx.send("This is the vote leaderboard for **Dank Vibes**!" if len(leaderboard) != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://top.gg/servers/595457764935991326/vote !", file=file)
+        except discord.Forbidden:
+            await ctx.send("I do not have permission to send the leaderboard here.")
+        os.remove(filename) # deletes the temporary file
+        cursor.close()
+        votetracker.close()
+        return
+
+    @commands.command(name="myvotes", brief="Shows the number of times you have voted for Dank Vibes.",
+                      description="Shows the number of times you have voted for Dank Vibes.", aliases=["myv", "myvote", "votes"])
+    async def myvotes(self, ctx, member = None): # member variable is not used actually
+        """
+        Shows the number of times you have voted for Dank Vibes.
+        """
+        timenow = round(time.time())
+        if member is not None and "<@" in ctx.message.content: # you can delete this if you want, I just added it to tease them hehe
+            await ctx.send("Nice try, but you can't view other users' votecount.")
+        votetracker = sqlite3.connect('databases/votetracker.db')
+        cursor = votetracker.cursor()
+        votecount = cursor.execute("SELECT * FROM votecount where member_id = ? LIMIT 1", (ctx.author.id,)).fetchall()
+        count = 0 if len(votecount) == 0 else votecount[0][1] # number of times user has voted
+        result = cursor.execute("SELECT * FROM roleremove WHERE member_id = ? and rmtime > ? LIMIT 1", (ctx.author.id, timenow)).fetchall()
+        if len(result) != 0:
+            desc = f"You can [vote for Dank Vibes](https://top.gg/servers/595457764935991326/vote) in another {humanize_timedelta(seconds=(result[0][1] - timenow))}." #if the user has voted recently
+        else:
+            desc = f"You can now [vote for Dank Vibes](https://top.gg/servers/595457764935991326/vote) again!" # self explanatory
+        embed = discord.Embed(title=f"You have voted for Dank Vibes **__{count}__** times.",
+                              description=desc, color=0x57f0f0, timestamp = datetime.datetime.utcnow())
+        embed.set_author(name=f"{ctx.author.name}#{ctx.author.discriminator}", icon_url=ctx.author.avatar_url)
+        embed.add_field(name="Want to be reminded to vote for Dank Vibes?", value="Use `dv.votereminder dm/ping` to be reminded 12 hours after you vote for Dank Vibes.")
+        embed.set_thumbnail(url=ctx.guild.icon_url)
+        await ctx.send(embed=embed)
+        cursor.close()
+        votetracker.close()

@@ -196,3 +196,18 @@ class GroupMenu(HelpMenu):
         nav = '\n'.join(f'{self.dict_emoji[e].emoji} {self.dict_emoji[e].explain}' for e in exists)
         embed.add_field(name='Navigation', value=nav)
         await self.message.edit(embed=embed)
+
+class CustomMenu(HelpMenu):
+    """
+    This is a MenuPages class that is used only in Emoji command. All it has it custom information and
+    custom initial message
+    """
+    async def on_information_show(self, payload):
+        exists = [str(emoji) for emoji in super().buttons]
+        embed = discord.Embed(color=self.ctx.bot.help_color)
+        curr = self.current_page + 1 if (p := self.current_page > -1) else "cover page"
+        pa = "page" if p else "the"
+        embed.set_footer(text=f"You were on {pa} {curr}")
+        nav = '\n'.join(f'{self.dict_emoji[e].emoji} {self.dict_emoji[e].explain}' for e in exists)
+        embed.add_field(name='Navigation', value=nav)
+        await self.message.edit(embed=embed)

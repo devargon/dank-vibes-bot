@@ -1,7 +1,8 @@
+import discord
 from .time import parse_timedelta
 from datetime import timedelta
 from discord.ext import commands
-from utils.errors import ArgumentBaseError, UserNotFound
+from utils.errors import ArgumentBaseError, DefaultRoleError, IntegratedRoleError, RoleNotFound, UserNotFound
 
 class TimedeltaConverter(commands.Converter):
     def __init__(self, *, minimum=None, maximum=None, allowed_units=None, default_units=None):
@@ -46,3 +47,17 @@ class MemberUserConverter(commands.Converter):
             except commands.UserNotFound:
                 raise UserNotFound(argument)
         return user
+
+class BetterRoles(commands.Converter):
+    async def convert(self, ctx, argument):
+        try:
+            role = await commands.RoleConverter().convert(ctx, argument)
+        except commands.BadArgument:
+            role = discord.utils.find(lambda x: x.name.lower() == argument.lower(), ctx.guild.roles)
+            if role is None:
+                raise RoleNotFound(argument)
+        if role.managed or role.is_integration():
+            raise IntegratedRoleError(role.name)
+        if role.is_default():
+            raise DefaultRoleError
+        return role

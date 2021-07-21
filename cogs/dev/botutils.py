@@ -11,7 +11,7 @@ class BotUtils(commands.Cog):
     @commands.group(hidden=True)
     async def set(self, ctx):
         """
-        Some bot utility commands.
+        Base command for managing bot.
         """
         pass
 

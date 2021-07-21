@@ -1,9 +1,9 @@
 import discord
+from datetime import datetime
+from utils.time import humanize_timedelta
 from discord.ext import commands
 from utils.format import print_exception
-from utils.time import humanize_timedelta
 from utils.errors import ArgumentBaseError
-
 
 class ErrorHandler(commands.Cog):
     """
@@ -19,8 +19,7 @@ class ErrorHandler(commands.Cog):
         """
         async def send_error(*args, **kwargs):
             await ctx.send(*args, allowed_mentions=discord.AllowedMentions(roles=False, users=False), **kwargs)
-        cog = ctx.cog
-        if cog:
+        if (cog := ctx.cog):
             if cog._get_overridden_method(cog.cog_command_error) is not None:
                 return
         ignore = (commands.CommandNotFound)
@@ -31,7 +30,9 @@ class ErrorHandler(commands.Cog):
         elif isinstance(error, commands.CheckFailure):
             await send_error("Oops!, looks like you don't have enough permission to use this command.", delete_after=5)
         elif isinstance(error, commands.CommandOnCooldown):
-            await send_error(f"Please wait for another **{humanize_timedelta(second=error.retry_after)}** seconds before executing this command!")
+            if (ctx.author.id == 321892489470410763) or (ctx.author.id == 515725341910892555):
+                return await ctx.reinvoke()
+            await send_error(f"You're on cooldown. Try again in **{humanize_timedelta(seconds=error.retry_after)}**.")
         elif isinstance(error, commands.MemberNotFound):
             await send_error("I couldn't find a member called {}.".format(error.argument))
         elif isinstance(error, commands.RoleNotFound):
@@ -42,11 +43,9 @@ class ErrorHandler(commands.Cog):
             await send_error(error)
         elif isinstance(error, commands.BadArgument):
             await send_error(error, delete_after=10)
-        elif isinstance(error, commands.CommandError):
-            await send_error(error, delete_after=10)
         else:
-            msg = f"Oops! something went wrong\n{error}"
-            await send_error(msg, delete_after=15)
+            embed = discord.Embed(title="Oh no! something went wrong.", description="It has been sent to the bot developer, it'll be fixed ASAP", color=discord.Color.red())
+            await send_error(embed=embed, delete_after=10)
             traceback_error = print_exception(f'Ignoring exception in command {ctx.command}:', error)
             error_message = f"**Command:** `{ctx.message.content}`\n" \
                             f"**Message ID:** `{ctx.message.id}`\n" \
@@ -56,4 +55,4 @@ class ErrorHandler(commands.Cog):
                             f"**Jump:** [`jump`]({ctx.message.jump_url})```py\n" \
                             f"{traceback_error}\n" \
                             f"```"
-            await self.client.get_guild(736324402236358677).get_channel(847756191346327614).send(embed=discord.Embed(description=error_message))
+            await self.client.get_guild(736324402236358677).get_channel(847756191346327614).send(embed=discord.Embed(color=0xffcccb, description=error_message, timestamp=datetime.utcnow()).set_footer(text=f"From: {ctx.guild.name}", icon_url=ctx.guild.icon_url))
