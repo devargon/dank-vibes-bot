@@ -44,7 +44,7 @@ class ErrorHandler(commands.Cog):
         elif isinstance(error, commands.BadArgument):
             await send_error(error, delete_after=10)
         else:
-            embed = discord.Embed(title="Oh no! something went wrong.", description="It has been sent to the bot developer, it'll be fixed ASAP", color=discord.Color.red())
+            embed = discord.Embed(title="Oh no! something went wrong.", description="It has been sent to the bot developer, it'll be fixed soon.", color=discord.Color.red())
             await send_error(embed=embed, delete_after=10)
             traceback_error = print_exception(f'Ignoring exception in command {ctx.command}:', error)
             error_message = f"**Command:** `{ctx.message.content}`\n" \
