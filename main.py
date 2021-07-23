@@ -9,9 +9,10 @@ from utils.context import DVVTcontext
 
 AVAILABLE_EXTENSIONS = ['cogs.dev',
 'cogs.errors',
-'cogs.help',
 'cogs.admin',
 'cogs.autoreaction',
+'cogs.banbattle',
+'cogs.help',
 'cogs.votetracker',
 'cogs.utility']
 
