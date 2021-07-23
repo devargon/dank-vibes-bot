@@ -23,6 +23,9 @@ def participant_or_permissions(**perms):
     return commands.check(extended_check)
 
 class BanBattle(commands.Cog):
+    """
+    Banbattle commands
+    """
     def __init__(self, client):
         self.client = client
         self.scores = {}

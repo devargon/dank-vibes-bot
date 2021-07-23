@@ -20,7 +20,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
     """
     def __init__(self, client):
         self.client = client
-        self.description = "Vote tracker" #If you are using a custom help command, this
+        self.description = "Vote tracker commands" #If you are using a custom help command, this
         self.votetracker = sqlite3.connect('databases/votetracker.db')
         self.vdankster.start()
         self.reminders.start()
@@ -30,7 +30,6 @@ class VoteTracker(commands.Cog, name='votetracker'):
     @tasks.loop(seconds=5.0) # this is the looping task that will remove the Vibing Dankster role from the person.
     async def vdankster(self):
         await self.client.wait_until_ready()
-        print("hello")
         timenow = round(time.time()) # Gets the time now
         cursor = self.votetracker.cursor()
         result = cursor.execute("SELECT * FROM roleremove WHERE roletime < ?", (timenow,)).fetchall() # Finds the users whose roletime has passed since 24 hours ago, which was added in the webhook event below
@@ -367,7 +366,6 @@ class VoteTracker(commands.Cog, name='votetracker'):
             ima.save(filename, optimize=True, quality=50) # saves the file under a temporary name
             file = discord.File(filename)
         try:
-            print("Sending")
             await ctx.send("This is the vote leaderboard for **Dank Vibes**!" if len(leaderboard) != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://top.gg/servers/595457764935991326/vote !", file=file)
         except discord.Forbidden:
             await ctx.send("I do not have permission to send the leaderboard here.")
@@ -385,7 +383,6 @@ class VoteTracker(commands.Cog, name='votetracker'):
         votecount = cursor.execute("SELECT * FROM votecount where member_id = ? LIMIT 1", (ctx.author.id,)).fetchall()
         count = 0 if len(votecount) == 0 else votecount[0][1] # number of times user has voted
         result = cursor.execute("SELECT * FROM roleremove WHERE member_id = ? and rmtime > ? LIMIT 1", (ctx.author.id, timenow)).fetchall()
-        await ctx.send(result)
         if len(result) != 0 and result[0][1] != 9223372036854775807:
             desc = f"You can [vote for Dank Vibes](https://top.gg/servers/595457764935991326/vote) in another {humanize_timedelta(seconds=(result[0][1] - timenow))}." #if the user has voted recently
         else:

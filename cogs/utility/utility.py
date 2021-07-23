@@ -11,7 +11,7 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
 
 class Utility(Whois, commands.Cog, name='utility', metaclass=CompositeMetaClass):
     """
-    Utility commands.
+    Utility commands
     """
     def __init__(self, client):
         self.client = client

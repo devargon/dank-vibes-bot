@@ -103,14 +103,11 @@ class DVBotHelp(commands.DefaultHelpCommand):
         """
         context = ctx if ctx else self.context
         if not command.description:
-            print("we're in not cmd desc")
             db_desc = context.bot.cur.execute("SELECT description FROM config WHERE command=?", (command.name,)).fetchone()
             if not db_desc:
-                print('not found in db')
                 real_help = command.help or "This command is not documented."
                 command.description = command.help or "This command is not documented."
             else:
-                print('found in db')
                 real_help = db_desc[0]
                 command.help = db_desc[0]
                 command.description = db_desc[0]
