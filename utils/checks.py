@@ -1,7 +1,8 @@
 import sqlite3
 import discord
-from typing import Callable
+from typing import Callable, Optional
 from discord.ext import commands
+from utils.errors import NotInBanBattle
 
 con = sqlite3.connect('databases/database.db', timeout=5.0)
 cur = con.cursor()
@@ -53,4 +54,13 @@ def admoon() -> Callable:
             return True
         else:
             raise commands.NotOwner()
+    return commands.check(predicate)
+
+def is_dvbm(silent: Optional[bool] = False) -> Callable:
+    async def predicate(ctx):
+        if ctx.guild and ctx.guild.id == 813865065593176145:
+            return True
+        else:
+            if not silent:
+                raise NotInBanBattle()
     return commands.check(predicate)

@@ -7,4 +7,5 @@ cogs/admin/__pycache__
 cogs/help/__pycache__
 cogs/utility/__pycache__
 cogs/votetracker/__pycache__
+cogs/banbattle/__pycache__
 utils/__pycache__

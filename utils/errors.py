@@ -23,3 +23,7 @@ class IntegratedRoleError(ArgumentBaseError):
 class DefaultRoleError(ArgumentBaseError):
     def __init__(self, arg, **kwargs):
         super().__init__(message=f"That's the default role.", **kwargs)
+
+class NotInBanBattle(ArgumentBaseError):
+    def __init__(self):
+        super().__init__(message="This command can only be invoked in `Dank Vibes Ban Mania` server.")
