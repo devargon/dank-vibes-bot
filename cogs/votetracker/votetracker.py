@@ -68,7 +68,6 @@ class VoteTracker(commands.Cog, name='votetracker'):
                     preferences = cursor.execute("SELECT rmtype FROM rmpreference WHERE member_id = ?", (row[0],)).fetchall() # refetch the configuration for this user after it has been added
                 member = self.client.get_user(row[0])
                 channel = self.client.get_channel(channelid)
-                await channel.send(preferences[0][0])
                 if preferences[0][0] == "dm":
                     try:
                         dmembed = discord.Embed(
@@ -86,10 +85,9 @@ class VoteTracker(commands.Cog, name='votetracker'):
                 self.votetracker.commit()
             cursor.close()
         except Exception as error:
-            pass
-            # traceback_error = print_exception(f'Ignoring exception in Reminder task', error)
-            # embed = discord.Embed(color=0xffcccb, description=f"Error encountered on a Reminder task.\n**UserID:** {row[0]} \n**For the reminder:** {row[1]}\n**More details:**\n```py\n{traceback_error}```", timestamp=datetime.datetime.utcnow())
-            # await self.client.get_guild(736324402236358677).get_channel(847756191346327614).send(embed=embed)
+            traceback_error = print_exception(f'Ignoring exception in Reminder task', error)
+            embed = discord.Embed(color=0xffcccb, description=f"Error encountered on a Reminder task.\n**UserID:** {row[0]} \n**For the reminder:** {row[1]}\n**More details:**\n```py\n{traceback_error}```", timestamp=datetime.datetime.utcnow())
+            await self.client.get_guild(736324402236358677).get_channel(847756191346327614).send(embed=embed)
 
     @commands.Cog.listener()
     async def on_ready(self):

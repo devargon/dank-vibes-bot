@@ -24,12 +24,12 @@ class Autoreaction(commands.Cog, name='autoreaction'):
         self.cur.execute('''CREATE TABLE IF NOT EXISTS autoreactions
                         (guild_id integer, trigger text, response text)''')
 
-    @commands.group(aliases=['ar'])
+    @commands.group(aliases=['ar'], invoke_without_command=True)
     async def autoreact(self, ctx):
         """
         Base command for managing autoreactions.
         """
-        pass
+        return await ctx.help()
 
     @checks.perms_or_role(administrator=True)
     @autoreact.command(name='add', aliases=['create', '+'], usage='<trigger> <response>')
@@ -175,10 +175,6 @@ class Autoreaction(commands.Cog, name='autoreaction'):
         pages = CustomMenu(source=get_ars(ars, ctx.guild, self.client.embed_color), clear_reactions_after=True, timeout=30)
         await pages.start(ctx)
     
-    def cog_unload(self):
-        self.cur.close()
-        self.con.close()
-
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.guild is None:

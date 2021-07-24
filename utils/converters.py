@@ -2,7 +2,7 @@ import discord
 from .time import parse_timedelta
 from datetime import timedelta
 from discord.ext import commands
-from utils.errors import ArgumentBaseError, DefaultRoleError, IntegratedRoleError, RoleNotFound, UserNotFound
+from utils.errors import ArgumentBaseError, DefaultRoleError, IntegratedRoleError, RoleNotFound, UserNotFound, InvalidDatabase
 
 class TimedeltaConverter(commands.Converter):
     def __init__(self, *, minimum=None, maximum=None, allowed_units=None, default_units=None):
@@ -32,6 +32,17 @@ class TrueFalse(commands.Converter):
         elif argument.lower() in ('no', 'n', 'nah', 'false'):
             return False
         return False
+
+class ValidDatabase(commands.Converter):
+    async def convert(self, ctx, argument):
+        if argument.lower() not in ('database', 'votetracker', 'autoreactor'):
+            raise InvalidDatabase(argument)
+        elif argument.lower() == 'database':
+            return 'databases/database.db'
+        elif argument.lower() == 'votetracker':
+            return 'databases/votetracker.db'
+        elif argument.lower() == 'autoreactor':
+            return 'databases/autoreactor.db'
 
 class MemberUserConverter(commands.Converter):
     """

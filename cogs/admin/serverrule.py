@@ -8,12 +8,12 @@ class ServerRule(commands.Cog):
         self.client = client
     
     @commands.guild_only()
-    @commands.group(name='serverrule')
+    @commands.group(name='serverrule', invoke_without_command=True)
     @commands.has_guild_permissions(administrator=True)
     async def serverrule(self, ctx):
         """
         Base command for managing server rules."""
-        pass
+        return await ctx.help()
 
     @commands.guild_only()
     @serverrule.command(name='add', aliases=['set'], usage='<command> <role>')

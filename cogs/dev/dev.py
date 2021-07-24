@@ -3,6 +3,7 @@ import re
 import ast
 import copy
 import time
+import sqlite3
 import discord
 import asyncio
 import inspect
@@ -12,14 +13,13 @@ import traceback
 import contextlib
 from abc import ABC
 from utils import checks
-from typing import Union
 from .status import Status
 from .botutils import BotUtils
 from contextlib import redirect_stdout
 from discord.ext import commands
 from .cog_manager import CogManager
-from utils.format import pagify
-from utils.converters import MemberUserConverter, TrueFalse
+from utils.format import pagify, TabularData
+from utils.converters import MemberUserConverter, TrueFalse, ValidDatabase
 
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     """
@@ -62,7 +62,7 @@ class Developer(BotUtils, CogManager, Status, commands.Cog, name='dev', command_
         return pagify(msg, delims=["\n", " "], priority=True, shorten_by=10)
 
     @checks.admoon()
-    @commands.command(hidden=True, usage='<silently>')
+    @commands.command(hidden=True, usage='[silently]')
     async def shutdown(self, ctx, silently: TrueFalse = False):
         """
         Shuts down the bot.
@@ -246,3 +246,64 @@ class Developer(BotUtils, CogManager, Status, commands.Cog, name='dev', command_
         message.content = ctx.prefix + command
         new_ctx = await self.client.get_context(message, cls=type(ctx))
         await self.client.invoke(new_ctx)
+
+    @checks.admoon()        
+    @commands.group(name='sql', invoke_without_command=True, hidden=True)
+    async def sql(self, ctx):
+        """
+        Base command for interacting with SQL.
+        """
+        await ctx.help()
+
+    @checks.admoon()    
+    @sql.command(name='fetch', hidden=True, usage='<database> <query...>')
+    async def sql_fetch(self, ctx, db: ValidDatabase = None, *, query: str = None):
+        """
+        Fetches all rows of a query result.
+        """
+        if db is None:
+            return await ctx.send('Database is a required argument.')
+        if query is None:
+            return await ctx.send('Query is a required argument.')
+        query = self.cleanup_code(query)
+        conn = sqlite3.connect(db, timeout=5)
+        cur = conn.cursor()
+        try:
+            results = cur.execute(query)
+        except Exception:
+            return await ctx.send(f'```py\n{traceback.format_exc()}\n```')
+        headers = list(col_name[0] for col_name in results.description)
+        table = TabularData()
+        table.set_columns(headers)
+        results = results.fetchall()
+        cur.close()
+        conn.close()
+        table.add_rows(list(r) for r in results)
+        render = table.render()
+        await ctx.send_interactive(self.get_pages(render), box_lang='py')
+    
+    @checks.admoon()    
+    @sql.command(name='execute', aliases=['exec'], hidden=True, usage='<database> <query...>')
+    async def sql_execute(self, ctx, db: ValidDatabase = None, *, query: str = None):
+        """
+        Executes a SQL query.
+        
+        It can only execute a single SQL query.
+        It also calls commit() method to commit the current changes, so be careful.
+        """
+        if db is None:
+            return await ctx.send('Database is a required argument.')
+        if query is None:
+            return await ctx.send('Query is a required argument.')
+        query = self.cleanup_code(query)
+        conn = sqlite3.connect(db, timeout=5)
+        cur = conn.cursor()
+        try:
+            cur.execute(query)
+            await ctx.checkmark()
+        except Exception:
+            await ctx.crossmark()
+            return await ctx.send(f'```py\n{traceback.format_exc()}\n```')
+        conn.commit()
+        cur.close()
+        conn.close()

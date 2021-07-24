@@ -27,3 +27,7 @@ class DefaultRoleError(ArgumentBaseError):
 class NotInBanBattle(ArgumentBaseError):
     def __init__(self):
         super().__init__(message="This command can only be invoked in `Dank Vibes Ban Mania` server.")
+
+class InvalidDatabase(ArgumentBaseError):
+    def __init__(self, arg, **kwargs):
+        super().__init__(message=f"**{arg}** is not a valid database.", **kwargs)
