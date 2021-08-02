@@ -130,15 +130,18 @@ class DVBotHelp(commands.DefaultHelpCommand):
         embed.timestamp = datetime.utcnow()
         embed.set_author(name=f"{self.context.me.name}'s Command List", icon_url=self.context.me.avatar_url)
         embed.set_footer(text=f"Requested by {self.context.author}", icon_url=self.context.author.avatar_url)
+        cogs = []
         for cog, unfiltered_commands in mapping.items():
             filtered = await self.filter_commands(unfiltered_commands, sort=True)
             if not cog:
                 continue
             if filtered:
-                name = cog.qualified_name.capitalize()
-                description = cog.description if cog.description else "Not documented."
-                value = f"{description}\n `{self.context.clean_prefix}help {cog.qualified_name}` for more info"
-                embed.add_field(name=name, value=value)
+                cogs.append(cog)
+        for cog in sorted(cogs, key=lambda x: x.qualified_name):
+            name = cog.qualified_name.capitalize()
+            description = cog.description if cog.description else "Not documented."
+            value = f"{description}\n `{self.context.clean_prefix}help {cog.qualified_name}` for more info"
+            embed.add_field(name=name, value=value)
         await self.context.reply(embed=embed, mention_author=False)
 
     def get_command_help(self, command):
@@ -198,7 +201,7 @@ class DVBotHelp(commands.DefaultHelpCommand):
         unfiltered_commands = cog.get_commands()
         list_commands = await self.filter_commands(unfiltered_commands, sort=True)
         if not list_commands:
-            raise commands.CommandError("You don't have enough permission to see this help.") from None
+            raise ArgumentBaseError(message="You don't have enough permission to see this help.") from None
         for chunks in more_itertools.chunked(list_commands, 5):
             command_data.append((cog, [command for command in chunks]))
         pages = CogMenu(source=cog_help_source_format(command_data), timeout=60)

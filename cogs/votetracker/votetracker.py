@@ -7,8 +7,8 @@ import asyncio
 import random
 import datetime
 from PIL import ImageFont, Image, ImageDraw
-from discord.ext import commands, tasks
 from utils.time import humanize_timedelta
+from discord.ext import commands, tasks
 from utils.format import print_exception
 
 vdanksterid = 683884762997587998 #Change this to the Vibing Dankster role ID.
@@ -26,6 +26,10 @@ class VoteTracker(commands.Cog, name='votetracker'):
         self.reminders.start()
         self.client.topgg_webhook = topgg.WebhookManager(client).dsl_webhook("/webhook", "ABCDE")
         self.client.topgg_webhook.run(5000)
+
+    def cog_unload(self):
+        self.vdankster.stop()
+        self.reminders.stop()
 
     @tasks.loop(seconds=5.0) # this is the looping task that will remove the Vibing Dankster role from the person.
     async def vdankster(self):
@@ -59,6 +63,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
             if len(result) == 0:
                 return
             for row in result: # iterate through the list of members who have reminders.
+                cursor.execute('UPDATE roleremove SET rmtime = ? WHERE member_id = ?',(9223372036854775807, row[0]))
                 preferences = cursor.execute("SELECT rmtype FROM rmpreference WHERE member_id = ?", (row[0],)).fetchall()
                 if len(preferences) == 0: # somehow there is no preference for this user, so i'll create an entry to prevent it from breaking
                     sql = 'INSERT into rmpreference(member_id, rmtype) VALUES(?, ?)'  # creats a new row for first time vote count if user isn't in database
@@ -79,7 +84,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
                 elif preferences[0][0] == "ping":
                     await channel.send(f"{member.mention} You can now vote for Dank Vibes again!", delete_after=5.0) # self-explainable
                 elif preferences[0][0] != "none": # somehow this guy doesn't have "dm" "ping or "none" in his setting so i'll update it to show that
-                    cursor.execute('UPDATE rmpreference set rmtype = ? where member_id = ?', (row[0], 'none')) # changes his setting to none
+                    cursor.execute('UPDATE rmpreference set rmtype = ? where member_id = ?', ('none', row[0],)) # changes his setting to none
                     self.votetracker.commit()
                     return
                 self.votetracker.commit()
@@ -87,7 +92,47 @@ class VoteTracker(commands.Cog, name='votetracker'):
         except Exception as error:
             traceback_error = print_exception(f'Ignoring exception in Reminder task', error)
             embed = discord.Embed(color=0xffcccb, description=f"Error encountered on a Reminder task.\n**UserID:** {row[0]} \n**For the reminder:** {row[1]}\n**More details:**\n```py\n{traceback_error}```", timestamp=datetime.datetime.utcnow())
-            await self.client.get_guild(736324402236358677).get_channel(847756191346327614).send(embed=embed)
+            await self.client.get_guild(871734809154707467).get_channel(871737028105109574).send(embed=embed)
+
+    @tasks.loop(hours=24.0)
+    async def leaderboardloop(self):
+        await self.client.wait_until_ready()
+        cursor = self.votetracker.cursor()
+        votecount = cursor.execute(
+            "SELECT * FROM votecount ORDER BY count DESC LIMIT 10").fetchall()  # gets top 10 voters
+        leaderboard = []
+        guild = self.client.get_guild(595457764935991326)
+        channel = self.client.get_channel(channelid)
+        for voter in votecount:
+            member = guild.get_member(voter[0])
+            name = member.display_name if member is not None else voter[0]  # shows user id if the user left the server
+            name = (name[:12] + '...') if len(name) > 15 else name  # shortens the nickname if it's too long
+            leaderboard.append((name, voter[1]))  # this is the final list of leaderboard people
+        font_name = "assets/Gagalin.ttf"
+        lbpositions = [(204, 240), (204, 390), (204, 550), (204, 710), (204, 870), (1150, 240), (1150, 390),
+                    (1150, 550), (1150, 710),
+                    (1150, 870)]  # these are the positions for the nicknames in the leaderboard
+        countpositions = [(780, 240), (780, 390), (780, 550), (780, 710), (780, 870), (1730, 240), (1730, 390),
+                        (1730, 550), (1730, 710), (1730, 870)]  # these are the positions for the number of votes
+        font = ImageFont.truetype(font_name, 60)  # opens the font
+        ima = Image.open("assets/lbbg.png")  # opens leaderboard background
+        ima = ima.convert("RGB")  # Convert into RGB instead of RGBA so that it can be saved as a jpeg
+        draw = ImageDraw.Draw(ima)  # starts the drawing process
+        for voter in leaderboard:
+            draw.text(lbpositions[leaderboard.index(voter)], voter[0], font=font,
+                    align="middle left")  # Adds a user's nickname
+            draw.text(countpositions[leaderboard.index(voter)], str(voter[1]), font=font,
+                    align="right")  # adds a user's vote count
+        filename = f"temp/{random.randint(1, 9999999)}.jpg"
+        ima.save(filename, optimize=True, quality=50)  # saves the file under a temporary name
+        file = discord.File(filename)
+        try:
+            await channel.send("This is the vote leaderboard for **Dank Vibes**!" if len(leaderboard) != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://top.gg/servers/595457764935991326/vote !",file=file)
+        except discord.Forbidden:
+            await channel.send("I do not have permission to send the leaderboard here.")
+        os.remove(filename)  # deletes the temporary file
+        cursor.close()
+        return
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -104,7 +149,6 @@ class VoteTracker(commands.Cog, name='votetracker'):
 
     @commands.Cog.listener()
     async def on_dsl_vote(self, data):
-        print(data)
         timenow = time.time()
         timetoremove = timenow + 86400 # epoch time that role will be removed
         timetoremind = timenow + 43200 # epoch time that member will be reminded
@@ -188,7 +232,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
                                   description=f"Every 12 hours after you vote, you can be reminded to [vote for Dank Vibes on top.gg](https://top.gg/servers/595457764935991326/vote).", timestamp=datetime.datetime.utcnow(), color=0x57f0f0)
             embed.add_field(name="Your current reminder setting",
                             value="DM" if currentpreference == "dm" else "Ping" if currentpreference == "ping" else "No reminder" if currentpreference == "none" else "Unknown; Please try to choose a reminder setting!", inline=False) #shows current reminder setting
-            embed.add_field(name = "How to configure the reminder?", value=f"`votereminder dm` will make {self.client.user.name} DM you to vote again.\n`votereminder ping/mention` will make {self.client.user.name} ping you to vote again.\n`votereminder none` will turn off reminders.", inline=False) # description on this command
+            embed.add_field(name = "How to configure the reminder?", value=f"`votereminder dm` will make {self.client.user.name} DM you to vote again.\n`votereminder ping/mention` will make {self.client.user.name} ping you in <#754725833540894750> to vote again.\n`votereminder none` will turn off reminders.", inline=False) # description on this command
             embed.set_footer(text=f"{ctx.guild.name} • {self.client.user.name}")
             embed.set_thumbnail(url=ctx.guild.icon_url)
             return await ctx.send(embed=embed)
@@ -392,3 +436,31 @@ class VoteTracker(commands.Cog, name='votetracker'):
         embed.set_thumbnail(url=ctx.guild.icon_url)
         await ctx.send(embed=embed)
         cursor.close()
+
+    @commands.guild_only()
+    @commands.command(name="dailyleaderboard", brief = "Enables or disables sending the leaderboard daily.", description = "Enables or disables sending the leaderboard daily.", aliases = ["dailylb", "dlb", "leaderboardloop"])
+    @commands.has_guild_permissions(administrator=True)
+    async def dlb(self, ctx, option=None):
+        """
+        Enables or disables sending the leaderboard daily.
+        """
+        if option is None: # explanation of command
+            embed = discord.Embed(title="Daily Leaderboard Loop", description = "Every 24 hours, I will send the leaderboard to the specified channel. It is enabled by default when the bot is started.", color=0x57f0f0, timestamp=datetime.datetime.utcnow())
+            embed.add_field(name="Usage", value="`dlb start/enable` starts.\n`dlb stop/disable` stops this feature.")
+            embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon_url)
+            await ctx.send(embed=embed)
+            return
+        if option.lower() in ["start", "enable"]:
+            try:
+                self.leaderboardloop.start() # starts the task of sending leaderboard running
+            except RuntimeError:
+                await ctx.send("The daily leaderboard feature is already running!")
+                return
+            else:
+                await ctx.send("Got it. I will start sending the leaderboard in the specified channel every 24 hours.")
+                return
+        elif option.lower() in ["stop", "disable"]:
+            self.leaderboardloop.stop() # if the task is stopped already, no error will appear
+            await ctx.send("I will no longer send the leaderboard every 24 hours.")
+        else:
+            await ctx.send("You did not provide a proper option. Use `dv.dlb` to see how to use this command.")

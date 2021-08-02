@@ -1,6 +1,6 @@
 credentials.env
 database.db
-cogs/votetracker/votetracker.db
+cogs/databases
 cogs/dev/__pycache__
 cogs/errors/__pycache__
 cogs/admin/__pycache__
@@ -8,4 +8,5 @@ cogs/help/__pycache__
 cogs/utility/__pycache__
 cogs/votetracker/__pycache__
 cogs/banbattle/__pycache__
+cogs/owo/__pycache__
 utils/__pycache__

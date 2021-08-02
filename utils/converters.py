@@ -2,7 +2,7 @@ import discord
 from .time import parse_timedelta
 from datetime import timedelta
 from discord.ext import commands
-from utils.errors import ArgumentBaseError, DefaultRoleError, IntegratedRoleError, RoleNotFound, UserNotFound, InvalidDatabase
+from utils.errors import ArgumentBaseError, DefaultRoleError, IntegratedRoleError, InvalidDatabase, RoleNotFound, UserNotFound
 
 class TimedeltaConverter(commands.Converter):
     def __init__(self, *, minimum=None, maximum=None, allowed_units=None, default_units=None):
@@ -35,14 +35,15 @@ class TrueFalse(commands.Converter):
 
 class ValidDatabase(commands.Converter):
     async def convert(self, ctx, argument):
-        if argument.lower() not in ('database', 'votetracker', 'autoreactor'):
-            raise InvalidDatabase(argument)
-        elif argument.lower() == 'database':
+        if argument.lower() == 'database':
             return 'databases/database.db'
         elif argument.lower() == 'votetracker':
             return 'databases/votetracker.db'
         elif argument.lower() == 'autoreactor':
             return 'databases/autoreactor.db'
+        elif argument.lower() == 'owo':
+            return 'databases/owo.db'
+        raise InvalidDatabase(argument)
 
 class MemberUserConverter(commands.Converter):
     """
@@ -67,8 +68,8 @@ class BetterRoles(commands.Converter):
             role = discord.utils.find(lambda x: x.name.lower() == argument.lower(), ctx.guild.roles)
             if role is None:
                 raise RoleNotFound(argument)
-        if role.managed or role.is_integration():
+        if role.is_bot_managed():
             raise IntegratedRoleError(role.name)
         if role.is_default():
-            raise DefaultRoleError
+            raise DefaultRoleError(role.name)
         return role

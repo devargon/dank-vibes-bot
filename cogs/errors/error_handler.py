@@ -55,4 +55,4 @@ class ErrorHandler(commands.Cog):
                             f"**Jump:** [`jump`]({ctx.message.jump_url})```py\n" \
                             f"{traceback_error}\n" \
                             f"```"
-            await self.client.get_guild(736324402236358677).get_channel(847756191346327614).send(embed=discord.Embed(color=0xffcccb, description=error_message, timestamp=datetime.utcnow()).set_footer(text=f"From: {ctx.guild.name}", icon_url=ctx.guild.icon_url))
+            await self.client.get_guild(871734809154707467).get_channel(871737028105109574).send(content=f"<@&871740422932824095> Check this out",embed=discord.Embed(color=0xffcccb, description=error_message, timestamp=datetime.utcnow()).set_footer(text=f"From: {ctx.guild.name}", icon_url=ctx.guild.icon_url))

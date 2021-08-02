@@ -18,7 +18,7 @@ from .botutils import BotUtils
 from contextlib import redirect_stdout
 from discord.ext import commands
 from .cog_manager import CogManager
-from utils.format import pagify, TabularData
+from utils.format import pagify, TabularData, plural
 from utils.converters import MemberUserConverter, TrueFalse, ValidDatabase
 
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
@@ -269,7 +269,9 @@ class Developer(BotUtils, CogManager, Status, commands.Cog, name='dev', command_
         conn = sqlite3.connect(db, timeout=5)
         cur = conn.cursor()
         try:
+            start = time.perf_counter()
             results = cur.execute(query)
+            time_taken = (time.perf_counter() - start) * 1000.0
         except Exception:
             return await ctx.send(f'```py\n{traceback.format_exc()}\n```')
         headers = list(col_name[0] for col_name in results.description)
@@ -280,7 +282,8 @@ class Developer(BotUtils, CogManager, Status, commands.Cog, name='dev', command_
         conn.close()
         table.add_rows(list(r) for r in results)
         render = table.render()
-        await ctx.send_interactive(self.get_pages(render), box_lang='py')
+        msg = f'```py\n{render}\n```\n*Returned {plural(len(results)):row} in {time_taken:.2f}ms*'
+        await ctx.send_interactive(self.get_pages(msg))
     
     @checks.admoon()    
     @sql.command(name='execute', aliases=['exec'], hidden=True, usage='<database> <query...>')

@@ -63,7 +63,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
         return await ctx.send("Autoreaction added.")
 
     @autoreact.command(name='remove', aliases=['delete', '-'], usage='<trigger>')
-    @commands.has_guild_permissions(administrator=True)
+    @checks.perms_or_role(administrator=True)
     async def autoreact_remove(self, ctx, trigger: str = None):
         """
         Remove an auto reaction.
@@ -101,19 +101,49 @@ class Autoreaction(commands.Cog, name='autoreaction'):
             else:
                 emoji = EMOJI_RE.match(response)
                 if emoji is not None:
+                    ctx.command.reset_cooldown(ctx)
                     return await ctx.send("I couldn't find that emoji in the server.")
                 else:
+                    ctx.command.reset_cooldown(ctx)
                     return await ctx.send(f"{response} is not a valid emoji", allowed_mentions=discord.AllowedMentions(roles=False, users=False))
-        ar = self.cur.execute("SELECT response FROM autoreactions where trigger=? AND guild_id=?", (f"<@!{ctx.author.id}>", ctx.guild.id,)).fetchall()
+        mention = True
+        msg = None
+        if (donor5b := ctx.guild.get_role(819998800382132265)) is not None and donor5b in ctx.author.roles:
+            msg = await ctx.send(f"Which ar do you wanna change?\nReact with <:mention:870679716779163659> for mention or <:name:870679739524874312> for name.")
+            for emoji in ['<:mention:870679716779163659>','<:name:870679739524874312>']:
+                await msg.add_reaction(emoji)
+            def check(payload):
+                return payload.user_id == ctx.message.author.id and payload.channel_id == ctx.channel.id and payload.message_id == msg.id and str(payload.emoji) in ['<:mention:870679716779163659>','<:name:870679739524874312>']
+            try:
+                response = await self.client.wait_for('raw_reaction_add', timeout=15, check=check)
+                if str(response.emoji) == '<:mention:870679716779163659>':
+                    check_query = (f"<@!{ctx.author.id}>", ctx.guild.id,) # Ar for mention
+                elif str(response.emoji) == '<:name:870679739524874312>':
+                    check_query = (f"{ctx.author.name.lower()}", ctx.guild.id,)
+                    mention = False # Ar for nam
+            except asyncio.TimeoutError:
+                ctx.command.reset_cooldown(ctx)
+                return await msg.edit(content="You didn't react on time.")
+        else:
+            check_query = (f"<@!{ctx.author.id}>", ctx.guild.id,)
+        ar = self.cur.execute("SELECT response FROM autoreactions where trigger=? AND guild_id=?", check_query).fetchall()
         query = "INSERT INTO autoreactions VALUES (?, ?, ?)"
-        params = (ctx.guild.id, f"<@!{ctx.author.id}>", reaction,)
+        params = (ctx.guild.id, f"<@!{ctx.author.id}>", reaction,) if mention else (ctx.guild.id, f"{ctx.author.name.lower()}", reaction,)
         if len(ar) != 0:
             if ar[0][0] == reaction:
-                return await ctx.send("You already have that autoreaction for your mention.")
+                if msg is not None:
+                    await msg.clear_reactions()
+                    ctx.command.reset_cooldown(ctx)
+                    return await msg.edit(content=f"You already have that autoreaction for your {'mention' if mention else 'name'}.")
+                ctx.command.reset_cooldown(ctx)
+                return await ctx.send(f"You already have that autoreaction for your {'mention' if mention else 'name'}.")
             query = "UPDATE autoreactions SET response=? WHERE trigger=? AND guild_id=?"
-            params = (reaction, f"<@!{ctx.author.id}>", ctx.guild.id,)
+            params = (reaction, f"<@!{ctx.author.id}>", ctx.guild.id,) if mention else (reaction, f"{ctx.author.name.lower()}", ctx.guild.id,)
         self.cur.execute(query, params)
         self.con.commit()
+        if msg is not None:
+            await msg.clear_reactions()
+            return await msg.edit(content="Autoreaction added.")
         return await ctx.send("Autoreaction added.")
 
     @autoreact.command(name='clear')
@@ -162,7 +192,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
             return await ctx.send("I need `Add Reactions` perms to do that.")
 
     @autoreact.command(name='list')
-    @commands.has_guild_permissions(administrator=True)
+    @checks.perms_or_role(administrator=True)
     async def autoreact_list(self, ctx):
         """
         View a full list of all auto reactions in the server
@@ -174,7 +204,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
             return await ctx.send("This server does not have any autoreaction.")
         pages = CustomMenu(source=get_ars(ars, ctx.guild, self.client.embed_color), clear_reactions_after=True, timeout=30)
         await pages.start(ctx)
-    
+
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.guild is None:

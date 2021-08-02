@@ -24,7 +24,8 @@ class DVVTcontext(commands.Context):
         ret = []
 
         for idx, page in enumerate(messages, 1):
-            msg = await self.send(box(page, lang=box_lang))
+            page = box(page, lang=box_lang) if box_lang is not None else page
+            msg = await self.send(page)
             ret.append(msg)
             n_remaining = len(messages) - idx
             if n_remaining > 0:

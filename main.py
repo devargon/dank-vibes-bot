@@ -13,6 +13,7 @@ AVAILABLE_EXTENSIONS = ['cogs.dev',
 'cogs.autoreaction',
 'cogs.banbattle',
 'cogs.help',
+'cogs.owo',
 'cogs.votetracker',
 'cogs.utility']
 
