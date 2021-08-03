@@ -4,11 +4,5 @@ python-dotenv
 python-dateutil
 humanize
 more-itertools
-rapidfuzz
-colour
 Pillow
 typing
-TagScriptEngine
-aiohttp
-regex
-pyparsing
