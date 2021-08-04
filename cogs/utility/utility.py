@@ -258,7 +258,7 @@ class Utility(Whois, commands.Cog, name='utility', metaclass=CompositeMetaClass)
         tgrinderrole = ctx.guild.get_role(827270880182009956)
         if grinderrole is None or tgrinderrole is None:
             return await ctx.send("One or more roles declared in this command are invalid, hence the command cannot proceed.")
-        if ctx.author.id not in [604938471857192974, 542447261658120221]: #bav and mystic
+        if ctx.author.id not in [719890992723001354, 542447261658120221]: #bav and mystic
             if not ctx.author.guild_permissions.manage_roles == True: # modms+
                 return await ctx.send("You need to be a `mystic` or `bav` or have the required permissions to use this command.")
         else:
