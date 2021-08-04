@@ -62,7 +62,7 @@ class Developer(BotUtils, CogManager, Status, commands.Cog, name='dev', command_
         return pagify(msg, delims=["\n", " "], priority=True, shorten_by=10)
 
     @staticmethod
-    def get_sql(self, msg: str):
+    def get_sql(msg: str):
         return pagify(msg, delims=["\n", " "], priority=True, shorten_by=10, box_lang='py')
 
     @checks.admoon()
@@ -289,7 +289,7 @@ class Developer(BotUtils, CogManager, Status, commands.Cog, name='dev', command_
         table.add_rows(list(r) for r in results)
         render = table.render()
         msg = f'{render}\n*Returned {plural(len(results)):row} in {time_taken:.2f}ms*'
-        await ctx.send_interactive(self.get_sql(self, msg))
+        await ctx.send_interactive(self.get_sql(msg))
     
     @checks.admoon()    
     @sql.command(name='execute', aliases=['exec'], hidden=True, usage='<database> <query...>')
