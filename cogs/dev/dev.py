@@ -61,6 +61,10 @@ class Developer(BotUtils, CogManager, Status, commands.Cog, name='dev', command_
         """Pagify the given message for output to the user."""
         return pagify(msg, delims=["\n", " "], priority=True, shorten_by=10)
 
+    @staticmethod
+    def get_sql(self, msg: str):
+        return pagify(msg, delims=["\n", " "], priority=True, shorten_by=10, box_lang='py')
+
     @checks.admoon()
     @commands.command(hidden=True, usage='[silently]')
     async def shutdown(self, ctx, silently: TrueFalse = False):
@@ -273,6 +277,8 @@ class Developer(BotUtils, CogManager, Status, commands.Cog, name='dev', command_
             results = cur.execute(query)
             time_taken = (time.perf_counter() - start) * 1000.0
         except Exception:
+            cur.close()
+            conn.close()
             return await ctx.send(f'```py\n{traceback.format_exc()}\n```')
         headers = list(col_name[0] for col_name in results.description)
         table = TabularData()
@@ -282,8 +288,8 @@ class Developer(BotUtils, CogManager, Status, commands.Cog, name='dev', command_
         conn.close()
         table.add_rows(list(r) for r in results)
         render = table.render()
-        msg = f'```py\n{render}\n```\n*Returned {plural(len(results)):row} in {time_taken:.2f}ms*'
-        await ctx.send_interactive(self.get_pages(msg))
+        msg = f'{render}\n*Returned {plural(len(results)):row} in {time_taken:.2f}ms*'
+        await ctx.send_interactive(self.get_sql(self, msg))
     
     @checks.admoon()    
     @sql.command(name='execute', aliases=['exec'], hidden=True, usage='<database> <query...>')
@@ -306,6 +312,8 @@ class Developer(BotUtils, CogManager, Status, commands.Cog, name='dev', command_
             await ctx.checkmark()
         except Exception:
             await ctx.crossmark()
+            cur.close()
+            conn.close()
             return await ctx.send(f'```py\n{traceback.format_exc()}\n```')
         conn.commit()
         cur.close()
