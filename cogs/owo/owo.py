@@ -42,20 +42,21 @@ class OwO(commands.Cog, name='owo'):
         owo50 = guild.get_role(owo50_id)
         owo100 = guild.get_role(owo100_id)
         self.active = False
-        cur = self.con.cursor()
-        daily_res = cur.execute("SELECT member_id, daily_count FROM current").fetchall()
-        daily_query = []
-        update_query = []
-        reset_query = []
-        for res in daily_res:
-            reset_query.append((0, res[0]))
-            daily_query.append((res[0], 0, 0))
-            update_query.append((res[1], res[0]))
-        cur.executemany("UPDATE current SET daily_count=? WHERE member_id=?", reset_query)
-        cur.executemany("INSERT OR IGNORE INTO past(member_id, yesterday, last_week) VALUES (?, ?, ?)", daily_query)
-        cur.executemany("UPDATE past SET yesterday=? WHERE member_id=?", update_query)
-        self.con.commit()
-        cur.close()
+        with contextlib.suppress(Exception):
+            cur = self.con.cursor()
+            daily_res = cur.execute("SELECT member_id, daily_count FROM current").fetchall()
+            daily_query = []
+            update_query = []
+            reset_query = []
+            for res in daily_res:
+                reset_query.append((0, res[0]))
+                daily_query.append((res[0], 0, 0))
+                update_query.append((res[1], res[0]))
+            cur.executemany("UPDATE current SET daily_count=? WHERE member_id=?", reset_query)
+            cur.executemany("INSERT OR IGNORE INTO past(member_id, yesterday, last_week) VALUES (?, ?, ?)", daily_query)
+            cur.executemany("UPDATE past SET yesterday=? WHERE member_id=?", update_query)
+            self.con.commit()
+            cur.close()
         self.active = True
         if owo50 is not None:
             for member in owo50.members:
@@ -72,7 +73,7 @@ class OwO(commands.Cog, name='owo'):
     async def wait_until_7am(self):
         await self.client.wait_until_ready()
         now = datetime.utcnow()
-        next_run = now.replace(hour=5, minute=58, second=0)
+        next_run = now.replace(hour=7, minute=0, second=0)
         if next_run < now:
             next_run += timedelta(days=1)
         await discord.utils.sleep_until(next_run)
@@ -222,24 +223,27 @@ class OwO(commands.Cog, name='owo'):
         `dv.owoleaderboard last week` for last week's OwO leaderboard.
         """
         async with ctx.typing():
+            arg = "total 5" if arg is None else arg
+            number = [int(i) for i in arg.split() if i.isdigit()]
+            integer = 5 if len(number) == 0 else number[0]
+            integer = integer if integer <= 10 else 10
             cur = self.con.cursor()
             embed = discord.Embed(color=self.client.embed_color, timestamp=datetime.utcnow())
-            arg = "total" if arg is None else arg
-            if arg.lower() == 'weekly' or arg.lower() == 'week':
-                embed.title = "This week's OwO leaderboard"
-                counts = cur.execute("SELECT member_id, weekly_count FROM current ORDER BY weekly_count DESC LIMIT 10").fetchall()
-            elif arg.lower() == 'daily' or arg.lower() == 'today':
+            if 'daily' in arg.lower() or 'today' in arg.lower():
                 embed.title = "Today's OwO leaderboard"
-                counts = cur.execute("SELECT member_id, daily_count FROM current ORDER BY daily_count DESC LIMIT 10").fetchall()
-            elif arg.lower() == 'yesterday':
-                embed.title = "Yesterday's OwO leaderboard"
-                counts = cur.execute("SELECT member_id, yesterday FROM past ORDER BY yesterday DESC LIMIT 10").fetchall()
-            elif arg.lower() == 'last week':
+                counts = cur.execute("SELECT member_id, daily_count FROM current ORDER BY daily_count DESC LIMIT ?", (integer,)).fetchall()
+            elif 'last week' in arg.lower():
                 embed.title = "Last week's OwO leaderboard"
-                counts = cur.execute("SELECT member_id, last_week FROM past ORDER BY last_week DESC LIMIT 10")
+                counts = cur.execute("SELECT member_id, last_week FROM past ORDER BY last_week DESC LIMIT ?", (integer,)).fetchall()
+            elif 'weekly' in arg.lower() or 'week' in arg.lower():
+                embed.title = "This week's OwO leaderboard"
+                counts = cur.execute("SELECT member_id, weekly_count FROM current ORDER BY weekly_count DESC LIMIT ?", (integer,)).fetchall()
+            elif 'yesterday' in arg.lower():
+                embed.title = "Yesterday's OwO leaderboard"
+                counts = cur.execute("SELECT member_id, yesterday FROM past ORDER BY yesterday DESC LIMIT ?", (integer,)).fetchall()
             else:
                 embed.title = f"OwO leaderboard for {ctx.guild.name}"
-                counts = cur.execute("SELECT member_id, total FROM current ORDER BY total DESC LIMIT 10").fetchall()
+                counts = cur.execute("SELECT member_id, total FROM current ORDER BY total DESC LIMIT ?", (integer,)).fetchall()
             leaderboard = []
             cur.close()
             for count in counts:
