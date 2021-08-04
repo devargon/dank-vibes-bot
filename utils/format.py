@@ -66,7 +66,7 @@ def inline(text: str) -> str:
     else:
         return "`{}`".format(text)
 
-def pagify(text: str, delims: Sequence[str] = ["\n"], *, priority: bool = False, escape_mass_mentions: bool = True, shorten_by: int = 8, page_length: int = 2000) -> Iterator[str]:
+def pagify(text: str, delims: Sequence[str] = ["\n"], *, priority: bool = False, escape_mass_mentions: bool = True, shorten_by: int = 8, page_length: int = 2000, box_lang: str = None) -> Iterator[str]:
     """
     Generate multiple pages from the given text.
     """
@@ -89,10 +89,12 @@ def pagify(text: str, delims: Sequence[str] = ["\n"], *, priority: bool = False,
         else:
             to_send = in_text[:closest_delim]
         if len(to_send.strip()) > 0:
+            to_send = box(to_send, lang=box_lang) if box_lang is not None else to_send
             yield to_send
         in_text = in_text[closest_delim:]
 
     if len(in_text.strip()) > 0:
+        in_text = box(in_text, lang=box_lang) if box_lang is not None else in_text
         if escape_mass_mentions:
             yield escape(in_text, mass_mentions=True)
         else:
