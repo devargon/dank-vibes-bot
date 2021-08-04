@@ -251,6 +251,9 @@ class Utility(Whois, commands.Cog, name='utility', metaclass=CompositeMetaClass)
 
     @commands.command(name="gcheck", brief = "Reminds DV Grinders that the requirement has been checked.", description = "Reminds DV Grinders that the requirement has been checked.")
     async def gcheck(self, ctx):
+        """
+        Reminds DV Grinders that the requirement has been checked.
+        """
         grinderrole = ctx.guild.get_role(859494328422367273)
         tgrinderrole = ctx.guild.get_role(827270880182009956)
         if grinderrole is None or tgrinderrole is None:
