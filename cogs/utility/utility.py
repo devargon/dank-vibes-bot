@@ -275,7 +275,7 @@ class Utility(Whois, commands.Cog, name='utility', metaclass=CompositeMetaClass)
             message += f"And **{len(grinders)}** more."
         embed = discord.Embed(title="DM Grinders?", description = f"I will be DMing these members with the {grinderrole.mention} and {tgrinderrole.mention} role to update them about the grinder check:\n\n{message}\n\nAre you sure?", color=0x57F0F0)
         message = await ctx.send(embed=embed)
-        reactions = ["<:crossmark:841186660662247444>", "<:checkmark:841187106654519296>"]
+        reactions = ["<:checkmark:841187106654519296>", "<:crossmark:841186660662247444>"]
         for reaction in reactions:
             await message.add_reaction(reaction)
         def check(payload):
