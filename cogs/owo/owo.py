@@ -194,7 +194,7 @@ class OwO(commands.Cog, name='owo'):
     "define", "divorce", "eightball", "8b", "ask", "8ball", "emoji", "enlarge", "jumbo", "level", "lvl", "levels", "xp",
     "zoo"}
 
-    @commands.command(name='owocount', usage='[member]', aliases=['mycount', 'myc', 'owoc'])
+    @commands.command(name='owocount', usage='[member]', aliases=['mycount', 'myc', 'owoc', 'stat'])
     async def owocount(self, ctx, member: Optional[discord.Member] = None):
         """
         Shows your or a member's daily OwO count for this server.

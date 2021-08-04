@@ -127,9 +127,9 @@ class Utility(Whois, commands.Cog, name='utility', metaclass=CompositeMetaClass)
                 if permissions.view_channel == True:
                     membersin.append(f"**{member.display_name}#{member.discriminator}** {member.mention} 🧑‍⚖️" if member.mentioned_in(message) else f"**{member.display_name}#{member.discriminator}** {member.mention}") # add them to a final list that shows who is in the channel
             members = "\n".join(membersin)
-            members += f"\n\nMember count: {len(membersin)-1 if '🧑‍⚖️' in members else len(membersin)}\n *This automatically excludes owners of the channel.*"
+            members += f"\n\nMember Count: `{len(membersin)-1 if '🧑‍⚖️' in members else len(membersin)}`\n*This automatically excludes owners of the channel.*"
             embed = discord.Embed(
-                title=f"members in #{channel.name}",
+                title=f"Members in #{channel.name}",
                 description=members[0:4096] or "It appears there's no one in this channel.", # limit the characters in case
                 color=0x57F0F0,
                 timestamp=datetime.datetime.utcnow(),
