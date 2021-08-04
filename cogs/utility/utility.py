@@ -173,14 +173,14 @@ class Utility(Whois, commands.Cog, name='utility', metaclass=CompositeMetaClass)
             await ctx.send("Wanted to check another member, and not yourself? You need to include a member.\nUsage of command: `memberpvc [channel]`")
             member = ctx.author
         # categoryids = [869943348608270446] this is for my server
-        categoryids = [802467427208265728, 763457841133912074, 789195494664306688, 783299769580781588, 805052824185733120, 834696686923284510, 847897065081274409] # this is for dv (all the category IDs for the VIP channels)
+        categoryids = [802467427208265728, 763457841133912074, 789195494664306688, 783299769580781588, 805052824185733120, 834696686923284510, 847897065081274409] # this is for dv (all the category IDs for the VIP channels) 
         categories = []
         for categoryid in categoryids:
             category = discord.utils.find(lambda m: m.id == categoryid, ctx.guild.categories)
             if category is None:
                 await ctx.send(f"I could not find a category for the ID {category}")
             else:
-                categories.append(category) # gets all the categories for channels
+                categories.append(category) # gets all the categories for channels 
         accessiblechannels = []
         for category in categories:
             for channel in category.channels:
@@ -248,61 +248,3 @@ class Utility(Whois, commands.Cog, name='utility', metaclass=CompositeMetaClass)
                 await message.add_reaction("🔓")
             except discord.Forbidden:
                 pass
-
-    @commands.command(name="gcheck", brief = "Reminds DV Grinders that the requirement has been checked.", description = "Reminds DV Grinders that the requirement has been checked.")
-    async def gcheck(self, ctx):
-        grinderrole = ctx.guild.get_role(859494328422367273)
-        tgrinderrole = ctx.guild.get_role(827270880182009956)
-        if grinderrole is None or tgrinderrole is None:
-            return await ctx.send("One or more roles declared in this command are invalid, hence the command cannot proceed.")
-        if ctx.author.id not in [604938471857192974, 542447261658120221]: #bav and mystic
-            if not ctx.author.guild_permissions.manage_roles == True: # modms+
-                return await ctx.send("You need to be a `mystic` or `bav` or have the required permissions to use this command.")
-        else:
-            pass
-        grinders = [member for member in ctx.guild.members if grinderrole in member.roles or tgrinderrole in member.roles] # gets all grinders
-        if len(grinders) == 0:
-            return await ctx.send("There are no grinders to be DMed.")
-        hiddengrinders = len(grinders) - 20 #number of grinders that will be hidden in "and ... more"
-        message = ""
-        while len(message) < 3700 and len(grinders) > hiddengrinders and len(grinders) > 0:
-            member = grinders.pop(0)
-            message += f"{member}\n" # add grinders name to embed
-        if len(grinders) != 0:
-            message += f"And **{len(grinders)}** more."
-        embed = discord.Embed(title="DM Grinders?", description = f"I will be DMing these members with the {grinderrole.mention} and {tgrinderrole.mention} role to update them about the grinder check:\n\n{message}\n\nAre you sure?", color=0x57F0F0)
-        message = await ctx.send(embed=embed)
-        reactions = ["<:crossmark:841186660662247444>", "<:checkmark:841187106654519296>"]
-        for reaction in reactions:
-            await message.add_reaction(reaction)
-        def check(payload):
-            return payload.user_id == ctx.message.author.id and payload.channel_id == ctx.channel.id and payload.message_id == message.id and str(payload.emoji) in reactions
-        try:
-            response = await self.client.wait_for('raw_reaction_add', timeout=15, check=check)
-            if not str(response.emoji) == '<:checkmark:841187106654519296>':
-                return await message.edit(content="Command stopped.")
-        except asyncio.TimeoutError:
-            ctx.command.reset_cooldown(ctx)
-            return await message.edit(content="You didn't react on time.")
-        else:
-            await message.clear_reactions()
-            msg = await ctx.send("<a:typing:839487089304141875> DMing grinders... ")
-            embed = discord.Embed(title="DV Grinders Team", description=f"<a:dv_pointArrowOwO:837656328482062336> The daily grinder requirement has been checked.\n<a:dv_pointArrowOwO:837656328482062336> <#862574856846704661> is now unlocked and you may send the cash to `Dank Vibes Holder#2553`\n<a:dv_pointArrowOwO:837656328482062336> The next requirement check will take place in about <t:{round(time.time())+86400}:R> ( i.e between 1:30 and 3:30 GMT)", color=0x57F0F0)
-            embed.set_thumbnail(url="https://cdn.discordapp.com/icons/595457764935991326/a_58b91a8c9e75742d7b423411b0205b2b.gif")
-            embed.set_footer(text="DM/Ping TheMysticLegacy#0001 or Bav#0507 if you have any queries.",icon_url=ctx.guild.icon_url)
-            success = 0
-            grinders = [member for member in ctx.guild.members if grinderrole in member.roles or tgrinderrole in member.roles] # gets the grinder list again since the earlier one was popped
-            faileddms = []
-            for grinder in grinders:
-                try:
-                    await grinder.send(f"Hello {grinder.name}! I have a message for you:" if grinder.id != 709350868733919314 else f"Hello {grinder.name}! I have a message for you:\n||btw haii wiz uwu <a:dv_nekoWaveOwO:837756827255963718>- argon||", embed=embed) # hehe
-                    success += 1
-                except discord.Forbidden:
-                    faileddms.append(grinder.mention) # gets list of people who will be pinged later
-            if len(faileddms) > 0:
-                channel = self.client.get_channel(862574856846704661)
-                await channel.send(f"{' '.join(faileddms)}\n<a:dv_pointArrowOwO:837656328482062336> The daily grinder requirement has been checked.\n<a:dv_pointArrowOwO:837656328482062336> <#862574856846704661> is now unlocked and you may send the cash to `Dank Vibes Holder#2553`\n<a:dv_pointArrowOwO:837656328482062336> The next requirement check will take place in about <t:{round(time.time())+86400}:R> ( i.e between 1:30 and 3:30 GMT).")
-            await msg.edit(content=f"DMed {success} members successfully, the rest were pinged in <#862574856846704661>.")
-
-
-
