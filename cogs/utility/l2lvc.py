@@ -16,8 +16,8 @@ class L2LVC(commands.Cog):
             return
         if after.channel is not None:
             if after.channel.id == 838437334553985045:
-                await member.add_roles(l2lrole, reason=f"{member} joined the Last to Leave VC")
+                await member.add_roles(l2lrole, reason=f"{member} joined the Last to Leave VC") # if member joined (from anywhere)
             elif before.channel is not None and before.channel.id == 838437334553985045:
-                await member.remove_roles(l2lrole, reason=f"{member} left the Last to Leave VC")
+                await member.remove_roles(l2lrole, reason=f"{member} left the Last to Leave VC") # if member left L2L vc to another vc
         elif before.channel is not None and before.channel.id == 838437334553985045:
-            await member.remove_roles(l2lrole, reason=f"{member} left the Last to Leave VC")
+            await member.remove_roles(l2lrole, reason=f"{member} left the Last to Leave VC") # if member left L2L VC
