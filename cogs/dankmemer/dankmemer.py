@@ -4,15 +4,9 @@ import time
 import discord
 import sqlite3
 import contextlib
-from typing import Optional
 from dateutil import relativedelta
 from datetime import datetime, timedelta
 from discord.ext import commands, tasks
-from utils import context
-
-owo50_id = 847877497634553856
-owo100_id = 847881186314289243
-owo_player_id = 837594929974870047
 
 class DankMemer(commands.Cog, name='Dank Memer'):
     """
@@ -116,12 +110,12 @@ class DankMemer(commands.Cog, name='Dank Memer'):
 
     @commands.command(name="dankreminders", aliases = ["dankrm", "drm"])
     async def dankreminders(self, ctx, argument=None):
-        timenow = time.time()
         """
         Shows your reminders for Dank Memer, without any arguments.
 
         Change your type of reminder with `dv.dankreminders dm` or `dv.dankreminders ping/mention`.
         """
+        timenow = time.time()
         embed = discord.Embed(title="Your Dank Memer reminders", description="For reminders to work, your reply pings needs to be enabled in Dank Memer's settings.", color=0x57f0f0)
         embed.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
         embed.add_field(name="<:enabled:872003679895560193> Claim daily <:calendar:873107952159059991>", value=f"<t:{round(timenow)}:R>", inline=True)
