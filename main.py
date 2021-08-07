@@ -10,13 +10,13 @@ from utils.context import DVVTcontext
 from utils.format import print_exception
 
 AVAILABLE_EXTENSIONS = ['cogs.dev',
-# 'cogs.errors',
+'cogs.errors',
 'cogs.admin',
 'cogs.autoreaction',
-# 'cogs.banbattle',
+'cogs.banbattle',
 'cogs.help',
 'cogs.owo',
-# 'cogs.votetracker',
+'cogs.votetracker',
 'cogs.utility'
 ]
 
@@ -70,7 +70,6 @@ class dvvt(commands.AutoShardedBot):
         return commands.when_mentioned_or(prefix)(self, message)
 
     async def set_prefix(self, guild, prefix):
-        query = "UPDATE prefixes SET prefix=? WHERE guild_id=?"
         await self.pool_pg.execute('UPDATE prefixes SET prefix=$1 WHERE guild_id=$2', prefix, guild.id)
         self.prefixes[guild.id] = prefix
 
