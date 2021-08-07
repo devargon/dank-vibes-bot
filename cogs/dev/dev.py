@@ -252,16 +252,16 @@ class Developer(BotUtils, CogManager, Status, commands.Cog, name='dev', command_
         await self.client.invoke(new_ctx)
 
     @checks.admoon()        
-    @commands.group(name='sql', invoke_without_command=True, hidden=True)
-    async def sql(self, ctx):
+    @commands.group(name='sqlite', invoke_without_command=True, hidden=True)
+    async def sqlite(self, ctx):
         """
         Base command for interacting with SQL.
         """
         await ctx.help()
 
     @checks.admoon()    
-    @sql.command(name='fetch', hidden=True, usage='<database> <query...>')
-    async def sql_fetch(self, ctx, db: ValidDatabase = None, *, query: str = None):
+    @sqlite.command(name='fetch', hidden=True, usage='<database> <query...>')
+    async def sqlite_fetch(self, ctx, db: ValidDatabase = None, *, query: str = None):
         """
         Fetches all rows of a query result.
         """
@@ -292,8 +292,8 @@ class Developer(BotUtils, CogManager, Status, commands.Cog, name='dev', command_
         await ctx.send_interactive(self.get_sql(msg))
     
     @checks.admoon()    
-    @sql.command(name='execute', aliases=['exec'], hidden=True, usage='<database> <query...>')
-    async def sql_execute(self, ctx, db: ValidDatabase = None, *, query: str = None):
+    @sqlite.command(name='execute', aliases=['exec'], hidden=True, usage='<database> <query...>')
+    async def sqlite_execute(self, ctx, db: ValidDatabase = None, *, query: str = None):
         """
         Executes a SQL query.
         
@@ -318,3 +318,49 @@ class Developer(BotUtils, CogManager, Status, commands.Cog, name='dev', command_
         conn.commit()
         cur.close()
         conn.close()
+
+    @checks.admoon()        
+    @commands.group(name='sql', invoke_without_command=True, hidden=True)
+    async def sql(self, ctx):
+        """
+        Base command for interacting with SQL.
+        """
+        await ctx.help()
+
+    @checks.admoon()
+    @sql.command(name='fetch', hidden=True, usage='<query...>')
+    async def sql_fetch(self, ctx, *, query: str = None):
+        if query is None:
+            return await ctx.send('Query is a required argument.')
+        try:
+            start = time.perf_counter()
+            results = await self.client.pool_pg.fetch(query)
+            time_taken = (time.perf_counter() - start) * 1000.0
+        except Exception:
+            return await ctx.send(f'```py\n{traceback.format_exc()}\n```')
+        headers = list(results[0].keys())
+        table = TabularData()
+        table.set_columns(headers)
+        table.add_rows(list(r.values()) for r in results)
+        render = table.render()
+        msg = f'{render}\n*Returned {plural(len(results)):row} in {time_taken:.2f}ms*'
+        await ctx.send_interactive(self.get_sql(msg))
+
+    @checks.admoon()    
+    @sql.command(name='execute', aliases=['exec'], hidden=True, usage='<database> <query...>')
+    async def sql_execute(self, ctx, *, query: str = None):
+        """
+        Executes a SQL query.
+        
+        It can only execute a single SQL query.
+        It also calls commit() method to commit the current changes, so be careful.
+        """
+        if query is None:
+            return await ctx.send('Query is a required argument.')
+        try:
+            # start = time.perf_counter()
+            results = await self.client.pool_pg.execute(query)
+            # time_taken = (time.perf_counter() - start) * 1000.0
+            return await ctx.checkmark()
+        except Exception:
+            return await ctx.send(f'```py\n{traceback.format_exc()}\n```')
