@@ -6,3 +6,4 @@ humanize
 more-itertools
 Pillow
 typing
+asyncpg

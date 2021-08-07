@@ -1,24 +1,32 @@
 import os
+import time
 import discord
+import asyncpg
 import datetime
-import sqlite3
 from dotenv import load_dotenv
 from discord import client
 from discord.ext import commands
 from utils.context import DVVTcontext
+from utils.format import print_exception
 
 AVAILABLE_EXTENSIONS = ['cogs.dev',
-'cogs.errors',
+# 'cogs.errors',
 'cogs.admin',
 'cogs.autoreaction',
-'cogs.banbattle',
+# 'cogs.banbattle',
 'cogs.help',
 'cogs.owo',
-'cogs.votetracker',
-'cogs.utility']
+# 'cogs.votetracker',
+'cogs.utility'
+]
 
 load_dotenv('credentials.env')
 token = os.getenv('TOKEN')
+host = os.getenv('HOST')
+database = os.getenv('DATABASE')
+user = os.getenv('USER')
+password = os.getenv('PASSWORD')
+
 
 intents = discord.Intents(guilds = True, members = True, presences = True, messages = True, reactions = True, emojis = True, invites = True, voice_states = True)
 allowed_mentions = discord.AllowedMentions(everyone=False, roles=False)
@@ -29,8 +37,7 @@ class dvvt(commands.AutoShardedBot):
         self.prefixes = {}
         self.uptime = None
         self.embed_color = 0x57F0F0
-        self.con = sqlite3.connect('databases/database.db')
-        self.cur = self.con.cursor()
+        self.pool_pg = None
         self.available_extensions = AVAILABLE_EXTENSIONS
 
         for ext in self.available_extensions:
@@ -40,20 +47,14 @@ class dvvt(commands.AutoShardedBot):
         context = await super().get_context(message, cls=DVVTcontext)
         return context
 
+    async def after_ready(self):
+        await self.wait_until_ready()
+
     async def on_ready(self):
-        self.cur.execute('''CREATE TABLE IF NOT EXISTS prefixes
-                (guild_id text PRIMARY KEY, prefix text)''')
-        self.cur.execute('''CREATE TABLE IF NOT EXISTS rules
-                (guild_id integer, command text, role_id integer)''')
-        self.cur.execute('''CREATE TABLE IF NOT EXISTS config
-                (command text PRIMARY KEY, description text)''')
-        self.con.commit()
         print("Bot is ready")
     
     async def on_guild_join(self, guild):
-        query = '''INSERT OR REPLACE INTO prefixes VALUES (?, ?)'''
-        self.cur.execute(query, (guild.id, "dv.",))
-        self.con.commit()
+        await self.pool_pg.execute('INSERT INTO prefixes VALUES ($1, $2) ON CONFLICT DO UPDATE SET prefix=$2', guild.id, "dv.")
 
     async def get_prefix(self, message):
         if message.guild is None:
@@ -61,19 +62,16 @@ class dvvt(commands.AutoShardedBot):
         guild_id = message.guild.id
         if not (prefix := self.prefixes.get(guild_id)):
             query = "SELECT prefix FROM prefixes WHERE guild_id=$1"
-            self.cur.execute(query, (guild_id,))
-            data = self.cur.fetchone()
-            if not data:
-                self.cur.execute('''INSERT INTO prefixes VALUES (?, ?)''', (guild_id, "dv.",))
-                self.con.commit()
+            data = await self.pool_pg.fetchrow(query, guild_id)
+            if data is None:
+                await self.pool_pg.execute("INSERT INTO prefixes VALUES ($1, $2)", guild_id, 'dv.')
                 data = {}
-            prefix = self.prefixes.setdefault(guild_id, data[0] or "dv.")
+            prefix = self.prefixes.setdefault(guild_id, data.get("prefix") or '.')
         return commands.when_mentioned_or(prefix)(self, message)
 
     async def set_prefix(self, guild, prefix):
         query = "UPDATE prefixes SET prefix=? WHERE guild_id=?"
-        self.cur.execute(query, (prefix, guild.id,))
-        self.con.commit()
+        await self.pool_pg.execute('UPDATE prefixes SET prefix=$1 WHERE guild_id=$2', prefix, guild.id)
         self.prefixes[guild.id] = prefix
 
     def get_guild_prefix(self, guild):
@@ -83,13 +81,26 @@ class dvvt(commands.AutoShardedBot):
 
     async def shutdown(self):
         """Cancels tasks and shuts down the bot."""
-        self.con.close()
         await self.close()
 
     def starter(self):
         """starts the bot properly."""
-        self.uptime = datetime.datetime.utcnow()
-        self.run(token)
+        try:
+            start = time.time()
+            pool_pg = self.loop.run_until_complete(asyncpg.create_pool(
+                host=host,
+                database=database,
+                user=user,
+                password=password
+            ))
+        except Exception as e:
+            print_exception("Could not connect to databases:", e)
+        else:
+            self.uptime = datetime.datetime.utcnow()
+            self.pool_pg = pool_pg
+            print(f"Connected to the database ({round(time.time() - start, 2)})s")
+            self.loop.create_task(self.after_ready())
+            self.run(token)
 
 if __name__ == '__main__':
     client = dvvt()

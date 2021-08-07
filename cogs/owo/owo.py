@@ -1,6 +1,6 @@
 import asyncio
+import time
 import discord
-import sqlite3
 import contextlib
 from typing import Optional
 from dateutil import relativedelta
@@ -19,17 +19,8 @@ class OwO(commands.Cog, name='owo'):
         self.client = client
         self.waitlist = []
         self.active = True
-        self.con = sqlite3.connect('databases/owo.db', timeout=5.0)
         self.daily_owo_reset.start()
         self.weekly_owo_reset.start()
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        cursor = self.con.cursor()
-        cursor.execute(
-            "CREATE TABLE IF NOT EXISTS current(member_id integer PRIMARY KEY, daily_count integer, weekly_count integer, total integer)")
-        cursor.execute(
-            "CREATE TABLE IF NOT EXISTS past(member_id integer PRIMARY KEY, yesterday integer, last_week integer)")
 
     def cog_unload(self):
         self.con.close()
@@ -42,21 +33,14 @@ class OwO(commands.Cog, name='owo'):
         owo50 = guild.get_role(owo50_id)
         owo100 = guild.get_role(owo100_id)
         self.active = False
-        with contextlib.suppress(Exception):
-            cur = self.con.cursor()
-            daily_res = cur.execute("SELECT member_id, daily_count FROM current").fetchall()
-            daily_query = []
-            update_query = []
-            reset_query = []
-            for res in daily_res:
-                reset_query.append((0, res[0]))
-                daily_query.append((res[0], 0, 0))
-                update_query.append((res[1], res[0]))
-            cur.executemany("UPDATE current SET daily_count=? WHERE member_id=?", reset_query)
-            cur.executemany("INSERT OR IGNORE INTO past(member_id, yesterday, last_week) VALUES (?, ?, ?)", daily_query)
-            cur.executemany("UPDATE past SET yesterday=? WHERE member_id=?", update_query)
-            self.con.commit()
-            cur.close()
+        daily_res = await self.client.pool_pg.fetch("SELECT member_id, daily_count FROM owocurrent")
+        reset_values = []
+        update_values = []
+        for res in daily_res:
+            reset_values.append((0, res.get('member_id')))
+            update_values.append((res.get('member_id'), 0, 0, res.get('daily_count')))
+        await self.client.pool_pg.executemany("UPDATE owocurrent SET daily_count=$1 WHERE member_id=$2", reset_values)
+        await self.client.pool_pg.executemany("INSERT INTO owopast VALUES ($1, $2, $3) ON CONFLICT (member_id) DO UPDATE SET yesterday=$4", update_values)
         self.active = True
         if owo50 is not None:
             for member in owo50.members:
@@ -81,27 +65,21 @@ class OwO(commands.Cog, name='owo'):
     @tasks.loop(hours=168)
     async def weekly_owo_reset(self):
         self.active = False
-        cur = self.con.cursor()
-        weekly_res = cur.execute("SELECT member_id, weekly_count FROM current").fetchall()
-        reset_query = []
-        weekly_query = []
-        update_query = []
+        weekly_res = await self.client.pool_pg.fetch("SELECT member_id, weekly_count FROM owocurrent")
+        reset_values = []
+        update_values = []
         for res in weekly_res:
-            reset_query.append((0, res[0]))
-            weekly_query.append((res[0], 0, 0))
-            update_query.append((res[1], res[0]))
-        cur.executemany("UPDATE current SET weekly_count=? WHERE member_id=?", reset_query)
-        cur.executemany("INSERT OR IGNORE INTO past(member_id, yesterday, last_week) VALUES (?, ?, ?)", weekly_query)
-        cur.executemany('UPDATE past SET last_week=? WHERE member_id=?', update_query)
-        self.con.commit()
-        cur.close()
+            reset_values.append((0, res.get('member_id')))
+            update_values.append((res.get('member_id'), 0, 0, res.get('weekly_count')))
+        await self.client.pool_pg.executemany("UPDATE owocurrent SET weekly_count=$1 WHERE member_id=$2", reset_values)
+        await self.client.pool_pg.executemany("INSERT INTO owopast VALUES ($1, $2, $3) ON CONFLICT (member_id) DO UPDATE SET last_week=$4", update_values)
         self.active = True
 
     @weekly_owo_reset.before_loop
     async def wait_until_sunday(self):
         await self.client.wait_until_ready()
         now = datetime.utcnow()
-        today = now.replace(hour=7, minute=1, second=0)
+        today = now.replace(hour=7, minute=0, second=0)
         sunday = today + timedelta ((6 - today.weekday()) % 7)
         if sunday < now:
             delta = relativedelta.relativedelta(days=1, weekday=relativedelta.SU)
@@ -120,18 +98,20 @@ class OwO(commands.Cog, name='owo'):
             return
         if not self.check_content(message):
             return
-        cur = self.con.cursor()
-        result = cur.execute("SELECT daily_count, weekly_count, total FROM current WHERE member_id=?", (message.author.id,)).fetchall()
-        if len(result) == 0:
-            dailycount = 0
-            param = (message.author.id, 0, 0, 0,)
+        query = "SELECT daily_count, weekly_count, total_count FROM owocurrent WHERE member_id=$1"
+        values = message.author.id
+        start = time.perf_counter()
+        result = await self.client.pool_pg.fetchrow(query, values)
+        if result is None:
+            dailycount = 1
+            values = (message.author.id, dailycount, 1, 1)
+            query = "INSERT INTO owocurrent VALUES ($1, $2, $3, $4)"
         else:
-            count = result[0]
-            dailycount = count[0]
-            param = (message.author.id, count[0]+1, count[1]+1, count[2]+1,)
-        cur.execute("INSERT OR REPLACE INTO current (member_id, daily_count, weekly_count, total) VALUES (?, ?, ?, ?)", param)
-        self.con.commit()
-        cur.close()
+            dailycount = result.get('daily_count') + 1
+            values = (dailycount, result.get('weekly_count') +1, result.get('total_count') +1, message.author.id)
+            query = "UPDATE owocurrent SET daily_count=$1, weekly_count=$2, total_count=$3 WHERE member_id=$4"
+        await self.client.pool_pg.execute(query, *values)
+        print((time.perf_counter() - start) * 1000.0)
         if dailycount >= 50:
             owoplayer = message.guild.get_role(owo_player_id)
             if owoplayer is not None and owoplayer in message.author.roles:    
@@ -201,13 +181,11 @@ class OwO(commands.Cog, name='owo'):
         Shows your or a member's daily OwO count for this server.
         """
         member = member if member is not None else ctx.author
-        cur = self.con.cursor()
-        counts = cur.execute("SELECT daily_count, weekly_count, total FROM current WHERE member_id=?", (member.id,)).fetchall()
-        past_count = cur.execute("SELECT yesterday, last_week FROM past WHERE member_id=?", (member.id,)).fetchall()
-        cur.close()
+        current_count = await self.client.pool_pg.fetchrow("SELECT daily_count, weekly_count, total_count FROM owocurrent WHERE member_id=$1", member.id)
+        past_count = await self.client.pool_pg.fetchrow("SELECT yesterday, last_week FROM owopast WHERE member_id=$1", member.id)
         embed = discord.Embed(color=self.client.embed_color, timestamp=datetime.utcnow())
-        embed.add_field(name='Current Stats', value=f"Today's OwO count: `{counts[0][0] if len(counts) != 0 else 0}`\nThis week's OwO count: `{counts[0][1] if len(counts) !=0 else 0}`\nTotal OwO count: `{counts[0][2] if len(counts) !=0 else 0}`")
-        embed.add_field(name='Past Stats', value=f"Yesterday's OwO count: `{past_count[0][0] if len(past_count) != 0 else 0}`\nLast week's OwO count: `{past_count[0][1] if len(past_count) !=0 else 0}`")
+        embed.add_field(name='Current Stats', value=f"Today's OwO count: `{current_count.get('daily_count') if current_count else 0}`\nThis week's OwO count: `{current_count.get('weekly_count') if current_count else 0}`\nTotal OwO count: `{current_count.get('total_count') if current_count else 0}`")
+        embed.add_field(name='Past Stats', value=f"Yesterday's OwO count: `{past_count.get('yesterday') if past_count else 0}`\nLast week's OwO count: `{past_count.get('last_week') if past_count else 0}`")
         embed.set_author(name=str(member), icon_url=member.avatar_url)
         embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon_url)
         await ctx.send(embed=embed)
@@ -227,29 +205,28 @@ class OwO(commands.Cog, name='owo'):
             number = [int(i) for i in arg.split() if i.isdigit()]
             integer = 5 if len(number) == 0 else number[0]
             integer = integer if integer <= 10 else 10
-            cur = self.con.cursor()
             embed = discord.Embed(color=self.client.embed_color, timestamp=datetime.utcnow())
             if 'daily' in arg.lower() or 'today' in arg.lower():
                 embed.title = "Today's OwO leaderboard"
-                counts = cur.execute("SELECT member_id, daily_count FROM current ORDER BY daily_count DESC LIMIT ?", (integer,)).fetchall()
+                query = "SELECT member_id, daily_count FROM owocurrent ORDER BY daily_count DESC LIMIT $1"
             elif 'last week' in arg.lower():
                 embed.title = "Last week's OwO leaderboard"
-                counts = cur.execute("SELECT member_id, last_week FROM past ORDER BY last_week DESC LIMIT ?", (integer,)).fetchall()
+                query = "SELECT member_id, last_week FROM owopast ORDER BY last_week DESC LIMIT $1"
             elif 'weekly' in arg.lower() or 'week' in arg.lower():
                 embed.title = "This week's OwO leaderboard"
-                counts = cur.execute("SELECT member_id, weekly_count FROM current ORDER BY weekly_count DESC LIMIT ?", (integer,)).fetchall()
+                query = "SELECT member_id, weekly_count FROM owocurrent ORDER BY weekly_count DESC LIMIT $1"
             elif 'yesterday' in arg.lower():
                 embed.title = "Yesterday's OwO leaderboard"
-                counts = cur.execute("SELECT member_id, yesterday FROM past ORDER BY yesterday DESC LIMIT ?", (integer,)).fetchall()
+                query = "SELECT member_id, yesterday FROM owopast ORDER BY yesterday DESC LIMIT $1"
             else:
                 embed.title = f"OwO leaderboard for {ctx.guild.name}"
-                counts = cur.execute("SELECT member_id, total FROM current ORDER BY total DESC LIMIT ?", (integer,)).fetchall()
+                query = "SELECT member_id, total_count FROM owocurrent ORDER BY total_count DESC LIMIT $1"
+            counts = await self.client.pool_pg.fetch(query, integer)
             leaderboard = []
-            cur.close()
             for count in counts:
                 member = ctx.guild.get_member(count[0])
                 name = member.name if member is not None else count[0]
                 leaderboard.append((name, count[1]))
-            for index, position in enumerate(leaderboard):
-                embed.add_field(name=f'#{index + 1} {position[0]}', value=f"**{position[1]}** OwOs", inline=False)
+            for index, position in enumerate(leaderboard, 1):
+                embed.add_field(name=f'#{index} {position[0]}', value=f"**{position[1]}** OwOs", inline=False)
         await ctx.send(embed=embed)
