@@ -16,10 +16,10 @@ async def group_help_source_format(self, menu: GroupMenu, entry):
     group, list_commands = entry
     embed = discord.Embed(title=DVBotHelp.get_command_name(self, group))
     embed.color = 0x57F0F0
-    embed.description = f"{DVBotHelp.get_help(self, group, False, ctx=menu.ctx)}\nUsage: {DVBotHelp.get_command_usage(self, group, ctx=menu.ctx)}"
+    embed.description = f"{DVBotHelp.get_help(self, group, False)}\nUsage: {DVBotHelp.get_command_usage(self, group, ctx=menu.ctx)}"
     embed.set_footer(text=f"Requested by {menu.ctx.author}", icon_url=menu.ctx.author.avatar_url)
     for command in list_commands:
-        value = f"{DVBotHelp.get_help(self, command, ctx=menu.ctx)}\nUsage: {DVBotHelp.get_command_usage(self, command, ctx=menu.ctx)}"
+        value = f"{DVBotHelp.get_help(self, command)}\nUsage: {DVBotHelp.get_command_usage(self, command, ctx=menu.ctx)}"
         embed.add_field(name=f"{DVBotHelp.get_command_name(self, command)}", value=value, inline=False)
     return embed
 
@@ -33,7 +33,7 @@ async def cog_help_source_format(self, menu: CogMenu, entry):
     embed.color = 0x57F0F0
     embed.set_footer(text=f"Requested by {menu.ctx.author}", icon_url=menu.ctx.author.avatar_url)
     for command in list_commands:
-        value = f"{DVBotHelp.get_help(self, command, ctx=menu.ctx)}\nUsage: {DVBotHelp.get_command_usage(self, command, ctx=menu.ctx)}"
+        value = f"{DVBotHelp.get_help(self, command)}\nUsage: {DVBotHelp.get_command_usage(self, command, ctx=menu.ctx)}"
         if isinstance(command, commands.Group):
             value += f"\n`{menu.ctx.clean_prefix}help {DVBotHelp.get_command_name(self, command)}` for subcommands."
         embed.add_field(name=f"{DVBotHelp.get_command_name(self, command)}", value=value, inline=False)
@@ -97,20 +97,10 @@ class DVBotHelp(commands.DefaultHelpCommand):
             else:
                 return f"`{prefix}{command.parent}` `{command.name}` `{command.signature}`"
 
-    def get_help(self, command, brief = True, ctx = None):
+    def get_help(self, command, brief = True):
         """
         Gets the command short_doc if brief is True while getting the longer help if it is false
         """
-        context = ctx if ctx else self.context
-        if not command.description:
-            db_desc = context.bot.cur.execute("SELECT description FROM config WHERE command=?", (command.name,)).fetchone()
-            if not db_desc:
-                real_help = command.help or "This command is not documented."
-                command.description = command.help or "This command is not documented."
-            else:
-                real_help = db_desc[0]
-                command.help = db_desc[0]
-                command.description = db_desc[0]
         real_help = command.help or "This command is not documented."
         return real_help if not brief else command.short_doc or real_help
 
