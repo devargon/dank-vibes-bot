@@ -54,7 +54,10 @@ class Utility(Whois, L2LVC, commands.Cog, name='utility', metaclass=CompositeMet
     @commands.guild_only()
     @commands.command(name='prefix', usage='[prefix]')
     @commands.has_guild_permissions(manage_guild=True)
-    async def prefix(self, ctx, prefix: str = None):
+    async def prefix(self, ctx, *, prefix: str = None):
+        """
+        Changes the server's prefix.
+        """
         if prefix is None:
             embed = discord.Embed(color=self.client.embed_color)
             current_prefix = self.client.get_guild_prefix(ctx.guild)
