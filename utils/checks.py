@@ -50,6 +50,14 @@ def owner_or_perms(**perms):
         return await base_check(ctx)
     return commands.check(predicate=predicate)
 
+def dev() -> callable:
+    async def predicate(ctx):
+        if ctx.message.author.id in [321892489470410763, 650647680837484556]:
+            return True
+        else:
+            raise commands.NotOwner()
+    return commands.check(predicate)
+
 def admoon() -> Callable:
     async def predicate(ctx):
         if (ctx.message.author.id == 321892489470410763) or (ctx.message.author.id == 515725341910892555):
