@@ -274,7 +274,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
     async def dankreminders(self, ctx, argument=None):
         """
         Shows your reminders for Dank Memer and allows you to enable/disable them, without any arguments.
-        Change your type of reminder with `dv.dankreminders dm` or `dv.dankreminders ping/mention`.
+        Change your type of reminder with `dv.dankreminders dm`,  `dv.dankreminders ping/mention` or `dv.dankreminders none`.
         """
         result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
         if result is None:
@@ -330,7 +330,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
             except NameError:
                 lifesavertime = "Ready!"
         result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
-        embed = discord.Embed(title="Your Dank Memer reminders", description="React with the emoji that corresponds to the reminder to enable/disable it.\nChange your type of reminder with `dv.dankreminders dm` or `dv.dankreminders ping/mention`.", color=0x57f0f0, timestamp=datetime.utcnow())
+        embed = discord.Embed(title="Your Dank Memer reminders", description="React with the emoji that corresponds to the reminder to enable/disable it.\nChange your type of reminder with `dv.dankreminders dm`,  `dv.dankreminders ping/mention` or `dv.dankreminders none`.", color=0x57f0f0, timestamp=datetime.utcnow())
         embed.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
         embed.add_field(name=f"{emojioutput(result.get('daily'))} Claim daily <:DVB_calendar:873107952159059991>", value=dailytime, inline=True)
         embed.add_field(name=f"{emojioutput(result.get('lottery'))} Enter the lottery <:DVB_lotteryticket:873110581085880321>", value=lotterytime, inline=True)
@@ -362,7 +362,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 self.con.commit()
                 await message.remove_reaction(response.emoji, ctx.author)
                 result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
-                embed = discord.Embed(title="Your Dank Memer reminders",  description="React with the emoji that corresponds to the reminder to enable/disable it.\nChange your type of reminder with `dv.dankreminders dm` or `dv.dankreminders ping/mention`.", color=0x57f0f0, timestamp=datetime.utcnow())
+                embed = discord.Embed(title="Your Dank Memer reminders",  description="React with the emoji that corresponds to the reminder to enable/disable it.\nChange your type of reminder with `dv.dankreminders dm`,  `dv.dankreminders ping/mention` or `dv.dankreminders none`.", color=0x57f0f0, timestamp=datetime.utcnow())
                 embed.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
                 embed.add_field(name=f"{emojioutput(result.get('daily'))} Claim daily <:DVB_calendar:873107952159059991>", value=dailytime, inline=True)
                 embed.add_field(name=f"{emojioutput(result.get('lottery'))} Enter the lottery <:DVB_lotteryticket:873110581085880321>", value=lotterytime, inline=True)
