@@ -305,6 +305,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 return await ctx.send("Got it. You will **now pinged in the channel where you used the command** for your enabled Dank Memer reminders.\n<a:DVB_Exclamation:873635993427779635> **Daily** and **lottery** reminders will still be sent in your DMs.")
         reminders = await self.client.pool_pg.fetch("SELECT * FROM dankreminders WHERE member_id = $1 and guild_id = $2", ctx.author.id, ctx.guild.id) # gets user's reminders
         for reminder in reminders:
+            print(reminder)
             if reminder.get('remindertype') == 2:
                 dailytime = f"<t:{reminder.get('time')}:R>" # time in discord time format
             if reminder.get('remindertype') == 3:
@@ -313,22 +314,22 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 worktime = f"<t:{reminder.get('time')}:R>"
             if reminder.get('remindertype') == 5:
                 lifesavertime = f"<t:{reminder.get('time')}:R>"
-            try:
-                dailytime
-            except NameError:
-                dailytime = "Ready!" # no record of reminder = user doesn't have to be reminder for this so it is available
-            try:
-                lotterytime
-            except NameError:
-                lotterytime = "Ready!"
-            try:
-                worktime
-            except NameError:
-                worktime = "Ready!"
-            try:
-                lifesavertime
-            except NameError:
-                lifesavertime = "Ready!"
+        try:
+            dailytime
+        except NameError:
+            dailytime = "Ready!" # no record of reminder = user doesn't have to be reminder for this so it is available
+        try:
+            lotterytime
+        except NameError:
+            lotterytime = "Ready!"
+        try:
+            worktime
+        except NameError:
+            worktime = "Ready!"
+        try:
+            lifesavertime
+        except NameError:
+            lifesavertime = "Ready!"
         result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
         embed = discord.Embed(title="Your Dank Memer reminders", description="React with the emoji that corresponds to the reminder to enable/disable it.\nChange your type of reminder with `dv.dankreminders dm`,  `dv.dankreminders ping/mention` or `dv.dankreminders none`.", color=0x57f0f0, timestamp=datetime.utcnow())
         embed.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
