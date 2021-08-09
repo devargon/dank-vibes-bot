@@ -383,7 +383,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         else:
             await ctx.send("Aborting this operation.")
 
-    @commands.command(name="leaderboard", brief="Shows the leaderboard for the top 10 voters for Dank Vibes.", description = "Shows the leaderboard for the top 10 voters for Dank Vibes.", aliases = ["lb"])
+    @commands.command(name="voteleaderboard", brief="Shows the leaderboard for the top 10 voters for Dank Vibes.", description = "Shows the leaderboard for the top 10 voters for Dank Vibes.", aliases = ["vlb", "votelb"])
     async def leaderboard(self, ctx):
         with ctx.typing():
             cursor = self.votetracker.cursor()
@@ -436,6 +436,10 @@ class VoteTracker(commands.Cog, name='votetracker'):
         embed.set_thumbnail(url=ctx.guild.icon_url)
         await ctx.send(embed=embed)
         cursor.close()
+
+    @commands.command(name="leaderboard", aliases = ["lb"], hidden=True)
+    async def lb(self, ctx):
+        await ctx.send("This command has been renamed to `voteleaderboard` (or `votelb`/`vlb`). To check the OwO count leaderboard, use `owoleaderboard` or `owolb`.", delete_after=10)
 
     @commands.guild_only()
     @commands.command(name="dailyleaderboard", brief = "Enables or disables sending the leaderboard daily.", description = "Enables or disables sending the leaderboard daily.", aliases = ["dailylb", "dlb", "leaderboardloop"])
