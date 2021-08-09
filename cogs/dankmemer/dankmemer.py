@@ -88,11 +88,11 @@ class DankMemer(commands.Cog, name='dankmemer'):
                     nextdailytime = round(time.time())
                     while nextdailytime % 86400 != 0:
                         nextdailytime += 1
-                    existing = await self.client.pool_pg.fetch("SELECT * FROM reminders where member_id = $1 and remindertype = $2", member.id, 2)
+                    existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 2)
                     if len(existing) > 0:
-                        await self.client.pool_pg.execute("UPDATE reminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextdailytime, member.id, 2)
+                        await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextdailytime, member.id, 2)
                     else:
-                        await self.client.pool_pg.execute("INSERT INTO reminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 2, message.channel.id, message.guild.id, nextdailytime)
+                        await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 2, message.channel.id, message.guild.id, nextdailytime)
                     await botresponse.add_reaction("⏰")
             else:
                 pass
