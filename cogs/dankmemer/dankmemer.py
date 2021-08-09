@@ -49,18 +49,24 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 except AttributeError: # member is none or channel is none
                     pass
                 else:
-                    if config.get('method') == 1 or result.get('remindertype') in [2, 3]:  # DMs or is lottery/daily reminder
+                    if config.get('method') == 1:  # DMs or is lottery/daily reminder
                         try:
                             await member.send(f"You can now {message(result.get('remindertype'))}") # DM
                         except discord.Forbidden:
-                            if result.get('remindertype') in [2, 3]: # not gonna try to mention if it's a lottery or daily reminder
-                                pass
-                            else:
-                                await channel.send(f"{member.mention} {self.client.user.name} is unable to DM you.\nTo receive Dank Memer reminders properly, open your DMs or switch to ping reminders via `dv.drm ping`. Your reminders have been disabled for now.")
-                                await self.client.pool_pg.execute("UPDATE remindersettings SET method = $1 WHERE member_id = $2", 0, result.get('member_id')) # change reminder settings to None
+                            await channel.send(f"{member.mention} {self.client.user.name} is unable to DM you.\nTo receive Dank Memer reminders properly, open your DMs or switch to ping reminders via `dv.drm ping`. Your reminders have been disabled for now.")
+                            await self.client.pool_pg.execute("UPDATE remindersettings SET method = $1 WHERE member_id = $2", 0, result.get('member_id')) # change reminder settings to None
                     elif config.get('method') == 2: # Mention
-                        await channel.send(f"{member.mention} you can now {message(result.get('remindertype'))}")
-            await self.client.pool_pg.execute("INSERT into stats(member_id, remindertype, time) VALUES($1, $2, $3)", result.get('member_id'), result.get('remindertype'), result.get('time'))
+                        if result.get('remindertype') in [2, 3]:
+                            if (await self.client.pool_pg.fetchrow("SELECT truefalse from dankmemersetting")).get('truefalse') == 1:
+                                await channel.send(f"{member.mention} you can now {message(result.get('remindertype'))}")
+                            else:
+                                try:
+                                    await member.send(f"You can now {message(result.get('remindertype'))}")  # DM
+                                except discord.Forbidden:
+                                    pass
+                        else:
+                            await channel.send(f"{member.mention} you can now {message(result.get('remindertype'))}")
+                await self.client.pool_pg.execute("INSERT into stats(member_id, remindertype, time) VALUES($1, $2, $3)", result.get('member_id'), result.get('remindertype'), result.get('time'))
             await self.client.pool_pg.execute("DELETE from dankreminders WHERE member_id = $1 and remindertype = $2 and channel_id = $3 and guild_id = $4 and time = $5", result.get('member_id'), result.get('remindertype'), result.get('channel_id'), result.get('guild_id'), result.get('time'))
 
     @commands.Cog.listener()
@@ -290,7 +296,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 return await ctx.send("Got it. You will **now be DMed** for your enabled Dank Memer reminders.")
             elif argument.lower() in ["ping", "mention"]:
                 await self.client.pool_pg.execute("UPDATE remindersettings SET method = $1 WHERE member_id = $2", 2, ctx.author.id) # sets to mentions
-                return await ctx.send("Got it. You will **now pinged in the channel where you used the command** for your enabled Dank Memer reminders.\n<a:DVB_Exclamation:873635993427779635> **Daily** and **lottery** reminders will still be sent in your DMs.")
+                return await ctx.send(f"Got it. You will **now pinged in the channel where you used the command** for your enabled Dank Memer reminders.\n{'<a:DVB_Exclamation:873635993427779635> **Daily** and **lottery** reminders will still be sent in your DMs.' if (await self.client.pool_pg.fetchrow('SELECT truefalse from dankmemersetting')).get('truefalse') == 0 else ''}")
         reminders = await self.client.pool_pg.fetch("SELECT * FROM dankreminders WHERE member_id = $1 and guild_id = $2", ctx.author.id, ctx.guild.id) # gets user's reminders
         for reminder in reminders:
             if reminder.get('remindertype') == 2:
