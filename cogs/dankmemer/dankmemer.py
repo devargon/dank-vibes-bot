@@ -235,11 +235,11 @@ class DankMemer(commands.Cog, name='dankmemer'):
         """
         timecounter = time.perf_counter()
         timenow = round(time.time())
-        alltime = await self.client.pool_pg.fetch("SELECT * from stats")
-        twentyfourhour = await self.client.pool_pg.fetch("SELECT * from stats WHERE time > $1", timenow - 86400)
-        week = await self.client.pool_pg.fetch("SELECT * from stats WHERE time > $1",timenow - 604800)
-        users = {}
-        reminders = {}
+        alltime = await self.client.pool_pg.fetch("SELECT * from stats") # gets all entries from all time
+        twentyfourhour = await self.client.pool_pg.fetch("SELECT * from stats WHERE time > $1", timenow - 86400) # gets all entries from the last 24 hours
+        week = await self.client.pool_pg.fetch("SELECT * from stats WHERE time > $1",timenow - 604800) # gets all entries from the past week
+        users = {} # result will be something like {321892489470410763: 123, 650647680837484556: 456}
+        reminders = {} # result will be something like {Lottery: 123, Work: 45, Lifesaver: 67, Daily: 89}
         for entry in alltime:
             if entry.get('member_id') not in users:
                 users[entry.get('member_id')] = 1
@@ -251,14 +251,14 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 reminders[remindertype(entry.get('remindertype'))] += 1
         sortusers = sorted(users.items(), key=operator.itemgetter(1), reverse=True) # sorts dict by descending
         listof = [f"<@{user[0]}>: {user[1]}" for user in sortusers[:3]] # makes it into a list that is readable
-        listof = "\n".join(listof) # makes into string
+        listof = "\n".join(listof) # makes top 3 users into string
         sortreminders = sorted(reminders.items(), key=operator.itemgetter(1), reverse=True) # sorts dict by descending
         listofreminders = [f"{reminder[0]}: {reminder[1]}" for reminder in sortreminders[:3]]
-        listofreminders = "\n".join(listofreminders)
-        daily = len(await self.client.pool_pg.fetch("SELECT * from stats WHERE remindertype = $1", 2))
-        lottery = len(await self.client.pool_pg.fetch("SELECT * from stats WHERE remindertype = $1", 3))
-        work = len(await self.client.pool_pg.fetch("SELECT * from stats WHERE remindertype = $1", 4))
-        lifesaver = len(await self.client.pool_pg.fetch("SELECT * from stats WHERE remindertype = $1", 5))
+        listofreminders = "\n".join(listofreminders) # makes top 3 reminder types into string
+        daily = len(await self.client.pool_pg.fetch("SELECT * from stats WHERE remindertype = $1", 2)) # number of daily reminders served
+        lottery = len(await self.client.pool_pg.fetch("SELECT * from stats WHERE remindertype = $1", 3)) # number of lottery reminders served
+        work = len(await self.client.pool_pg.fetch("SELECT * from stats WHERE remindertype = $1", 4)) # number of work reminders served
+        lifesaver = len(await self.client.pool_pg.fetch("SELECT * from stats WHERE remindertype = $1", 5)) # number of lifesavers reminders served
         onhold = len(await self.client.pool_pg.fetch("SELECT * FROM dankreminders"))
         embed = discord.Embed(title="Dank Memer Reminder Statistics", description=f"Fetched in {round(time.perf_counter() - timecounter, 3)} seconds.", color = 0x57F0F0, timestamp= datetime.utcnow())
         embed.add_field(name="Top 3 reminder types:", value=listof or "None", inline=True)
@@ -276,7 +276,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
         Shows your reminders for Dank Memer and allows you to enable/disable them, without any arguments.
         Change your type of reminder with `dv.dankreminders dm`,  `dv.dankreminders ping/mention` or `dv.dankreminders none`.
         """
-        result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
+        result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id) # gets the configuration for user to check if they have used dank reminder before
         if result is None:
             await self.client.pool_pg.execute("INSERT into remindersettings VALUES ($1, $2, $3, $4, $5, $6)", ctx.author.id, 0, 0, 0, 0, 0) # creates new entry for settings
         def numberswitcher(no):
@@ -286,7 +286,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 return 1
             else:
                 return 0
-        def emojioutput(truefalse):
+        def emojioutput(truefalse): # shows the enabled or disabled emoji for 0 or 1 values
             if truefalse == 0:
                 return "<:DVB_disabled:872003709096321024>"
             elif truefalse == 1:
@@ -295,18 +295,18 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 return "error"
         if argument is not None and argument.lower() in ["dm", "ping", "mention", "none", "off", "false", "disable"]:
             if argument.lower() in ["none", "off", "false", "disable"]:
-                await self.client.pool_pg.execute("UPDATE remindersettings SET method = $1 WHERE member_id = $2", 0, ctx.author.id)
+                await self.client.pool_pg.execute("UPDATE remindersettings SET method = $1 WHERE member_id = $2", 0, ctx.author.id) # disables dank reminders
                 return await ctx.send("Got it. You will not be reminded for any Dank Memer reminders.")
             elif argument.lower() == "dm":
-                await self.client.pool_pg.execute("UPDATE remindersettings SET method = $1 WHERE member_id = $2", 1, ctx.author.id)
+                await self.client.pool_pg.execute("UPDATE remindersettings SET method = $1 WHERE member_id = $2", 1, ctx.author.id) # sets to DMs
                 return await ctx.send("Got it. You will **now be DMed** for your enabled Dank Memer reminders.")
             elif argument.lower() in ["ping", "mention"]:
-                await self.client.pool_pg.execute("UPDATE remindersettings SET method = $1 WHERE member_id = $2", 2, ctx.author.id)
+                await self.client.pool_pg.execute("UPDATE remindersettings SET method = $1 WHERE member_id = $2", 2, ctx.author.id) # sets to mentions
                 return await ctx.send("Got it. You will **now pinged in the channel where you used the command** for your enabled Dank Memer reminders.\n<a:DVB_Exclamation:873635993427779635> **Daily** and **lottery** reminders will still be sent in your DMs.")
-        reminders = await self.client.pool_pg.fetch("SELECT * FROM dankreminders WHERE member_id = $1 and guild_id = $2", ctx.author.id, ctx.guild.id)
+        reminders = await self.client.pool_pg.fetch("SELECT * FROM dankreminders WHERE member_id = $1 and guild_id = $2", ctx.author.id, ctx.guild.id) # gets user's reminders
         for reminder in reminders:
             if reminder.get('remindertype') == 2:
-                dailytime = f"<t:{reminder.get('time')}:R>"
+                dailytime = f"<t:{reminder.get('time')}:R>" # time in discord time format
             if reminder.get('remindertype') == 3:
                 lotterytime = f"<t:{reminder.get('time')}:R>"
             if reminder.get('remindertype') == 4:
@@ -316,7 +316,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
             try:
                 dailytime
             except NameError:
-                dailytime = "Ready!"
+                dailytime = "Ready!" # no record of reminder = user doesn't have to be reminder for this so it is available
             try:
                 lotterytime
             except NameError:
@@ -352,7 +352,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 active = False
             else:
                 if str(response.emoji) == "<:DVB_calendar:873107952159059991>":
-                    await self.client.pool_pg.execute("UPDATE remindersettings SET daily = $1 WHERE member_id = $2", numberswitcher(result.get('daily')), ctx.author.id)
+                    await self.client.pool_pg.execute("UPDATE remindersettings SET daily = $1 WHERE member_id = $2", numberswitcher(result.get('daily')), ctx.author.id) # switches to enabled/disabled reminder
                 elif str(response.emoji) == "<:DVB_lotteryticket:873110581085880321>":
                     await self.client.pool_pg.execute("UPDATE remindersettings SET lottery = $1 WHERE member_id = $2", numberswitcher(result.get('lottery')), ctx.author.id)
                 elif str(response.emoji) == "<:DVB_workbadge:873110507605872650>":
