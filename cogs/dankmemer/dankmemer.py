@@ -257,7 +257,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
         embed = discord.Embed(title="Dank Memer Reminder Statistics", description=f"Fetched in {round(time.perf_counter() - timecounter, 3)} seconds.", color = 0x57F0F0, timestamp= datetime.utcnow())
         embed.add_field(name="Top 3 reminder types:", value=listof or "None", inline=True)
         embed.add_field(name="Top 3 reminder users:", value=listofreminders or "None", inline=True)
-        embed.add_field(name="\u200b", value="\u200b", inline=False)
+        embed.add_field(name="Number of activated settings", value=str(len(await self.client.pool_pg.fetch("SELECT * FROM remindersettings"))), inline=False)
         embed.add_field(name="History statistics", value=f"Since dawn of time: `{len(alltime)}`\nPast 24 hours: `{len(twentyfourhour)}`\nPast week: `{len(week)}`\nOn hold:`{onhold}`", inline=True)
         embed.add_field(name="History statistics",value=f"Daily: `{daily}`\nLottery: `{lottery}`\nWork: `{work}`\nLifesaver:`{lifesaver}`", inline=True)
         await ctx.send(embed=embed)
