@@ -69,6 +69,8 @@ class DankMemer(commands.Cog, name='dankmemer'):
             return
         if message.guild.id != 595457764935991326:
             return
+        if not isinstance(message.channel, discord.TextChannel):
+            return
         """
         Refer to https://discord.com/channels/871734809154707467/871737332431216661/873142587001827379 to all message events here
         """
