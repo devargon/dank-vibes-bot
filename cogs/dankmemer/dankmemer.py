@@ -1,13 +1,9 @@
-import asyncio
 import time
-from utils import checks
-import operator
-import asyncpg
+import asyncio
 import discord
-import sqlite3
-import contextlib
-from dateutil import relativedelta
-from datetime import datetime, timedelta
+import operator
+from utils import checks
+from datetime import datetime
 from discord.ext import commands, tasks
 
 class DankMemer(commands.Cog, name='dankmemer'):
@@ -16,17 +12,9 @@ class DankMemer(commands.Cog, name='dankmemer'):
     """
     def __init__(self, client):
         self.client = client
-        self.con = sqlite3.connect('databases/dankmemer.db', timeout=5.0)
         self.dankmemerreminders.start()
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        await self.client.pool_pg.execute("CREATE TABLE IF NOT EXISTS remindersettings(member_id bigint PRIMARY KEY, method integer, daily bigint, lottery bigint, work bigint, lifesaver bigint)")
-        await self.client.pool_pg.execute("CREATE TABLE IF NOT EXISTS dankreminders(member_id bigint, remindertype bigint, channel_id bigint, guild_id bigint, time bigint)")
-        await self.client.pool_pg.execute("CREATE TABLE IF NOT EXISTS stats(member_id bigint, remindertype integer, time bigint)")
-
     def cog_unload(self):
-        self.con.close()
         self.dankmemerreminders.stop()
 
     @tasks.loop(seconds=5)
@@ -216,9 +204,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                     await self.client.pool_pg.execute("DELETE FROM stats") # delete statistics database
                     embed = discord.Embed(title="Reset Dank reminder database?", description=f"Database has been reset.", color=discord.Color.green())
                     await message.edit(embed=embed)
-                    await asyncio.sleep(10)
-                    await message.delete()
-                    return
+                    return await message.delete(delay=10)
         def remindertype(num):
             if num == 2:
                 return "Daily"
@@ -360,7 +346,6 @@ class DankMemer(commands.Cog, name='dankmemer'):
                     await self.client.pool_pg.execute("UPDATE remindersettings SET work = $1 WHERE member_id = $2", numberswitcher(result.get('work')), ctx.author.id)
                 elif str(response.emoji) == "<:DVB_lifesaver:873110547854405722>":
                     await self.client.pool_pg.execute("UPDATE remindersettings SET lifesaver = $1 WHERE member_id = $2", numberswitcher(result.get('lifesaver')), ctx.author.id)
-                self.con.commit()
                 await message.remove_reaction(response.emoji, ctx.author)
                 result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
                 embed = discord.Embed(title="Your Dank Memer reminders",  description="React with the emoji that corresponds to the reminder to enable/disable it.\nChange your type of reminder with `dv.dankreminders dm`,  `dv.dankreminders ping/mention` or `dv.dankreminders none`.", color=0x57f0f0, timestamp=datetime.utcnow())
