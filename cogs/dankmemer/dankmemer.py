@@ -293,7 +293,6 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 return await ctx.send("Got it. You will **now pinged in the channel where you used the command** for your enabled Dank Memer reminders.\n<a:DVB_Exclamation:873635993427779635> **Daily** and **lottery** reminders will still be sent in your DMs.")
         reminders = await self.client.pool_pg.fetch("SELECT * FROM dankreminders WHERE member_id = $1 and guild_id = $2", ctx.author.id, ctx.guild.id) # gets user's reminders
         for reminder in reminders:
-            print(reminder)
             if reminder.get('remindertype') == 2:
                 dailytime = f"<t:{reminder.get('time')}:R>" # time in discord time format
             if reminder.get('remindertype') == 3:
