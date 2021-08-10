@@ -26,10 +26,12 @@ class VoteTracker(commands.Cog, name='votetracker'):
         self.reminders.start()
         self.client.topgg_webhook = topgg.WebhookManager(client).dsl_webhook("/webhook", "ABCDE")
         self.client.topgg_webhook.run(5000)
+        self.leaderboardloop.start()
 
     def cog_unload(self):
         self.vdankster.stop()
         self.reminders.stop()
+        self.leaderboardloop.stop()
 
     @tasks.loop(seconds=5.0) # this is the looping task that will remove the Vibing Dankster role from the person.
     async def vdankster(self):
