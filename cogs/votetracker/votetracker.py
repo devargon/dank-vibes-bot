@@ -11,6 +11,7 @@ from utils.time import humanize_timedelta
 from discord.ext import commands, tasks
 from utils.format import print_exception
 
+guildid = 595457764935991326
 vdanksterid = 683884762997587998 #Change this to the Vibing Dankster role ID.
 channelid = 754725833540894750 #Change this to where all the bot messages are sent.
 
@@ -42,8 +43,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         if len(result) == 0:
             return # No one's roles need to be removed.
         for row in result: #individually iterates through the list of people who have voted for dv more than 12 hours ago
-            print("hi")
-            guild = self.client.get_guild(595457764935991326)
+            guild = self.client.get_guild(guildid)
             member = guild.get_member(row[0])
             role = guild.get_role(vdanksterid)
             if guild is not None and member is not None and role is not None: #if a member leaves, it won't break this function
@@ -103,7 +103,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         votecount = cursor.execute(
             "SELECT * FROM votecount ORDER BY count DESC LIMIT 10").fetchall()  # gets top 10 voters
         leaderboard = []
-        guild = self.client.get_guild(595457764935991326)
+        guild = self.client.get_guild(guildid)
         channel = self.client.get_channel(channelid)
         for voter in votecount:
             member = guild.get_member(voter[0])
@@ -159,7 +159,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         if data['type'] != 'upvote': #ignores webhook messages such as test
             return
         votingchannel = self.client.get_channel(channelid)  # gets the channel to send messages in
-        guild = self.client.get_guild(595457764935991326)
+        guild = self.client.get_guild(guildid)
         member = guild.get_member(userid)
         if member is None:
             return
