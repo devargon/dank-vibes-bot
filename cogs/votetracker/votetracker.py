@@ -11,6 +11,7 @@ from utils.time import humanize_timedelta
 from discord.ext import commands, tasks
 from utils.format import print_exception
 
+guildid = 595457764935991326
 vdanksterid = 683884762997587998 #Change this to the Vibing Dankster role ID.
 channelid = 754725833540894750 #Change this to where all the bot messages are sent.
 
@@ -26,10 +27,12 @@ class VoteTracker(commands.Cog, name='votetracker'):
         self.reminders.start()
         self.client.topgg_webhook = topgg.WebhookManager(client).dsl_webhook("/webhook", "ABCDE")
         self.client.topgg_webhook.run(5000)
+        self.leaderboardloop.start()
 
     def cog_unload(self):
         self.vdankster.stop()
         self.reminders.stop()
+        self.leaderboardloop.stop()
 
     @tasks.loop(seconds=5.0) # this is the looping task that will remove the Vibing Dankster role from the person.
     async def vdankster(self):
@@ -40,8 +43,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         if len(result) == 0:
             return # No one's roles need to be removed.
         for row in result: #individually iterates through the list of people who have voted for dv more than 12 hours ago
-            print("hi")
-            guild = self.client.get_guild(595457764935991326)
+            guild = self.client.get_guild(guildid)
             member = guild.get_member(row[0])
             role = guild.get_role(vdanksterid)
             if guild is not None and member is not None and role is not None: #if a member leaves, it won't break this function
@@ -101,7 +103,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         votecount = cursor.execute(
             "SELECT * FROM votecount ORDER BY count DESC LIMIT 10").fetchall()  # gets top 10 voters
         leaderboard = []
-        guild = self.client.get_guild(595457764935991326)
+        guild = self.client.get_guild(guildid)
         channel = self.client.get_channel(channelid)
         for voter in votecount:
             member = guild.get_member(voter[0])
@@ -157,7 +159,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         if data['type'] != 'upvote': #ignores webhook messages such as test
             return
         votingchannel = self.client.get_channel(channelid)  # gets the channel to send messages in
-        guild = self.client.get_guild(595457764935991326)
+        guild = self.client.get_guild(guildid)
         member = guild.get_member(userid)
         if member is None:
             return
@@ -383,7 +385,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         else:
             await ctx.send("Aborting this operation.")
 
-    @commands.command(name="leaderboard", brief="Shows the leaderboard for the top 10 voters for Dank Vibes.", description = "Shows the leaderboard for the top 10 voters for Dank Vibes.", aliases = ["lb"])
+    @commands.command(name="voteleaderboard", brief="Shows the leaderboard for the top 10 voters for Dank Vibes.", description = "Shows the leaderboard for the top 10 voters for Dank Vibes.", aliases = ["vlb", "votelb"])
     async def leaderboard(self, ctx):
         with ctx.typing():
             cursor = self.votetracker.cursor()
@@ -436,6 +438,10 @@ class VoteTracker(commands.Cog, name='votetracker'):
         embed.set_thumbnail(url=ctx.guild.icon_url)
         await ctx.send(embed=embed)
         cursor.close()
+
+    @commands.command(name="leaderboard", aliases = ["lb"], hidden=True)
+    async def lb(self, ctx):
+        await ctx.send("This command has been renamed to `voteleaderboard` (or `votelb`/`vlb`). To check the OwO count leaderboard, use `owoleaderboard` or `owolb`.", delete_after=10)
 
     @commands.guild_only()
     @commands.command(name="dailyleaderboard", brief = "Enables or disables sending the leaderboard daily.", description = "Enables or disables sending the leaderboard daily.", aliases = ["dailylb", "dlb", "leaderboardloop"])
