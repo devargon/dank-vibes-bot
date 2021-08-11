@@ -21,7 +21,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
     """
     def __init__(self, client):
         self.client = client
-        self.description = "Vote tracker commands" 
+        self.description = "Vote tracker commands"
         self.vdankster.start()
         self.reminders.start()
         self.client.topgg_webhook = topgg.WebhookManager(client).dsl_webhook("/webhook", "ABCDE")
@@ -56,20 +56,17 @@ class VoteTracker(commands.Cog, name='votetracker'):
             await self.client.wait_until_ready()
             timenow = round(time.time())
             result = await self.client.pool_pg.fetch("SELECT * FROM roleremove WHERE rmtime < $1", timenow)
-            print(result)
             if len(result) == 0:
                 return
             for row in result: # iterate through the list of members who have reminders.
                 memberid = row.get('member_id')
                 await self.client.pool_pg.execute('UPDATE roleremove SET rmtime = $1 WHERE member_id = $2',9223372036854775807, memberid)
                 preferences = await self.client.pool_pg.fetchrow("SELECT rmtype FROM rmpreference WHERE member_id = $1", memberid)
-                print(preferences)
                 if preferences is None: # somehow there is no preference for this user, so i'll create an entry to prevent it from breaking
                     await self.client.pool_pg.execute("INSERT INTO rmpreference(member_id, rmtype) VALUES($1, $2)", memberid, 0)
                     preferences = await self.client.pool_pg.fetchrow("SELECT rmtype FROM rmpreference WHERE member_id = $1", memberid) # refetch the configuration for this user after it has been added
                 member = self.client.get_user(memberid)
                 channel = self.client.get_channel(channelid)
-                print(preferences)
                 if preferences.get('rmtype') == 1:
                     try:
                         dmembed = discord.Embed(
