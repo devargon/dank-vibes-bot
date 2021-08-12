@@ -2,7 +2,6 @@ import os
 import time
 import topgg
 import discord
-import sqlite3
 import asyncio
 import random
 import datetime
@@ -24,6 +23,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         self.description = "Vote tracker commands"
         self.vdankster.start()
         self.reminders.start()
+        self.leaderboardloop.start()
         self.client.topgg_webhook = topgg.WebhookManager(client).dsl_webhook("/webhook", "ABCDE")
         self.client.topgg_webhook.run(5000)
 
@@ -88,43 +88,40 @@ class VoteTracker(commands.Cog, name='votetracker'):
     @tasks.loop(hours=24.0)
     async def leaderboardloop(self):
         await self.client.wait_until_ready()
-        votecount = await self.client.pool_pg.fetch("SELECT * FROM votecount ORDER BY count DESC LIMIT 10")  # gets top 10 voters
-        leaderboard = []
-        guild = self.client.get_guild(guildid)
-        channel = self.client.get_channel(channelid)
-        for voter in votecount:
-            member = guild.get_member(voter.get('member_id'))
-            name = member.display_name if member is not None else str(voter.get('member_id'))  # shows user id if the user left the server
-            name = (name[:12] + '...') if len(name) > 15 else name  # shortens the nickname if it's too long
-            leaderboard.append((name, voter[1]))  # this is the final list of leaderboard people
-        font_name = "assets/Gagalin.ttf"
-        lbpositions = [(204, 240), (204, 390), (204, 550), (204, 710), (204, 870), (1150, 240), (1150, 390),
-                    (1150, 550), (1150, 710),
-                    (1150, 870)]  # these are the positions for the nicknames in the leaderboard
-        countpositions = [(780, 240), (780, 390), (780, 550), (780, 710), (780, 870), (1730, 240), (1730, 390),
-                        (1730, 550), (1730, 710), (1730, 870)]  # these are the positions for the number of votes
-        font = ImageFont.truetype(font_name, 60)  # opens the font
-        ima = Image.open("assets/lbbg.png")  # opens leaderboard background
-        ima = ima.convert("RGB")  # Convert into RGB instead of RGBA so that it can be saved as a jpeg
-        draw = ImageDraw.Draw(ima)  # starts the drawing process
-        for voter in leaderboard:
-            draw.text(lbpositions[leaderboard.index(voter)], voter[0], font=font,
-                    align="middle left")  # Adds a user's nickname
-            draw.text(countpositions[leaderboard.index(voter)], str(voter[1]), font=font,
-                    align="right")  # adds a user's vote count
-        filename = f"temp/{random.randint(1, 9999999)}.jpg"
-        ima.save(filename, optimize=True, quality=50)  # saves the file under a temporary name
-        file = discord.File(filename)
-        try:
-            await channel.send("This is the vote leaderboard for **Dank Vibes**!" if len(leaderboard) != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://top.gg/servers/595457764935991326/vote !",file=file)
-        except discord.Forbidden:
-            await channel.send("I do not have permission to send the leaderboard here.")
-        os.remove(filename)  # deletes the temporary file
-        return
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        pass
+        if await self.client.pool_pg.fetchval("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", guildid, 'votelb'):
+            votecount = await self.client.pool_pg.fetch("SELECT * FROM votecount ORDER BY count DESC LIMIT 10")  # gets top 10 voters
+            leaderboard = []
+            guild = self.client.get_guild(guildid)
+            channel = self.client.get_channel(channelid)
+            for voter in votecount:
+                member = guild.get_member(voter.get('member_id'))
+                name = member.display_name if member is not None else str(voter.get('member_id'))  # shows user id if the user left the server
+                name = (name[:12] + '...') if len(name) > 15 else name  # shortens the nickname if it's too long
+                leaderboard.append((name, voter[1]))  # this is the final list of leaderboard people
+            font_name = "assets/Gagalin.ttf"
+            lbpositions = [(204, 240), (204, 390), (204, 550), (204, 710), (204, 870), (1150, 240), (1150, 390),
+                        (1150, 550), (1150, 710),
+                        (1150, 870)]  # these are the positions for the nicknames in the leaderboard
+            countpositions = [(780, 240), (780, 390), (780, 550), (780, 710), (780, 870), (1730, 240), (1730, 390),
+                            (1730, 550), (1730, 710), (1730, 870)]  # these are the positions for the number of votes
+            font = ImageFont.truetype(font_name, 60)  # opens the font
+            ima = Image.open("assets/lbbg.png")  # opens leaderboard background
+            ima = ima.convert("RGB")  # Convert into RGB instead of RGBA so that it can be saved as a jpeg
+            draw = ImageDraw.Draw(ima)  # starts the drawing process
+            for voter in leaderboard:
+                draw.text(lbpositions[leaderboard.index(voter)], voter[0], font=font,
+                        align="middle left")  # Adds a user's nickname
+                draw.text(countpositions[leaderboard.index(voter)], str(voter[1]), font=font,
+                        align="right")  # adds a user's vote count
+            filename = f"temp/{random.randint(1, 9999999)}.jpg"
+            ima.save(filename, optimize=True, quality=50)  # saves the file under a temporary name
+            file = discord.File(filename)
+            try:
+                await channel.send("This is the vote leaderboard for **Dank Vibes**!" if len(leaderboard) != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://top.gg/servers/595457764935991326/vote !",file=file)
+            except discord.Forbidden:
+                await channel.send("I do not have permission to send the leaderboard here.")
+            os.remove(filename)  # deletes the temporary file
+            return
 
     @commands.Cog.listener()
     async def on_dsl_vote(self, data):
@@ -375,31 +372,3 @@ class VoteTracker(commands.Cog, name='votetracker'):
     @commands.command(name="leaderboard", aliases = ["lb"], hidden=True)
     async def lb(self, ctx):
         await ctx.send("This command has been renamed to `voteleaderboard` (or `votelb`/`vlb`). To check the OwO count leaderboard, use `owoleaderboard` or `owolb`.", delete_after=10)
-
-    @commands.guild_only()
-    @commands.command(name="dailyleaderboard", brief = "Enables or disables sending the leaderboard daily.", description = "Enables or disables sending the leaderboard daily.", aliases = ["dailylb", "dlb", "leaderboardloop"])
-    @commands.has_guild_permissions(administrator=True)
-    async def dlb(self, ctx, option=None):
-        """
-        Enables or disables sending the leaderboard daily.
-        """
-        if option is None: # explanation of command
-            embed = discord.Embed(title="Daily Leaderboard Loop", description = "Every 24 hours, I will send the leaderboard to the specified channel. It is enabled by default when the bot is started.", color=0x57f0f0, timestamp=datetime.datetime.utcnow())
-            embed.add_field(name="Usage", value="`dlb start/enable` starts.\n`dlb stop/disable` stops this feature.")
-            embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon_url)
-            await ctx.send(embed=embed)
-            return
-        if option.lower() in ["start", "enable"]:
-            try:
-                self.leaderboardloop.start() # starts the task of sending leaderboard running
-            except RuntimeError:
-                await ctx.send("The daily leaderboard feature is already running!")
-                return
-            else:
-                await ctx.send("Got it. I will start sending the leaderboard in the specified channel every 24 hours.")
-                return
-        elif option.lower() in ["stop", "disable"]:
-            self.leaderboardloop.stop() # if the task is stopped already, no error will appear
-            await ctx.send("I will no longer send the leaderboard every 24 hours.")
-        else:
-            await ctx.send("You did not provide a proper option. Use `dv.dlb` to see how to use this command.")
