@@ -46,6 +46,13 @@ class Autoreaction(commands.Cog, name='autoreaction'):
     def __init__(self, client):
         self.client = client
 
+    def cancerous_name(self, text: str):
+        for word in text.split():
+            for char in word:
+                if not (char.isascii() and char.isalnum()):
+                    return False
+        return False
+
     @commands.group(aliases=['ar'], invoke_without_command=True)
     async def autoreact(self, ctx):
         """
@@ -137,10 +144,15 @@ class Autoreaction(commands.Cog, name='autoreaction'):
                 if str(response.emoji) == '<:mention:870679716779163659>':
                     check_values = (f"<@!{ctx.author.id}>", ctx.guild.id) # Ar for mention
                 elif str(response.emoji) == '<:name:870679739524874312>':
+                    if self.cancerous_name(ctx.author.name):
+                        ctx.command.reset_cooldown(ctx)
+                        await msg.clear_reactions()
+                        return await msg.edit(content="I can't set an autoreaction for that username.")
                     check_values = (f"{ctx.author.name.lower()}", ctx.guild.id)
                     mention = False # Ar for name
             except asyncio.TimeoutError:
                 ctx.command.reset_cooldown(ctx)
+                await msg.clear_reactions()
                 return await msg.edit(content="You didn't react on time.")
         else:
             check_values = (f"<@!{ctx.author.id}>", ctx.guild.id)
