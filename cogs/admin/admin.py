@@ -118,6 +118,9 @@ class Admin(commands.Cog, name='admin'):
     @commands.command(name='leaderboards')
     @commands.has_guild_permissions(administrator=True)
     async def leaderboards(self, ctx):
+        """
+        Shows guild's leaderboard settings and also allows you to allow/disable them.
+        """
         def get_emoji(enabled):
             if enabled:
                 return "<:DVB_enabled:872003679895560193>"
@@ -160,3 +163,4 @@ class Admin(commands.Cog, name='admin'):
                 tempembed = discord.Embed(title='Information', color=self.client.embed_color, description="React with the emojis to toggle leaderboards")
                 tempembed.add_field(name='Reactions' ,value=f"{emojis[0]} Toggles OwO daily leaderboard\n{emojis[1]} Toggles OwO weekly leaderboard\n{emojis[2]} Toggles vote leaderboard\n{emojis[3]} Shows this infomation message.")
                 await message.edit(embed=tempembed)
+            await message.remove_reaction(response.emoji, ctx.author)
