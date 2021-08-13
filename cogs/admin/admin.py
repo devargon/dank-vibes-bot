@@ -118,6 +118,9 @@ class Admin(commands.Cog, name='admin'):
     @commands.command(name='leaderboards')
     @commands.has_guild_permissions(administrator=True)
     async def leaderboards(self, ctx):
+        """
+        Shows guild's leaderboard settings and also allows you to allow/disable them.
+        """
         def get_emoji(enabled):
             if enabled:
                 return "<:DVB_enabled:872003679895560193>"
