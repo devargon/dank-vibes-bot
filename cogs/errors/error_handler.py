@@ -30,7 +30,7 @@ class ErrorHandler(commands.Cog):
         elif isinstance(error, commands.CheckFailure):
             await send_error("Oops!, looks like you don't have enough permission to use this command.", delete_after=5)
         elif isinstance(error, commands.CommandOnCooldown):
-            if (ctx.author.id == 321892489470410763) or (ctx.author.id == 515725341910892555):
+            if (ctx.author.id == 321892489470410763) or (ctx.author.id == 650647680837484556):
                 return await ctx.reinvoke()
             await send_error(f"You're on cooldown. Try again in **{humanize_timedelta(seconds=error.retry_after)}**.")
         elif isinstance(error, commands.MemberNotFound):
@@ -55,4 +55,4 @@ class ErrorHandler(commands.Cog):
                             f"**Jump:** [`jump`]({ctx.message.jump_url})```py\n" \
                             f"{traceback_error}\n" \
                             f"```"
-            await self.client.get_guild(871734809154707467).get_channel(871737028105109574).send(content=f"<@&871740422932824095> Check this out",embed=discord.Embed(color=0xffcccb, description=error_message, timestamp=datetime.utcnow()).set_footer(text=f"From: {ctx.guild.name}", icon_url=ctx.guild.icon_url), allowed_mentions=discord.AllowedMentions(roles=True))
+            await self.client.error_channel.send(content=f"<@&871740422932824095> Check this out",embed=discord.Embed(color=0xffcccb, description=error_message, timestamp=datetime.utcnow()).set_footer(text=f"From: {ctx.guild.name}", icon_url=ctx.guild.icon_url), allowed_mentions=discord.AllowedMentions(roles=True))

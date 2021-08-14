@@ -14,6 +14,7 @@ AVAILABLE_EXTENSIONS = ['cogs.dev',
 'cogs.admin',
 'cogs.autoreaction',
 'cogs.banbattle',
+'cogs.dankmemer',
 'cogs.help',
 'cogs.owo',
 'cogs.votetracker',
@@ -53,6 +54,10 @@ class dvvt(commands.AutoShardedBot):
     async def on_ready(self):
         print("Bot is ready")
     
+    @property
+    def error_channel(self):
+        return self.get_guild(871734809154707467).get_channel(871737028105109574)
+
     async def on_guild_join(self, guild):
         await self.pool_pg.execute('INSERT INTO prefixes VALUES ($1, $2) ON CONFLICT DO UPDATE SET prefix=$2', guild.id, "dv.")
 
