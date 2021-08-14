@@ -1,46 +1,30 @@
-import sqlite3
 import discord
 from typing import Callable, Optional
 from discord.ext import commands
 from utils.errors import NotInBanBattle
+from utils.format import get_command_name
 
-con = sqlite3.connect('databases/database.db', timeout=5.0)
-cur = con.cursor()
-
-def get_roles(guild, cmd):
-    roles = cur.execute("SELECT role_id FROM rules WHERE guild_id=? AND command=?", (guild.id, cmd.name,)).fetchall()
-    roles = [role[0] for role in roles if len(roles) != 0]
-    return roles
-
-def set_rule(guild, cmd, role):
-    cur.execute("INSERT INTO rules VALUES (?, ?, ?)", (guild.id, cmd.name, role.id,))
-    con.commit()
-
-def remove_rule(guild, cmd, role):
-    cur.execute("DELETE FROM rules WHERE guild_id=? AND command=? AND role_id=?", (guild.id, cmd.name, role.id,))
-    con.commit()
-
-def clear_rule(guild, cmd):
-    cur.execute("DELETE FROM rules WHERE guild_id=? AND command=?", (guild.id, cmd.name,))
-    con.commit()
-
-def perms_or_role(**perms):
-    base_check = commands.has_guild_permissions(**perms).predicate
-    async def predictate(ctx):
-        if ctx.author.id == 321892489470410763:
-            return True
-        if ctx.guild is None:
-            raise commands.NoPrivateMessage()
-        roles = get_roles(ctx.guild, ctx.command)
-        if len(roles) == 0:
-            return await base_check(ctx)
-        for role in roles:
-            if discord.utils.get(ctx.author.roles, id=role):
+def has_permissions_or_role(**perms):
+        perms = commands.has_guild_permissions(**perms).predicate
+        async def predicate(ctx):
+            if ctx.guild is None:
+                raise commands.NoPrivateMessage()
+            if ctx.author.id == 321892489470410763:
                 return True
-        return await base_check(ctx)
-    return commands.check(predicate=predictate)
+            roles = await ctx.bot.pool_pg.fetch("SELECT role_id, whitelist FROM rules WHERE guild_id=$1 AND command=$2", ctx.guild.id, get_command_name(ctx.command))
+            if not roles:
+                return await perms(ctx)
+            for role in roles:
+                if not role.get('whitelist'):
+                    if discord.utils.get(ctx.author.roles, id=role.get('role_id')):
+                        return False
+                else:
+                    if discord.utils.get(ctx.author.roles, id=role.get('role_id')):
+                        return True
+            return await perms(ctx)
+        return commands.check(predicate=predicate)
 
-def owner_or_perms(**perms):
+def is_owner_or_perms(**perms):
     base_check = commands.has_guild_permissions(**perms).predicate
     async def predicate(ctx):
         if ctx.guild is None and ctx.author.id != 321892489470410763:

@@ -60,7 +60,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
         """
         return await ctx.help()
 
-    @checks.perms_or_role(administrator=True)
+    @checks.has_permissions_or_role(administrator=True)
     @autoreact.command(name='add', aliases=['create', '+'], usage='<trigger> <response>')
     async def autoreact_add(self, ctx, trigger: str = None, *, responses: EmojiOrString = None):
         """
@@ -89,7 +89,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
         return await ctx.send("Autoreaction added.")
 
     @autoreact.command(name='remove', aliases=['delete', '-'], usage='<trigger>')
-    @checks.perms_or_role(administrator=True)
+    @checks.has_permissions_or_role(administrator=True)
     async def autoreact_remove(self, ctx, trigger: str = None):
         """
         Remove an auto reaction.
@@ -107,7 +107,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
     @commands.guild_only()
     @autoreact.command(name='claim', usage='<response>')
     @commands.cooldown(1, 1800, commands.BucketType.user)
-    @checks.perms_or_role(manage_messages=True)
+    @checks.has_permissions_or_role(manage_messages=True)
     async def autoreact_claim(self, ctx, response: Union[discord.Emoji, str] = None):
         """
         Set your personal auto reaction.
@@ -220,7 +220,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
             return await ctx.send("I need `Add Reactions` perms to do that.")
 
     @autoreact.command(name='list')
-    @checks.perms_or_role(administrator=True)
+    @checks.has_permissions_or_role(administrator=True)
     async def autoreact_list(self, ctx):
         """
         View a full list of all auto reactions in the server

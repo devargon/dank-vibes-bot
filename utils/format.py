@@ -3,6 +3,7 @@ import discord
 import traceback
 from io import BytesIO
 from typing import Sequence, Iterator
+from discord.ext import commands
 
 class plural:
     """
@@ -109,6 +110,14 @@ def print_exception(text, error):
     trace = error.__traceback__
     lines = traceback.format_exception(etype, error, trace)
     return ''.join(lines)
+
+def get_command_name(command: commands.command):
+    """
+    Returns commands name.
+    """
+    if command.parent:
+        return f"{command.parent} {command.name}"
+    return f"{command.name}"
 
 class TabularData:
     def __init__(self):

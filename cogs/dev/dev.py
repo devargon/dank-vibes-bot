@@ -12,6 +12,8 @@ import textwrap
 import traceback
 import contextlib
 from abc import ABC
+
+from discord.ext.commands.core import is_owner
 from utils import checks
 from .status import Status
 from .botutils import BotUtils
@@ -65,7 +67,7 @@ class Developer(BotUtils, CogManager, Status, commands.Cog, name='dev', command_
     def get_sql(msg: str):
         return pagify(msg, delims=["\n", " "], priority=True, shorten_by=10, box_lang='py')
 
-    @checks.admoon()
+    @commands.is_owner()
     @commands.command(hidden=True, usage='[silently]')
     async def shutdown(self, ctx, silently: TrueFalse = False):
         """
@@ -234,7 +236,7 @@ class Developer(BotUtils, CogManager, Status, commands.Cog, name='dev', command_
             except discord.HTTPException as e:
                 await ctx.send(f'Unexpected error: `{e}`')
 
-    @checks.admoon()
+    @commands.is_owner()
     @commands.command(name='sudo', aliases=['su'], hidden=True, usage='<user> <command>')
     async def sudo(self, ctx, member: MemberUserConverter = None, *, command: str = None):
         """
@@ -319,7 +321,7 @@ class Developer(BotUtils, CogManager, Status, commands.Cog, name='dev', command_
         cur.close()
         conn.close()
 
-    @checks.admoon()
+    @commands.is_owner()
     @commands.group(name='sql', invoke_without_command=True, hidden=True)
     async def sql(self, ctx):
         """
@@ -327,7 +329,7 @@ class Developer(BotUtils, CogManager, Status, commands.Cog, name='dev', command_
         """
         await ctx.help()
 
-    @checks.admoon()
+    @commands.is_owner()
     @sql.command(name='fetch', hidden=True, usage='<query...>')
     async def sql_fetch(self, ctx, *, query: str = None):
         """
@@ -349,7 +351,7 @@ class Developer(BotUtils, CogManager, Status, commands.Cog, name='dev', command_
         msg = f'{render}\n*Returned {plural(len(results)):row} in {time_taken:.2f}ms*'
         await ctx.send_interactive(self.get_sql(msg))
 
-    @checks.admoon()
+    @commands.is_owner()
     @sql.command(name='execute', aliases=['exec'], hidden=True, usage='<database> <query...>')
     async def sql_execute(self, ctx, *, query: str = None):
         """
@@ -361,14 +363,15 @@ class Developer(BotUtils, CogManager, Status, commands.Cog, name='dev', command_
         if query is None:
             return await ctx.send('Query is a required argument.')
         try:
-            # start = time.perf_counter()
-            await self.client.pool_pg.execute(query)
-            # time_taken = (time.perf_counter() - start) * 1000.0
+            start = time.perf_counter()
+            result = await self.client.pool_pg.execute(query)
+            time_taken = (time.perf_counter() - start) * 1000.0
+            await ctx.send(f'`{time_taken:.2f}ms: {result}`')
             return await ctx.checkmark()
         except Exception:
             return await ctx.send(f'```py\n{traceback.format_exc()}\n```')
 
-    @checks.admoon()
+    @commands.is_owner()
     @sql.command(name='table', hidden=True, usage="<table>")
     async def sql_table(self, ctx, table: str = None):
         """

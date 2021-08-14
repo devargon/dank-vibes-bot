@@ -33,6 +33,13 @@ class TrueFalse(commands.Converter):
             return False
         return False
 
+def AllowDeny(arg: str):
+    if arg.lower() in ("allow", "whitelist", "wl"):
+        return True
+    if arg.lower() in ("deny", "blacklist", "bl"):
+        return False
+    raise ArgumentBaseError(message=f'"{arg}" is not a valid option. Try "allow", "deny", "whitelist", or "blacklist"')
+
 class ValidDatabase(commands.Converter):
     async def convert(self, ctx, argument):
         if argument.lower() == 'database':
@@ -73,3 +80,21 @@ class BetterRoles(commands.Converter):
         if role.is_default():
             raise DefaultRoleError(role.name)
         return role
+
+class RoleString(commands.Converter):
+    async def convert(self, ctx, argument):
+        args = argument.split()
+        roles = []
+        for arg in args:
+            try:
+                role = await commands.RoleConverter().convert(ctx, argument=arg)
+            except commands.BadArgument:
+                role = discord.utils.find(lambda x: x.name.lower() == argument.lower(), ctx.guild.roles)
+                if role is None:
+                    raise RoleNotFound(argument)
+            if role.is_bot_managed():
+                raise IntegratedRoleError(role.name)
+            if role.is_default():
+                raise DefaultRoleError(role.name)
+            roles.append(role)
+        return roles
