@@ -1,6 +1,5 @@
-from datetime import datetime
-from typing import Union
 import discord
+from datetime import datetime
 from discord.ext import commands
 emojis = ["<:checkmark:841187106654519296>", "<:crossmark:841186660662247444>"]
 class nicknames(commands.Cog):
@@ -79,10 +78,12 @@ class nicknames(commands.Cog):
         if len(nickname) > 32:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"Your nickname is currently {len(nickname)} characters long. It can only be 32 characters long.")
-        config = await self.client.pool_pg.fetchrow("SELECT channel_id FROM nicknameconfig where guild_id = $1", ctx.guild.id)
-        if config is None:
-            return await ctx.send(f"This server has not set a channel for nickname requests to be directed to. Have someone with the `Administrator` Permission to add a nickname request channel with `dv.setrequest <channel>`.")
-        request_channel = ctx.guild.get_channel(config.get('channel_id'))
+        if not (config := self.nickconfig.get(ctx.guild.id)):
+            config = await self.client.pool_pg.fetchrow("SELECT channel_id FROM nicknameconfig where guild_id = $1", ctx.guild.id)
+            if config is None:
+                return await ctx.send(f"This server has not set a channel for nickname requests to be directed to. Have someone with the `Administrator` Permission to add a nickname request channel with `dv.setrequest <channel>`.")
+            config = self.nickconfig.setdefault(ctx.guild.id, config.get('channel_id'))
+        request_channel = ctx.guild.get_channel(config)
         if request_channel is None:
             await self.client.pool_pg.execute("DELETE FROM nicknameconfig WHERE guild_id = $1", ctx.guild.id)
             return await ctx.send("I could not find the channel to send nickname requests to. Please contact an admin about this!")
@@ -128,18 +129,3 @@ class nicknames(commands.Cog):
         authorembed.add_field(name="Request ID", value=str(ID), inline=True)
         authorembed.set_footer(text="Your nickname will be denied if it is blatantly inappropriate and/or unmentionable.")
         await ctx.reply(embed=authorembed)
-
-    @commands.command(name="setnickchannel", aliases = ["nickchannel"])
-    @commands.has_guild_permissions(administrator=True)
-    async def setchannel(self, ctx, channel:discord.TextChannel=None):
-        """
-        Set the channel for nickname requests to be sent to.
-        """
-        result = await self.client.pool_pg.fetch("SELECT * FROM nicknameconfig where guild_id = $1", ctx.guild.id)
-        if len(result) == 0:
-            await self.client.pool_pg.execute("INSERT INTO nicknameconfig VALUES($1, $2)", ctx.guild.id, channel.id)
-            return await ctx.send(f"I will now send nickname requests to {channel.mention}.")
-        else:
-            await self.client.pool_pg.execute("UPDATE nicknameconfig SET channel_id = $1 where guild_id = $2", channel.id, ctx.guild.id)
-            await self.client.pool_pg.execute("DELETE FROM nicknames")
-            return await ctx.send(f"I will now send nickname requests to {channel.mention}.\nAll nickname requests sent in the previous channel have been forfeited.")
