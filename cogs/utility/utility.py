@@ -76,6 +76,9 @@ class Utility(Whois, L2LVC, nicknames, commands.Cog, name='utility', metaclass=C
 
     @commands.command(name='info')
     async def info(self, ctx):
+        """
+        Shows some information about this bot.
+        """
         value_1 = []
         value_1.append(f'⚙ Commands: {len(self.client.commands)}')
         value_1.append(f'<:user_mention:868806554961453116> Users: `{len(self.client.users)}`')
