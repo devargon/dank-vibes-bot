@@ -1,9 +1,9 @@
 import asyncio
-from cogs.test.test import get_command_name
 import discord
 from utils import checks
 from datetime import datetime
 from discord.ext import commands
+from utils.format import get_command_name
 from utils.converters import AllowDeny, BetterRoles
 
 class Admin(commands.Cog, name='admin'):
@@ -28,7 +28,7 @@ class Admin(commands.Cog, name='admin'):
         return whitelist, blacklist
 
     @commands.guild_only()
-    @commands.group(name='serverrule', invoke_without_command=True)
+    @commands.group(name='serverrule', aliases=['sr'], invoke_without_command=True)
     @checks.is_owner_or_perms(administrator=True)
     async def serverrule(self, ctx):
         """
@@ -36,11 +36,12 @@ class Admin(commands.Cog, name='admin'):
         return await ctx.help()
 
     @commands.guild_only()
-    @serverrule.command(name='add', usage='<command> <role>')
+    @serverrule.command(name='add', usage='<allow_or_deny> <command> <role>')
     @checks.is_owner_or_perms(administrator=True)
     async def serverrule_add(self, ctx, allow_or_deny: AllowDeny = None, cmd: str = None, role: BetterRoles = None):
         """
         Add a rule to a command in this server.
+        You can pass `allow` or `whitelist` to whitelist or `deny` or `blacklist` to blacklist the role.
         
         Required role: <@&663502776952815626>
         """
