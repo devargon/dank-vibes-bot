@@ -69,6 +69,44 @@ class DVVTcontext(commands.Context):
                 return await self.reply(content, mention_author=mention_author, **kwargs)
         return await self.send(content, **kwargs)
 
+    async def confirmation(self, message, *, cancel_message = None, timeout=15, delete_after=True, delete_delay=0):
+        """
+        An interactive reaction confirmation dialog.
+        """
+        msg = await self.send(message)
+        confirm = None
+        def check(payload):
+            nonlocal confirm 
+            if payload.message_id != msg.id or payload.user_id != self.message.author.id:
+                return False
+            emoji = str(payload.emoji)
+            if emoji == '<:checkmark:841187106654519296>':
+                confirm = True
+                return True
+            elif emoji == '<:crossmark:841186660662247444>':
+                confirm = False
+                return True
+            return False
+
+        for emoji in ['<:checkmark:841187106654519296>','<:crossmark:841186660662247444>']:
+            await msg.add_reaction(emoji)
+        try:
+            await self.bot.wait_for('raw_reaction_add', check=check, timeout=timeout)
+        except asyncio.TimeoutError:
+            confirm = None
+        if confirm is False and cancel_message:
+            await msg.clear_reactions()
+            await msg.edit(content=cancel_message, delete_after=delete_delay)
+            return confirm
+        if delete_after:
+            if confirm:
+                await msg.delete(delay=0)
+            else:
+                await msg.clear_reactions()
+                await self.crossmark()
+                await msg.delete(delay=delete_delay)
+        return confirm
+
     async def send_error(self, error = None):
         """
         Sends the error message, and deletes it after 10 seconds.
