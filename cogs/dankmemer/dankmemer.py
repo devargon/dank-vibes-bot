@@ -165,7 +165,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                         member.id, 4, message.channel.id, message.guild.id, nextdailytime)
                 await botresponse.add_reaction("⏰")
 
-        if "You equipped a lifesaver. For the next 10" in message.content and message.author.bot and message.author.id == 270904126974590976:
+        """if "You equipped a lifesaver. For the next 10" in message.content and message.author.bot and message.author.id == 270904126974590976:
             if len(message.mentions) == 0:
                 pass
             else:
@@ -181,7 +181,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                     await self.client.pool_pg.execute(
                         "INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)",
                         member.id, 5, message.channel.id, message.guild.id, nextdailytime)
-                await message.add_reaction("⏰")
+                await message.add_reaction("⏰")"""
 
     @checks.dev()
     @commands.command(name="drmstats", aliases = ["dankreminderstats, statistics"])
