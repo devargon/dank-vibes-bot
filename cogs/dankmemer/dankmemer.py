@@ -305,8 +305,6 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 lotterytime = f"<t:{reminder.get('time')}:R>"
             if reminder.get('remindertype') == 4:
                 worktime = f"<t:{reminder.get('time')}:R>"
-            if reminder.get('remindertype') == 5:
-                lifesavertime = f"<t:{reminder.get('time')}:R>"
         try:
             dailytime
         except NameError:
@@ -319,22 +317,21 @@ class DankMemer(commands.Cog, name='dankmemer'):
             worktime
         except NameError:
             worktime = "Ready!"
-        try:
-            lifesavertime
-        except NameError:
-            lifesavertime = "Ready!"
         result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
         embed = discord.Embed(title="Your Dank Memer reminders", description="**React with the emoji that corresponds to the reminder to enable/disable it.**\nChange how you want to be reminded with `dv.dankreminders dm`,  `dv.dankreminders ping/mention` or `dv.dankreminders none`.", color=0x57f0f0, timestamp=datetime.utcnow())
         embed.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
+        dankmemer = self.client.get_user(270904126974590976)
+        if dankmemer is not None:
+            embed.set_thumbnail(url=dankmemer.avatar_url)
         embed.add_field(name=f"{emojioutput(result.get('daily'))} Claim daily <:DVB_calendar:873107952159059991>", value=dailytime, inline=True)
         embed.add_field(name=f"{emojioutput(result.get('lottery'))} Enter the lottery <:DVB_lotteryticket:873110581085880321>", value=lotterytime, inline=True)
         embed.add_field(name=f"{emojioutput(result.get('work'))} Work <:DVB_workbadge:873110507605872650>", value=worktime, inline=True)
-        embed.add_field(name=f"{emojioutput(result.get('lifesaver'))} Use a lifesaver <:DVB_lifesaver:873110547854405722>", value=lifesavertime, inline=True)
+        #embed.add_field(name=f"{emojioutput(result.get('lifesaver'))} Use a lifesaver <:DVB_lifesaver:873110547854405722>", value=lifesavertime, inline=True)
         embed.add_field(name="\u200b", value="\u200b", inline=False)
         embed.add_field(name="Reminder preference", value=f"{'DM' if result.get('method') == 1 else 'Ping' if result.get('method') == 2 else None}", inline=False)
         embed.set_footer(text="For reminders to work, your reply pings needs to be enabled in Dank Memer's settings.", icon_url=ctx.guild.icon_url)
         message = await ctx.send(embed=embed)
-        reminderemojis = ["<:DVB_calendar:873107952159059991>", "<:DVB_lotteryticket:873110581085880321>", "<:DVB_workbadge:873110507605872650>", "<:DVB_lifesaver:873110547854405722>"]
+        reminderemojis = ["<:DVB_calendar:873107952159059991>", "<:DVB_lotteryticket:873110581085880321>", "<:DVB_workbadge:873110507605872650>"]
         for emoji in reminderemojis:
             await message.add_reaction(emoji)
         active = True
@@ -352,16 +349,18 @@ class DankMemer(commands.Cog, name='dankmemer'):
                     await self.client.pool_pg.execute("UPDATE remindersettings SET lottery = $1 WHERE member_id = $2", numberswitcher(result.get('lottery')), ctx.author.id)
                 elif str(response.emoji) == "<:DVB_workbadge:873110507605872650>":
                     await self.client.pool_pg.execute("UPDATE remindersettings SET work = $1 WHERE member_id = $2", numberswitcher(result.get('work')), ctx.author.id)
-                elif str(response.emoji) == "<:DVB_lifesaver:873110547854405722>":
-                    await self.client.pool_pg.execute("UPDATE remindersettings SET lifesaver = $1 WHERE member_id = $2", numberswitcher(result.get('lifesaver')), ctx.author.id)
+                '''elif str(response.emoji) == "<:DVB_lifesaver:873110547854405722>":
+                    await self.client.pool_pg.execute("UPDATE remindersettings SET lifesaver = $1 WHERE member_id = $2", numberswitcher(result.get('lifesaver')), ctx.author.id)'''
                 await message.remove_reaction(response.emoji, ctx.author)
                 result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
                 embed = discord.Embed(title="Your Dank Memer reminders",  description="**React with the emoji that corresponds to the reminder to enable/disable it.**\nChange how you want to be reminded with `dv.dankreminders dm`,  `dv.dankreminders ping/mention` or `dv.dankreminders none`.", color=0x57f0f0, timestamp=datetime.utcnow())
                 embed.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
+                if dankmemer is not None:
+                    embed.set_thumbnail(url=dankmemer.avatar_url)
                 embed.add_field(name=f"{emojioutput(result.get('daily'))} Claim daily <:DVB_calendar:873107952159059991>", value=dailytime, inline=True)
                 embed.add_field(name=f"{emojioutput(result.get('lottery'))} Enter the lottery <:DVB_lotteryticket:873110581085880321>", value=lotterytime, inline=True)
                 embed.add_field(name=f"{emojioutput(result.get('work'))} Work <:DVB_workbadge:873110507605872650>", value=worktime, inline=True)
-                embed.add_field(name=f"{emojioutput(result.get('lifesaver'))} Use a lifesaver <:DVB_lifesaver:873110547854405722>", value=lifesavertime, inline=True)
+                #embed.add_field(name=f"{emojioutput(result.get('lifesaver'))} Use a lifesaver <:DVB_lifesaver:873110547854405722>", value=lifesavertime, inline=True)
                 embed.add_field(name="\u200b", value="\u200b", inline=False)
                 embed.add_field(name="Reminder preference", value=f"{'DM' if result.get('method') == 1 else 'Ping' if result.get('method') == 2 else None}", inline=False)
                 embed.set_footer(text="For reminders to work, your reply pings needs to be enabled in Dank Memer's settings.", icon_url=ctx.guild.icon_url)
