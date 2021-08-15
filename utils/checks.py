@@ -1,7 +1,7 @@
 import discord
 from typing import Callable, Optional
 from discord.ext import commands
-from utils.errors import NotInBanBattle
+from utils.errors import NotInBanBattle, ArgumentBaseError
 from utils.format import get_command_name
 
 def has_permissions_or_role(**perms):
@@ -57,4 +57,15 @@ def is_dvbm(silent: Optional[bool] = False) -> Callable:
         else:
             if not silent:
                 raise NotInBanBattle()
+    return commands.check(predicate)
+
+def is_bav_or_mystic() -> Callable:
+    async def predicate(ctx):
+        if not ctx.guild:
+            raise commands.NoPrivateMessage()
+        if ctx.author.id in [719890992723001354, 542447261658120221]:
+            return True
+        if ctx.author.guild_permissions.manage_roles == True:
+            return True
+        raise ArgumentBaseError(message="You need to be a `mystic` or `bav` or have the required permissions to use this command.")
     return commands.check(predicate)

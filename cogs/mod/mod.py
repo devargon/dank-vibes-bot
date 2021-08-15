@@ -3,7 +3,7 @@ import discord
 import datetime
 import asyncio
 from discord.ext import commands
-
+from utils import checks
 class Mod(commands.Cog, name='mod'):
     """
     Mod commands
@@ -11,6 +11,7 @@ class Mod(commands.Cog, name='mod'):
     def __init__(self, client):
         self.client = client
 
+    @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="checkoverwrites", brief = "Checks the permission overwrites for that channel. Can be used to check who is in a private channel.", description = "Checks the permission overwrites for that channel. Can be used to check who is in a private channel.", aliases = ["privchannel", "pvc", "checkpvc"])
     async def checkoverwrites(self, ctx, channel:discord.TextChannel=None):
         """
@@ -86,6 +87,7 @@ class Mod(commands.Cog, name='mod'):
                             description=streeng, color=0x57f0f0)
         await ctx.send(embed=embed)
 
+    @checks.is_bav_or_mystic()
     @commands.command(name="gcheck", brief = "Reminds DV Grinders that the requirement has been checked.", description = "Reminds DV Grinders that the requirement has been checked.")
     async def gcheck(self, ctx):
         """
@@ -95,11 +97,6 @@ class Mod(commands.Cog, name='mod'):
         tgrinderrole = ctx.guild.get_role(827270880182009956)
         if grinderrole is None or tgrinderrole is None:
             return await ctx.send("One or more roles declared in this command are invalid, hence the command cannot proceed.")
-        if ctx.author.id not in [719890992723001354, 542447261658120221]: #bav and mystic
-            if not ctx.author.guild_permissions.manage_roles == True: # modms+
-                return await ctx.send("You need to be a `mystic` or `bav` or have the required permissions to use this command.")
-        else:
-            pass
         grinders = [member for member in ctx.guild.members if grinderrole in member.roles or tgrinderrole in member.roles] # gets all grinders
         if len(grinders) == 0:
             return await ctx.send("There are no grinders to be DMed.")
