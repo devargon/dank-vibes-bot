@@ -111,3 +111,23 @@ class Utility(Whois, L2LVC, nicknames, commands.Cog, name='utility', metaclass=C
         embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar_url)
         embed.timestamp = datetime.datetime.utcnow()
         await ctx.send(embed=embed)
+
+    @commands.command(name='suggest', usage='<message>')
+    @commands.cooldown(1, 300, commands.BucketType.user)
+    async def suggest(self, ctx, *, message: str = None):
+        """
+        Suggest something to the developers through the bot.
+        """
+        if message is None:
+            return await ctx.send("Message is a required argument.")
+        if not await ctx.confirmation("Are you sure you wanna send this message to the developers?", cancel_message="Okay, we're not sending that message to the developers", delete_delay=5):
+            return
+        channel = self.client.get_channel(876346196564803614)
+        query = "INSERT INTO suggestions VALUES(DEFAULT, $1, $2) RETURNING id"
+        suggestion_id = await self.client.pool_pg.fetchval(query, ctx.author.id, message, column='id')
+        await ctx.checkmark()
+        author = f"Suggestion from {ctx.author} ({suggestion_id})"
+        suggestionembed = discord.Embed(color=self.client.embed_color, description=message, timestamp=datetime.datetime.utcnow())
+        suggestionembed.set_author(name=author, icon_url=ctx.author.avatar_url)
+        suggestionembed.set_footer(text=ctx.author.id)
+        return await channel.send(embed=suggestionembed)
