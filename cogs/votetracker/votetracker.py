@@ -174,8 +174,9 @@ class VoteTracker(commands.Cog, name='votetracker'):
                               # It will look like this: https://i.ibb.co/g4PvRsQ/Discord-ha-R7-Hsdzo-E.png
                               timestamp=datetime.datetime.utcnow(), color=0x57f0f0)
         embed.set_author(name=f"{member.name}#{member.discriminator} ({member.id})", icon_url=member.avatar_url)
-        embed.set_footer(text=f"{guild.name} • {self.client.user.name}", icon_url=guild.icon_url) # dory allowed me to credit myself c:
-        embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/830920902019514408.gif?v=1")
+        embed.set_footer(text=f"{guild.name} • {self.client.user.name}", icon_url=guild.icon_url)
+        qbemojis = ["https://cdn.discordapp.com/emojis/869579459420913715.gif?v=1", "https://cdn.discordapp.com/emojis/869579448708653066.gif?v=1", "https://cdn.discordapp.com/emojis/869579493776457838.gif?v=1", "https://cdn.discordapp.com/emojis/869579480509841428.gif?v=1", "https://cdn.discordapp.com/emojis/873643650607894548.gif?v=1", "https://cdn.discordapp.com/emojis/871970548576559155.gif?v=1", "https://cdn.discordapp.com/emojis/872470665607909417.gif?v=1", "https://cdn.discordapp.com/emojis/830920902019514408.gif?v=1"]
+        embed.set_thumbnail(url=random.choice(qbemojis))
         embed.add_field(name="\u200b", value=rolesummary)
         try:
             await votingchannel.send(embed=embed)
