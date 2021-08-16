@@ -37,6 +37,9 @@ class ErrorHandler(commands.Cog):
             await send_error("I couldn't find a member called {}.".format(error.argument))
         elif isinstance(error, commands.RoleNotFound):
             await send_error("I couldn't find a role called {}.".format(error.argument))
+        elif isinstance(error, commands.BadUnionArgument):
+            if error.converters == (discord.TextChannel, discord.VoiceChannel):
+                await send_error("I couldn't find that channel.")
         elif isinstance(error, commands.MissingRequiredArgument):
             await send_error("{} is a required argument.".format(error.param))
         elif isinstance(error, ArgumentBaseError):
