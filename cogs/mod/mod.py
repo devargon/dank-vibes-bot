@@ -32,7 +32,7 @@ class Mod(commands.Cog, name='mod'):
             for member in members:
                 permissions = channel.permissions_for(member)
                 if permissions.view_channel == True:
-                    membersin.append(f"**{member.display_name}#{member.discriminator}** {member.mention} 🧑‍⚖️" if member.mentioned_in(message) else f"**{member.display_name}#{member.discriminator}** {member.mention}") # add them to a final list that shows who is in the channel
+                    membersin.append(f"**{member}** {member.mention} 🧑‍⚖️" if member.mentioned_in(message) else f"**{member.display_name}#{member.discriminator}** {member.mention}") # add them to a final list that shows who is in the channel
             members = "\n".join(membersin)
             members += f"\n\nMember Count: `{len(membersin)-1 if '🧑‍⚖️' in members else len(membersin)}`\n*This automatically excludes owners of the channel.*"
             embed = discord.Embed(
