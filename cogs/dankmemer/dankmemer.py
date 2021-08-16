@@ -70,9 +70,9 @@ class DankMemer(commands.Cog, name='dankmemer'):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.author.bot and message.author.id != 235148962103951360:
+        if message.author.bot and message.author.id != 270904126974590976:
             return
-        if message.guild.id != 871734809154707467:
+        if message.guild.id != 595457764935991326:
             return
         if not message.guild:
             return
@@ -82,7 +82,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
         if message.content.lower() in ["pls daily", "pls 24hr"]:
             if not message.author.bot:
                 def check_daily(payload):
-                    if len(payload.embeds) == 0 or payload.author.id == message.author.id or not payload.author.bot or message.channel != payload.channel or payload.author.id != 235148962103951360:
+                    if len(payload.embeds) == 0 or payload.author.id == message.author.id or not payload.author.bot or message.channel != payload.channel or payload.author.id != 270904126974590976:
                         return False
                     else:
                         return payload.embeds[0].title == f"Here are yer daily coins, {message.author.name}" or payload.embeds[0].title == f"Here are your daily coins, {message.author.name}"
@@ -107,7 +107,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
         if "pls weekly" in message.content.lower():
             if not message.author.bot:
                 def check_weekly(payload):
-                    if len(payload.embeds) == 0 or payload.author.id == message.author.id or not payload.author.bot or message.channel != payload.channel or payload.author.id != 235148962103951360:
+                    if len(payload.embeds) == 0 or payload.author.id == message.author.id or not payload.author.bot or message.channel != payload.channel or payload.author.id != 270904126974590976:
                         return False
                     else:
                         return payload.embeds[0].title == f"Here are yer weekly coins, {message.author.name}" or payload.embeds[0].title == f"Here are your weekly coins, {message.author.name}"
@@ -135,7 +135,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
         if "pls monthly" in message.content.lower():
             if not message.author.bot:
                 def check_monthly(payload):
-                    if len(payload.embeds) == 0 or payload.author.id == message.author.id or not payload.author.bot or message.channel != payload.channel or payload.author.id != 235148962103951360:
+                    if len(payload.embeds) == 0 or payload.author.id == message.author.id or not payload.author.bot or message.channel != payload.channel or payload.author.id != 270904126974590976:
                         return False
                     else:
                         return payload.embeds[0].title == f"Here are yer monthly coins, {message.author.name}" or payload.embeds[0].title == f"Here are your monthly coins, {message.author.name}"
@@ -173,7 +173,6 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 if message.embeds[0].title == "Action Canceled" or message.embeds[0].title == "Action Canceled":
                     return await message.add_reaction("<:crossmark:841186660662247444>")
                 if message.embeds[0].title == "Action Confirmed":
-                    print(f"{member} Completed the lottery")
                     nextlotterytime = round(time.time())
                     while nextlotterytime % 3600 != 0:
                         nextlotterytime += 1
@@ -190,7 +189,6 @@ class DankMemer(commands.Cog, name='dankmemer'):
                     await message.add_reaction("⏰")
 
         if "pls redeem" in message.content.lower():
-            print("checking redeen")
             def check_redeem(payload):
                 return payload.author.bot and len(payload.embeds) > 0
             try:
@@ -219,7 +217,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 if len(payload.embeds) == 0 or payload.author.id == message.author.id or not payload.author.bot or message.channel != payload.channel:
                     return False
                 else:
-                    if len(payload.mentions) != 0 and payload.mentions[0] == message.author and payload.author.id == 235148962103951360:
+                    if len(payload.mentions) != 0 and payload.mentions[0] == message.author and payload.author.id == 270904126974590976:
                         return True if payload.embeds[0].description.startswith("**TERRIBLE work!**") or payload.embeds[0].description.startswith("**Great work!**") else False
             try:
                 botresponse = await self.client.wait_for("message", check=check_work, timeout=60)
