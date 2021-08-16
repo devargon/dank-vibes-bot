@@ -17,7 +17,7 @@ class Fun(commands.Cog, name='fun'):
     @commands.command(name="dumbfight", aliases = ["df"])
     async def dumbfight(self, ctx, member: discord.Member = None):
         """
-        Mute people for a random duration between 20 to 120 seconds.
+        Mute people for a random duration between 30 to 120 seconds.
         """
         timenow = round(time.time())
         cooldown = await self.client.pool_pg.fetchrow("SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time > $3", ctx.command.name, ctx.author.id, timenow)
