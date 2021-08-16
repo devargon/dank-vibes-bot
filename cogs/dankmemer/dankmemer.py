@@ -427,9 +427,9 @@ class DankMemer(commands.Cog, name='dankmemer'):
                     await self.client.pool_pg.execute("UPDATE remindersettings SET lottery = $1 WHERE member_id = $2", numberswitcher(result.get('lottery')), ctx.author.id)
                 elif str(response.emoji) == "<:DVB_workbadge:873110507605872650>":
                     await self.client.pool_pg.execute("UPDATE remindersettings SET work = $1 WHERE member_id = $2", numberswitcher(result.get('work')), ctx.author.id)
-                elif str(response.emoji) == "<:DVB_week:876711052669247528> ":
+                elif str(response.emoji) == "<:DVB_week:876711052669247528>":
                     await self.client.pool_pg.execute("UPDATE remindersettings SET weekly = $1 WHERE member_id = $2", numberswitcher(result.get('weekly')), ctx.author.id)
-                elif str(response.emoji) == "<:DVB_month:876711072030150707> ":
+                elif str(response.emoji) == "<:DVB_month:876711072030150707>":
                     await self.client.pool_pg.execute("UPDATE remindersettings SET monthly = $1 WHERE member_id = $2", numberswitcher(result.get('monthly')), ctx.author.id)
                 elif str(response.emoji) == "<:DVB_apple:876627457275469867>":
                     await self.client.pool_pg.execute("UPDATE remindersettings SET apple = $1 WHERE member_id = $2", numberswitcher(result.get('apple')), ctx.author.id)
