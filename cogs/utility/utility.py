@@ -8,11 +8,12 @@ from .whois import Whois
 from .l2lvc import L2LVC
 from .nicknames import nicknames
 from discord.ext import commands
+from .teleport import Teleport
 
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
 
-class Utility(Whois, L2LVC, nicknames, commands.Cog, name='utility', metaclass=CompositeMetaClass):
+class Utility(Whois, L2LVC, nicknames, Teleport, commands.Cog, name='utility', metaclass=CompositeMetaClass):
     """
     Utility commands
     """
