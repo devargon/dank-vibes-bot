@@ -1,6 +1,11 @@
 import discord
+import time
 import asyncio
 from discord.ext import commands
+import random
+from utils.time import humanize_timedelta
+from utils import checks
+
 
 class Fun(commands.Cog, name='fun'):
     """
@@ -8,6 +13,47 @@ class Fun(commands.Cog, name='fun'):
     """
     def __init__(self, client):
         self.client = client
+
+    @commands.command(name="dumbfight", aliases = ["df"])
+    async def dumbfight(self, ctx, member: discord.Member = None):
+        """
+        Mute people for a random duration between 20 to 120 seconds.
+        """
+        timenow = round(time.time())
+        cooldown = await self.client.pool_pg.fetchrow("SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time > $3", ctx.command.name, ctx.author.id, timenow)
+        if cooldown is not None:
+            return await ctx.send(f"You're on cooldown. try again in {humanize_timedelta(seconds=(cooldown.get('time') - timenow))}.", delete_after = 10.0)
+        cooldown = await self.client.pool_pg.fetchrow("SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time < $3", ctx.command.name, ctx.author.id, timenow)
+        if cooldown:
+            await self.client.pool_pg.execute("DELETE FROM cooldowns WHERE command_name = $1 and member_id = $2 and time = $3", cooldown.get('command_name'), cooldown.get('member_id'), cooldown.get('time'))
+        if member is None:
+            return await ctx.send("You need to tell me who you want to dumbfight.")
+        if member.bot:
+            return await ctx.send("Back off my kind.")
+        if member == ctx.me:
+            return await ctx.send("How do you expect me to mute myself?")
+        duration = random.randint(30, 120)
+        doesauthorwin = random.choice([True, False])
+        channel = ctx.channel
+        if doesauthorwin:
+            muted = member
+            color = 0x00ff00
+            str = "and won against"
+        else:
+            muted = ctx.author
+            color = 0xff0000
+            str = "and lost against"
+        originaloverwrite = channel.overwrites_for(muted) if muted in channel.overwrites else None
+        tempoverwrite = channel.overwrites_for(muted) if muted in channel.overwrites else discord.PermissionOverwrite()
+        tempoverwrite.send_messages = False
+        await channel.set_permissions(muted, overwrite=tempoverwrite)
+        embed = discord.Embed(title="Get muted!", description = f"{ctx.author.mention} fought {member.mention} {str} them.\n{muted.mention} is now muted for {duration} seconds.", colour=color)
+        await ctx.send(embed=embed)
+        specialrole = ctx.guild.get_role(876767313263734805) # 874931276329656370
+        cooldowntime = 1800 if specialrole in ctx.author.roles else 3600
+        await self.client.pool_pg.execute("INSERT INTO cooldowns VALUES($1, $2, $3)", ctx.command.name, ctx.author.id, timenow + cooldowntime)
+        await asyncio.sleep(duration)
+        await channel.set_permissions(muted, overwrite=originaloverwrite)
 
     @commands.command(name="hideping", brief="hides ping", description= "hides ping", aliases = ["hp", "secretping", "sp"], hidden=True)
     @commands.cooldown(1,5, commands.BucketType.user)
