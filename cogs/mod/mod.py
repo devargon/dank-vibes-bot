@@ -4,6 +4,9 @@ import datetime
 import asyncio
 from discord.ext import commands
 from utils import checks
+from utils.format import text_to_file
+
+
 class Mod(commands.Cog, name='mod'):
     """
     Mod commands
@@ -29,10 +32,7 @@ class Mod(commands.Cog, name='mod'):
             if "‍" in content or "​" in content:
                 return await ctx.send("Nice try, but you won't be able to get the raw text for hiding pings.")
             if len(content) > 4096:
-                with open("temp/contents.txt", "w", encoding="utf8") as f:
-                    f.write(content)
-                file = discord.File("temp/contents.txt")
-                await ctx.send(f"Raw content of message with ID {message_id} in {channel}", file=file)
+                await ctx.send(f"Raw content of message with ID {message_id} in {channel}", file=text_to_file(content, "file.txt", "utf8"))
             else:
                 await ctx.send(embed=discord.Embed(title=f"Raw content of message with ID {message_id} in {channel}", description=f"```\n{content}\n```", color = self.client.embed_color))
 
