@@ -10,6 +10,39 @@ class Mod(commands.Cog, name='mod'):
     """
     def __init__(self, client):
         self.client = client
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.command(name="getraw", aliases = ['raw', 'rawmessage'])
+    async def getrawmessage(self, ctx, message_id=None, channel:discord.TextChannel=None):
+        """
+        Gets the raw content of a message.
+        """
+        modrole = ctx.guild.get_role(871736440009162772)
+        if modrole is None:
+            await ctx.send("I had a problem checking for the required roles. For safety reasons, this command cannot be run until this problem is fixed.\n(Roles are defined as None)")
+            return
+        if modrole in ctx.author.roles:
+            if not message_id:
+                return await ctx.send("`dv.getraw <message_id> <channel>`\nMessage ID is a required argument.")
+            if not channel:
+                channel = ctx.channel
+            try:
+                message = await channel.fetch_message(message_id)
+            except discord.NotFound:
+                return await ctx.send(f"I did not find a message with the ID {message_id} in {channel}. {'DId you forget to include `channel`?' if channel == ctx.channel else ''}")
+            else:
+                content = message.content
+                if "‍" in content or "​" in content:
+                    return await ctx.send("Nice try, but you won't be able to get the raw text for hiding pings.")
+                if len(content) > 4096:
+                    with open("temp/contents.txt", "w", encoding="utf8") as f:
+                        f.write(content)
+                    file = discord.File("temp/contents.txt")
+                    await ctx.send(f"Raw content of message with ID {message_id} in {channel}", file=file)
+                else:
+                    await ctx.send(embed=discord.Embed(title=f"Raw content of message with ID {message_id} in {channel}", description=f"```\n{content}\n```", color = self.client.embed_color))
+        else:
+            await ctx.send(f"You do not have the required role (`{modrole}`) to use this command.") #self explanatory
+            return
 
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="checkoverwrites", brief = "Checks the permission overwrites for that channel. Can be used to check who is in a private channel.", description = "Checks the permission overwrites for that channel. Can be used to check who is in a private channel.", aliases = ["privchannel", "pvc", "checkpvc"])
