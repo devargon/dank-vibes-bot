@@ -200,7 +200,7 @@ class OwO(commands.Cog, name='owo'):
     async def wait_until_7am(self):
         await self.client.wait_until_ready()
         now = datetime.utcnow()
-        next_run = now.replace(hour=11, minute=27, second=0)
+        next_run = now.replace(hour=7, minute=0, second=0)
         if next_run < now:
             next_run += timedelta(days=1)
         await discord.utils.sleep_until(next_run)
