@@ -22,7 +22,7 @@ def participant_or_permissions(**perms):
         return check or await original(ctx)
     return commands.check(extended_check)
 
-class BanBattle(commands.Cog):
+class BanBattle(commands.Cog, name='banbattle'):
     """
     Banbattle commands
     """

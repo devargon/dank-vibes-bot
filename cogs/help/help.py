@@ -216,7 +216,7 @@ class DVBotHelp(commands.DefaultHelpCommand):
     async def send_error_message(self, error):
         return await self.context.reply(error, delete_after=10, mention_author=False)
 
-class Help(commands.Cog):
+class Help(commands.Cog, name='help'):
     def __init__(self, client):
         self.client = client
         self.default_help_command = client.help_command
