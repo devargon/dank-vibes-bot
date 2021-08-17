@@ -3,7 +3,6 @@ import re
 import ast
 import copy
 import time
-import sqlite3
 import discord
 import asyncio
 import inspect
@@ -12,8 +11,6 @@ import textwrap
 import traceback
 import contextlib
 from abc import ABC
-
-from discord.ext.commands.core import is_owner
 from utils import checks
 from .status import Status
 from .botutils import BotUtils
@@ -21,7 +18,8 @@ from contextlib import redirect_stdout
 from discord.ext import commands
 from .cog_manager import CogManager
 from utils.format import pagify, TabularData, plural
-from utils.converters import MemberUserConverter, TrueFalse, ValidDatabase
+from .maintenance import Maintenance
+from utils.converters import MemberUserConverter, TrueFalse
 
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     """
@@ -30,7 +28,7 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
     """
     pass
 
-class Developer(BotUtils, CogManager, Status, commands.Cog, name='dev', command_attrs=dict(hidden=True), metaclass=CompositeMetaClass):
+class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='dev', command_attrs=dict(hidden=True), metaclass=CompositeMetaClass):
     """
     This module contains various development focused commands.
     """
@@ -253,74 +251,6 @@ class Developer(BotUtils, CogManager, Status, commands.Cog, name='dev', command_
         new_ctx = await self.client.get_context(message, cls=type(ctx))
         await self.client.invoke(new_ctx)
 
-    @checks.admoon()
-    @commands.group(name='sqlite', invoke_without_command=True, hidden=True)
-    async def sqlite(self, ctx):
-        """
-        Base command for interacting with SQL.
-        """
-        await ctx.help()
-
-    @checks.admoon()
-    @sqlite.command(name='fetch', hidden=True, usage='<database> <query...>')
-    async def sqlite_fetch(self, ctx, db: ValidDatabase = None, *, query: str = None):
-        """
-        Fetches all rows of a query result.
-        """
-        if db is None:
-            return await ctx.send('Database is a required argument.')
-        if query is None:
-            return await ctx.send('Query is a required argument.')
-        query = self.cleanup_code(query)
-        conn = sqlite3.connect(db, timeout=5)
-        cur = conn.cursor()
-        try:
-            start = time.perf_counter()
-            results = cur.execute(query)
-            time_taken = (time.perf_counter() - start) * 1000.0
-        except Exception:
-            cur.close()
-            conn.close()
-            return await ctx.send(f'```py\n{traceback.format_exc()}\n```')
-        headers = list(col_name[0] for col_name in results.description)
-        table = TabularData()
-        table.set_columns(headers)
-        results = results.fetchall()
-        cur.close()
-        conn.close()
-        table.add_rows(list(r) for r in results)
-        render = table.render()
-        msg = f'{render}\n*Returned {plural(len(results)):row} in {time_taken:.2f}ms*'
-        await ctx.send_interactive(self.get_sql(msg))
-
-    @checks.admoon()
-    @sqlite.command(name='execute', aliases=['exec'], hidden=True, usage='<database> <query...>')
-    async def sqlite_execute(self, ctx, db: ValidDatabase = None, *, query: str = None):
-        """
-        Executes a SQL query.
-
-        It can only execute a single SQL query.
-        It also calls commit() method to commit the current changes, so be careful.
-        """
-        if db is None:
-            return await ctx.send('Database is a required argument.')
-        if query is None:
-            return await ctx.send('Query is a required argument.')
-        query = self.cleanup_code(query)
-        conn = sqlite3.connect(db, timeout=5)
-        cur = conn.cursor()
-        try:
-            cur.execute(query)
-            await ctx.checkmark()
-        except Exception:
-            await ctx.crossmark()
-            cur.close()
-            conn.close()
-            return await ctx.send(f'```py\n{traceback.format_exc()}\n```')
-        conn.commit()
-        cur.close()
-        conn.close()
-
     @commands.is_owner()
     @commands.group(name='sql', invoke_without_command=True, hidden=True)
     async def sql(self, ctx):
@@ -356,9 +286,6 @@ class Developer(BotUtils, CogManager, Status, commands.Cog, name='dev', command_
     async def sql_execute(self, ctx, *, query: str = None):
         """
         Executes a SQL query.
-
-        It can only execute a single SQL query.
-        It also calls commit() method to commit the current changes, so be careful.
         """
         if query is None:
             return await ctx.send('Query is a required argument.')
