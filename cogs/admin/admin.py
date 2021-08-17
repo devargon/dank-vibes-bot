@@ -83,11 +83,38 @@ class Admin(ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass
         """
         Set the channel for nickname requests to be sent to.
         """
-        result = await self.client.pool_pg.fetch("SELECT * FROM nicknameconfig where guild_id = $1", ctx.guild.id)
+        result = await self.client.pool_pg.fetch("SELECT * FROM channelconfigs where guild_id = $1", ctx.guild.id)
         if len(result) == 0:
-            await self.client.pool_pg.execute("INSERT INTO nicknameconfig VALUES($1, $2)", ctx.guild.id, channel.id)
+            await self.client.pool_pg.execute("INSERT INTO channelconfigs(guild_id, nicknamechannel_id) VALUES($1, $2)", ctx.guild.id, channel.id)
             return await ctx.send(f"I will now send nickname requests to {channel.mention}.")
         else:
-            await self.client.pool_pg.execute("UPDATE nicknameconfig SET channel_id = $1 where guild_id = $2", channel.id, ctx.guild.id)
+            await self.client.pool_pg.execute("UPDATE channelconfigs SET nicknamechannel_id = $1 where guild_id = $2", channel.id, ctx.guild.id)
             await self.client.pool_pg.execute("DELETE FROM nicknames")
-            return await ctx.send(f"I will now send nickname requests to {channel.mention}.\nAll nickname requests sent in the previous channel have been forfeited.")
+            return await ctx.send(f"I will now send nickname requests to {channel.mention}.\nAll nickname requests sent in a previous channel have been forfeited.")
+
+    @commands.command(name="setdmchannel", aliases = ["dmchannel"])
+    @commands.has_guild_permissions(administrator=True)
+    async def setdmchannel(self, ctx, channel:discord.TextChannel=None):
+        """
+        Set the channel for dmname requests to be sent to.
+        """
+        result = await self.client.pool_pg.fetch("SELECT * FROM channelconfigs where guild_id = $1", ctx.guild.id)
+        if len(result) == 0:
+            await self.client.pool_pg.execute("INSERT INTO channelconfigs(guild_id, dmchannel_id) VALUES($1, $2)", ctx.guild.id, channel.id)
+            return await ctx.send(f"I will now send DM requests to {channel.mention}.")
+        else:
+            await self.client.pool_pg.execute("UPDATE channelconfigs SET dmchannel_id = $1 where guild_id = $2", channel.id, ctx.guild.id)
+            await self.client.pool_pg.execute("DELETE FROM dmrequests")
+            return await ctx.send(f"I will now send DM requests to {channel.mention}.\nAll DM requests sent in a previous channel have been forfeited.")
+
+    @commands.command(name="viewconfig")
+    @commands.has_guild_permissions(administrator=True)
+    async def viewconfig(self, ctx, channel: discord.TextChannel = None):
+        """
+        Show configurations for nickname and DM requests.
+        """
+        result = await self.client.pool_pg.fetchrow("SELECT * FROM channelconfigs where guild_id = $1", ctx.guild.id)
+        if len(result) == 0:
+            return await ctx.send(f"No configuration for DM and nickname requests have been set yet. ")
+        else:
+            await ctx.send(embed=discord.Embed(title=f"Configurations for {ctx.guild.name}", description = f"Nickname requests: {ctx.guild.get_channel(result.get('nicknamechannel_id'))}\nDM requests: {ctx.guild.get_channel(result.get('dmchannel_id'))}", color = 0x57F0F0))
