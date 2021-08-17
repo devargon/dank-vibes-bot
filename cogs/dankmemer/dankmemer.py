@@ -403,6 +403,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
         embed.add_field(name=f"{emojioutput(result.get('redeem'))} Redeem donor rewards <:DVB_patreon:876628017194082395>", value=redeemtime or "Ready!", inline=True)
         if ctx.author.id == 650647680837484556:
             embed.add_field(name=f"<:DVB_enabled:872003679895560193> Slap Frenzy <a:DVB_pandaslap:876631217750048798>", value="Always ready", inline=True)
+            embed.add_field(name=f"<:DVB_enabled:872003679895560193> Bonk Blu <a:DVB_bonk:877196623506194452>", value="Always ready", inline=True)
         embed.add_field(name="\u200b", value="\u200b", inline=False)
         embed.add_field(name="Reminder preference", value=f"{'DM' if result.get('method') == 1 else 'Ping' if result.get('method') == 2 else None}", inline=False)
         embed.set_footer(text="For reminders to work, your reply pings needs to be enabled in Dank Memer's settings.", icon_url=ctx.guild.icon_url)
@@ -448,6 +449,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 embed.add_field(name=f"{emojioutput(result.get('redeem'))} Redeem donor rewards <:DVB_patreon:876628017194082395>", value=redeemtime or "Ready!", inline=True)
                 if ctx.author.id == 650647680837484556:
                     embed.add_field(name=f"<:DVB_enabled:872003679895560193> Slap Frenzy <a:DVB_pandaslap:876631217750048798>", value="Always ready", inline=True)
+                    embed.add_field(name=f"<:DVB_enabled:872003679895560193> Bonk Blu <a:DVB_bonk:877196623506194452>", value="Always ready", inline=True)
                 embed.add_field(name="\u200b", value="\u200b", inline=False)
                 embed.add_field(name="Reminder preference", value=f"{'DM' if result.get('method') == 1 else 'Ping' if result.get('method') == 2 else None}", inline=False)
                 embed.set_footer(text="For reminders to work, your reply pings needs to be enabled in Dank Memer's settings.", icon_url=ctx.guild.icon_url)
