@@ -94,7 +94,7 @@ class dm(commands.Cog):
             return await ctx.send(f"Your message has {len(message)} characters. It can only have a maximum of 4096 characters.")
         if not (config := self.dmconfig.get(ctx.guild.id)):
             config = await self.client.pool_pg.fetchrow("SELECT dmchannel_id FROM channelconfigs where guild_id = $1", ctx.guild.id)
-            if config is None:
+            if config is None or config.get('dmchannel_id') is None:
                 return await ctx.send(f"This server has not set a channel for DM requests to be directed to. Have someone with the `Administrator` Permission to add a DM request channel with `dv.setdmchannel <channel>`.")
             config = self.dmconfig.setdefault(ctx.guild.id, config.get('dmchannel_id'))
         request_channel = ctx.guild.get_channel(config)
@@ -106,6 +106,7 @@ class dm(commands.Cog):
             return await ctx.send("I already have an existing DM request that matches your new request.")
         await self.client.pool_pg.execute("INSERT INTO dmrequests(member_id, target_id, dmcontent) values($1, $2, $3)", ctx.author.id, member.id, message)
         ID = (await self.client.pool_pg.fetchrow("SELECT id FROM dmrequests where member_id = $1 and dmcontent = $2", ctx.author.id, message)).get('id')
+
         embed = discord.Embed(title="DM Request", description = message, color=0x57F0F0, timestamp=datetime.utcnow())
         embed.set_author(name=f"{ctx.author} ({ctx.author.id})")
         embed.add_field(name="DM Target", value=f"{member} {member.mention}")
@@ -113,10 +114,12 @@ class dm(commands.Cog):
         embed.set_thumbnail(url=ctx.author.avatar_url)
         embed.set_footer(text=f"Request ID: {ID}", icon_url=ctx.guild.icon_url)
         new_message = await request_channel.send(embed=embed)
+
         await self.client.pool_pg.execute("UPDATE dmrequests set messageid = $1 where id = $2", new_message.id, ID)
         for emoji in emojis:
             if emoji not in new_message.reactions:
                 await new_message.add_reaction(emoji)
+
         authorembed = discord.Embed(title="Your DM request has been submitted!", description="I will notify you on the status of your DM request.", color=0x57F0F0, timestamp=datetime.utcnow())
         authorembed.set_author(icon_url=ctx.guild.icon_url, name=ctx.guild.name)
         authorembed.add_field(name="Message", value=(message[:1020] + '...') if len(message) > 1024 else message, inline=False)
@@ -124,6 +127,7 @@ class dm(commands.Cog):
         authorembed.add_field(name="Request ID", value=str(ID), inline=True)
         authorembed.set_footer(text="Your DM request will be denied if it breaks server rules. To hide/delete this message, react to the cross.")
         authormessage = await ctx.reply(embed=authorembed)
+
         await authormessage.add_reaction("<:crossmark:841186660662247444>")
         def check(payload):
             return str(payload.emoji) == "<:crossmark:841186660662247444>" and payload.message_id == authormessage.id and not payload.member.bot and payload.member == ctx.author

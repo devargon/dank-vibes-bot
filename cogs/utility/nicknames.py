@@ -82,7 +82,7 @@ class nicknames(commands.Cog):
             return await ctx.send(f"Your nickname is currently {len(nickname)} characters long. It can only be 32 characters long.")
         if not (config := self.nickconfig.get(ctx.guild.id)):
             config = await self.client.pool_pg.fetchrow("SELECT nicknamechannel_id FROM channelconfigs where guild_id = $1", ctx.guild.id)
-            if config is None:
+            if config is None or config.get('nicknamechannel_id') is None:
                 return await ctx.send(f"This server has not set a channel for nickname requests to be directed to. Have someone with the `Administrator` Permission to add a nickname request channel with `dv.setrequest <channel>`.")
             config = self.nickconfig.setdefault(ctx.guild.id, config.get('nicknamechannel_id'))
         request_channel = ctx.guild.get_channel(config)
@@ -90,7 +90,6 @@ class nicknames(commands.Cog):
             await self.client.pool_pg.execute("DELETE FROM channelconfigs WHERE guild_id = $1", ctx.guild.id)
             return await ctx.send("I could not find the channel to send nickname requests to. Please contact an admin about this!")
         pastnickname = await self.client.pool_pg.fetchrow("SELECT * FROM nicknames where member_id = $1", ctx.author.id)
-
         if pastnickname is not None:
             ID = pastnickname.get('id')
             await self.client.pool_pg.execute("UPDATE nicknames set nickname = $1 where id = $2", nickname, ID)
