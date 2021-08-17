@@ -4,15 +4,17 @@ import asyncio
 from discord.ext import commands
 import random
 from utils.time import humanize_timedelta
+from .dm import dm
 from utils import checks
 
 
-class Fun(commands.Cog, name='fun'):
+class Fun(dm, commands.Cog, name='fun'):
     """
     Fun commands
     """
     def __init__(self, client):
         self.client = client
+        self.dmconfig = {}
 
     @commands.command(name="dumbfight", aliases = ["df"])
     async def dumbfight(self, ctx, member: discord.Member = None):
