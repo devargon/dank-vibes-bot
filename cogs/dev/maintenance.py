@@ -1,4 +1,5 @@
 import discord
+from discord.ext.commands import cog
 from utils import checks
 from datetime import datetime
 from discord.ext import commands
@@ -46,7 +47,10 @@ class Maintenance(commands.Cog):
                 _cogs.append(cog)
         values = []
         for cog in _cogs:
-            if self.client.maintenance.get(cog.qualified_name):
+            maintenance = self.client.maintenance.get(cog.qualified_name)
+            if maintenance is None:
+                await self.insert_in_database(cog.qualified_name)
+            if maintenance:
                 continue
             values.append((cog.qualified_name, True))
             self.client.maintenance[cog.qualified_name] = True
@@ -72,7 +76,10 @@ class Maintenance(commands.Cog):
                 _cogs.append(cog)
         values = []
         for cog in _cogs:
-            if not self.client.maintenance.get(cog.qualified_name):
+            maintenance = self.client.maintenance.get(cog.qualified_name)
+            if maintenance is None:
+                await self.insert_in_database(cog.qualified_name)
+            if not maintenance:
                 continue
             values.append((cog.qualified_name, False))
             self.client.maintenance[cog.qualified_name] = False
@@ -112,3 +119,11 @@ class Maintenance(commands.Cog):
             await self.client.pool_pg.execute(query, value)
             self.client.maintenance_message[cog.qualified_name] = message
         return await ctx.checkmark()
+
+    async def insert_in_database(self, cog_name):
+        query = "INSERT INTO maintenance VALUES ($1, $2, $3) ON CONFLICT DO NOTHING"
+        message = "The bot is down for maintenance. Please check back later."
+        values = (cog_name, message, False)
+        await self.client.pool_pg.execute(query, *values)
+        self.client.maintenance[cog_name] = False
+        self.client.maintenance_message[cog_name] = message
