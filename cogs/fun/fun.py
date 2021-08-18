@@ -29,10 +29,10 @@ class Fun(dm, commands.Cog, name='fun'):
         cooldown = await self.client.pool_pg.fetchrow("SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time < $3", ctx.command.name, ctx.author.id, timenow)
         if cooldown:
             await self.client.pool_pg.execute("DELETE FROM cooldowns WHERE command_name = $1 and member_id = $2 and time = $3", cooldown.get('command_name'), cooldown.get('member_id'), cooldown.get('time'))
-        if member.id in self.mutedusers:
-            return await ctx.send(f"**{member.display_name}** is currently muted in a dumbfight. Wait a few moments before using this command.")
         if member is None:
             return await ctx.send("You need to tell me who you want to dumbfight.")
+        if member.id in self.mutedusers:
+            return await ctx.send(f"**{member.display_name}** is currently muted in a dumbfight. Wait a few moments before using this command.")
         if member.bot:
             return await ctx.send("Back off my kind.")
         if member == ctx.me:
