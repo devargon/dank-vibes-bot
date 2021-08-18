@@ -57,7 +57,9 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 except AttributeError: # member is none or channel is none
                     pass
                 else:
-                    if config.get('method') == 1:  # DMs or is lottery/daily reminder
+                    if member is None or channel is None:
+                        pass
+                    elif config.get('method') == 1:  # DMs or is lottery/daily reminder
                         try:
                             await member.send(f"You can now {message(result.get('remindertype'))}") # DM
                         except discord.Forbidden:
