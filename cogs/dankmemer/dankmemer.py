@@ -82,9 +82,11 @@ class DankMemer(commands.Cog, name='dankmemer'):
     async def on_message(self, message):
         if message.author.bot and message.author.id != 270904126974590976:
             return
-        if message.guild.id != 595457764935991326:
+        if self.client.maintenance.get(self.qualified_name):
             return
         if not message.guild:
+            return
+        if message.guild.id != 595457764935991326:
             return
         """
         Refer to https://discord.com/channels/871734809154707467/871737332431216661/873142587001827379 to all message events here

@@ -211,6 +211,8 @@ class OwO(commands.Cog, name='owo'):
             return
         if message.author.bot:
             return
+        if self.client.maintenance.get(self.qualified_name):
+            return
         if not message.guild or message.guild.id != 595457764935991326:
             return
         if message.author.id in self.waitlist:
