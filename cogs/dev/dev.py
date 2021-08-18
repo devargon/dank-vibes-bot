@@ -17,7 +17,7 @@ from .botutils import BotUtils
 from contextlib import redirect_stdout
 from discord.ext import commands
 from .cog_manager import CogManager
-from utils.format import pagify, TabularData, plural
+from utils.format import pagify, TabularData, plural, text_to_file
 from .maintenance import Maintenance
 from utils.converters import MemberUserConverter, TrueFalse
 
@@ -77,8 +77,9 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
             await ctx.checkmark()
             if not silently:
                 await ctx.send("Shutting down...")
-            with contextlib.suppress(discord.HTTPException):
-                await ctx.message.delete()
+            if silently:
+                with contextlib.suppress(discord.HTTPException):
+                    await ctx.message.delete()
             await self.client.shutdown()
         except Exception as e:
             await ctx.send("Error while disconnecting",delete_after=3)
@@ -253,50 +254,37 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
 
     @commands.is_owner()
     @commands.group(name='sql', invoke_without_command=True, hidden=True)
-    async def sql(self, ctx):
+    async def sql(self, ctx, *, query: str = None):
         """
-        Base command for interacting with SQL.
-        """
-        await ctx.help()
-
-    @commands.is_owner()
-    @sql.command(name='fetch', hidden=True, usage='<query...>')
-    async def sql_fetch(self, ctx, *, query: str = None):
-        """
-        Fetches all rows of a query result.
+        Evaluate a SQL query directly from your discord.
         """
         if query is None:
             return await ctx.send('Query is a required argument.')
+        query = self.cleanup_code(query)
+        multistatement = query.count(';') > 1
+        if multistatement:
+            strategy = self.client.pool_pg.execute
+        else:
+            strategy = self.client.pool_pg.fetch
+        
         try:
             start = time.perf_counter()
-            results = await self.client.pool_pg.fetch(query)
+            results = await strategy(query)
             time_taken = (time.perf_counter() - start) * 1000.0
         except Exception:
             return await ctx.send(f'```py\n{traceback.format_exc()}\n```')
+        rows = len(results)
+        if multistatement or rows == 0:
+            return await ctx.send(f'`{time_taken:.2f}ms: {results}`')
         headers = list(results[0].keys())
         table = TabularData()
         table.set_columns(headers)
         table.add_rows(list(r.values()) for r in results)
         render = table.render()
         msg = f'{render}\n*Returned {plural(len(results)):row} in {time_taken:.2f}ms*'
+        if len(headers) > 2:
+            return await ctx.send(file=text_to_file(msg, "sql.txt"))
         await ctx.send_interactive(self.get_sql(msg))
-
-    @commands.is_owner()
-    @sql.command(name='execute', aliases=['exec'], hidden=True, usage='<database> <query...>')
-    async def sql_execute(self, ctx, *, query: str = None):
-        """
-        Executes a SQL query.
-        """
-        if query is None:
-            return await ctx.send('Query is a required argument.')
-        try:
-            start = time.perf_counter()
-            result = await self.client.pool_pg.execute(query)
-            time_taken = (time.perf_counter() - start) * 1000.0
-            await ctx.send(f'`{time_taken:.2f}ms: {result}`')
-            return await ctx.checkmark()
-        except Exception:
-            return await ctx.send(f'```py\n{traceback.format_exc()}\n```')
 
     @commands.is_owner()
     @sql.command(name='table', hidden=True, usage="<table>")

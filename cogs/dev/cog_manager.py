@@ -12,7 +12,7 @@ class CogManager(commands.Cog):
 
     @checks.admoon()
     @commands.command(name='cogs', hidden=True)
-    async def cogs(self, ctx, silence: TrueFalse = True):
+    async def cogs(self, ctx, silence: TrueFalse = False):
         """
         Lists all loaded and available cogs.
         """
