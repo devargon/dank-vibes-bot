@@ -15,12 +15,14 @@ class Fun(dm, commands.Cog, name='fun'):
     def __init__(self, client):
         self.client = client
         self.dmconfig = {}
+        self.mutedusers = []
 
     @commands.command(name="dumbfight", aliases = ["df"])
     async def dumbfight(self, ctx, member: discord.Member = None):
         """
         Mute people for a random duration between 30 to 120 seconds.
         """
+        print(self.mutedusers)
         timenow = round(time.time())
         cooldown = await self.client.pool_pg.fetchrow("SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time > $3", ctx.command.name, ctx.author.id, timenow)
         if cooldown is not None:
@@ -28,6 +30,8 @@ class Fun(dm, commands.Cog, name='fun'):
         cooldown = await self.client.pool_pg.fetchrow("SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time < $3", ctx.command.name, ctx.author.id, timenow)
         if cooldown:
             await self.client.pool_pg.execute("DELETE FROM cooldowns WHERE command_name = $1 and member_id = $2 and time = $3", cooldown.get('command_name'), cooldown.get('member_id'), cooldown.get('time'))
+        if member.id in self.mutedusers:
+            return await ctx.send(f"**{member.display_name}** is currently muted in a dumbfight. Wait a few moments before using this command.")
         if member is None:
             return await ctx.send("You need to tell me who you want to dumbfight.")
         if member.bot:
@@ -49,6 +53,7 @@ class Fun(dm, commands.Cog, name='fun'):
         tempoverwrite = channel.overwrites_for(muted) if muted in channel.overwrites else discord.PermissionOverwrite()
         tempoverwrite.send_messages = False
         await channel.set_permissions(muted, overwrite=tempoverwrite)
+        self.mutedusers.append(muted.id)
         embed = discord.Embed(title="Get muted!", description = f"{ctx.author.mention} fought {member.mention} {str} them.\n{muted.mention} is now muted for {duration} seconds.", colour=color)
         await ctx.send(embed=embed)
         specialrole = ctx.guild.get_role(876767313263734805) # 874931276329656370
@@ -56,6 +61,8 @@ class Fun(dm, commands.Cog, name='fun'):
         await self.client.pool_pg.execute("INSERT INTO cooldowns VALUES($1, $2, $3)", ctx.command.name, ctx.author.id, timenow + cooldowntime)
         await asyncio.sleep(duration)
         await channel.set_permissions(muted, overwrite=originaloverwrite)
+        if muted.id in self.mutedusers:
+            self.mutedusers.remove(muted.id)
 
     @commands.command(name="hideping", brief="hides ping", description= "hides ping", aliases = ["hp", "secretping", "sp"], hidden=True)
     @commands.cooldown(1,5, commands.BucketType.user)
