@@ -19,7 +19,7 @@ AVAILABLE_EXTENSIONS = ['cogs.dev',
 'cogs.help',
 'cogs.mod',
 'cogs.owo',
-'cogs.utility'
+'cogs.utility',
 'cogs.votetracker',
 ]
 
