@@ -22,7 +22,6 @@ class Fun(dm, commands.Cog, name='fun'):
         """
         Mute people for a random duration between 30 to 120 seconds.
         """
-        print(self.mutedusers)
         timenow = round(time.time())
         cooldown = await self.client.pool_pg.fetchrow("SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time > $3", ctx.command.name, ctx.author.id, timenow)
         if cooldown is not None:
@@ -54,7 +53,8 @@ class Fun(dm, commands.Cog, name='fun'):
         tempoverwrite.send_messages = False
         await channel.set_permissions(muted, overwrite=tempoverwrite)
         self.mutedusers.append(muted.id)
-        embed = discord.Embed(title="Get muted!", description = f"{ctx.author.mention} fought {member.mention} {str} them.\n{muted.mention} is now muted for {duration} seconds.", colour=color)
+        selfmute = random.choice(['punched themselves in the face', 'kicked themselves in the knee', 'stepped on their own feet', 'punched themselves in the stomach', 'tickled themselves until they couldn\'t take it'])
+        embed = discord.Embed(title="Get muted!", description = f"{ctx.author.mention} fought {member.mention} {str} them.\n{muted.mention} is now muted for {duration} seconds." if ctx.author != member else f"{ctx.author.mention} {selfmute}.\n{muted.mention} is now muted for {duration} seconds.", colour=color)
         await ctx.send(embed=embed)
         specialrole = ctx.guild.get_role(876767313263734805) # 874931276329656370
         cooldowntime = 1800 if specialrole in ctx.author.roles else 3600
