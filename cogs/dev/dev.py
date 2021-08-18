@@ -260,13 +260,13 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
         """
         if query is None:
             return await ctx.send('Query is a required argument.')
-        query = self.cleanup_code(query)
+        query = self.cleanup_code(query)      
         multistatement = query.count(';') > 1
-        if multistatement:
-            strategy = self.client.pool_pg.execute
-        else:
+        if query.lower().startswith('select') and not multistatement:
             strategy = self.client.pool_pg.fetch
-        
+        else:
+            multistatement = True
+            strategy = self.client.pool_pg.execute
         try:
             start = time.perf_counter()
             results = await strategy(query)
