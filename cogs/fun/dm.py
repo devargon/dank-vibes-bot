@@ -49,6 +49,7 @@ class dm(commands.Cog):
         else:
             output = (0, "Denied")
         await self.client.pool_pg.execute("DELETE from dmrequests WHERE id = $1", ID)
+        await self.client.pool_pg.execute("INSERT INTO dmrequestslog values($1, $2, $3, $4, $5, $6)", ID, dmrequester.id if dmrequester else dm_request.get('member_id'), dmtarget.id if dmtarget else dm_request.get('target_id'), payload.user_id, dmcontent, output[0]) # 0 : Denied, 1: Failed, 2 : Approved
         embed = discord.Embed(title="DM Request", description = dmcontent, color=discord.Color.green() if output[0] == 2 else discord.Color.red(), timestamp=datetime.utcnow())
         embed.set_author(name=authordetails)
         dmtargetdetails = f"{dmtarget} {dmtarget.mention}" if dmtarget is not None else dmtarget
@@ -126,15 +127,8 @@ class dm(commands.Cog):
         embed.add_field(name="DM Target", value=f"{member} {member.mention}", inline=True)
         authorembed.add_field(name="Request ID", value=str(ID), inline=True)
         authorembed.set_footer(text="Your DM request will be denied if it breaks server rules. To hide/delete this message, react to the cross.")
-        authormessage = await ctx.reply(embed=authorembed)
-
-        await authormessage.add_reaction("<:crossmark:841186660662247444>")
-        def check(payload):
-            return str(payload.emoji) == "<:crossmark:841186660662247444>" and payload.message_id == authormessage.id and not payload.member.bot and payload.member == ctx.author
+        await ctx.message.delete()
         try:
-            response = await self.client.wait_for('raw_reaction_add', timeout=15, check=check)
-        except asyncio.TimeoutError:
-            await authormessage.clear_reactions()
-        else:
-            await ctx.message.delete()
-            await authormessage.delete()
+            await ctx.author.send(embed=authorembed)
+        except discord.Forbidden:
+            pass

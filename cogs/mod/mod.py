@@ -4,12 +4,37 @@ import datetime
 import asyncio
 from discord.ext import commands
 from utils import checks
+from utils.format import text_to_file
+
+
 class Mod(commands.Cog, name='mod'):
     """
     Mod commands
     """
     def __init__(self, client):
         self.client = client
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.command(name="getraw", aliases = ['raw', 'rawmessage'])
+    async def getrawmessage(self, ctx, message_id=None, channel:discord.TextChannel=None):
+        """
+        Gets the raw content of a message.
+        """
+        if not message_id:
+            return await ctx.send("`dv.getraw <message_id> <channel>`\nMessage ID is a required argument.")
+        if not channel:
+            channel = ctx.channel
+        try:
+            message = await channel.fetch_message(message_id)
+        except discord.NotFound:
+            return await ctx.send(f"I did not find a message with the ID {message_id} in {channel}. {'DId you forget to include `channel`?' if channel == ctx.channel else ''}")
+        else:
+            content = message.content
+            if "‍" in content or "​" in content:
+                return await ctx.send("Nice try, but you won't be able to get the raw text for hiding pings.")
+            if len(content) > 4096:
+                await ctx.send(f"Raw content of message with ID {message_id} in {channel}", file=text_to_file(content, "file.txt", "utf8"))
+            else:
+                await ctx.send(embed=discord.Embed(title=f"Raw content of message with ID {message_id} in {channel}", description=f"```\n{content}\n```", color = self.client.embed_color))
 
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="checkoverwrites", brief = "Checks the permission overwrites for that channel. Can be used to check who is in a private channel.", description = "Checks the permission overwrites for that channel. Can be used to check who is in a private channel.", aliases = ["privchannel", "pvc", "checkpvc"])
