@@ -5,6 +5,7 @@ import operator
 from utils import checks
 from datetime import datetime
 from discord.ext import commands, tasks
+from utils.format import print_exception
 
 class DankMemer(commands.Cog, name='dankmemer'):
     """
@@ -19,56 +20,63 @@ class DankMemer(commands.Cog, name='dankmemer'):
 
     @tasks.loop(seconds=5)
     async def dankmemerreminders(self):
-        await self.client.wait_until_ready()
-        results = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where time < $1", round(time.time())) # all reminders that are due for reminding
-        if len(results) == 0:
-            return
-        for result in results:
-            config = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", result.get('member_id')) # get the user's configuration
-            if config is None: # no config means user doesn't even use this reminder system lol
-                pass
-            elif result.get('remindertype') not in [2, 3, 4, 6 , 7, 8, 9]: # since 2 3 4 5 corresponds to the respective reminders, if somehow an invalid number is inserted it skips straight to deleting
-                pass
-            elif config[result.get('remindertype')] == 0: # activity specific reminder check
-                pass
-            elif config.get('method') == 0: # chose not to be reminded
-                pass
-            elif config.get('method') in [1, 2]: # DMs or Mentions
-                def message(reminderaction):
-                    if reminderaction == 2:
-                        return "**claim your daily.** <:DVB_calendar:873107952159059991>"
-                    elif reminderaction == 3:
-                        return "**enter the lottery.** <:DVB_lotteryticket:873110581085880321>"
-                    elif reminderaction == 4:
-                        return "**work again.** <:DVB_workbadge:873110507605872650>"
-                    elif reminderaction == 5:
-                        return "**use a lifesaver.** <:DVB_lifesaver:873110547854405722>"
-                    elif reminderaction == 6:
-                        return "**use an apple.** <:DVB_apple:876627457275469867>"
-                    elif reminderaction == 7:
-                        return "**redeem your Patreon perks.** <:DVB_patreon:876628017194082395>"
-                    elif reminderaction == 8:
-                        return "**claim your weekly.** <:DVB_week:876711052669247528> "
-                    elif reminderaction == 9:
-                        return "**claim your monthly**. <:DVB_month:876711072030150707> "
-                try:
-                    member = self.client.get_guild(result.get('guild_id')).get_member(result.get('member_id'))
-                    channel = self.client.get_channel(result.get('channel_id'))
-                except AttributeError: # member is none or channel is none
+        try:
+            await self.client.wait_until_ready()
+            results = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where time < $1", round(time.time())) # all reminders that are due for reminding
+            if len(results) == 0:
+                return
+            for result in results:
+                config = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", result.get('member_id')) # get the user's configuration
+                if config is None: # no config means user doesn't even use this reminder system lol
                     pass
-                else:
-                    if member is None or channel is None:
+                elif result.get('remindertype') not in [2, 3, 4, 6 , 7, 8, 9]: # since 2 3 4 5 corresponds to the respective reminders, if somehow an invalid number is inserted it skips straight to deleting
+                    pass
+                elif config[result.get('remindertype')] == 0: # activity specific reminder check
+                    pass
+                elif config.get('method') == 0: # chose not to be reminded
+                    pass
+                elif config.get('method') in [1, 2]: # DMs or Mentions
+                    def message(reminderaction):
+                        if reminderaction == 2:
+                            return "**claim your daily.** <:DVB_calendar:873107952159059991>"
+                        elif reminderaction == 3:
+                            return "**enter the lottery.** <:DVB_lotteryticket:873110581085880321>"
+                        elif reminderaction == 4:
+                            return "**work again.** <:DVB_workbadge:873110507605872650>"
+                        elif reminderaction == 5:
+                            return "**use a lifesaver.** <:DVB_lifesaver:873110547854405722>"
+                        elif reminderaction == 6:
+                            return "**use an apple.** <:DVB_apple:876627457275469867>"
+                        elif reminderaction == 7:
+                            return "**redeem your Patreon perks.** <:DVB_patreon:876628017194082395>"
+                        elif reminderaction == 8:
+                            return "**claim your weekly.** <:DVB_week:876711052669247528> "
+                        elif reminderaction == 9:
+                            return "**claim your monthly**. <:DVB_month:876711072030150707> "
+                    try:
+                        member = self.client.get_guild(result.get('guild_id')).get_member(result.get('member_id'))
+                        channel = self.client.get_channel(result.get('channel_id'))
+                    except AttributeError: # member is none or channel is none
                         pass
-                    elif config.get('method') == 1:  # DMs or is lottery/daily reminder
-                        try:
-                            await member.send(f"You can now {message(result.get('remindertype'))}") # DM
-                        except discord.Forbidden:
-                            await channel.send(f"{member.mention} {self.client.user.name} is unable to DM you.\nTo receive Dank Memer reminders properly, open your DMs or switch to ping reminders via `dv.drm ping`. Your reminders have been disabled for now.")
-                            await self.client.pool_pg.execute("UPDATE remindersettings SET method = $1 WHERE member_id = $2", 0, result.get('member_id')) # change reminder settings to None
-                    elif config.get('method') == 2: # Mention
-                            await channel.send(f"{member.mention} you can now {message(result.get('remindertype'))}")
-                await self.client.pool_pg.execute("INSERT into stats(member_id, remindertype, time) VALUES($1, $2, $3)", result.get('member_id'), result.get('remindertype'), result.get('time'))
-            await self.client.pool_pg.execute("DELETE from dankreminders WHERE member_id = $1 and remindertype = $2 and channel_id = $3 and guild_id = $4 and time = $5", result.get('member_id'), result.get('remindertype'), result.get('channel_id'), result.get('guild_id'), result.get('time'))
+                    else:
+                        if member is None or channel is None:
+                            pass
+                        elif config.get('method') == 1:  # DMs or is lottery/daily reminder
+                            try:
+                                await member.send(f"You can now {message(result.get('remindertype'))}") # DM
+                            except discord.Forbidden:
+                                await channel.send(f"{member.mention} {self.client.user.name} is unable to DM you.\nTo receive Dank Memer reminders properly, open your DMs or switch to ping reminders via `dv.drm ping`. Your reminders have been disabled for now.")
+                                await self.client.pool_pg.execute("UPDATE remindersettings SET method = $1 WHERE member_id = $2", 0, result.get('member_id')) # change reminder settings to None
+                        elif config.get('method') == 2: # Mention
+                                await channel.send(f"{member.mention} you can now {message(result.get('remindertype'))}")
+                    await self.client.pool_pg.execute("INSERT into stats(member_id, remindertype, time) VALUES($1, $2, $3)", result.get('member_id'), result.get('remindertype'), result.get('time'))
+                await self.client.pool_pg.execute("DELETE from dankreminders WHERE member_id = $1 and remindertype = $2 and channel_id = $3 and guild_id = $4 and time = $5", result.get('member_id'), result.get('remindertype'), result.get('channel_id'), result.get('guild_id'), result.get('time'))
+        except Exception as error:
+            traceback_error = print_exception(f'Ignoring exception in Reminder task', error)
+            embed = discord.Embed(color=0xffcccb,
+                                  description=f"Error encountered on a Reminder task.\n```py\n{traceback_error}```",
+                                  timestamp=datetime.utcnow())
+            await self.client.get_guild(871734809154707467).get_channel(871737028105109574).send(embed=embed)
 
     @commands.Cog.listener()
     async def on_message(self, message):
