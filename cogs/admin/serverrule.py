@@ -136,7 +136,7 @@ class ServerRule(commands.Cog):
             return await ctx.send("Command is a required argument.")
         if not (command := self.client.get_command(cmd)):
             return await ctx.send(f"Oops, looks like command \"{cmd}\" doesn't exist!")
-        roles = await self.get_command_rule(ctx.guild, self.get_command_name(command))
+        roles = await self.get_command_rule(ctx.guild, get_command_name(command))
         if not roles:
             return await ctx.send("I couldn't find a server rule for that command.")
         whitelist, blacklist = roles

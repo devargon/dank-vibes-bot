@@ -240,6 +240,8 @@ class Autoreaction(commands.Cog, name='autoreaction'):
             return
         if message.author.bot:
             return
+        if self.client.maintenance.get(self.qualified_name):
+            return
         triggers = await self.client.pool_pg.fetch("SELECT DISTINCT trigger FROM autoreactions WHERE guild_id=$1", message.guild.id)
         if len(triggers) == 0:
             return

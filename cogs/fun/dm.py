@@ -1,8 +1,8 @@
 import asyncio
-
 import discord
 from datetime import datetime
 from discord.ext import commands
+from utils import checks
 emojis = ["<:checkmark:841187106654519296>", "<:crossmark:841186660662247444>"]
 class dm(commands.Cog):
     def __init__(self, client):
@@ -79,6 +79,7 @@ class dm(commands.Cog):
         await requestmessage.delete(delay=10)
 
     @commands.command(name="dm")
+    @checks.has_permissions_or_role(administrator=True)
     @commands.cooldown(1, 600, commands.BucketType.user)
     async def dmrequest(self, ctx, member: discord.Member = None, *, message: str = None):
         """

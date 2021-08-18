@@ -2,6 +2,7 @@ import discord
 from typing import Union
 from discord.ext import commands, menus
 from utils.menus import CustomMenu
+from utils import checks
 
 
 class get_checkpoint_pages(menus.ListPageSource):
@@ -20,6 +21,7 @@ class Teleport(commands.Cog):
     def __init___(self, client):
         self.client = client
 
+    @checks.has_permissions_or_role(administrator=True)
     @commands.group(name='teleport', aliases=['tp'], invoke_without_command=True, usage='<checkpoint_name>')
     async def teleport(self, ctx, checkpoint: str = None):
         """

@@ -7,7 +7,6 @@ from utils.time import humanize_timedelta
 from .dm import dm
 from utils import checks
 
-
 class Fun(dm, commands.Cog, name='fun'):
     """
     Fun commands
@@ -16,6 +15,7 @@ class Fun(dm, commands.Cog, name='fun'):
         self.client = client
         self.dmconfig = {}
 
+    @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="dumbfight", aliases = ["df"])
     async def dumbfight(self, ctx, member: discord.Member = None):
         """
