@@ -120,8 +120,10 @@ class Utility(Whois, L2LVC, nicknames, Teleport, commands.Cog, name='utility', m
         Suggest something to the developers through the bot.
         """
         if message is None:
-            return await ctx.send("Message is a required argument.")
+            ctx.command.reset_cooldown(ctx)
+            return await ctx.send("Hey! write something meaningful and try again.")
         if not await ctx.confirmation("Are you sure you wanna send this message to the developers?", cancel_message="Okay, we're not sending that message to the developers", delete_delay=5):
+            ctx.command.reset_cooldown(ctx)
             return
         channel = self.client.get_channel(876346196564803614)
         query = "INSERT INTO suggestions VALUES(DEFAULT, $1, $2) RETURNING id"

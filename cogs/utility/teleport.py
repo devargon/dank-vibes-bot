@@ -1,9 +1,8 @@
+import re
 import discord
-from typing import Union
+from utils import checks
 from discord.ext import commands, menus
 from utils.menus import CustomMenu
-from utils import checks
-
 
 class get_checkpoint_pages(menus.ListPageSource):
     def __init__(self, data, author):
@@ -31,23 +30,28 @@ class Teleport(commands.Cog):
             return await ctx.send("Checkpoint name is a required argument.")
         if not (channel_id := await self.client.pool_pg.fetchval("SELECT channel_id FROM teleport WHERE member_id=$1 AND checkpoint=$2", ctx.author.id, checkpoint.lower())):
             return await ctx.send("I don't have any channel saved for that checkpoint.")
-        channel = self.client.get_channel(channel_id)
-        if not channel:
-            return await ctx.send("I couldn't find a channel with that id.")
-        await ctx.send(channel.mention, delete_after=5)
+        channel = f"<#{channel_id}>"
+        await ctx.send(channel, delete_after=5)
 
     @teleport.command(name='add', usage="<checkpoint_name> <channel>")
-    async def teleport_add(self, ctx, checkpoint: str = None, channel: Union[discord.TextChannel, discord.VoiceChannel] = None):
+    async def teleport_add(self, ctx, checkpoint: str = None, channel: str = None):
         """
         Adds a checkpoint.
         """
         if checkpoint is None:
             return await ctx.send("Checkpoint name is a required argument.")
         if channel is None:
-            return await ctx.send("Channel is a required argument.")
+            return await ctx.send("Mention a valid channel for your checkpoint.")
         if await self.client.pool_pg.fetchval("SELECT * FROM teleport WHERE member_id=$1 AND checkpoint=$2", ctx.author.id, checkpoint.lower()):
             return await ctx.send("You already have a checkpoint with that name.")
-        await self.client.pool_pg.execute("INSERT INTO teleport VALUES ($1, $2, $3)", ctx.author.id, checkpoint.lower(), channel.id)
+        channel_re = re.compile(r"<#(?P<id>\d+)>")
+        if len(channel) == 18 and channel.isdigit():
+            channel_id = channel
+        elif (ids := channel_re.findall(channel)):
+            channel_id = ids[0]
+        else:
+            return await ctx.send("You didn't mention a valid channel, try again!")
+        await self.client.pool_pg.execute("INSERT INTO teleport VALUES ($1, $2, $3)", ctx.author.id, checkpoint.lower(), int(channel_id))
         await ctx.send("Checkpoint added.")
     
     @teleport.command(name='remove', usage="<checkpoint_name>")
@@ -74,10 +78,7 @@ class Teleport(commands.Cog):
         for result in results:
             checkpoint = result.get('checkpoint')
             channel_id = result.get('channel_id')
-            channel = self.client.get_channel(channel_id)
-            channel = channel.mention if channel else f"<#{channel_id}>"
-            checkpoints.append((checkpoint, channel))
-        checkpoints = [(result.get('checkpoint'), self.client.get_channel(result.get('channel_id')).mention) for result in results]
+            checkpoints.append((checkpoint, f"<#{channel_id}>"))
         pages = CustomMenu(source=get_checkpoint_pages(checkpoints, ctx.author), clear_reactions_after=True, timeout=60)
         await pages.start(ctx)
         return await ctx.checkmark()
