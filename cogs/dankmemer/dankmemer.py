@@ -86,7 +86,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
             return
         if not message.guild:
             return
-        if message.guild.id != 871734809154707467:
+        if message.guild.id != 595457764935991326:
             return
         """
         Refer to https://discord.com/channels/871734809154707467/871737332431216661/873142587001827379 to all message events here
