@@ -27,7 +27,7 @@ class Teleport(commands.Cog):
         Teleport between your saved checkpoints.
         """
         if checkpoint is None:
-            return await ctx.send("Checkpoint name is a required argument.")
+            return await ctx.send("You need to include a checkpoint name.")
         if not (channel_id := await self.client.pool_pg.fetchval("SELECT channel_id FROM teleport WHERE member_id=$1 AND checkpoint=$2", ctx.author.id, checkpoint.lower())):
             return await ctx.send("I don't have any channel saved for that checkpoint.")
         channel = f"<#{channel_id}>"
@@ -39,7 +39,7 @@ class Teleport(commands.Cog):
         Adds a checkpoint.
         """
         if checkpoint is None:
-            return await ctx.send("Checkpoint name is a required argument.")
+            return await ctx.send("You need to include a checkpoint name.")
         if channel is None:
             return await ctx.send("Mention a valid channel for your checkpoint.")
         if await self.client.pool_pg.fetchval("SELECT * FROM teleport WHERE member_id=$1 AND checkpoint=$2", ctx.author.id, checkpoint.lower()):
@@ -60,7 +60,7 @@ class Teleport(commands.Cog):
         Removes a checkpoint.
         """
         if checkpoint is None:
-            return await ctx.send("Checkpoint name is a required argument.")
+            return await ctx.send("You need to include a checkpoint name.")
         if not await self.client.pool_pg.fetchval("SELECT * FROM teleport WHERE member_id=$1 AND checkpoint=$2", ctx.author.id, checkpoint.lower()):
             return await ctx.send("You don't have any checkpoint saved with that name.")
         await self.client.pool_pg.execute("DELETE FROM teleport WHERE member_id=$1, AND checkpoint=$2", ctx.author.id, checkpoint.lower())
