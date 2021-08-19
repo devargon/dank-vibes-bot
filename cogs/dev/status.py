@@ -32,7 +32,7 @@ class Status(commands.Cog):
         """
         if status is None:
             await ctx.send("Available statuses: `online`, `idle`, `dnd` and `invisible`.", delete_after=3)
-            await ctx.message.delete(delay=3)
+            return await ctx.message.delete(delay=3)
         statuses = {
             "online": discord.Status.online,
             "idle": discord.Status.idle,
