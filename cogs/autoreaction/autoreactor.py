@@ -65,13 +65,11 @@ class Autoreaction(commands.Cog, name='autoreaction'):
     async def autoreact_add(self, ctx, trigger: str = None, *, responses: EmojiOrString = None):
         """
         Add an auto reaction for a mention or username.
-        
-        Required role: <@&608495204399448066> 
+
+        Required role: <@&608495204399448066>
         """
-        if trigger is None:
-            return await ctx.send("Trigger is a required argument.")
-        if responses is None:
-            return await ctx.send("Response is a required argument.")
+        if trigger is None or responses is None:
+            return await ctx.send("Please include a trigger and a response")
         trigger = trigger.lower()
         if (len(await self.client.pool_pg.fetch("SELECT response FROM autoreactions WHERE trigger=$1 AND guild_id=$2", *(trigger, ctx.guild.id))) != 0 ):
             return await ctx.send("I already have an autoreaction for that trigger.")
@@ -93,11 +91,11 @@ class Autoreaction(commands.Cog, name='autoreaction'):
     async def autoreact_remove(self, ctx, trigger: str = None):
         """
         Remove an auto reaction.
-        
+
         Required role: <@&608495204399448066>
         """
         if trigger is None:
-            return await ctx.send("Trigger is a required argument.")
+            return await ctx.send("Please include the trigger that you wanna remove.")
         ar = await self.client.pool_pg.fetchrow("SELECT response FROM autoreactions WHERE trigger=$1 AND guild_id=$2", *(trigger, ctx.guild.id))
         if not ar:
             return await ctx.send("Looks like I don't have any reactions for that trigger.")
@@ -111,12 +109,13 @@ class Autoreaction(commands.Cog, name='autoreaction'):
     async def autoreact_claim(self, ctx, response: Union[discord.Emoji, str] = None):
         """
         Set your personal auto reaction.
-        
+
         Cooldown: 30 minutes
         Required roles: <@&819998671742959636>, <@&645934789160992768>, <@&739199912377319427> or <@&847461305774243890>
         """
         if response is None:
-            return await ctx.send("Response is a required argument.")
+            ctx.command.reset_cooldown(ctx)
+            return await ctx.send("You need to include a response.")
         if isinstance(response, discord.Emoji):
             reaction = str(response)
         else:
@@ -180,7 +179,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
     async def autoreact_clear(self, ctx):
         """
         Clear all auto reactions from the server
-        
+
         Required role: <@&663502776952815626>
         """
         ars = await self.client.pool_pg.fetch('SELECT DISTINCT trigger FROM autoreactions WHERE guild_id=$1', ctx.guild.id)
@@ -224,7 +223,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
     async def autoreact_list(self, ctx):
         """
         View a full list of all auto reactions in the server
-        
+
         Required role: <@&608495204399448066>
         """
         ars = await self.client.pool_pg.fetch("SELECT DISTINCT trigger FROM autoreactions WHERE guild_id=$1", ctx.guild.id)

@@ -53,7 +53,7 @@ class BanBattle(commands.Cog, name='banbattle'):
         if ctx.guild.id != 813865065593176145:
             return
         if member is None:
-            return await ctx.send('Member is a required argument.')
+            return await ctx.send('You need to include a member to bon.')
         if ctx.author == member:
             return await ctx.send("You can't bon yourself.")
         if member == ctx.guild.me:

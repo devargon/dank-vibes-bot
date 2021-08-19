@@ -27,7 +27,7 @@ class Whois(commands.Cog):
         Get information about a user.
         """
         if user is None:
-            return await ctx.send("User is a required argument.")
+            return await ctx.send("idk who tf is that")
         created_on = user.created_at.strftime("%a, %b %d, %Y")
         description = ["**General**",
                 f"• Username: **{str(user)}**",

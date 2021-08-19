@@ -76,7 +76,7 @@ class nicknames(commands.Cog):
         """
         if nickname is None:
             ctx.command.reset_cooldown(ctx)
-            return await ctx.send("Nickname is a required argument.")
+            return await ctx.send("What do you want your nickname to be? `dv.nick <nickname>`")
         if len(nickname) > 32:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"Your nickname is currently {len(nickname)} characters long. It can only be 32 characters long.")

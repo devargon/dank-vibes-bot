@@ -87,10 +87,10 @@ class dm(commands.Cog):
         """
         if not member:
             ctx.command.reset_cooldown(ctx)
-            return await ctx.send("Member is a required argument.")
+            return await ctx.send("You need to mention a member to send a message!")
         if not message:
             ctx.command.reset_cooldown(ctx)
-            return await ctx.send("Message is a required argument.")
+            return await ctx.send("I'm not sending a blank message, write something meaningful and try again.")
         if len(message) > 4096:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"Your message has {len(message)} characters. It can only have a maximum of 4096 characters.")

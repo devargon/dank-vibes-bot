@@ -121,7 +121,7 @@ class Utility(Whois, L2LVC, nicknames, Teleport, commands.Cog, name='utility', m
         """
         if message is None:
             ctx.command.reset_cooldown(ctx)
-            return await ctx.send("Hey! write something meaningful and try again.")
+            return await ctx.send("Hey! im not sending a blank message, write something meaningful and try again.")
         if not await ctx.confirmation("Are you sure you wanna send this message to the developers?", cancel_message="Okay, we're not sending that message to the developers", delete_delay=5):
             ctx.command.reset_cooldown(ctx)
             return
