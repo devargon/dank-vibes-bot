@@ -225,6 +225,8 @@ class DankMemer(commands.Cog, name='dankmemer'):
                             member.id, 7, message.channel.id, message.guild.id, nextredeemtime)
                     with contextlib.suppress(discord.HTTPException):
                         await message.add_reaction("⏰")
+                else:
+                    return await message.add_reaction("<:crossmark:841186660662247444>")
 
 
         if message.content.lower() in ["pls work", "pls job"] and not message.author.bot:
