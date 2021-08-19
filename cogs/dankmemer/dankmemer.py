@@ -220,6 +220,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                             member.id, 7, message.channel.id, message.guild.id, nextredeemtime)
                     await message.add_reaction("⏰")
 
+
         if message.content.lower() in ["pls work", "pls job"] and not message.author.bot:
             argument = message.content.split()
             if len(argument) > 2:
@@ -361,7 +362,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
         """
         result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id) # gets the configuration for user to check if they have used dank reminder before
         if result is None:
-            await self.client.pool_pg.execute("INSERT into remindersettings VALUES ($1, $2, $3, $4, $5, $6)", ctx.author.id, 1, 0, 0, 0, 0) # creates new entry for settings
+            await self.client.pool_pg.execute("INSERT into remindersettings VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,$10)", ctx.author.id, 1, 0, 0, 0, 0, 0, 0, 0, 0) # creates new entry for settings
         def numberswitcher(no):
             if no == 1:
                 return 0

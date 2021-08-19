@@ -42,36 +42,27 @@ class Mod(commands.Cog, name='mod'):
         """
         Checks the permission overwrites for that channel. Can be used to check who is in a private channel.
         """
-        modrole = ctx.guild.get_role(608495204399448066)
-        ownerrole = ctx.guild.get_role(608500355973644299)
-        if modrole is None or ownerrole is None:
-            await ctx.send("I had a problem checking for the required roles. For safety reasons, this command cannot be run until this problem is fixed.\n(Roles are defined as None)")
-            return
-        if modrole in ctx.author.roles or ownerrole in ctx.author.roles:
-            if channel is None:
-                await ctx.send("Wanted to check another channel, and not this one? You need to mention a channel.\nUsage of command: `checkoverwrites [channel]`")
-                channel = ctx.channel # references the current channel
-            messages = await channel.history(limit=1, oldest_first=True).flatten()
-            message = messages[0]
-            members = [overwriteobject for overwriteobject in channel.overwrites if isinstance(overwriteobject, discord.Member) and not overwriteobject.bot] # gets all members who have some sort of overwrite in that channel
-            membersin = []
-            for member in members:
-                permissions = channel.permissions_for(member)
-                if permissions.view_channel == True:
-                    membersin.append(f"**{member}** {member.mention} 🧑‍⚖️" if member.mentioned_in(message) else f"**{member.display_name}#{member.discriminator}** {member.mention}") # add them to a final list that shows who is in the channel
-            members = "\n".join(membersin)
-            members += f"\n\nMember Count: `{len(membersin)-1 if '🧑‍⚖️' in members else len(membersin)}`\n*This automatically excludes owners of the channel.*"
-            embed = discord.Embed(
-                title=f"Members in #{channel.name}",
-                description=members[0:4096] or "It appears there's no one in this channel.", # limit the characters in case
-                color=0x57F0F0,
-                timestamp=datetime.datetime.utcnow(),
-            )
-            embed.set_footer(icon_url=ctx.guild.icon_url, text="uwu") # you can remove this if you want idk
-            await ctx.send(embed=embed)
-        else:
-            await ctx.send(f"You do not have the required role (`{modrole}` or `{ownerrole}`) to use this command.") #self explanatory
-            return
+        if channel is None:
+            await ctx.send("Wanted to check another channel, and not this one? You need to mention a channel.\nUsage of command: `checkoverwrites [channel]`")
+            channel = ctx.channel # references the current channel
+        messages = await channel.history(limit=1, oldest_first=True).flatten()
+        message = messages[0]
+        members = [overwriteobject for overwriteobject in channel.overwrites if isinstance(overwriteobject, discord.Member) and not overwriteobject.bot] # gets all members who have some sort of overwrite in that channel
+        membersin = []
+        for member in members:
+            permissions = channel.permissions_for(member)
+            if permissions.view_channel == True:
+                membersin.append(f"**{member}** {member.mention} 🧑‍⚖️" if member.mentioned_in(message) else f"**{member}** {member.mention}") # add them to a final list that shows who is in the channel
+        members = "\n".join(membersin)
+        members += f"\n\nMember Count: `{len(membersin)-1 if '🧑‍⚖️' in members else len(membersin)}`\n*This automatically excludes owners of the channel.*"
+        embed = discord.Embed(
+            title=f"Members in #{channel.name}",
+            description=members[0:4096] or "It appears there's no one in this channel.", # limit the characters in case
+            color=0x57F0F0,
+            timestamp=datetime.datetime.utcnow(),
+        )
+        embed.set_footer(icon_url=ctx.guild.icon_url, text="uwu") # you can remove this if you want idk
+        await ctx.send(embed=embed)
 
     @commands.command(name="memberpvc", brief = "Checks the private channels that a member has access to", description = "Checks the private channels that a member has access to", aliases = ["pvcmember"])
     @commands.has_guild_permissions(manage_roles=True)
