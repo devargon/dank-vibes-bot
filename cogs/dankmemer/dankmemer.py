@@ -1,3 +1,4 @@
+import contextlib
 import time
 import asyncio
 import discord
@@ -112,7 +113,8 @@ class DankMemer(commands.Cog, name='dankmemer'):
                         await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextdailytime, member.id, 2)
                     else:
                         await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 2, message.channel.id, message.guild.id, nextdailytime)
-                    await botresponse.add_reaction("⏰")
+                    with contextlib.suppress(discord.HTTPException):
+                        await botresponse.add_reaction("⏰")
             else:
                 pass
 
@@ -140,7 +142,8 @@ class DankMemer(commands.Cog, name='dankmemer'):
                         await self.client.pool_pg.execute(
                             "INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)",
                             member.id, 8, message.channel.id, message.guild.id, nextweeklytime)
-                    await botresponse.add_reaction("⏰")
+                    with contextlib.suppress(discord.HTTPException):
+                        await botresponse.add_reaction("⏰")
             else:
                 pass
 
@@ -169,7 +172,8 @@ class DankMemer(commands.Cog, name='dankmemer'):
                         await self.client.pool_pg.execute(
                             "INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)",
                             member.id, 9, message.channel.id, message.guild.id, nextmonthlytime)
-                    await botresponse.add_reaction("⏰")
+                    with contextlib.suppress(discord.HTTPException):
+                        await botresponse.add_reaction("⏰")
             else:
                 pass
 
@@ -198,7 +202,8 @@ class DankMemer(commands.Cog, name='dankmemer'):
                         await self.client.pool_pg.execute(
                             "INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)",
                             member.id, 3, message.channel.id, message.guild.id, nextlotterytime)
-                    await message.add_reaction("⏰")
+                    with contextlib.suppress(discord.HTTPException):
+                        await message.add_reaction("⏰")
 
         if "pls redeem" in message.content.lower():
             def check_redeem(payload):
@@ -218,7 +223,8 @@ class DankMemer(commands.Cog, name='dankmemer'):
                         await self.client.pool_pg.execute(
                             "INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)",
                             member.id, 7, message.channel.id, message.guild.id, nextredeemtime)
-                    await message.add_reaction("⏰")
+                    with contextlib.suppress(discord.HTTPException):
+                        await message.add_reaction("⏰")
 
 
         if message.content.lower() in ["pls work", "pls job"] and not message.author.bot:
@@ -249,7 +255,8 @@ class DankMemer(commands.Cog, name='dankmemer'):
                     await self.client.pool_pg.execute(
                         "INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)",
                         member.id, 4, message.channel.id, message.guild.id, nextdailytime)
-                await botresponse.add_reaction("⏰")
+                with contextlib.suppress(discord.HTTPException):
+                    await botresponse.add_reaction("⏰")
 
         if len(message.mentions) > 0 and "You've eaten an apple!" in message.content and message.author.bot:
             member = message.mentions[0]
@@ -259,7 +266,8 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextappletime, member.id, 6)
             else:
                 await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 6, message.channel.id, message.guild.id, nextappletime)
-            await message.add_reaction("⏰")
+            with contextlib.suppress(discord.HTTPException):
+                await message.add_reaction("⏰")
 
     @checks.dev()
     @commands.command(name="drmstats", aliases = ["dankreminderstats, statistics"])
