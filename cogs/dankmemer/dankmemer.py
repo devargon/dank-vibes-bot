@@ -86,7 +86,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
             return
         if not message.guild:
             return
-        if message.guild.id != 595457764935991326:
+        if message.guild.id != 871734809154707467:
             return
         """
         Refer to https://discord.com/channels/871734809154707467/871737332431216661/873142587001827379 to all message events here
@@ -219,6 +219,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                             "INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)",
                             member.id, 7, message.channel.id, message.guild.id, nextredeemtime)
                     await message.add_reaction("⏰")
+
 
         if message.content.lower() in ["pls work", "pls job"] and not message.author.bot:
             argument = message.content.split()
@@ -361,7 +362,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
         """
         result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id) # gets the configuration for user to check if they have used dank reminder before
         if result is None:
-            await self.client.pool_pg.execute("INSERT into remindersettings VALUES ($1, $2, $3, $4, $5, $6)", ctx.author.id, 1, 0, 0, 0, 0) # creates new entry for settings
+            await self.client.pool_pg.execute("INSERT into remindersettings VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,$10)", ctx.author.id, 1, 0, 0, 0, 0, 0, 0, 0, 0) # creates new entry for settings
         def numberswitcher(no):
             if no == 1:
                 return 0
