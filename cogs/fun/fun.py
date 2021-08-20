@@ -17,7 +17,7 @@ class Fun(dm, commands.Cog, name='fun'):
         self.mutedusers = []
 
     @checks.has_permissions_or_role(administrator=True)
-    @commands.command(name="dumbfight", aliases = ["df"])
+    @commands.group(name="dumbfight", aliases = ["df"], invoke_without_command=True)
     async def dumbfight(self, ctx, member: discord.Member = None):
         """
         Mute people for a random duration between 30 to 120 seconds.
@@ -34,7 +34,7 @@ class Fun(dm, commands.Cog, name='fun'):
         if member.id in self.mutedusers:
             return await ctx.send(f"**{member.display_name}** is currently muted in a dumbfight. Wait a few moments before using this command.")
         if member.bot:
-            return await ctx.send("Back off my kind.")
+            return await ctx.send("Back off my kind. Don't dumbfight bots.")
         if member == ctx.me:
             return await ctx.send("How do you expect me to mute myself?")
         duration = random.randint(30, 120)
@@ -48,6 +48,7 @@ class Fun(dm, commands.Cog, name='fun'):
             muted = ctx.author
             color = 0xff0000
             str = "and lost against"
+        await self.client.pool_pg.execute("INSERT INTO dumbfightlog values($1, $2, $3)", ctx.author.id, member.id, 1 if doesauthorwin is True else 0)
         originaloverwrite = channel.overwrites_for(muted) if muted in channel.overwrites else None
         tempoverwrite = channel.overwrites_for(muted) if muted in channel.overwrites else discord.PermissionOverwrite()
         tempoverwrite.send_messages = False
@@ -63,6 +64,18 @@ class Fun(dm, commands.Cog, name='fun'):
         await channel.set_permissions(muted, overwrite=originaloverwrite)
         if muted.id in self.mutedusers:
             self.mutedusers.remove(muted.id)
+
+    @checks.dev()
+    @dumbfight.command(name="statistics")
+    async def dfstatistics(self, ctx, member:discord.Member=None):
+        if member is None:
+            won_dumbfights = len(await self.client.pool_pg.fetch("SELECT * FROM dumbfightlog where did_win = $1", 1))
+            lost_dumbfights = len(await self.client.pool_pg.fetch("SELECT * FROM dumbfightlog where did_win = $1", 0))
+            return await ctx.send(embed=discord.Embed(title="Dumbfight statistics", description = f"Number of dumbfights won: {won_dumbfights}\nNumber of dumbfights lost: {lost_dumbfights}", color = discord.Color.blurple()))
+        else:
+            won_dumbfights = len(await self.client.pool_pg.fetch("SELECT * FROM dumbfightlog where did_win = $1 and invoker_id = $2", 1, member.id))
+            lost_dumbfights = len(await self.client.pool_pg.fetch("SELECT * FROM dumbfightlog where did_win = $1 and invoker_id = $2", 0, member.id))
+            return await ctx.send(embed=discord.Embed(title=f"Dumbfight statistics for {member}",description=f"Number of dumbfights won: {won_dumbfights}\nNumber of dumbfights lost: {lost_dumbfights}",color=discord.Color.blurple()))
 
     @commands.command(name="hideping", brief="hides ping", description= "hides ping", aliases = ["hp", "secretping", "sp"], hidden=True)
     @commands.cooldown(1,5, commands.BucketType.user)
