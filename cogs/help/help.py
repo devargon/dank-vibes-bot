@@ -128,7 +128,7 @@ class DVBotHelp(commands.DefaultHelpCommand):
             if filtered:
                 cogs.append(cog)
         for cog in sorted(cogs, key=lambda x: x.qualified_name):
-            name = cog.qualified_name.capitalize()
+            name = cog.qualified_name.capitalize() if cog.qualified_name != 'owo' else 'OwO'
             description = cog.description if cog.description else "Not documented."
             value = f"{description}\n `{self.context.clean_prefix}help {cog.qualified_name}` for more info"
             embed.add_field(name=name, value=value)
