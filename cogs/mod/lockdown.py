@@ -31,6 +31,7 @@ class lockdown(commands.Cog):
             return await ctx.send("You need to specify what you want the first channel in the lockdown profile to be. `lockdown create [profile_name] [channel]`")
         if len(name) > 18:
             return await ctx.send(f"Your requested profile name is {len(name)} characters long. It can only be 18 characters long.")
+        name = name.lower()
         existing_profile = await self.client.pool_pg.fetchrow("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", name, ctx.guild.id)
         if existing_profile is not None:
             return await ctx.send(f"<:DVB_eyeroll:878146268277374976> You already have a profile with the name `{name}`. You can add or remove channels to that profile with `lockdown add [profile_name] [channel]` and `lockdown remove [profile_name] [channel]` respectively. You can also remove the lockdown profile with `lockdown delete [profile_name]`.")
@@ -44,11 +45,10 @@ class lockdown(commands.Cog):
         Adds a channel to a lockdown profile.
         """
         if profile_name is None:
-            return await ctx.send(
-                "You need to specify the name of the lockdown profile. `lockdown add [profile_name] [channel]`")
+            return await ctx.send("You need to specify the name of the lockdown profile. `lockdown add [profile_name] [channel]`")
         elif channels is None:
-            return await ctx.send(
-                "You need to specify the channel to be added to the profile. `lockdown add [profile_name] [channel]`")
+            return await ctx.send("You need to specify the channel to be added to the profile. `lockdown add [profile_name] [channel]`")
+        profile_name = profile_name.lower()
         lockdown_profile = await self.client.pool_pg.fetch("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
         if len(lockdown_profile) == 0:
             return await ctx.send(f"There is no such lockdown profile with the name **{profile_name}**.")
@@ -79,6 +79,7 @@ class lockdown(commands.Cog):
         View the channels in a lockdown profile. When executed without any arguments, it will show the list of profiles instead.
         """
         if profile_name is not None:
+            profile_name = profile_name.lower()
             lockdown_profile = await self.client.pool_pg.fetch("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2",
                                                                profile_name, ctx.guild.id)
             if len(lockdown_profile) == 0:
@@ -124,6 +125,7 @@ class lockdown(commands.Cog):
             return await ctx.send("You need to specify the name of the lockdown profile. `lockdown remove [profile_name] [channel]`")
         elif channels is None:
             return await ctx.send("You need to specify the channel to be added to the profile. `lockdown remove [profile_name] [channel]`")
+        profile_name = profile_name.lower()
         lockdown_profile = await self.client.pool_pg.fetch("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
         if len(lockdown_profile) == 0:
             return await ctx.send(f"There is no such lockdown profile with the name **{profile_name}**.")
@@ -156,6 +158,7 @@ class lockdown(commands.Cog):
         if profile_name is None:
             return await ctx.send(
                 "You need to specify the name of the lockdown profile. `lockdown delete [profile_name]`")
+        profile_name = profile_name.lower()
         lockdown_profile = await self.client.pool_pg.fetch(
             "SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
         if len(lockdown_profile) == 0:
@@ -188,6 +191,7 @@ class lockdown(commands.Cog):
         if profile_name is None:
             return await ctx.send(
                 "You need to specify the name of the lockdown profile. `lockdown start [profile_name]`")
+        profile_name = profile_name.lower()
         lockdown_profile = await self.client.pool_pg.fetch(
             "SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
         if len(lockdown_profile) == 0:
@@ -221,7 +225,9 @@ class lockdown(commands.Cog):
                     channels_not_found.append(str(entry.get('channel_id')))
                 else:
                     try:
-                        await channel.set_permissions(ctx.guild.default_role, send_messages=False, reason = f"Lockdown issued by {ctx.author} for channels in the {profile_name} Lockdown Profile")
+                        overwrites = channel.overwrites_for(ctx.guild.default_role)
+                        overwrites.send_messages=False
+                        await channel.set_permissions(ctx.guild.default_role,overwrite = overwrites, reason = f"Lockdown issued by {ctx.author} for channels in the {profile_name} Lockdown Profile")
                         if lockdownmsg_entry is not None:
                             try:
                                 embedjson = json.loads(lockdownmsg)
@@ -256,6 +262,7 @@ class lockdown(commands.Cog):
         if profile_name is None:
             return await ctx.send(
                 "You need to specify the name of the lockdown profile. `lockdown end [profile_name]`")
+        profile_name = profile_name.lower()
         lockdown_profile = await self.client.pool_pg.fetch("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
         if len(lockdown_profile) == 0:
             return await ctx.send(f"There is no such lockdown profile with the name **{profile_name}**.")
@@ -285,7 +292,9 @@ class lockdown(commands.Cog):
                     channels_not_found.append(str(entry.get('channel_id')))
                 else:
                     try:
-                        await channel.set_permissions(ctx.guild.default_role, send_messages=None, reason = f"Lockdown removed, issued by {ctx.author} for channels in the Lockdown Profile '{profile_name}'")
+                        overwrites = channel.overwrites_for(ctx.guild.default_role)
+                        overwrites.send_messages = None
+                        await channel.set_permissions(ctx.guild.default_role, overwrite=overwrites, reason = f"Lockdown removed, issued by {ctx.author} for channels in the Lockdown Profile '{profile_name}'")
                         embed = discord.Embed(title="This channel is now unlocked! 🔓", description=f"Have fun in {ctx.guild.name}!", color=self.client.embed_color, timestamp = datetime.utcnow())
                         embed.set_footer(icon_url=ctx.guild.icon_url, text=ctx.guild.name)
                         await channel.send(embed=embed)
@@ -309,6 +318,7 @@ class lockdown(commands.Cog):
         """
         if profile_name is None:
             return await ctx.send("You need to specify the name of the lockdown profile. `lockdown delete [profile_name]`")
+        profile_name = profile_name.lower()
         lockdown_profile = await self.client.pool_pg.fetch("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
         if len(lockdown_profile) == 0:
             return await ctx.send(f"There is no such lockdown profile with the name **{profile_name}**.")
