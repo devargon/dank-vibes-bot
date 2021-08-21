@@ -3,9 +3,20 @@ from datetime import datetime
 from discord.ext import commands
 from utils import checks
 import asyncio
-from discord.ext import commands, menus, tasks
+from discord.ext import commands, menus
+from utils.menus import CustomMenu
 import json
 emojis = ["<:checkmark:841187106654519296>", "<:crossmark:841186660662247444>"]
+
+class lockdown_pagination(menus.ListPageSource):
+    def __init__(self, entries, title):
+        self.title = title
+        super().__init__(entries, per_page=20)
+
+    async def format_page(self, menu, page):
+        embed = discord.Embed(color=0x57F0F0, title=self.title)
+        embed.description = "\n".join(page)
+        return embed
 
 class lockdown(commands.Cog):
     def __init__(self, client):
@@ -94,8 +105,9 @@ class lockdown(commands.Cog):
                     channel_list.append(f"• {channel.mention}")
             if deleted_channels > 0:
                 channel_list.append(f"\n{deleted_channels} channels have been removed from this profile as {self.client.user.name} was unable to find those channels.")
-            content = "\n".join(channel_list)
-            return await ctx.send(embed=discord.Embed(title=f"Channels in {profile_name}", description=content, color=self.client.embed_color))
+            title = f"Channels in {profile_name}"
+            pages = CustomMenu(source=lockdown_pagination(channel_list, title), clear_reactions_after=True, timeout=30)
+            await pages.start(ctx)
         else:
             results = await self.client.pool_pg.fetch("SELECT * FROM lockdownprofiles WHERE guild_id = $1", ctx.guild.id)
             if len(results) == 0:
