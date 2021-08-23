@@ -277,7 +277,13 @@ class lockdown(commands.Cog):
                                 await channel.send(embed=embed)
                             else:
                                 if "title" in embedjson and "description" in embedjson:
-                                    await channel.send(embed=discord.Embed.from_dict(embedjson))
+                                    try:
+                                        await channel.send(embed=discord.Embed.from_dict(embedjson))
+                                    except discord.HTTPException:
+                                        embed = discord.Embed(title="This channel is under lockdown! 🔒",
+                                                              description=lockdownmsg, color=self.client.embed_color)
+                                        embed.set_footer(icon_url=ctx.guild.icon_url, text=ctx.guild.name)
+                                        await channel.send(embed=embed)
                                 else:
                                     embed = discord.Embed(title="This channel is under lockdown! 🔒", description=lockdownmsg, color=self.client.embed_color)
                                     embed.set_footer(icon_url=ctx.guild.icon_url, text=ctx.guild.name)
@@ -373,7 +379,10 @@ class lockdown(commands.Cog):
             pass
         else:
             if "title" in embedjson and "description" in embedjson:
-                return await ctx.send(f"I have successfully set your lockdown message for the lockdown profile {profile_name}. This is how it will look like:",embed=discord.Embed.from_dict(embedjson))
+                try:
+                    return await ctx.send(f"I have successfully set your lockdown message for the lockdown profile {profile_name}. This is how it will look like:",embed=discord.Embed.from_dict(embedjson))
+                except discord.HTTPException:
+                    pass
         embed = discord.Embed(title="This channel is under lockdown! 🔒", description=message, color=self.client.embed_color)
         embed.set_footer(icon_url=ctx.guild.icon_url, text=ctx.guild.name)
         return await ctx.send(f"I have successfully set your lockdown message for the lockdown profile {profile_name}. This is how it will look like:", embed=embed)
