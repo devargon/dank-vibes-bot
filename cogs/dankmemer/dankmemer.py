@@ -207,7 +207,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
 
         if "pls redeem" in message.content.lower():
             def check_redeem(payload):
-                return payload.author.bot and len(payload.embeds) > 0
+                return payload.author.bot and len(payload.embeds) > 0 and payload.channel == message.channel and payload.author.id == 270904126974590976
             try:
                 redeemresponse = await self.client.wait_for("message", check=check_redeem, timeout = 15)
             except asyncio.TimeoutError:
