@@ -273,7 +273,7 @@ class lockdown(commands.Cog):
                                 embedjson = json.loads(lockdownmsg)
                             except json.decoder.JSONDecodeError:
                                 embed = discord.Embed(title="This channel is under lockdown! 🔒", description=lockdownmsg, color=self.client.embed_color)
-                                embed.set_footer(icon_url=ctx.guild.icon_url, text=ctx.guild.name)
+                                embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
                                 await channel.send(embed=embed)
                             else:
                                 if "title" in embedjson and "description" in embedjson:
@@ -282,11 +282,11 @@ class lockdown(commands.Cog):
                                     except discord.HTTPException:
                                         embed = discord.Embed(title="This channel is under lockdown! 🔒",
                                                               description=lockdownmsg, color=self.client.embed_color)
-                                        embed.set_footer(icon_url=ctx.guild.icon_url, text=ctx.guild.name)
+                                        embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
                                         await channel.send(embed=embed)
                                 else:
                                     embed = discord.Embed(title="This channel is under lockdown! 🔒", description=lockdownmsg, color=self.client.embed_color)
-                                    embed.set_footer(icon_url=ctx.guild.icon_url, text=ctx.guild.name)
+                                    embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
                                     await channel.send(embed=embed)
                     except discord.Forbidden:
                         channels_missing_perms.append(channel.mention)
@@ -342,7 +342,7 @@ class lockdown(commands.Cog):
                         overwrites.send_messages = None
                         await channel.set_permissions(ctx.guild.default_role, overwrite=overwrites, reason = f"Lockdown removed, issued by {ctx.author} for channels in the Lockdown Profile '{profile_name}'")
                         embed = discord.Embed(title="This channel is now unlocked! 🔓", description=f"Have fun in {ctx.guild.name}!", color=self.client.embed_color, timestamp = datetime.utcnow())
-                        embed.set_footer(icon_url=ctx.guild.icon_url, text=ctx.guild.name)
+                        embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
                         await channel.send(embed=embed)
                     except discord.Forbidden:
                         channels_missing_perms.append(channel.mention)
@@ -384,7 +384,7 @@ class lockdown(commands.Cog):
                 except discord.HTTPException:
                     pass
         embed = discord.Embed(title="This channel is under lockdown! 🔒", description=message, color=self.client.embed_color)
-        embed.set_footer(icon_url=ctx.guild.icon_url, text=ctx.guild.name)
+        embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
         return await ctx.send(f"I have successfully set your lockdown message for the lockdown profile {profile_name}. This is how it will look like:", embed=embed)
 
 

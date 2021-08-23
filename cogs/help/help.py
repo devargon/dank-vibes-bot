@@ -17,7 +17,7 @@ async def group_help_source_format(self, menu: GroupMenu, entry):
     embed = discord.Embed(title=DVBotHelp.get_command_name(self, group))
     embed.color = 0x57F0F0
     embed.description = f"{DVBotHelp.get_help(self, group, False)}\nUsage: {DVBotHelp.get_command_usage(self, group, ctx=menu.ctx)}"
-    embed.set_footer(text=f"Requested by {menu.ctx.author}", icon_url=menu.ctx.author.avatar_url)
+    embed.set_footer(text=f"Requested by {menu.ctx.author}", icon_url=menu.ctx.author.avatar.url)
     for command in list_commands:
         value = f"{DVBotHelp.get_help(self, command)}\nUsage: {DVBotHelp.get_command_usage(self, command, ctx=menu.ctx)}"
         embed.add_field(name=f"{DVBotHelp.get_command_name(self, command)}", value=value, inline=False)
@@ -31,7 +31,7 @@ async def cog_help_source_format(self, menu: CogMenu, entry):
     cog, list_commands = entry
     embed = discord.Embed(title=f"{getattr(cog, 'qualified_name', 'No').capitalize()} Category")
     embed.color = 0x57F0F0
-    embed.set_footer(text=f"Requested by {menu.ctx.author}", icon_url=menu.ctx.author.avatar_url)
+    embed.set_footer(text=f"Requested by {menu.ctx.author}", icon_url=menu.ctx.author.avatar.url)
     for command in list_commands:
         value = f"{DVBotHelp.get_help(self, command)}\nUsage: {DVBotHelp.get_command_usage(self, command, ctx=menu.ctx)}"
         if isinstance(command, commands.Group):
@@ -118,8 +118,8 @@ class DVBotHelp(commands.DefaultHelpCommand):
             raise commands.NoPrivateMessage
         embed = discord.Embed(color=0x57F0F0)
         embed.timestamp = datetime.utcnow()
-        embed.set_author(name=f"{self.context.me.name}'s Command List", icon_url=self.context.me.avatar_url)
-        embed.set_footer(text=f"Requested by {self.context.author}", icon_url=self.context.author.avatar_url)
+        embed.set_author(name=f"{self.context.me.name}'s Command List", icon_url=self.context.me.avatar.url)
+        embed.set_footer(text=f"Requested by {self.context.author}", icon_url=self.context.author.avatar.url)
         cogs = []
         for cog, unfiltered_commands in mapping.items():
             filtered = await self.filter_commands(unfiltered_commands, sort=True)
@@ -147,7 +147,7 @@ class DVBotHelp(commands.DefaultHelpCommand):
         if alias := self.get_aliases(command):
             embed.add_field(name="Aliases", value=f'[{" | ".join(f"`{x}`" for x in alias)}]', inline=True)
         embed.add_field(name='Usage', value=self.get_command_usage(command), inline=True)
-        embed.set_footer(text=f"Requested by {self.context.author}", icon_url=self.context.author.avatar_url)
+        embed.set_footer(text=f"Requested by {self.context.author}", icon_url=self.context.author.avatar.url)
         return embed
 
     async def handle_help(self, command):

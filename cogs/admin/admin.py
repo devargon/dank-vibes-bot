@@ -47,7 +47,7 @@ class Admin(ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass
         embed.add_field(name=f"{get_emoji(owodaily)} OwO Daily Leaderboard", value=f"{'Enabled' if owodaily else 'Disabled'}", inline=False)
         embed.add_field(name=f"{get_emoji(owoweekly)} OwO Weekly Leaderboard", value=f"{'Enabled' if owoweekly else 'Disabled'}", inline=False)
         embed.add_field(name=f"{get_emoji(votelb)} Vote Leaderboard", value=f"{'Enabled' if votelb else 'Disabled'}", inline=False)
-        embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon_url)
+        embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon.url)
         message = await ctx.send(embed=embed)
         emojis = ['1⃣', '2⃣', '3⃣', 'ℹ']
         for emoji in emojis:

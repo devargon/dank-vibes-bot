@@ -56,7 +56,7 @@ class dm(commands.Cog):
         embed.add_field(name="DM Target", value=f"{dmtargetdetails}")
         embed.add_field(name="Status", value=output[1], inline=True)
         if dmrequester is not None:
-            embed.set_thumbnail(url=dmrequester.avatar_url)
+            embed.set_thumbnail(url=dmrequester.avatar.url)
         embed.set_footer(text=f"This message will be deleted in 10 seconds.")
         await requestmessage.clear_reactions()
         await requestmessage.edit(embed=embed)
@@ -113,8 +113,8 @@ class dm(commands.Cog):
         embed.set_author(name=f"{ctx.author} ({ctx.author.id})")
         embed.add_field(name="DM Target", value=f"{member} {member.mention}")
         embed.add_field(name="Status", value="Not approved", inline=True)
-        embed.set_thumbnail(url=ctx.author.avatar_url)
-        embed.set_footer(text=f"Request ID: {ID}", icon_url=ctx.guild.icon_url)
+        embed.set_thumbnail(url=ctx.author.avatar.url)
+        embed.set_footer(text=f"Request ID: {ID}", icon_url=ctx.guild.icon.url)
         new_message = await request_channel.send(embed=embed)
 
         await self.client.pool_pg.execute("UPDATE dmrequests set messageid = $1 where id = $2", new_message.id, ID)
@@ -123,7 +123,7 @@ class dm(commands.Cog):
                 await new_message.add_reaction(emoji)
 
         authorembed = discord.Embed(title="Your DM request has been submitted!", description="I will notify you on the status of your DM request.", color=0x57F0F0, timestamp=datetime.utcnow())
-        authorembed.set_author(icon_url=ctx.guild.icon_url, name=ctx.guild.name)
+        authorembed.set_author(icon_url=ctx.guild.icon.url, name=ctx.guild.name)
         authorembed.add_field(name="Message", value=(message[:1020] + '...') if len(message) > 1024 else message, inline=False)
         embed.add_field(name="DM Target", value=f"{member} {member.mention}", inline=True)
         authorembed.add_field(name="Request ID", value=str(ID), inline=True)

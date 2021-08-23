@@ -50,7 +50,7 @@ class nicknames(commands.Cog):
         embed.add_field(name="Nickname", value=nickname, inline=True)
         embed.add_field(name="Status", value=output[1], inline=True)
         if nicktarget is not None:
-            embed.set_thumbnail(url=nicktarget.avatar_url)
+            embed.set_thumbnail(url=nicktarget.avatar.url)
         embed.set_footer(text=f"This message will be deleted in 10 seconds. | wicked is very nice !!")
         await requestmessage.clear_reactions()
         await requestmessage.edit(embed=embed)
@@ -97,8 +97,8 @@ class nicknames(commands.Cog):
             requestembed.set_author(name=f"{ctx.author} ({ctx.author.id})")
             requestembed.add_field(name="Nickname", value=nickname, inline=True)
             requestembed.add_field(name="Status", value="Not approved", inline=True)
-            requestembed.set_thumbnail(url=ctx.author.avatar_url)
-            requestembed.set_footer(text=f"Request ID: {pastnickname.get('id')} | wicked is very nice !!", icon_url=ctx.guild.icon_url) # DONT REMOVE IT PLEASDSWD
+            requestembed.set_thumbnail(url=ctx.author.avatar.url)
+            requestembed.set_footer(text=f"Request ID: {pastnickname.get('id')} | wicked is very nice !!", icon_url=ctx.guild.icon.url) # DONT REMOVE IT PLEASDSWD
             try:
                 request_message = await request_channel.fetch_message(pastnickname.get('messageid'))
             except discord.NotFound:
@@ -117,15 +117,15 @@ class nicknames(commands.Cog):
             embed.set_author(name=f"{ctx.author} ({ctx.author.id})")
             embed.add_field(name="Nickname", value=nickname, inline=True)
             embed.add_field(name="Status", value="Not approved", inline=True)
-            embed.set_thumbnail(url=ctx.author.avatar_url)
-            embed.set_footer(text=f"Request ID: {ID} | wicked is very nice !!", icon_url=ctx.guild.icon_url)
+            embed.set_thumbnail(url=ctx.author.avatar.url)
+            embed.set_footer(text=f"Request ID: {ID} | wicked is very nice !!", icon_url=ctx.guild.icon.url)
             new_message = await request_channel.send(embed=embed)
             await self.client.pool_pg.execute("UPDATE nicknames set messageid = $1 where id = $2", new_message.id, ID)
             for emoji in emojis:
                 if emoji not in new_message.reactions:
                     await new_message.add_reaction(emoji)
         authorembed = discord.Embed(title="Your nickname request has been submitted!", description="I will DM you on the status of your nickname request.", color=0x57F0F0, timestamp=datetime.utcnow())
-        authorembed.set_author(icon_url=ctx.guild.icon_url, name=ctx.guild.name)
+        authorembed.set_author(icon_url=ctx.guild.icon.url, name=ctx.guild.name)
         authorembed.add_field(name="Nickname", value=nickname, inline=True)
         authorembed.add_field(name="Request ID", value=str(ID), inline=True)
         authorembed.set_footer(text="Your nickname will be denied if it is blatantly inappropriate and/or unmentionable.")

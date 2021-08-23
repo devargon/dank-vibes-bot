@@ -416,7 +416,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 monthlytime = f"<t:{reminder.get('time')}:R>"
         result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
         embed = discord.Embed(title="Your Dank Memer reminders", description="**React with the emoji that corresponds to the reminder to enable/disable it.**\nChange how you want to be reminded with `dv.dankreminders dm`,  `dv.dankreminders ping/mention` or `dv.dankreminders none`.", color=0x57f0f0, timestamp=datetime.utcnow())
-        embed.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
+        embed.set_author(name=ctx.author, icon_url=ctx.avatar.avatar.url)
         embed.add_field(name=f"{emojioutput(result.get('daily'))} Claim daily <:DVB_calendar:873107952159059991>", value=dailytime or "Ready!", inline=True)
         embed.add_field(name=f"{emojioutput(result.get('weekly'))} Claim weekly <:DVB_week:876711052669247528> ", value=weeklytime or "Ready!", inline=True) #8
         embed.add_field(name=f"{emojioutput(result.get('monthly'))} Claim monthly <:DVB_month:876711072030150707> ", value=monthlytime or "Ready!", inline=True) #9
@@ -429,7 +429,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
             embed.add_field(name=f"<:DVB_enabled:872003679895560193> Bonk Blu <a:DVB_bonk:877196623506194452>", value="Always ready", inline=True)
         embed.add_field(name="\u200b", value="\u200b", inline=False)
         embed.add_field(name="Reminder preference", value=f"{'DM' if result.get('method') == 1 else 'Ping' if result.get('method') == 2 else None}", inline=False)
-        embed.set_footer(text="For reminders to work, your reply pings needs to be enabled in Dank Memer's settings.", icon_url=ctx.guild.icon_url)
+        embed.set_footer(text="For reminders to work, your reply pings needs to be enabled in Dank Memer's settings.", icon_url=ctx.guild.icon.url)
         message = await ctx.send(embed=embed)
         reminderemojis = ["<:DVB_calendar:873107952159059991>", "<:DVB_week:876711052669247528>", "<:DVB_month:876711072030150707>", "<:DVB_lotteryticket:873110581085880321>", "<:DVB_workbadge:873110507605872650>", "<:DVB_apple:876627457275469867>", "<:DVB_patreon:876628017194082395>"]
         for emoji in reminderemojis:
@@ -462,7 +462,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 await message.remove_reaction(response.emoji, ctx.author)
                 result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
                 embed = discord.Embed(title="Your Dank Memer reminders",  description="**React with the emoji that corresponds to the reminder to enable/disable it.**\nChange how you want to be reminded with `dv.dankreminders dm`,  `dv.dankreminders ping/mention` or `dv.dankreminders none`.", color=0x57f0f0, timestamp=datetime.utcnow())
-                embed.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
+                embed.set_author(name=ctx.author, icon_url=ctx.avatar.avatar.url)
                 embed.add_field(name=f"{emojioutput(result.get('daily'))} Claim daily <:DVB_calendar:873107952159059991>", value=dailytime or "Ready!", inline=True)
                 embed.add_field(name=f"{emojioutput(result.get('weekly'))} Claim weekly <:DVB_week:876711052669247528> ", value=weeklytime or "Ready!", inline=True)  # 8
                 embed.add_field(name=f"{emojioutput(result.get('monthly'))} Claim monthly <:DVB_month:876711072030150707> ", value=monthlytime or "Ready!", inline=True)  # 9
@@ -475,6 +475,6 @@ class DankMemer(commands.Cog, name='dankmemer'):
                     embed.add_field(name=f"<:DVB_enabled:872003679895560193> Bonk Blu <a:DVB_bonk:877196623506194452>", value="Always ready", inline=True)
                 embed.add_field(name="\u200b", value="\u200b", inline=False)
                 embed.add_field(name="Reminder preference", value=f"{'DM' if result.get('method') == 1 else 'Ping' if result.get('method') == 2 else None}", inline=False)
-                embed.set_footer(text="For reminders to work, your reply pings needs to be enabled in Dank Memer's settings.", icon_url=ctx.guild.icon_url)
+                embed.set_footer(text="For reminders to work, your reply pings needs to be enabled in Dank Memer's settings.", icon_url=ctx.guild.icon.url)
                 await message.edit(embed=embed)
         await message.clear_reactions()
