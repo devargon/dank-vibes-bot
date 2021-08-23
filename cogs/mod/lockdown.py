@@ -15,9 +15,37 @@ class lockdown(commands.Cog):
     @commands.group(name="lockdown", invoke_without_command=True)
     async def lockdown(self, ctx):
         """
-        Base command for managing lockdowns
+        Lockdown Guide for Dank Vibes Bot
         """
-        return await ctx.help()
+        message = """
+        This lockdown feature allows you to create separate groups of channels (or lockdown profiles) to be able to lock and unlock many channels at once. It also allows you to set a separate message for each profile. When quoting profile names, add quotations `""` for names with spaces, unless you're using `view`, `delete`, `start` and `end`.
+        **__Editing lockdown profiles__**
+        `lockdown create [profile_name] [channel]`
+        Creates a lockdown profile with the name specified in `profile_name`. The channel is the first channel to be added to the lockdown profile.
+        
+        `lockdown add [profile_name] [channel1] <channel2> ...`
+        Adds channels to the specified lockdown profile. You can add more than one channel in this command to add various channels at once.
+        
+        `lockdown remove [profile_name] [channel1] <channel2> ...`
+        Removes channels from the specified lockdown profile. You can add more than one channel in this command to remove various channels at once.
+        
+        `lockdown delete [profille_name]`
+        Deletes all channels in a lockdown profile, removing a lockdown profile effectively. 
+        
+        `lockdown view <profile_name>`
+        Using this command without any arguments will show all the lockdown profiles in this server. Viewing a lockdown profile will show you the channels in that lockdown profile.
+        
+        `lockdown msg [profile_name] [message_or_json_embed]`
+        This will set a message for the lockdown profile when It is used to lock channels. The message can also be an embed, but in the form of JSON code.
+        
+        **__Using lockdown profiles__**
+        `lockdown start [profile_name]`
+        Locks down all channels in a lockdown profile. If a message is specified, it will send that message when locking down the channels.
+        
+        `lockdown end [profile_name]`
+        Unlocks down all channels in a lockdown profile. It will send a default message when unlocking channels.
+        """
+        await ctx.send(embed=discord.Embed(title=f"{self.client.user.name}'s Lockdown Guide", description=message, color=self.client.embed_color, timestamp=datetime.utcnow()))
 
     @checks.has_permissions_or_role(administrator=True)
     @lockdown.command(name="create")
@@ -151,7 +179,7 @@ class lockdown(commands.Cog):
 
     @checks.has_permissions_or_role(administrator=True)
     @lockdown.command(name="delete", aliases = ["clear"])
-    async def lockdown_delete(self, ctx, profile_name=None):
+    async def lockdown_delete(self, ctx, *, profile_name=None):
         """
         This **deletes** a lockdown profile!
         """
@@ -213,12 +241,12 @@ class lockdown(commands.Cog):
         else:
             await message.clear_reactions()
             await message.edit(content="<a:DVB_lock:878207978371686405> Locking channels... (and like carlbot would say, ETA: 0 seconds)")
-            lockdownmsg_entry = await self.client.pool_pg.fetchrow("SELECT lockdownmsg FROM lockdownmsgs WHERE guild_id = $1 and profile_name = $2", ctx.guild.id, profile_name)
-            if lockdownmsg_entry is not None:
-                lockdownmsg = lockdownmsg_entry.get('lockdownmsg')
             channels_not_found = []
             channels_missing_perms = []
             channels_success = []
+            lockdownmsg_entry = await self.client.pool_pg.fetchrow("SELECT lockdownmsg FROM lockdownmsgs WHERE guild_id = $1 and profile_name = $2", ctx.guild.id, profile_name)
+            if lockdownmsg_entry is not None:
+                lockdownmsg = lockdownmsg_entry.get('lockdownmsg')
             for entry in lockdown_profile:
                 channel = ctx.guild.get_channel((entry.get('channel_id')))
                 if channel is None:
