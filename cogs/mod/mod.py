@@ -38,7 +38,7 @@ class Mod(lockdown, commands.Cog, name='mod'):
                 await ctx.send(embed=discord.Embed(title=f"Raw content of message with ID {message_id} in {channel}", description=f"```\n{content}\n```", color = self.client.embed_color))
 
     @checks.has_permissions_or_role(administrator=True)
-    @commands.command(name="checkoverwrites", brief = "Checks the permission overwrites for that channel. Can be used to check who is in a private channel.", description = "Checks the permission overwrites for that channel. Can be used to check who is in a private channel.", aliases = ["privchannel", "pvc", "checkpvc"])
+    @commands.command(name="checkpvc", aliases = ["privchannel", "pvc"])
     async def checkoverwrites(self, ctx, channel:discord.TextChannel=None):
         """
         Checks the permission overwrites for that channel. Can be used to check who is in a private channel.
