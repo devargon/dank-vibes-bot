@@ -35,7 +35,7 @@ class Suggestion(commands.Cog):
             suggestion_id = await self.client.pool_pg.fetchval(query, *values, column='suggestion_id')
             embed.title += f" (ID: {suggestion_id})"
             await response.edit(embed=embed)
-            channel = self.client.get_guild(871734809154707467).get_channel(871737314831908974)
+            channel = self.client.get_guild(871734809154707467).get_channel(876346196564803614)
             embed = discord.Embed(color=0xffcccb,
                                     description=message,
                                     timestamp=datetime.utcnow())
@@ -65,7 +65,7 @@ class Suggestion(commands.Cog):
             return await ctx.send("I couldn't find a suggestion with that ID.")
         if suggestion.get('finish'):
             return await ctx.send("That suggestion is already closed.")
-        channel = self.client.get_guild(871734809154707467).get_channel(871737314831908974)
+        channel = self.client.get_guild(871734809154707467).get_channel(876346196564803614)
         await self.client.pool_pg.execute("UPDATE suggestions SET finish=True WHERE suggestion_id=$1", suggestion_id)
         stats = await self.client.pool_pg.fetchrow("SELECT * FROM suggestion_response WHERE suggestion_id=$1", suggestion_id)
         dm = await self.get_dm(suggestion.get('user_id'))
