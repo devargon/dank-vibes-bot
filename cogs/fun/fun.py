@@ -187,6 +187,7 @@ class Fun(dm, commands.Cog, name='fun'):
 
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="scramble", aliases=["shuffle"])
+    @commands.cooldown(1, 1800, commands.BucketType.user)
     async def scramble(self, ctx, member: discord.Member=None):
         """
         Scrambles your target's nickname for 3 minutes, effectively freezing it until the 3 minutes are up.
