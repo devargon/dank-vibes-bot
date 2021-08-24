@@ -226,14 +226,14 @@ class Fun(dm, commands.Cog, name='fun'):
             self.scrambledusers.append(member)
         except discord.Forbidden:
             return await ctx.send("Sorry! I am unable to change that user's name, probably due to role hierachy or missing permissions.")
-        await ctx.send(f"{member}'s name is now {new_name}!")
+        await ctx.send(f"{member}'s name is now {new_name}!\n{member.mention}, your nickname has been jumbled up by **{ctx.author.name}**. It will automatically revert to your previous nickname after 3 minutes. If you try to change your nickname, I will jumble it again.")
         def check(payload_before, payload_after):
             return payload_before == member and payload_before.display_name == new_name and payload_after.display_name != new_name
         active = True
         has_warned = False
         while active:
             try:
-                member_edit = await self.client.wait_for("member_update", check = check, timeout=30)
+                member_edit = await self.client.wait_for("member_update", check = check, timeout=180)
             except asyncio.TimeoutError:
                 await member.edit(nick=member_name)
                 active = False
