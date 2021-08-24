@@ -40,7 +40,23 @@ class Fun(dm, commands.Cog, name='fun'):
         if member == ctx.me:
             return await ctx.send("How do you expect me to mute myself?")
         duration = random.randint(30, 120)
-        doesauthorwin = random.choice([True, False])
+        won_dumbfights = await self.client.pool_pg.fetch(
+            "SELECT * FROM dumbfightlog where did_win = $1 and invoker_id = $2", 1, ctx.author.id)
+        lost_dumbfights = await self.client.pool_pg.fetch(
+            "SELECT * FROM dumbfightlog where did_win = $1 and invoker_id = $2", 0, ctx.author.id)
+        try:
+            wonlossratio = len(won_dumbfights) / len(lost_dumbfights)
+        except ZeroDivisionError:
+            doesauthorwin = random.choice([True, False])
+        else:
+            if wonlossratio == 0:
+                doesauthorwin = random.choice([True, False])
+            elif wonlossratio < 0.7:
+                doesauthorwin = True
+            elif wonlossratio > 1.5:
+                doesauthorwin = False
+            else:
+                doesauthorwin = random.choice([True, False])
         channel = ctx.channel
         if doesauthorwin:
             muted = member
@@ -111,7 +127,7 @@ class Fun(dm, commands.Cog, name='fun'):
                 text += f"{member.mention} was dumbfoughted by <@{entry.get('invoker_id')}> and lost to them.\n"
             for entry in non_invoked_losses:
                 text += f"{member.mention} was dumbfoughted by <@{entry.get('invoker_id')}> and won to them.\n"
-            embed=discord.Embed(title=f"Dumbfight statistics for {member}", description=f"Number of dumbfights won: {len(won_dumbfights)}\nNumber of dumbfights lost: {len(lost_dumbfights)}\n\nNumber of wins from non-self-invoked dumbfights: {len(non_invoked_wins)}\nNumber of losses from non-self-invoked dumbfights: {len(non_invoked_losses)}",color = 0x1E90FF if ctx.author.id == 650647680837484556 else 0xffcccb)
+            embed=discord.Embed(title=f"Dumbfight statistics for {member}", description=f"Number of dumbfights won: {len(won_dumbfights)}\nNumber of dumbfights lost: {len(lost_dumbfights)}\n\nNumber of wins from non-self-invoked dumbfights: {len(non_invoked_wins)}\nNumber of losses from non-self-invoked dumbfights: {len(non_invoked_losses)}\n\n**Total** number of **wins**: {len(won_dumbfights) + len(non_invoked_wins)}\n**Total** number of **losses**: {len(lost_dumbfights) + len(non_invoked_losses)}",color = 0x1E90FF if ctx.author.id == 650647680837484556 else 0xffcccb)
             embed.add_field(name=f"Last few wins and losses for {member}", value=text)
             await ctx.send(embed=embed)
 
