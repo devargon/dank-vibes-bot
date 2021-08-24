@@ -123,9 +123,9 @@ class Fun(dm, commands.Cog, name='fun'):
                 text += f"{member.mention} invoked a dumbfight and **won** to <@{entry.get('target_id')}>.\n"
             for entry in lost_dumbfights[:3]:
                 text += f"{member.mention} invoked a dumbfight and **lost** to <@{entry.get('target_id')}>.\n"
-            for entry in non_invoked_wins:
+            for entry in non_invoked_wins[3:]:
                 text += f"{member.mention} was dumbfoughted by <@{entry.get('invoker_id')}> and lost to them.\n"
-            for entry in non_invoked_losses:
+            for entry in non_invoked_losses[3:]:
                 text += f"{member.mention} was dumbfoughted by <@{entry.get('invoker_id')}> and won to them.\n"
             embed=discord.Embed(title=f"Dumbfight statistics for {member}", description=f"Number of dumbfights won: {len(won_dumbfights)}\nNumber of dumbfights lost: {len(lost_dumbfights)}\n\nNumber of wins from non-self-invoked dumbfights: {len(non_invoked_wins)}\nNumber of losses from non-self-invoked dumbfights: {len(non_invoked_losses)}\n\n**Total** number of **wins**: {len(won_dumbfights) + len(non_invoked_wins)}\n**Total** number of **losses**: {len(lost_dumbfights) + len(non_invoked_losses)}",color = 0x1E90FF if ctx.author.id == 650647680837484556 else 0xffcccb)
             embed.add_field(name=f"Last few wins and losses for {member}", value=text)
