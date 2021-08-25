@@ -6,6 +6,7 @@ import random
 from utils.time import humanize_timedelta
 from .dm import dm
 from utils import checks
+import operator
 
 class Fun(dm, commands.Cog, name='fun'):
     """
@@ -15,6 +16,7 @@ class Fun(dm, commands.Cog, name='fun'):
         self.client = client
         self.dmconfig = {}
         self.mutedusers = []
+        self.scrambledusers = []
 
     @checks.has_permissions_or_role(administrator=True)
     @commands.group(name="dumbfight", aliases = ["df"], invoke_without_command=True)
@@ -38,7 +40,23 @@ class Fun(dm, commands.Cog, name='fun'):
         if member == ctx.me:
             return await ctx.send("How do you expect me to mute myself?")
         duration = random.randint(30, 120)
-        doesauthorwin = random.choice([True, False])
+        won_dumbfights = await self.client.pool_pg.fetch(
+            "SELECT * FROM dumbfightlog where did_win = $1 and invoker_id = $2", 1, ctx.author.id)
+        lost_dumbfights = await self.client.pool_pg.fetch(
+            "SELECT * FROM dumbfightlog where did_win = $1 and invoker_id = $2", 0, ctx.author.id)
+        try:
+            wonlossratio = len(won_dumbfights) / len(lost_dumbfights)
+        except ZeroDivisionError:
+            doesauthorwin = random.choice([True, False])
+        else:
+            if wonlossratio == 0:
+                doesauthorwin = random.choice([True, False])
+            elif wonlossratio < 0.7:
+                doesauthorwin = True
+            elif wonlossratio > 1.5:
+                doesauthorwin = False
+            else:
+                doesauthorwin = random.choice([True, False])
         channel = ctx.channel
         if doesauthorwin:
             muted = member
@@ -56,6 +74,8 @@ class Fun(dm, commands.Cog, name='fun'):
         self.mutedusers.append(muted.id)
         selfmute = random.choice(['punched themselves in the face', 'kicked themselves in the knee', 'stepped on their own feet', 'punched themselves in the stomach', 'tickled themselves until they couldn\'t take it'])
         embed = discord.Embed(title="Get muted!", description = f"{ctx.author.mention} fought {member.mention} {str} them.\n{muted.mention} is now muted for {duration} seconds." if ctx.author != member else f"{ctx.author.mention} {selfmute}.\n{muted.mention} is now muted for {duration} seconds.", colour=color)
+        if member.id in [650647680837484556, 321892489470410763] and muted != ctx.author:
+            embed.set_footer(text="why did you dumbfight the developer :c", icon_url="https://cdn.discordapp.com/emojis/796407682764505180.png?v=1")
         await ctx.send(embed=embed)
         specialrole = ctx.guild.get_role(876767313263734805) # 874931276329656370
         cooldowntime = 1800 if specialrole in ctx.author.roles else 3600
@@ -66,16 +86,63 @@ class Fun(dm, commands.Cog, name='fun'):
             self.mutedusers.remove(muted.id)
 
     @checks.dev()
-    @dumbfight.command(name="statistics")
+    @dumbfight.command(name="statistics", aliases = ["stats"])
     async def dfstatistics(self, ctx, member:discord.Member=None):
         if member is None:
-            won_dumbfights = len(await self.client.pool_pg.fetch("SELECT * FROM dumbfightlog where did_win = $1", 1))
-            lost_dumbfights = len(await self.client.pool_pg.fetch("SELECT * FROM dumbfightlog where did_win = $1", 0))
-            return await ctx.send(embed=discord.Embed(title="Dumbfight statistics", description = f"Number of dumbfights won: {won_dumbfights}\nNumber of dumbfights lost: {lost_dumbfights}", color = discord.Color.blurple()))
+            won_dumbfights = await self.client.pool_pg.fetch("SELECT * FROM dumbfightlog where did_win = $1", 1)
+            lost_dumbfights = await self.client.pool_pg.fetch("SELECT * FROM dumbfightlog where did_win = $1", 0)
+            top3_won = {}
+            top3_lost = {}
+            for entry in won_dumbfights:
+                if entry.get('invoker_id') not in top3_won:
+                    top3_won[entry.get('invoker_id')] = 1
+                else:
+                    top3_won[entry.get('invoker_id')] += 1
+            for entry in lost_dumbfights:
+                if entry.get('invoker_id') not in top3_lost:
+                    top3_lost[entry.get('invoker_id')] = 1
+                else:
+                    top3_lost[entry.get('invoker_id')] += 1
+            won_users = sorted(top3_won.items(), key=operator.itemgetter(1), reverse=True)  # sorts dict by descending
+            lost_users = sorted(top3_lost.items(), key=operator.itemgetter(1), reverse=True)  # sorts dict by descending
+            embed=discord.Embed(title="Dumbfight statistics", description = f"Number of dumbfights won: {len(won_dumbfights)}\nNumber of dumbfights lost: {len(lost_dumbfights)}", color = 0x1E90FF if ctx.author.id == 650647680837484556 else 0xffcccb)
+            top3won = [f"<@{user[0]}>: {user[1]}" for user in won_users[:3]]
+            top3won = "\n".join(top3won)
+            top3lost = [f"<@{user[0]}>: {user[1]}" for user in lost_users[:3]]
+            top3lost = "\n".join(top3lost)
+            embed.add_field(name="Top 3 wiwnners", value = top3won)
+            embed.add_field(name="Top 3 lost dumbfighters", value=top3lost)
+            await ctx.send(embed=embed)
         else:
-            won_dumbfights = len(await self.client.pool_pg.fetch("SELECT * FROM dumbfightlog where did_win = $1 and invoker_id = $2", 1, member.id))
-            lost_dumbfights = len(await self.client.pool_pg.fetch("SELECT * FROM dumbfightlog where did_win = $1 and invoker_id = $2", 0, member.id))
-            return await ctx.send(embed=discord.Embed(title=f"Dumbfight statistics for {member}",description=f"Number of dumbfights won: {won_dumbfights}\nNumber of dumbfights lost: {lost_dumbfights}",color=discord.Color.blurple()))
+            won_dumbfights = await self.client.pool_pg.fetch("SELECT * FROM dumbfightlog where did_win = $1 and invoker_id = $2", 1, member.id)
+            lost_dumbfights = await self.client.pool_pg.fetch("SELECT * FROM dumbfightlog where did_win = $1 and invoker_id = $2", 0, member.id)
+            non_invoked_losses = await self.client.pool_pg.fetch("SELECT * FROM dumbfightlog where did_win = $1 and target_id = $2", 1, member.id)
+            non_invoked_wins = await self.client.pool_pg.fetch("SELECT * FROM dumbfightlog where did_win = $1 and target_id = $2", 0, member.id)
+            non_invoked_wins.reverse()
+            non_invoked_losses.reverse()
+            text = ""
+            for entry in won_dumbfights[:3]:
+                text += f"{member.mention} invoked a dumbfight and **won** to <@{entry.get('target_id')}>.\n"
+            for entry in lost_dumbfights[:3]:
+                text += f"{member.mention} invoked a dumbfight and **lost** to <@{entry.get('target_id')}>.\n"
+            for entry in non_invoked_wins[:3]:
+                text += f"{member.mention} was dumbfoughted by <@{entry.get('invoker_id')}> and lost to them.\n"
+            for entry in non_invoked_losses[:3]:
+                text += f"{member.mention} was dumbfoughted by <@{entry.get('invoker_id')}> and won to them.\n"
+            embed=discord.Embed(title=f"Dumbfight statistics for {member}", description=f"Number of dumbfights won: {len(won_dumbfights)}\nNumber of dumbfights lost: {len(lost_dumbfights)}\n\nNumber of wins from non-self-invoked dumbfights: {len(non_invoked_wins)}\nNumber of losses from non-self-invoked dumbfights: {len(non_invoked_losses)}\n\n**Total** number of **wins**: {len(won_dumbfights) + len(non_invoked_wins)}\n**Total** number of **losses**: {len(lost_dumbfights) + len(non_invoked_losses)}",color = 0x1E90FF if ctx.author.id == 650647680837484556 else 0xffcccb)
+            message = await ctx.send(f"React with 🥺 to view more information about **{member}**'s dumbfight statistics.", embed=embed)
+            await message.add_reaction("🥺")
+            def check(payload):
+                return str(payload.emoji == "🥺") and payload.user_id == ctx.author.id  and payload.message_id == message.id
+            try:
+                await self.client.wait_for('raw_reaction_add', check=check, timeout = 20.0)
+            except asyncio.TimeoutError:
+                await message.clear_reactions()
+            else:
+                await message.clear_reactions()
+                embed.add_field(name=f"Last few wins and losses for {member}", value=text)
+                await message.edit(content="🥺", embed=embed)
+
 
     @commands.command(name="hideping", brief="hides ping", description= "hides ping", aliases = ["hp", "secretping", "sp"], hidden=True)
     @commands.cooldown(1,5, commands.BucketType.user)
@@ -146,3 +213,47 @@ class Fun(dm, commands.Cog, name='fun'):
                 await message.add_reaction("🔓")
             except discord.Forbidden:
                 pass
+
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.command(name="scramble", aliases=["shuffle"])
+    @commands.cooldown(1, 1800, commands.BucketType.user)
+    async def scramble(self, ctx, member: discord.Member=None):
+        """
+        Scrambles your target's nickname for 3 minutes, effectively freezing it until the 3 minutes are up.
+        In this testing server, the duration is just 20 seconds.
+        """
+        if member is None:
+            return await ctx.send("You have to tell me whose name you want to scramble, man. `dv.scramble [member]`")
+        if member.bot:
+            return await ctx.send("I ain't bullying bots.")
+        if member == ctx.author:
+            return await ctx.send("Why change your own nickname when you can scramble others' nicknames?")
+        if member in self.scrambledusers:
+            return await ctx.send(f"**{member.name}**'s nickname is currently scrambled. Use this command when their nickname has returned to normal.")
+        member_name = member.display_name
+        lst_member_name = list(member_name)
+        random.shuffle(lst_member_name)
+        new_name = ''.join(lst_member_name)
+        try:
+            await member.edit(nick=new_name)
+            self.scrambledusers.append(member)
+        except discord.Forbidden:
+            return await ctx.send("Sorry! I am unable to change that user's name, probably due to role hierachy or missing permissions.")
+        await ctx.send(f"{member}'s name is now {new_name}!\n{member.mention}, your nickname has been jumbled up by **{ctx.author.name}**. It will automatically revert to your previous nickname after 3 minutes. If you try to change your nickname, I will jumble it again.")
+        def check(payload_before, payload_after):
+            return payload_before == member and payload_before.display_name == new_name and payload_after.display_name != new_name
+        active = True
+        has_warned = False
+        while active:
+            try:
+                member_edit = await self.client.wait_for("member_update", check = check, timeout=180)
+            except asyncio.TimeoutError:
+                await member.edit(nick=member_name)
+                active = False
+                self.scrambledusers.remove(member)
+            else:
+                await member.edit(nick=new_name)
+                if has_warned == False:
+                    await ctx.send(f"{member.mention} how bad! You changed your nickname before the three minutes were up. Your scrambled nickname will still remain on you until 3 minutes are up. I will only tell you this once.")
+                    has_warned = True
+        return await ctx.send("Good boy! I have restored your original nickname. :)")
