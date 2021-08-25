@@ -1,23 +1,10 @@
 import discord
 from discord.ext import menus
 from collections import namedtuple
+from typing import Iterable, Any, Dict
+from discord.ui import View, Button
 from discord.ext.menus import First, Last, Button
 
-def pages(per_page=1, show_page=True):
-    """Compact ListPageSource that was originally made teru but was modified"""
-    def page_source(coro):
-        async def create_page_header(self, menu, entry):
-            result = await discord.utils.maybe_coroutine(coro, self, menu, entry)
-            return menu.generate_page(result, self._max_pages)
-
-        def __init__(self, list_pages):
-            super(self.__class__, self).__init__(list_pages, per_page=per_page)
-        kwargs = {
-            '__init__': __init__,
-            'format_page': (coro, create_page_header)[show_page]
-        }
-        return type(coro.__name__, (menus.ListPageSource,), kwargs)
-    return page_source
 
 class MenuBase(menus.MenuPages):
     """
@@ -211,3 +198,29 @@ class CustomMenu(HelpMenu):
         nav = '\n'.join(f'{self.dict_emoji[e].emoji} {self.dict_emoji[e].explain}' for e in exists)
         embed.add_field(name='Navigation', value=nav)
         await self.message.edit(embed=embed)
+
+class MenuViewInteractionBase(HelpMenuBase):
+    """MenuPages class that is specifically for the help command."""
+    def __init__(self, view: View, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.view = view
+
+    def stop(self) -> None:
+        self.view.stop()
+        super().stop()
+
+    async def _get_kwargs_from_page(self, page: Any) -> Dict[str, Any]:
+        kwargs = await super()._get_kwargs_from_page(page)
+        kwargs.update({"view": await self._source.format_view(self, page)})
+        return kwargs
+
+class ListPageInteractionBase(menus.ListPageSource):
+    """A ListPageSource base that is involved with Interaction. It takes button and interaction object
+        to correctly operate and require format_view to be overriden"""
+    def __init__(self, button: Button, entries: Iterable[Any], **kwargs: Any):
+        super().__init__(entries, **kwargs)
+        self.button = button
+
+    async def format_view(self, menu: menus.MenuPages, entry: Any) -> None:
+        """Method that handles views, it must return a View"""
+        raise NotImplementedError
