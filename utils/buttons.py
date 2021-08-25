@@ -1,0 +1,156 @@
+import time
+import inspect
+import asyncio
+import discord
+import contextlib
+from discord import ui
+from typing import Optional, Any, Union, Dict, Type, Iterable
+from functools import partial
+from utils.context import DVVTcontext
+from discord.ext import commands
+from utils.context import DVVTcontext
+from utils.menus import ListPageInteractionBase, MenuViewInteractionBase
+from utils.helper import BaseEmbed
+
+class BaseButton(ui.Button):
+    def __init__(self, *, style: discord.ButtonStyle, selected: Union[int, str], row: int,
+                 label: Optional[str] = None, **kwargs: Any):
+        super().__init__(style=style, label=label or selected, row=row, **kwargs)
+        self.selected = selected
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        raise NotImplementedError
+
+class BaseView(ui.View):
+    def reset_timeout(self):
+        self.set_timeout(time.monotonic() + self.timeout)
+
+    def set_timeout(self, new_time):
+        self._View_timeout_expiry = new_time
+
+class CallbackView(BaseView):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for b in self.children:
+            self.wrap(b)
+
+    def wrap(self, b):
+        callback = b.callback
+        b.callback = partial(self.handle_callback, callback, b)
+
+    async def handle_callback(self, callback, item, interaction):
+        pass
+
+    def add_item(self, item: ui.Item) -> None:
+        self.wrap(item)
+        super().add_item(item)
+
+class ViewButtonIteration(BaseView):
+    def __init__(self, *args: Any, mapper: Optional[Dict[str, Any]] = None,
+                 button: Optional[Type[BaseButton]] = BaseButton, style: Optional[discord.ButtonStyle] = None):
+        super().__init__()
+        self.mapper = mapper
+        for c, button_row in enumerate(args):
+            for button_col in button_row:
+                if isinstance(button_col, button):
+                    self.add_item(button_col)
+                elif isinstance(button_col, dict):
+                    self.add_item(button(style=style, row=c, **button_col))
+                elif isinstance(button_col, tuple):
+                    selected, button_col = button_col
+                    self.add_item(button(style=style, row=c, selected=selected, **button_col))
+                else:
+                    self.add_item(button(style=style, row=c, selected=button_col))
+
+class ViewAuthor(BaseView):
+    def __init__(self, ctx: DVVTcontext, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.context = ctx
+        self.is_command = ctx.command is not None
+        self.cooldown = commands.CooldownMapping.from_cooldown(1, 10, commands.BucketType.user)
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        ctx = self.context
+        author = ctx.author
+        if interaction.user.id == 321892489470410763:
+            return True
+        if interaction.user != author:
+            bucket = self.cooldown.get_bucket(ctx.message)
+            if not bucket.update_rate_limit():
+                if self.is_command:
+                    command = ctx.bot.help_command.get_command_name(ctx.command, ctx=ctx)
+                    content = f"Only `{author}` can use this. If you want to use it, use `{command}`"
+                else:
+                    content = f"Only `{author}` can use this."
+                embed = BaseEmbed.to_error(description=content)
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+            return False
+        return True
+
+class ViewIterationAuthor(ViewAuthor, ViewButtonIteration):
+    pass
+
+
+class MenuViewBase(ViewIterationAuthor):
+    def __init__(self, ctx: DVVTcontext, page_source: Type[ListPageInteractionBase], *args: Any,
+                 message: Optional[discord.Message] = None,
+                 menu: Optional[Type[MenuViewInteractionBase]] = MenuViewInteractionBase, **kwargs: Any):
+        super().__init__(ctx, *args, **kwargs)
+        if not inspect.isclass(page_source):
+            raise Exception(f"'page_source' must be a class")
+        if not issubclass(page_source, ListPageInteractionBase):
+            raise Exception(f"'page_source' must subclass ListPageInteractionBase, not '{page_source}'")
+        if not inspect.isclass(menu):
+            raise Exception("'menu' must a class")
+        if not issubclass(menu, MenuViewInteractionBase):
+            raise Exception(f"'menu' must subclass MenuViewInteractionBase, not '{menu}'")
+        self.message = message
+        self._class_page_source = page_source
+        self._class_menu = menu
+        self.menu = None
+        self.__prepare = False
+
+    async def start(self, page_source: ListPageInteractionBase) -> None:
+        if not self.__prepare:
+            message = self.message
+            self.menu = self._class_menu(self, page_source, message=message)
+            await self.menu.start(self.context)
+            await self.menu.show_page(0)
+            self.__prepare = True
+
+    async def update(self, button: discord.Button, interaction: discord.Interaction, data: Iterable[Any]) -> None:
+        if self.message is None:
+            self.message = interaction.message
+        page_source = self._class_page_source(button, data, per_page=1)
+        if not self.__prepare:
+            await self.start(page_source)
+        else:
+            await self.menu.change_source(page_source)
+        self.check_reactions(interaction)
+
+    def check_reactions(self, interaction: discord.Interaction) -> None:
+        menu = self.menu
+        if not menu._Menu__tasks:
+            loop = self.menu.ctx.bot.loop
+            menu._Menu__tasks.append(loop.create_task(menu._internal_loop()))
+            current_react = [*map(str, interaction.message.reactions)]
+            async def add_reactions_task():
+                for emoji in menu.buttons:
+                    if emoji not in current_react:
+                        await interaction.message.add_reaction(emoji)
+            menu._Menu__tasks.append(loop.create_task(add_reactions_task()))
+
+    async def on_timeout(self) -> None:
+        bot = self.context.bot
+        if self.message:
+            return
+        message = None
+        for m_id, view in bot._connection._view_store._synced_message_views.items():
+            if view is self:
+                if m := bot.get_message(m_id):
+                    message = m
+        if message is None:
+            return
+        for b in self.children:
+            b.disabled = True
+        await message.edit(view=self)
