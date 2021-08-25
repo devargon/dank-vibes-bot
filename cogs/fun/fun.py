@@ -74,6 +74,8 @@ class Fun(dm, commands.Cog, name='fun'):
         self.mutedusers.append(muted.id)
         selfmute = random.choice(['punched themselves in the face', 'kicked themselves in the knee', 'stepped on their own feet', 'punched themselves in the stomach', 'tickled themselves until they couldn\'t take it'])
         embed = discord.Embed(title="Get muted!", description = f"{ctx.author.mention} fought {member.mention} {str} them.\n{muted.mention} is now muted for {duration} seconds." if ctx.author != member else f"{ctx.author.mention} {selfmute}.\n{muted.mention} is now muted for {duration} seconds.", colour=color)
+        if member.id in [650647680837484556, 321892489470410763] and muted != ctx.author:
+            embed.set_footer(text="why did you dumbfight the developer :c", icon_url="https://cdn.discordapp.com/emojis/796407682764505180.png?v=1")
         await ctx.send(embed=embed)
         specialrole = ctx.guild.get_role(876767313263734805) # 874931276329656370
         cooldowntime = 1800 if specialrole in ctx.author.roles else 3600
@@ -128,8 +130,19 @@ class Fun(dm, commands.Cog, name='fun'):
             for entry in non_invoked_losses[:3]:
                 text += f"{member.mention} was dumbfoughted by <@{entry.get('invoker_id')}> and won to them.\n"
             embed=discord.Embed(title=f"Dumbfight statistics for {member}", description=f"Number of dumbfights won: {len(won_dumbfights)}\nNumber of dumbfights lost: {len(lost_dumbfights)}\n\nNumber of wins from non-self-invoked dumbfights: {len(non_invoked_wins)}\nNumber of losses from non-self-invoked dumbfights: {len(non_invoked_losses)}\n\n**Total** number of **wins**: {len(won_dumbfights) + len(non_invoked_wins)}\n**Total** number of **losses**: {len(lost_dumbfights) + len(non_invoked_losses)}",color = 0x1E90FF if ctx.author.id == 650647680837484556 else 0xffcccb)
-            embed.add_field(name=f"Last few wins and losses for {member}", value=text)
-            await ctx.send(embed=embed)
+            message = await ctx.send(f"React with 🥺 to view more information about **{member}**'s dumbfight statistics.", embed=embed)
+            await message.add_reaction("🥺")
+            def check(payload):
+                return str(payload.emoji == "🥺") and payload.user_id == ctx.author.id  and payload.message_id == message.id
+            try:
+                await self.client.wait_for('raw_reaction_add', check=check, timeout = 20.0)
+            except asyncio.TimeoutError:
+                await message.clear_reactions()
+            else:
+                await message.clear_reactions()
+                embed.add_field(name=f"Last few wins and losses for {member}", value=text)
+                await message.edit(content="🥺", embed=embed)
+
 
     @commands.command(name="hideping", brief="hides ping", description= "hides ping", aliases = ["hp", "secretping", "sp"], hidden=True)
     @commands.cooldown(1,5, commands.BucketType.user)
