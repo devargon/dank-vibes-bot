@@ -95,6 +95,7 @@ class lockdown(commands.Cog):
         already_added_channels = []
         results = await self.client.pool_pg.fetch("SELECT channel_id FROM lockdownprofiles WHERE profile_name=$1 and guild_id = $2", profile_name, ctx.guild.id)
         results = [result.get('channel_id') for result in results]
+        channels = list(dict.fromkeys(channels))
         for channel in channels:
             if channel.id in results:
                 already_added_channels.append(channel.mention)
@@ -173,6 +174,7 @@ class lockdown(commands.Cog):
         non_existent_channels = []
         results = await self.client.pool_pg.fetch("SELECT channel_id FROM lockdownprofiles WHERE profile_name=$1 and guild_id = $2", profile_name, ctx.guild.id)
         results = [result.get('channel_id') for result in results]
+        channels = list(dict.fromkeys(channels))
         for channel in channels:
             if channel.id in results:
                 await self.client.pool_pg.execute("DELETE FROM lockdownprofiles where guild_id = $1 and profile_name = $2 and channel_id = $3", ctx.guild.id, profile_name, channel.id)
@@ -364,6 +366,36 @@ class lockdown(commands.Cog):
         """
         if profile_name is None:
             return await ctx.send("You need to specify the name of the lockdown profile. `lockdown delete [profile_name]`")
+        if message is None:
+            lockdownmsg_entry = await self.client.pool_pg.fetchrow(
+                "SELECT lockdownmsg FROM lockdownmsgs WHERE guild_id = $1 and profile_name = $2", ctx.guild.id, profile_name)
+            if lockdownmsg_entry is not None:
+                lockdownmsg = lockdownmsg_entry.get('lockdownmsg')
+                if lockdownmsg is None:
+                    pass
+                else:
+                    try:
+                        embedjson = json.loads(lockdownmsg)
+                    except json.decoder.JSONDecodeError:
+                        embed = discord.Embed(title="This channel is under lockdown! 🔒",
+                                              description=lockdownmsg, color=self.client.embed_color)
+                        embed.set_footer(icon_url=ctx.guild.icon_url, text=ctx.guild.name)
+                        return await ctx.send(f"This is the message for the lockdown profile **{profile_name}**:", embed=embed)
+                    else:
+                        if "title" in embedjson and "description" in embedjson:
+                            try:
+                                return await ctx.send(embed=discord.Embed.from_dict(embedjson))
+                            except discord.HTTPException:
+                                embed = discord.Embed(title="This channel is under lockdown! 🔒",
+                                                      description=lockdownmsg, color=self.client.embed_color)
+                                embed.set_footer(icon_url=ctx.guild.icon_url, text=ctx.guild.name)
+                                return await ctx.send(f"This is the message for the lockdown profile **{profile_name}**:", embed=embed)
+                        else:
+                            embed = discord.Embed(title="This channel is under lockdown! 🔒",
+                                                  description=lockdownmsg, color=self.client.embed_color)
+                            embed.set_footer(icon_url=ctx.guild.icon_url, text=ctx.guild.name)
+                            return await ctx.send(f"This is the message for the lockdown profile **{profile_name}**:", embed=embed)
+            return await ctx.send(f"There is no message set for the lockdown profile **{profile_name}**. You can set one with `dv.lockdown msg {profile_name} [message_in_plain_text_or_json]`.")
         profile_name = profile_name.lower()
         lockdown_profile = await self.client.pool_pg.fetch("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
         if len(lockdown_profile) == 0:
