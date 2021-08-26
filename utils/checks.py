@@ -39,7 +39,7 @@ def dev() -> callable:
         if ctx.message.author.id in [321892489470410763, 650647680837484556]:
             return True
         else:
-            raise commands.NotOwner()
+            raise ArgumentBaseError(message="Only developers can use this command.")
     return commands.check(predicate)
 
 def admoon() -> Callable:
