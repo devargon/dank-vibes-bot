@@ -7,6 +7,12 @@ from utils.time import humanize_timedelta
 from .dm import dm
 from utils import checks
 import operator
+from typing import Union
+import matplotlib.pyplot as plt
+import os
+from PIL import Image, ImageFilter
+import urllib.request
+from io import BytesIO
 
 class Fun(dm, commands.Cog, name='fun'):
     """
@@ -256,5 +262,118 @@ class Fun(dm, commands.Cog, name='fun'):
                 if has_warned == False:
                     await ctx.send(f"{member.mention} how bad! You changed your nickname before the three minutes were up. Your scrambled nickname will still remain on you until 3 minutes are up. I will only tell you this once.")
                     has_warned = True
-        return await ctx.send("Good boy! I have restored your original nickname. :)")
+        return await ctx.send(f"{member.mention} good boy! I have restored your original nickname. :)")
 
+    @checks.dev()
+    @commands.command(name="chatchart")
+    async def chatchart(self, ctx, channel: Union[discord.TextChannel, str] = None):
+        """
+        Shows the percentage of messages sent by various members. Use `chatchart <channel> --nobots` to filter out bots.
+        """
+        data = {}
+        if channel is None or type(channel) is str:
+            channel = ctx.channel
+        embed=discord.Embed(title=f"Shuffling through #{channel}'s message history...", description=f"Fetching messages from Discord's API...", color=self.client.embed_color)
+        embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/871737314831908974/880374020267212830/discord_loading.gif")
+        statusmessage = await ctx.send(embed=embed)
+        messagecount = 0
+        async for message in channel.history(limit=2500):
+            if message.webhook_id is None:
+                authorid = message.author.id
+                if len(data) > 19 and authorid not in data:
+                    if "Others" not in data:
+                        data["Others"] = 1
+                    else:
+                        data["Others"] += 1
+                elif ctx.message.content.endswith("--nobots"):
+                    if authorid not in data and not message.author.bot:
+                        data[authorid] = 1
+                    elif not message.author.bot:
+                        data[authorid] += 1
+                elif authorid not in data:
+                    data[authorid] = 1
+                else:
+                    data[authorid] += 1
+            messagecount += 1
+            if messagecount %200 == 0:
+                embed=discord.Embed(title=f"Shuffling through #{channel}'s message history...", description=f"Scanned {messagecount} of the last **5000** messages sent here.", color=self.client.embed_color)
+                embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/871737314831908974/880374020267212830/discord_loading.gif")
+                await statusmessage.edit(embed=embed)
+        counted = sorted(data.items(), key=operator.itemgetter(1), reverse=True)
+        for entry in counted:
+            if entry[0] == "Others":
+                counted.pop(counted.index(entry))
+                counted.append((entry[0], entry[1],))
+        labels = []
+        sizes = []
+        for entry in counted:
+            if entry[0] == "Others":
+                labels.append("Others")
+            else:
+                print(entry[0])
+                member = self.client.get_user(entry[0])
+                if member is None:
+                    pass
+                else:
+                    if len(member.name) > 15:
+                        name = f"{member.name[0:15]}...#{member.discriminator}"
+                    else:
+                        name = f"{member.name}#{member.discriminator}"
+                    labels.append(name)
+            sizes.append(entry[1])
+        count = counted
+        if len(labels) == 0:
+            await statusmessage.delete()
+            await ctx.send("There were no entries to display in chatchart. This can happen as: \n    • No one had talked in the channel.\n    • `--nobots` was used but there're only bots talking.\n    • I do not have `Read Message History` permissions.")
+            return
+        plt.figure(figsize=plt.figaspect(1))
+        newlabels = []
+        for l, s in zip(labels, sizes):
+            s = s / sum(sizes) * 100
+            s = round(s, 1)
+            newlabels.append(f"{l}, {s}%")
+        title = plt.title(f"Messages in #{channel.name}", color='w')
+        colors = ['#3d405b', '#005f73', '#0a9396', '#94d2bd', '#e9d8a6', '#ee9b00', '#ca6702', '#bb3e03', '#ae2012', '#9b2226', '#3d405b', '#005f73', '#0a9396', '#94d2bd', '#e9d8a6', '#ee9b00', '#ca6702', '#bb3e03', '#ae2012', 'grey']
+        plt.pie(sizes, colors=colors)
+        plt.legend(bbox_to_anchor=(1, 0.5), loc='center left', labels=newlabels, facecolor="gray",
+                   edgecolor="white")
+        filename = f"temp/{random.randint(0,9999999)}.png"
+        plt.savefig(filename, bbox_inches="tight", pad_inches=0.1, transparent=True)
+        embed = discord.Embed(title=f"Shuffling through #{channel}'s message history...",
+                              description=f"Sending chatchart...",
+                              color=self.client.embed_color)
+        embed.set_thumbnail(
+            url="https://cdn.discordapp.com/attachments/871737314831908974/880374020267212830/discord_loading.gif")
+        await statusmessage.edit(embed=embed)
+        file = discord.File(filename)
+        await ctx.send(file=file)
+        await statusmessage.delete()
+        os.remove(filename)
+
+    @checks.dev()
+    @commands.command(name="goeatpoop")
+    async def goeatpoop(self, ctx, member:discord.Member = None):
+        """
+        Get someone to eat poop
+        """
+        if member is None:
+            return await ctx.send("mention someone lol")
+        memberfilename = f"temp/{random.randint(1, 9999999)}.png"
+        main = Image.open("assets/poop.png")
+        opener = urllib.request.build_opener()
+        opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+        urllib.request.install_opener(opener)
+        urllib.request.urlretrieve(str(ctx.author.avatar_url).replace('webp', 'png'), memberfilename)
+        ima = Image.open(memberfilename).convert('RGB')
+        ima = ima.resize((220,220))
+        backg = main.copy()
+        backg.paste(ima, (107, 218))
+        urllib.request.urlretrieve(str(member.avatar_url).replace('webp', 'png'), memberfilename)
+        ima2 = Image.open(memberfilename).convert('RGB')
+        ima2 = ima2.resize((227,227))
+        backg.paste(ima2, (555,112))
+        b = BytesIO()
+        backg.save(b, format="png", optimize=True, quality=50)
+        b.seek(0)
+        file = discord.File(fp=b, filename="goeatpoop.png")
+        await ctx.send("If you don't understand the reference: <https://www.youtube.com/watch?v=M-PvB0NdO2g>", file=file)
