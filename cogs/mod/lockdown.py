@@ -8,6 +8,31 @@ from utils.menus import CustomMenu
 import json
 emojis = ["<:checkmark:841187106654519296>", "<:crossmark:841186660662247444>"]
 
+
+async def send_lockdown_message(self, channel: discord.TextChannel, message: str, extra_message: str = None):
+    print(extra_message)
+    try:
+        embedjson = json.loads(message)
+    except json.decoder.JSONDecodeError:
+        embed = discord.Embed(title="This channel is under lockdown! 🔒",
+                              description=message, color=self.client.embed_color)
+        embed.set_footer(icon_url=channel.guild.icon_url, text=channel.guild.name)
+        return await channel.send(content=extra_message, embed=embed)
+    else:
+        if "title" in embedjson and "description" in embedjson:
+            try:
+                return await channel.send(content=extra_message, embed=discord.Embed.from_dict(embedjson))
+            except discord.HTTPException:
+                embed = discord.Embed(title="This channel is under lockdown! 🔒",
+                                      description=message, color=self.client.embed_color)
+                embed.set_footer(icon_url=channel.guild.icon_url, text=channel.guild.name)
+                return await channel.send(content=extra_message, embed=embed)
+        else:
+            embed = discord.Embed(title="This channel is under lockdown! 🔒",
+                                  description=message, color=self.client.embed_color)
+            embed.set_footer(icon_url=channel.guild.icon_url, text=channel.guild.name)
+            return await channel.send(content=extra_message, embed=embed)
+
 class lockdown_pagination(menus.ListPageSource):
     def __init__(self, entries, title):
         self.title = title
@@ -258,6 +283,7 @@ class lockdown(commands.Cog):
             channels_not_found = []
             channels_missing_perms = []
             channels_success = []
+            special_cases = []
             lockdownmsg_entry = await self.client.pool_pg.fetchrow("SELECT lockdownmsg FROM lockdownmsgs WHERE guild_id = $1 and profile_name = $2", ctx.guild.id, profile_name)
             if lockdownmsg_entry is not None:
                 lockdownmsg = lockdownmsg_entry.get('lockdownmsg')
@@ -268,37 +294,27 @@ class lockdown(commands.Cog):
                 else:
                     try:
                         overwrites = channel.overwrites_for(ctx.guild.default_role)
-                        overwrites.send_messages=False
-                        await channel.set_permissions(ctx.guild.default_role,overwrite = overwrites, reason = f"Lockdown issued by {ctx.author} for channels in the {profile_name} Lockdown Profile")
-                        if lockdownmsg_entry is not None:
-                            try:
-                                embedjson = json.loads(lockdownmsg)
-                            except json.decoder.JSONDecodeError:
-                                embed = discord.Embed(title="This channel is under lockdown! 🔒", description=lockdownmsg, color=self.client.embed_color)
-                                embed.set_footer(icon_url=ctx.guild.icon_url, text=ctx.guild.name)
-                                await channel.send(embed=embed)
-                            else:
-                                if "title" in embedjson and "description" in embedjson:
-                                    try:
-                                        await channel.send(embed=discord.Embed.from_dict(embedjson))
-                                    except discord.HTTPException:
-                                        embed = discord.Embed(title="This channel is under lockdown! 🔒",
-                                                              description=lockdownmsg, color=self.client.embed_color)
-                                        embed.set_footer(icon_url=ctx.guild.icon_url, text=ctx.guild.name)
-                                        await channel.send(embed=embed)
-                                else:
-                                    embed = discord.Embed(title="This channel is under lockdown! 🔒", description=lockdownmsg, color=self.client.embed_color)
-                                    embed.set_footer(icon_url=ctx.guild.icon_url, text=ctx.guild.name)
-                                    await channel.send(embed=embed)
+                        if channel.name == "support":
+                            overwrites.view_channel=False
+                            await channel.set_permissions(ctx.guild.default_role,overwrite = overwrites, reason = f"Denied view channel permissions through lockdown issued by {ctx.author} for channels in the {profile_name} Lockdown Profile")
+                            special_cases.append((channel.mention, "Denied view channel Permissions",))
+                        else:
+                            overwrites.send_messages = False
+                            await channel.set_permissions(ctx.guild.default_role, overwrite=overwrites, reason=f"Lockdown issued by {ctx.author} for channels in the {profile_name} Lockdown Profile")
+                            if lockdownmsg_entry is not None:
+                                await send_lockdown_message(self, channel, lockdownmsg)
+                                channels_success.append(channel.mention)
                     except discord.Forbidden:
                         channels_missing_perms.append(channel.mention)
-                    else:
-                        channels_success.append(channel.mention)
             msg_content = f"{len(channels_success)} channels were successfully locked."
             if len(channels_missing_perms) > 0:
                 msg_content += f"\nI was not able to lock down these channels due to missing permissions: {', '.join(channels_missing_perms)}"
             if len(channels_not_found) > 0:
                 msg_content += f"\nI was not able to lock down these channels as I could not find them: {', '.join(channels_not_found)}"
+            if 0 < len(special_cases) < 30:
+                msg_content += f"\n\nThese channels had special actions:\n"
+                for case in special_cases:
+                    msg_content += f"{case[0]} - {case[1]}"
             await ctx.send(msg_content)
 
     @checks.has_permissions_or_role(administrator=True)
@@ -334,6 +350,7 @@ class lockdown(commands.Cog):
             channels_not_found = []
             channels_missing_perms = []
             channels_success = []
+            special_cases = []
             for entry in lockdown_profile:
                 channel = ctx.guild.get_channel((entry.get('channel_id')))
                 if channel is None:
@@ -341,20 +358,29 @@ class lockdown(commands.Cog):
                 else:
                     try:
                         overwrites = channel.overwrites_for(ctx.guild.default_role)
-                        overwrites.send_messages = None
-                        await channel.set_permissions(ctx.guild.default_role, overwrite=overwrites, reason = f"Lockdown removed, issued by {ctx.author} for channels in the Lockdown Profile '{profile_name}'")
-                        embed = discord.Embed(title="This channel is now unlocked! 🔓", description=f"Have fun in {ctx.guild.name}!", color=self.client.embed_color, timestamp = datetime.utcnow())
-                        embed.set_footer(icon_url=ctx.guild.icon_url, text=ctx.guild.name)
-                        await channel.send(embed=embed)
+                        if channel.name == "support":
+                            overwrites.view_channel=True
+                            await channel.set_permissions(ctx.guild.default_role,overwrite = overwrites, reason = f"Allowed to view support channel through lockdown end issued by {ctx.author} for channels in the {profile_name} Lockdown Profile")
+                            special_cases.append((channel.mention, "Allowed view channel Permissions",))
+                        else:
+                            overwrites.send_messages = None
+                            await channel.set_permissions(ctx.guild.default_role, overwrite=overwrites, reason = f"Lockdown removed, issued by {ctx.author} for channels in the Lockdown Profile '{profile_name}'")
+                            embed = discord.Embed(title="This channel is now unlocked! 🔓", description=f"Have fun in {ctx.guild.name}!", color=self.client.embed_color, timestamp = datetime.utcnow())
+                            embed.set_footer(icon_url=ctx.guild.icon_url, text=ctx.guild.name)
+                            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/867100945773756476.gif?v=1")
+                            await channel.send(embed=embed)
+                            channels_success.append(channel.mention)
                     except discord.Forbidden:
                         channels_missing_perms.append(channel.mention)
-                    else:
-                        channels_success.append(channel.mention)
             msg_content = f"{len(channels_success)} channels were successfully unlocked."
             if len(channels_missing_perms) > 0:
                 msg_content += f"\nI was not able to unlock these channels due to missing permissions: {', '.join(channels_missing_perms)}"
             if len(channels_not_found) > 0:
                 msg_content += f"\nI was not able to unlock these channels as I could not find them: {', '.join(channels_not_found)}"
+            if 0 < len(special_cases) < 30:
+                msg_content += f"\n\nThese channels had special actions:\n"
+                for case in special_cases:
+                    msg_content += f"{case[0]} - {case[1]}"
             await ctx.send(msg_content)
 
     @checks.has_permissions_or_role(administrator=True)
@@ -363,6 +389,7 @@ class lockdown(commands.Cog):
         """
         Changes the lockdown message for a specific lockdown profile. You can add a embed as the lockdown message by getting the JSON code of an embed via Carlbot. Otherwise, a normal message will be shown in a generic embed's description.
         ⚠️ This only applies to lockdown messages, and not unlock messages.
+        To view the message for a lockdown profile, just use the command without a message.
         """
         if profile_name is None:
             return await ctx.send("You need to specify the name of the lockdown profile. `lockdown delete [profile_name]`")
@@ -371,30 +398,8 @@ class lockdown(commands.Cog):
                 "SELECT lockdownmsg FROM lockdownmsgs WHERE guild_id = $1 and profile_name = $2", ctx.guild.id, profile_name)
             if lockdownmsg_entry is not None:
                 lockdownmsg = lockdownmsg_entry.get('lockdownmsg')
-                if lockdownmsg is None:
-                    pass
-                else:
-                    try:
-                        embedjson = json.loads(lockdownmsg)
-                    except json.decoder.JSONDecodeError:
-                        embed = discord.Embed(title="This channel is under lockdown! 🔒",
-                                              description=lockdownmsg, color=self.client.embed_color)
-                        embed.set_footer(icon_url=ctx.guild.icon_url, text=ctx.guild.name)
-                        return await ctx.send(f"This is the message for the lockdown profile **{profile_name}**:", embed=embed)
-                    else:
-                        if "title" in embedjson and "description" in embedjson:
-                            try:
-                                return await ctx.send(embed=discord.Embed.from_dict(embedjson))
-                            except discord.HTTPException:
-                                embed = discord.Embed(title="This channel is under lockdown! 🔒",
-                                                      description=lockdownmsg, color=self.client.embed_color)
-                                embed.set_footer(icon_url=ctx.guild.icon_url, text=ctx.guild.name)
-                                return await ctx.send(f"This is the message for the lockdown profile **{profile_name}**:", embed=embed)
-                        else:
-                            embed = discord.Embed(title="This channel is under lockdown! 🔒",
-                                                  description=lockdownmsg, color=self.client.embed_color)
-                            embed.set_footer(icon_url=ctx.guild.icon_url, text=ctx.guild.name)
-                            return await ctx.send(f"This is the message for the lockdown profile **{profile_name}**:", embed=embed)
+                if lockdownmsg is not None:
+                    return await send_lockdown_message(self, ctx.channel, lockdownmsg, f"This is the message sent when channels are locked in the lockdown profile **{profile_name}**")
             return await ctx.send(f"There is no message set for the lockdown profile **{profile_name}**. You can set one with `dv.lockdown msg {profile_name} [message_in_plain_text_or_json]`.")
         profile_name = profile_name.lower()
         lockdown_profile = await self.client.pool_pg.fetch("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
@@ -405,19 +410,7 @@ class lockdown(commands.Cog):
             await self.client.pool_pg.execute("UPDATE lockdownmsgs SET lockdownmsg = $1 WHERE profile_name = $2 and guild_id = $3", message, profile_name, ctx.guild.id)
         else:
             await self.client.pool_pg.execute("INSERT INTO lockdownmsgs VALUES($1, $2, $3)", ctx.guild.id, profile_name, message)
-        try:
-            embedjson = json.loads(message)
-        except json.decoder.JSONDecodeError:
-            pass
-        else:
-            if "title" in embedjson and "description" in embedjson:
-                try:
-                    return await ctx.send(f"I have successfully set your lockdown message for the lockdown profile {profile_name}. This is how it will look like:",embed=discord.Embed.from_dict(embedjson))
-                except discord.HTTPException:
-                    pass
-        embed = discord.Embed(title="This channel is under lockdown! 🔒", description=message, color=self.client.embed_color)
-        embed.set_footer(icon_url=ctx.guild.icon_url, text=ctx.guild.name)
-        return await ctx.send(f"I have successfully set your lockdown message for the lockdown profile {profile_name}. This is how it will look like:", embed=embed)
+        return await send_lockdown_message(self, ctx.channel, message, f"I have successfully set your lockdown message for the lockdown profile {profile_name}. This is how it will look like:")
 
 
 
