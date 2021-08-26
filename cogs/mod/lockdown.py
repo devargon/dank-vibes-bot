@@ -410,7 +410,7 @@ class lockdown(commands.Cog):
             await self.client.pool_pg.execute("UPDATE lockdownmsgs SET lockdownmsg = $1 WHERE profile_name = $2 and guild_id = $3", message, profile_name, ctx.guild.id)
         else:
             await self.client.pool_pg.execute("INSERT INTO lockdownmsgs VALUES($1, $2, $3)", ctx.guild.id, profile_name, message)
-        return await send_lockdown_message(self, ctx.channel, message, f"I have successfully set your lockdown message for the lockdown profile {profile_name}. This is how it will look like:")
+        return await send_lockdown_message(self, ctx.channel, message, f"I have successfully set your lockdown message for the lockdown profile **{profile_name}**. This is how it will look like:")
 
 
 
