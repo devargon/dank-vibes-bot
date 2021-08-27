@@ -14,6 +14,25 @@ from PIL import Image, ImageFilter
 import urllib.request
 from io import BytesIO
 
+blacklisted_words = ['N-renoteQ3R', 'n.i.g.g.e.r', 'n i g a', 'nygga', 'niuggers', 'nigger',
+                     'https://discordnitro.link/stearncommunity', 'kill yourself', 'figgot', 'ching chong',
+                     'frigger', 'retard', 'n06g4s', 'n1gga', 'nicecar', 'nig a', 'discorcl.click', 'n!ggas', 'n1g@',
+                     'kyś', 'nigg', '𓂺', 'negro', 'tranny', 'https://discorcl.click/gift/b5xkymkdgtacxja', 'nigga',
+                     'ñïbbä', 'rxtarded', '.ni.gga.', 'nixgger', '░', 'etard', 'n1 66 er', 'niglet', 'nag gers',
+                     'noiga', 'n8gga', 'retarted', 'discord.qq', 'n iggers', 'nêģŕö',
+                     'send this to all servers you are in.', 'fagot', 're.tard', 'n!6g3r',
+                     'http://discordglft.ru/gift', 'cars', 'nergga', 'kýs', 'n1gər', 'r3tard', 'nigg4',
+                     'https://steamdiscordnitro.ru/gift', 'n1g||64', 'nigga', 'naggers', 're tar d', 'neega',
+                     'ni99er', 'steamcommunytu', 'night', 'nigga', 'gleam.io', 'n!gga', 'nigga', 'nidgga',
+                     'niogger', '⠿', 'no664s', 'nippa', 'nlgger', 'nibbas', 'nìģêŕ', 'nebbas', 'nigas', 'nigga',
+                     'nice', '卐', 'negga', 'n1gg3rs', 'n I g g a', 'nigba', 'furfag', 'n3bb4s', 'nugga', 'n¡gga',
+                     'n!gger', 'n.i.g.g.a', 'higgers', 'nirrger', 'n1gger', 'fucktard', '⣿', 'steamcommnuitry',
+                     'migga', 'https://discordnitro.link/steam/gifts', 'n|ggers', 'giveawaynitro.com', 'f@g',
+                     'リ╎⊣⊣ᒷ∷', 'retrded', 'https://discordgift.ru.com/gift', 'r3tar d', 'n!gg3r', 'nibba', 'niqqer',
+                     'kyfs', 'discord.qg', 'fa.g', 'nagger', 'nigfa', 'send this to all the servers you are in',
+                     'faggot', 'niceca||r', 'nig gas', 'n!gg@', 'hey, free discord gifted nitro for 1 month:',
+                     'neeger', 'nighha', 'n1gg@', 'n!g3r', 'nig', 'nigg', 'anigame']
+
 class Fun(dm, commands.Cog, name='fun'):
     """
     Fun commands
@@ -237,9 +256,22 @@ class Fun(dm, commands.Cog, name='fun'):
         if member in self.scrambledusers:
             return await ctx.send(f"**{member.name}**'s nickname is currently scrambled. Use this command when their nickname has returned to normal.")
         member_name = member.display_name
-        lst_member_name = list(member_name)
-        random.shuffle(lst_member_name)
-        new_name = ''.join(lst_member_name)
+        def scramble_nickname():
+            tries = 0
+            while True:
+                if tries < 10:
+                    lst_member_name = list(member_name)
+                    random.shuffle(lst_member_name)
+                    new_name = ''.join(lst_member_name)
+                    if new_name in blacklisted_words:
+                        tries += 1
+                    else:
+                        return new_name
+                else:
+                    return None
+        new_name = scramble_nickname()
+        if new_name is None:
+            return await ctx.send(f"It appears that a scrambled version of **{member.name}**'s name corresponds to a blacklisted word. Unfortunately, we can't scramble their nickname.")
         try:
             await member.edit(nick=new_name)
             self.scrambledusers.append(member)
