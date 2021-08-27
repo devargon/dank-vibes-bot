@@ -42,7 +42,7 @@ class betting(commands.Cog):
         for fighter in self.fighters:
             if ctx.author in self.fighters[fighter]:
                 return await ctx.send("You have already placed a bet on someone. Unfortunately, this action is irreversible.")
-        holder = ctx.guild.get_member(321892489470410763)
+        holder = ctx.guild.get_member(719890992723001354)
         confirmation = await ctx.send(embed=discord.Embed(title="Placing a bet...", description=f"Are you sure you want to place a bet on **{member.name}**? You cannot change your bet after you have sent the entry fee for your bet.", color=self.client.embed_color))
         for emoji in emojis:
             await confirmation.add_reaction(emoji)
@@ -96,8 +96,8 @@ class betting(commands.Cog):
         """
         Starts a betting session by adding all members who have a role. The role is specified in the code. Rerunning this command will cause the previous betting session to reset.
         """
-        mod_id = 879625711915241532
-        modm_role_id = 874961803313033257
+        mod_id = 608495204399448066
+        modm_role_id = 684591962094829569
         mod_role = ctx.guild.get_role(mod_id)
         modm_role = ctx.guild.get_role(modm_role_id)
         self.fighters.clear()
