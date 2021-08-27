@@ -7,14 +7,16 @@ from utils import checks
 from datetime import datetime
 from discord.ext import commands, tasks
 from utils.format import print_exception
+from .betting import betting
 
-class DankMemer(commands.Cog, name='dankmemer'):
+class DankMemer(betting, commands.Cog, name='dankmemer'):
     """
     Dank Memer utilities
     """
     def __init__(self, client):
         self.client = client
         self.dankmemerreminders.start()
+        self.fighters = {}
 
     def cog_unload(self):
         self.dankmemerreminders.stop()
