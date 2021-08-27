@@ -95,7 +95,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
             channel = self.client.get_channel(channelid)
             for voter in votecount:
                 member = guild.get_member(voter.get('member_id'))
-                name = member.display_name if member is not None else str(voter.get('member_id'))  # shows user id if the user left the server
+                name = member.display_name.replace("[AFK] ", "") if member is not None else str(voter.get('member_id'))  # shows user id if the user left the server
                 name = (name[:12] + '...') if len(name) > 15 else name  # shortens the nickname if it's too long
                 leaderboard.append((name, voter[1]))  # this is the final list of leaderboard people
             font_name = "assets/Gagalin.ttf"
@@ -327,7 +327,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
             leaderboard = []
             for voter in votecount:
                 member = ctx.guild.get_member(voter.get('member_id'))
-                name = member.display_name.replace("[AFK]", "") if member is not None else str(voter.get('member_id')) # shows user id if the user left the server
+                name = member.display_name.replace("[AFK] ", "") if member is not None else str(voter.get('member_id')) # shows user id if the user left the server
                 name = (name[:15] + '...') if len(name) > 18 else name # shortens the nickname if it's too long
                 leaderboard.append((name, voter[1])) #this is the final list of leaderboard people
             font_name = "assets/Gagalin.ttf"
