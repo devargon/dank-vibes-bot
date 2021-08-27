@@ -95,7 +95,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
             channel = self.client.get_channel(channelid)
             for voter in votecount:
                 member = guild.get_member(voter.get('member_id'))
-                name = member.display_name if member is not None else str(voter.get('member_id'))  # shows user id if the user left the server
+                name = member.display_name.replace("[AFK] ", "") if member is not None else str(voter.get('member_id'))  # shows user id if the user left the server
                 name = (name[:12] + '...') if len(name) > 15 else name  # shortens the nickname if it's too long
                 leaderboard.append((name, voter[1]))  # this is the final list of leaderboard people
             font_name = "assets/Gagalin.ttf"
@@ -173,8 +173,8 @@ class VoteTracker(commands.Cog, name='votetracker'):
                               description=f"You have voted {guild.name} for **{votecount}** time(s).\n[You can vote for Dank Vibes here!](https://top.gg/servers/595457764935991326/vote)",
                               # It will look like this: https://i.ibb.co/g4PvRsQ/Discord-ha-R7-Hsdzo-E.png
                               timestamp=datetime.datetime.utcnow(), color=0x57f0f0)
-        embed.set_author(name=f"{member.name}#{member.discriminator} ({member.id})", icon_url=member.avatar.url)
-        embed.set_footer(text=f"{guild.name} • {self.client.user.name}", icon_url=guild.icon.url)
+        embed.set_author(name=f"{member.name}#{member.discriminator} ({member.id})", icon_url=member.avatar_url)
+        embed.set_footer(text=f"{guild.name} • {self.client.user.name}", icon_url=guild.icon_url)
         qbemojis = ["https://cdn.discordapp.com/emojis/869579459420913715.gif?v=1", "https://cdn.discordapp.com/emojis/869579448708653066.gif?v=1", "https://cdn.discordapp.com/emojis/869579493776457838.gif?v=1", "https://cdn.discordapp.com/emojis/869579480509841428.gif?v=1", "https://cdn.discordapp.com/emojis/873643650607894548.gif?v=1", "https://cdn.discordapp.com/emojis/871970548576559155.gif?v=1", "https://cdn.discordapp.com/emojis/872470665607909417.gif?v=1", "https://cdn.discordapp.com/emojis/830920902019514408.gif?v=1"]
         embed.set_thumbnail(url=random.choice(qbemojis))
         embed.add_field(name="\u200b", value=rolesummary)
@@ -198,7 +198,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
             embed.add_field(name="Your current reminder setting", value="DM" if currentpreference == 1 else "Ping" if currentpreference == 2 else "No reminder" if currentpreference == 0 else "Unknown; Please try to choose a reminder setting!", inline=False) #shows current reminder setting
             embed.add_field(name = "How to configure the reminder?", value=f"`votereminder dm` will make {self.client.user.name} DM you to vote again.\n`votereminder ping/mention` will make {self.client.user.name} ping you in <#{channelid}> to vote again.\n`votereminder none` will turn off reminders.", inline=False) # description on this command
             embed.set_footer(text=f"{ctx.guild.name} • {self.client.user.name}")
-            embed.set_thumbnail(url=ctx.guild.icon.url)
+            embed.set_thumbnail(url=ctx.guild.icon_url)
             return await ctx.send(embed=embed)
         if argument.lower() in ["dm"]:
             await self.client.pool_pg.execute("UPDATE rmpreference SET rmtype = $1 WHERE member_id = $2", 1, ctx.author.id)
@@ -223,7 +223,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
                               timestamp=datetime.datetime.utcnow(), color=0x57f0f0)
         embed.add_field(name="How to configure the vote roles?",
                         value=f"`voteroles list` shows all milestones for vote roles.\n`votereminder add [votecount] [role]` adds a milestone for vote roles.\n`votereminder remove [votecount]` will remove the milestone for vote count.") # description on this command
-        embed.set_thumbnail(url=ctx.guild.icon.url)
+        embed.set_thumbnail(url=ctx.guild.icon_url)
         embed.set_footer(text="Roles can be stated via a name, mention or ID.")
         await ctx.send(embed=embed)
 
@@ -327,7 +327,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
             leaderboard = []
             for voter in votecount:
                 member = ctx.guild.get_member(voter.get('member_id'))
-                name = member.display_name.replace("[AFK]", "") if member is not None else str(voter.get('member_id')) # shows user id if the user left the server
+                name = member.display_name.replace("[AFK] ", "") if member is not None else str(voter.get('member_id')) # shows user id if the user left the server
                 name = (name[:15] + '...') if len(name) > 18 else name # shortens the nickname if it's too long
                 leaderboard.append((name, voter[1])) #this is the final list of leaderboard people
             font_name = "assets/Gagalin.ttf"
@@ -365,9 +365,9 @@ class VoteTracker(commands.Cog, name='votetracker'):
             desc = f"You can now [vote for Dank Vibes](https://top.gg/servers/595457764935991326/vote) again!" # self explanatory
         embed = discord.Embed(title=f"You have voted for Dank Vibes **__{count}__** times.",
                               description=desc, color=0x57f0f0, timestamp = datetime.datetime.utcnow())
-        embed.set_author(name=f"{ctx.author.name}#{ctx.author.discriminator}", icon_url=ctx.author.avatar.url)
+        embed.set_author(name=f"{ctx.author.name}#{ctx.author.discriminator}", icon_url=ctx.author.avatar_url)
         embed.add_field(name="Want to be reminded to vote for Dank Vibes?", value="Use `dv.votereminder dm/ping` to be reminded 12 hours after you vote for Dank Vibes.")
-        embed.set_thumbnail(url=ctx.guild.icon.url)
+        embed.set_thumbnail(url=ctx.guild.icon_url)
         await ctx.send(embed=embed)
 
     @commands.command(name="leaderboard", aliases = ["lb"], hidden=True)

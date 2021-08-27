@@ -1,12 +1,37 @@
+import os
 import discord
 import time
-import asyncio
-from discord.ext import commands
 import random
-from utils.time import humanize_timedelta
+import asyncio
+import operator
+import urllib.request
+from io import BytesIO
+from PIL import Image
 from .dm import dm
 from utils import checks
-import operator
+from typing import Union
+from utils.time import humanize_timedelta
+from discord.ext import commands
+import matplotlib.pyplot as plt
+
+blacklisted_words = ['N-renoteQ3R', 'n.i.g.g.e.r', 'n i g a', 'nygga', 'niuggers', 'nigger',
+                     'https://discordnitro.link/stearncommunity', 'kill yourself', 'figgot', 'ching chong',
+                     'frigger', 'retard', 'n06g4s', 'n1gga', 'nicecar', 'nig a', 'discorcl.click', 'n!ggas', 'n1g@',
+                     'kyś', 'nigg', '𓂺', 'negro', 'tranny', 'https://discorcl.click/gift/b5xkymkdgtacxja', 'nigga',
+                     'ñïbbä', 'rxtarded', '.ni.gga.', 'nixgger', '░', 'etard', 'n1 66 er', 'niglet', 'nag gers',
+                     'noiga', 'n8gga', 'retarted', 'discord.qq', 'n iggers', 'nêģŕö',
+                     'send this to all servers you are in.', 'fagot', 're.tard', 'n!6g3r',
+                     'http://discordglft.ru/gift', 'cars', 'nergga', 'kýs', 'n1gər', 'r3tard', 'nigg4',
+                     'https://steamdiscordnitro.ru/gift', 'n1g||64', 'nigga', 'naggers', 're tar d', 'neega',
+                     'ni99er', 'steamcommunytu', 'night', 'nigga', 'gleam.io', 'n!gga', 'nigga', 'nidgga',
+                     'niogger', '⠿', 'no664s', 'nippa', 'nlgger', 'nibbas', 'nìģêŕ', 'nebbas', 'nigas', 'nigga',
+                     'nice', '卐', 'negga', 'n1gg3rs', 'n I g g a', 'nigba', 'furfag', 'n3bb4s', 'nugga', 'n¡gga',
+                     'n!gger', 'n.i.g.g.a', 'higgers', 'nirrger', 'n1gger', 'fucktard', '⣿', 'steamcommnuitry',
+                     'migga', 'https://discordnitro.link/steam/gifts', 'n|ggers', 'giveawaynitro.com', 'f@g',
+                     'リ╎⊣⊣ᒷ∷', 'retrded', 'https://discordgift.ru.com/gift', 'r3tar d', 'n!gg3r', 'nibba', 'niqqer',
+                     'kyfs', 'discord.qg', 'fa.g', 'nagger', 'nigfa', 'send this to all the servers you are in',
+                     'faggot', 'niceca||r', 'nig gas', 'n!gg@', 'hey, free discord gifted nitro for 1 month:',
+                     'neeger', 'nighha', 'n1gg@', 'n!g3r', 'nig', 'nigg', 'anigame']
 
 class Fun(dm, commands.Cog, name='fun'):
     """
@@ -231,9 +256,22 @@ class Fun(dm, commands.Cog, name='fun'):
         if member in self.scrambledusers:
             return await ctx.send(f"**{member.name}**'s nickname is currently scrambled. Use this command when their nickname has returned to normal.")
         member_name = member.display_name
-        lst_member_name = list(member_name)
-        random.shuffle(lst_member_name)
-        new_name = ''.join(lst_member_name)
+        def scramble_nickname():
+            tries = 0
+            while True:
+                if tries < 10:
+                    lst_member_name = list(member_name)
+                    random.shuffle(lst_member_name)
+                    new_name = ''.join(lst_member_name)
+                    if new_name in blacklisted_words:
+                        tries += 1
+                    else:
+                        return new_name
+                else:
+                    return None
+        new_name = scramble_nickname()
+        if new_name is None:
+            return await ctx.send(f"It appears that a scrambled version of **{member.name}**'s name corresponds to a blacklisted word. Unfortunately, we can't scramble their nickname.")
         try:
             await member.edit(nick=new_name)
             self.scrambledusers.append(member)
@@ -256,4 +294,125 @@ class Fun(dm, commands.Cog, name='fun'):
                 if has_warned == False:
                     await ctx.send(f"{member.mention} how bad! You changed your nickname before the three minutes were up. Your scrambled nickname will still remain on you until 3 minutes are up. I will only tell you this once.")
                     has_warned = True
-        return await ctx.send("Good boy! I have restored your original nickname. :)")
+        return await ctx.send(f"{member.mention} good boy! I have restored your original nickname. :)")
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.cooldown(600, 1, commands.BucketType.user)
+    @commands.command(name="chatchart")
+    async def chatchart(self, ctx, channel: Union[discord.TextChannel, str] = None):
+        """
+        Shows the percentage of messages sent by various members.
+        Add the --bots flag to include bots in the chatchart.
+        """
+        data = {}
+        if channel is None or type(channel) is str:
+            channel = ctx.channel
+        embed=discord.Embed(title=f"Shuffling through #{channel}'s message history...", description=f"Fetching messages from Discord's API...", color=self.client.embed_color)
+        embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/871737314831908974/880374020267212830/discord_loading.gif")
+        statusmessage = await ctx.send(embed=embed)
+        messagecount = 0
+        async for message in channel.history(limit=5000):
+            if message.webhook_id is None:
+                authorid = message.author.id
+                if len(data) > 19 and authorid not in data:
+                    if "Others" not in data:
+                        data["Others"] = 1
+                    else:
+                        data["Others"] += 1
+                elif message.author.bot:
+                    if ctx.message.content.endswith("--bots"):
+                        if authorid not in data:
+                            data[authorid] = 1
+                        else:
+                            data[authorid] += 1
+                else:
+                    if authorid not in data:
+                        data[authorid] = 1
+                    else:
+                        data[authorid] += 1
+            messagecount += 1
+            if messagecount %200 == 0:
+                embed=discord.Embed(title=f"Shuffling through #{channel}'s message history...", description=f"Scanned {messagecount} of the last **5000** messages sent here.", color=self.client.embed_color)
+                embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/871737314831908974/880374020267212830/discord_loading.gif")
+                await statusmessage.edit(embed=embed)
+        counted = sorted(data.items(), key=operator.itemgetter(1), reverse=True)
+        for entry in counted:
+            if entry[0] == "Others":
+                counted.pop(counted.index(entry))
+                counted.append((entry[0], entry[1],))
+        labels = []
+        sizes = []
+        for entry in counted:
+            if entry[0] == "Others":
+                labels.append("Others")
+            else:
+                print(entry[0])
+                member = self.client.get_user(entry[0])
+                if member is None:
+                    pass
+                else:
+                    if len(member.name) > 15:
+                        name = f"{member.name[0:15]}...#{member.discriminator}"
+                    else:
+                        name = f"{member.name}#{member.discriminator}"
+                    labels.append(name)
+            sizes.append(entry[1])
+        count = counted
+        if len(labels) == 0:
+            await statusmessage.delete()
+            await ctx.send("There were no entries to display in chatchart. This can happen as: \n    • No one had talked in the channel.\n    • `--nobots` was used but there're only bots talking.\n    • I do not have `Read Message History` permissions.")
+            return
+        plt.figure(figsize=plt.figaspect(1))
+        newlabels = []
+        for l, s in zip(labels, sizes):
+            s = s / sum(sizes) * 100
+            s = round(s, 1)
+            newlabels.append(f"{l}, {s}%")
+        title = plt.title(f"Messages in #{channel.name}", color='w')
+        colors = ['#3d405b', '#005f73', '#0a9396', '#94d2bd', '#e9d8a6', '#ee9b00', '#ca6702', '#bb3e03', '#ae2012', '#9b2226', '#3d405b', '#005f73', '#0a9396', '#94d2bd', '#e9d8a6', '#ee9b00', '#ca6702', '#bb3e03', '#ae2012', 'grey']
+        plt.pie(sizes, colors=colors)
+        plt.legend(bbox_to_anchor=(1, 0.5), loc='center left', labels=newlabels, facecolor="gray",
+                   edgecolor="white")
+        filename = f"temp/{random.randint(0,9999999)}.png"
+        plt.savefig(filename, bbox_inches="tight", pad_inches=0.1, transparent=True)
+        embed = discord.Embed(title=f"Shuffling through #{channel}'s message history...",
+                              description=f"Sending chatchart...",
+                              color=self.client.embed_color)
+        embed.set_thumbnail(
+            url="https://cdn.discordapp.com/attachments/871737314831908974/880374020267212830/discord_loading.gif")
+        await statusmessage.edit(embed=embed)
+        file = discord.File(filename)
+        await ctx.send(file=file)
+        await statusmessage.delete()
+        os.remove(filename)
+        if ctx.author.id in [650647680837484556, 321892489470410763]:
+            ctx.command.reset_cooldown(ctx)
+
+    @checks.dev()
+    @commands.command(name="goeatpoop")
+    async def goeatpoop(self, ctx, member:discord.Member = None):
+        """
+        Get someone to eat poop
+        """
+        if member is None:
+            return await ctx.send("mention someone lol")
+        memberfilename = f"temp/{random.randint(1, 9999999)}.png"
+        main = Image.open("assets/poop.png")
+        opener = urllib.request.build_opener()
+        opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+        urllib.request.install_opener(opener)
+        urllib.request.urlretrieve(str(ctx.author.avatar.url).replace('webp', 'png'), memberfilename)
+        ima = Image.open(memberfilename).convert('RGBA')
+        ima = ima.resize((220,220))
+        backg = main.copy()
+        backg.paste(ima, (107, 218), ima)
+        urllib.request.urlretrieve(str(member.avatar.url).replace('webp', 'png'), memberfilename)
+        ima2 = Image.open(memberfilename).convert('RGBA')
+        ima2 = ima2.resize((227,227))
+        backg.paste(ima2, (555,112), ima2)
+        b = BytesIO()
+        backg.save(b, format="png", optimize=True, quality=50)
+        b.seek(0)
+        file = discord.File(fp=b, filename="goeatpoop.jpg")
+        await ctx.send("If you don't understand the reference: <https://www.youtube.com/watch?v=M-PvB0NdO2g>", file=file)
+        os.remove(memberfilename)
