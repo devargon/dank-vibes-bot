@@ -296,11 +296,13 @@ class Fun(dm, commands.Cog, name='fun'):
                     has_warned = True
         return await ctx.send(f"{member.mention} good boy! I have restored your original nickname. :)")
 
-    @checks.dev()
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.cooldown(600, 1, commands.BucketType.user)
     @commands.command(name="chatchart")
     async def chatchart(self, ctx, channel: Union[discord.TextChannel, str] = None):
         """
-        Shows the percentage of messages sent by various members. Use `chatchart <channel> --nobots` to filter out bots.
+        Shows the percentage of messages sent by various members.
+        Add the --bots flag to include bots in the chatchart.
         """
         data = {}
         if channel is None or type(channel) is str:
@@ -383,6 +385,8 @@ class Fun(dm, commands.Cog, name='fun'):
         await ctx.send(file=file)
         await statusmessage.delete()
         os.remove(filename)
+        if ctx.author.id in [650647680837484556, 321892489470410763]:
+            ctx.command.reset_cooldown(ctx)
 
     @checks.dev()
     @commands.command(name="goeatpoop")
