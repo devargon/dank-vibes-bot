@@ -277,7 +277,7 @@ class Fun(dm, commands.Cog, name='fun'):
         embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/871737314831908974/880374020267212830/discord_loading.gif")
         statusmessage = await ctx.send(embed=embed)
         messagecount = 0
-        async for message in channel.history(limit=2500):
+        async for message in channel.history(limit=5000):
             if message.webhook_id is None:
                 authorid = message.author.id
                 if len(data) > 19 and authorid not in data:
@@ -285,15 +285,17 @@ class Fun(dm, commands.Cog, name='fun'):
                         data["Others"] = 1
                     else:
                         data["Others"] += 1
-                elif ctx.message.content.endswith("--nobots"):
-                    if authorid not in data and not message.author.bot:
-                        data[authorid] = 1
-                    elif not message.author.bot:
-                        data[authorid] += 1
-                elif authorid not in data:
-                    data[authorid] = 1
+                elif message.author.bot:
+                    if ctx.message.content.endswith("--bots"):
+                        if authorid not in data:
+                            data[authorid] = 1
+                        else:
+                            data[authorid] += 1
                 else:
-                    data[authorid] += 1
+                    if authorid not in data:
+                        data[authorid] = 1
+                    else:
+                        data[authorid] += 1
             messagecount += 1
             if messagecount %200 == 0:
                 embed=discord.Embed(title=f"Shuffling through #{channel}'s message history...", description=f"Scanned {messagecount} of the last **5000** messages sent here.", color=self.client.embed_color)
