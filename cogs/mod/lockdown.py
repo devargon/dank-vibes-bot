@@ -10,7 +10,6 @@ emojis = ["<:checkmark:841187106654519296>", "<:crossmark:841186660662247444>"]
 
 
 async def send_lockdown_message(self, channel: discord.TextChannel, message: str, extra_message: str = None):
-    print(extra_message)
     try:
         embedjson = json.loads(message)
     except json.decoder.JSONDecodeError:
@@ -57,7 +56,7 @@ class lockdown(commands.Cog):
         This lockdown feature allows you to create separate groups of channels (or lockdown profiles) to be able to lock and unlock many channels at once. It also allows you to set a separate message for each profile. When quoting profile names, add quotations `""` for names with spaces, unless you're using `view`, `delete`, `start` and `end`.
         **__Editing lockdown profiles__**
         `lockdown create [profile_name] [channel]`
-        Creates a lockdown profile with the name specified in `profile_name`. The channel is the first channel to be added to the lockdown profile.
+        Creates a lockdown profile with the name specified in `profile_name`.
         
         `lockdown add [profile_name] [channel1] <channel2> ...`
         Adds channels to the specified lockdown profile. You can add more than one channel in this command to add various channels at once.
@@ -66,13 +65,13 @@ class lockdown(commands.Cog):
         Removes channels from the specified lockdown profile. You can add more than one channel in this command to remove various channels at once.
         
         `lockdown delete [profille_name]`
-        Deletes all channels in a lockdown profile, removing a lockdown profile effectively. 
+        Deletes all channels in a lockdown profile, hence removing a lockdown profile.
         
         `lockdown view <profile_name>`
-        Using this command without any arguments will show all the lockdown profiles in this server. Viewing a lockdown profile will show you the channels in that lockdown profile.
+        Using this command without any arguments will show the lockdown profiles. Viewing a lockdown profile will show you the channels in it.
         
         `lockdown msg [profile_name] [message_or_json_embed]`
-        This will set a message for the lockdown profile when It is used to lock channels. The message can also be an embed, but in the form of JSON code.
+        This will set a message for the lockdown profile when it is used to lock channels.
         
         **__Using lockdown profiles__**
         `lockdown start [profile_name]`
