@@ -69,7 +69,7 @@ class betting(commands.Cog):
             lst = self.fighters[member]
             lst.append(ctx.author)
             self.fighters[member] = lst
-            await ctx.send(f"Your entry has been added! You are now betting `⏣ 500` on {member}.")
+            await ctx.send(f"Your entry has been added! You have placed a bet on **{member}**.")
 
     @checks.has_permissions_or_role(administrator=True)
     @bet.command(name="check")
