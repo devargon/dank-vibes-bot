@@ -109,7 +109,6 @@ class betting(commands.Cog):
                 self.fighters[member] = []
             elif mod_role in member.roles or modm_role in member.roles:
                 members_with_role.append(member)
-        print(len(members_with_role))
         if len(members_with_role) + len(joined_members) > 24:
             while len(joined_members) < 24:
                 chosen_member = random.choice(members_with_role)
