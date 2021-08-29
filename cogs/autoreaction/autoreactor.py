@@ -19,6 +19,11 @@ class EmojiOrString(commands.Converter):
     async def convert(self, ctx, argument):
         args = argument.split()
         reactions = []
+        if len(args) == 1:
+            with contextlib.suppress(commands.BadArgument):
+                emoji = await commands.EmojiConverter().convert(ctx, args[0])
+                reactions.append(str(emoji))
+                return reactions
         if EMOJI_RE.match(args[0]) is not None or UNICODE_RE.match(args[0]) is not None:
             for arg in args:
                 try:
@@ -38,6 +43,7 @@ class EmojiOrString(commands.Converter):
             return reactions
         else:
             return argument
+
 
 class Autoreaction(commands.Cog, name='autoreaction'):
     """
