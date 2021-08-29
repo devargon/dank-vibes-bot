@@ -9,7 +9,7 @@ def has_permissions_or_role(**perms):
         async def predicate(ctx):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
-            if ctx.author.id == 321892489470410763:
+            if ctx.author.id == 321892489470410763 or ctx.author.id == 650647680837484556:
                 return True
             roles = await ctx.bot.pool_pg.fetch("SELECT role_id, whitelist FROM rules WHERE guild_id=$1 AND command=$2", ctx.guild.id, get_command_name(ctx.command))
             if not roles:
@@ -27,9 +27,9 @@ def has_permissions_or_role(**perms):
 def is_owner_or_perms(**perms):
     base_check = commands.has_guild_permissions(**perms).predicate
     async def predicate(ctx):
-        if ctx.guild is None and ctx.author.id != 321892489470410763:
+        if ctx.guild is None and ctx.author.id != 321892489470410763 or ctx.guild is None and ctx.author.id != 650647680837484556:
             raise commands.NoPrivateMessage()
-        if ctx.author.id == 321892489470410763:
+        if ctx.author.id == 321892489470410763 or ctx.author.id == 650647680837484556:
             return True
         return await base_check(ctx)
     return commands.check(predicate=predicate)
@@ -44,7 +44,7 @@ def dev() -> callable:
 
 def admoon() -> Callable:
     async def predicate(ctx):
-        if (ctx.message.author.id == 321892489470410763) or (ctx.message.author.id == 515725341910892555):
+        if (ctx.message.author.id == 321892489470410763) or (ctx.message.author.id == 515725341910892555) or (ctx.message.author.id == 650647680837484556):
             return True
         else:
             raise commands.NotOwner()
