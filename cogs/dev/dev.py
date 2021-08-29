@@ -65,7 +65,7 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
     def get_sql(msg: str):
         return pagify(msg, delims=["\n", " "], priority=True, shorten_by=10, box_lang='py')
 
-    @commands.is_owner()
+    @checks.dev()
     @commands.command(hidden=True, usage='[silently]')
     async def shutdown(self, ctx, silently: TrueFalse = False):
         """
@@ -144,7 +144,7 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
         msg = self.sanitize_output(msg)
         await ctx.send_interactive(self.get_pages(msg), box_lang="py")
 
-    @checks.admoon()
+    @checks.dev()
     @commands.command(name='repl', hidden=True)
     async def repl(self, ctx):
         """
@@ -235,7 +235,7 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
             except discord.HTTPException as e:
                 await ctx.send(f'Unexpected error: `{e}`')
 
-    @commands.is_owner()
+    @checks.admoon()
     @commands.command(name='sudo', aliases=['su'], hidden=True, usage='<user> <command>')
     async def sudo(self, ctx, member: MemberUserConverter = None, *, command: str = None):
         """
@@ -245,6 +245,8 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
             return await ctx.send('Member is a required argument.')
         if command is None:
             return await ctx.send('Command is a required argument.')
+        if ctx.author.id == 515725341910892555:
+            return await ctx.send('no')
         message = copy.copy(ctx.message)
         message.channel = ctx.channel
         message.author = member
@@ -252,7 +254,7 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
         new_ctx = await self.client.get_context(message, cls=type(ctx))
         await self.client.invoke(new_ctx)
 
-    @commands.is_owner()
+    @checks.dev()
     @commands.group(name='sql', invoke_without_command=True, hidden=True)
     async def sql(self, ctx, *, query: str = None):
         """
