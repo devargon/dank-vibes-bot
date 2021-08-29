@@ -331,8 +331,8 @@ class Fun(dm, commands.Cog, name='fun'):
                     else:
                         data[authorid] += 1
             messagecount += 1
-            if messagecount %200 == 0:
-                embed=discord.Embed(title=f"Shuffling through #{channel}'s message history...", description=f"Scanned {messagecount} of the last **5000** messages sent here.", color=self.client.embed_color)
+            if messagecount %250 == 0:
+                embed=discord.Embed(title=f"Shuffling through #{channel}'s message history...", description=f"Scanned {messagecount} of the last **5000** messages sent here.\n\n{'■'*int(messagecount/250)}{'□'*int((20-(messagecount/250)))}", color=self.client.embed_color)
                 embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/871737314831908974/880374020267212830/discord_loading.gif")
                 await statusmessage.edit(embed=embed)
         counted = sorted(data.items(), key=operator.itemgetter(1), reverse=True)
@@ -346,7 +346,6 @@ class Fun(dm, commands.Cog, name='fun'):
             if entry[0] == "Others":
                 labels.append("Others")
             else:
-                print(entry[0])
                 member = self.client.get_user(entry[0])
                 if member is None:
                     pass
@@ -357,7 +356,6 @@ class Fun(dm, commands.Cog, name='fun'):
                         name = f"{member.name}#{member.discriminator}"
                     labels.append(name)
             sizes.append(entry[1])
-        count = counted
         if len(labels) == 0:
             await statusmessage.delete()
             await ctx.send("There were no entries to display in chatchart. This can happen as: \n    • No one had talked in the channel.\n    • `--nobots` was used but there're only bots talking.\n    • I do not have `Read Message History` permissions.")
@@ -375,9 +373,7 @@ class Fun(dm, commands.Cog, name='fun'):
                    edgecolor="white")
         filename = f"temp/{random.randint(0,9999999)}.png"
         plt.savefig(filename, bbox_inches="tight", pad_inches=0.1, transparent=True)
-        embed = discord.Embed(title=f"Shuffling through #{channel}'s message history...",
-                              description=f"Sending chatchart...",
-                              color=self.client.embed_color)
+        embed = discord.Embed(title=f"Sending chatchart for #{channel}...", color=self.client.embed_color)
         embed.set_thumbnail(
             url="https://cdn.discordapp.com/attachments/871737314831908974/880374020267212830/discord_loading.gif")
         await statusmessage.edit(embed=embed)
