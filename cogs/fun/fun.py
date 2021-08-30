@@ -241,22 +241,30 @@ class Fun(dm, commands.Cog, name='fun'):
         In this testing server, the duration is just 20 seconds.
         """
         if member is None:
+            ctx.command.reset_cooldown(ctx)
             return await ctx.send("You have to tell me whose name you want to scramble, man. `dv.scramble [member]`")
         if member.bot:
+            ctx.command.reset_cooldown(ctx)
             return await ctx.send("I ain't bullying bots.")
         if member == ctx.author:
+            ctx.command.reset_cooldown(ctx)
             return await ctx.send("Why change your own nickname when you can scramble others' nicknames?")
         if member in self.scrambledusers:
+            ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"**{member.name}**'s nickname is currently scrambled. Use this command when their nickname has returned to normal.")
         member_name = member.display_name
+        if len(member_name) == 1:
+            ctx.command.reset_cooldown(ctx)
+            return await ctx.send("Their name only has one character, it's not worth it.")
         def scramble_nickname():
             tries = 0
+
             while True:
                 if tries < 10:
                     lst_member_name = list(member_name)
                     random.shuffle(lst_member_name)
                     new_name = ''.join(lst_member_name)
-                    if new_name in blacklisted_words:
+                    if new_name in blacklisted_words or new_name == member.display_name:
                         tries += 1
                     else:
                         return new_name
@@ -264,20 +272,21 @@ class Fun(dm, commands.Cog, name='fun'):
                     return None
         new_name = scramble_nickname()
         if new_name is None:
-            return await ctx.send(f"It appears that a scrambled version of **{member.name}**'s name corresponds to a blacklisted word. Unfortunately, we can't scramble their nickname.")
+            ctx.command.reset_cooldown(ctx)
+            return await ctx.send(f"I can't scramble **{member.name}**'s name as their scrambled name will still be the same/the resulting name is blacklisted.")
         try:
             await member.edit(nick=new_name)
             self.scrambledusers.append(member)
         except discord.Forbidden:
             return await ctx.send("Sorry! I am unable to change that user's name, probably due to role hierachy or missing permissions.")
-        await ctx.send(f"{member}'s name is now {new_name}!\n{member.mention}, your nickname has been jumbled up by **{ctx.author.name}**. It will automatically revert to your previous nickname after 3 minutes. If you try to change your nickname, I will jumble it again.")
+        await ctx.send(f"{member}'s name is now {new_name}!\n{member.mention}, your nickname has been scrambled by **{ctx.author.name}**. It will automatically revert to your previous nickname after 3 minutes. If you try to change your nickname, you will have to wait for another 3 minutes until your original nickname will be restored.")
         def check(payload_before, payload_after):
             return payload_before == member and payload_before.display_name == new_name and payload_after.display_name != new_name
         active = True
         has_warned = False
         while active:
             try:
-                member_edit = await self.client.wait_for("member_update", check = check, timeout=180)
+                await self.client.wait_for("member_update", check = check, timeout=180)
             except asyncio.TimeoutError:
                 await member.edit(nick=member_name)
                 active = False
@@ -307,12 +316,7 @@ class Fun(dm, commands.Cog, name='fun'):
         async for message in channel.history(limit=5000):
             if message.webhook_id is None:
                 authorid = message.author.id
-                if len(data) > 18 and authorid not in data:
-                    if "Others" not in data:
-                        data["Others"] = 1
-                    else:
-                        data["Others"] += 1
-                elif message.author.bot:
+                if message.author.bot:
                     if ctx.message.content.endswith("--bots"):
                         if authorid not in data:
                             data[authorid] = 1
@@ -329,6 +333,14 @@ class Fun(dm, commands.Cog, name='fun'):
                 embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/871737314831908974/880374020267212830/discord_loading.gif")
                 await statusmessage.edit(embed=embed)
         counted = sorted(data.items(), key=operator.itemgetter(1), reverse=True)
+        if len(counted) > 20:
+            others_element = ("Others", 0)
+            counted.append(others_element)
+            while len(counted) > 20:
+                counted.pop(19)
+                counted.remove(others_element)
+                others_element = ("Others", others_element[1] + 1)
+                counted.append(others_element)
         for entry in counted:
             if entry[0] == "Others":
                 counted.pop(counted.index(entry))
