@@ -302,7 +302,7 @@ class lockdown(commands.Cog):
                             await channel.set_permissions(ctx.guild.default_role, overwrite=overwrites, reason=f"Lockdown issued by {ctx.author} for channels in the {profile_name} Lockdown Profile")
                             if lockdownmsg_entry is not None:
                                 await send_lockdown_message(self, channel, lockdownmsg)
-                                channels_success.append(channel.mention)
+                            channels_success.append(channel.mention)
                     except discord.Forbidden:
                         channels_missing_perms.append(channel.mention)
             msg_content = f"{len(channels_success)} channels were successfully locked."
@@ -392,6 +392,10 @@ class lockdown(commands.Cog):
         """
         if profile_name is None:
             return await ctx.send("You need to specify the name of the lockdown profile. `lockdown delete [profile_name]`")
+        lockdown_profile = await self.client.pool_pg.fetch(
+            "SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
+        if len(lockdown_profile) == 0:
+            return await ctx.send(f"There is no such lockdown profile with the name **{profile_name}**.")
         if message is None:
             lockdownmsg_entry = await self.client.pool_pg.fetchrow(
                 "SELECT lockdownmsg FROM lockdownmsgs WHERE guild_id = $1 and profile_name = $2", ctx.guild.id, profile_name)
