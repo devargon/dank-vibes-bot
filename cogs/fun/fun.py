@@ -169,16 +169,13 @@ class Fun(dm, commands.Cog, name='fun'):
                 embed.add_field(name=f"Last few wins and losses for {member}", value=text)
                 await message.edit(content="🥺", embed=embed)
 
-
+    @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="hideping", brief="hides ping", description= "hides ping", aliases = ["hp", "secretping", "sp"], hidden=True)
     @commands.cooldown(1,5, commands.BucketType.user)
     async def hideping(self, ctx, member: discord.Member=None, *, message=None):
         """
         hides ping
         """
-        perm_role = ctx.guild.get_role(865534172403597312)
-        if perm_role is not None and perm_role not in ctx.author.roles:
-            raise commands.CheckFailure()
         if member is None:
             await ctx.send("You missed out `member` for this command.\n**Usage**: `hideping [member] [message]`")
             return
