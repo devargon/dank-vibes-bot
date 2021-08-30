@@ -246,6 +246,7 @@ class lockdown(commands.Cog):
         else:
             await message.clear_reactions()
             await self.client.pool_pg.execute("DELETE FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
+            await self.client.pool_pg.execute("DELETE FROM lockdownmsgs WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
             await message.edit(content = f"The lockdown profile **{profile_name}** has been removed.")
 
     @checks.has_permissions_or_role(administrator=True)
