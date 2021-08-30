@@ -334,6 +334,9 @@ class Fun(dm, commands.Cog, name='fun'):
                 embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/871737314831908974/880374020267212830/discord_loading.gif")
                 await statusmessage.edit(embed=embed)
         counted = sorted(data.items(), key=operator.itemgetter(1), reverse=True)
+        """
+        This removes the extra authors from the earlier dictionary so it's only 19 authors and 1 others
+        """
         if len(counted) > 20:
             others_element = ("Others", 0)
             counted.append(others_element)
@@ -342,10 +345,6 @@ class Fun(dm, commands.Cog, name='fun'):
                 counted.remove(others_element)
                 others_element = ("Others", others_element[1] + 1)
                 counted.append(others_element)
-        for entry in counted:
-            if entry[0] == "Others":
-                counted.pop(counted.index(entry))
-                counted.append((entry[0], entry[1],))
         labels = []
         sizes = []
         for entry in counted:
@@ -372,11 +371,10 @@ class Fun(dm, commands.Cog, name='fun'):
             s = s / sum(sizes) * 100
             s = round(s, 1)
             newlabels.append(f"{l}, {s}%")
-        title = plt.title(f"Messages in #{channel.name}", color='w')
+        plt.title(f"Messages in #{channel.name}", color='w')
         colors = ['#3d405b', '#005f73', '#0a9396', '#94d2bd', '#e9d8a6', '#ee9b00', '#ca6702', '#bb3e03', '#ae2012', '#9b2226', '#3d405b', '#005f73', '#0a9396', '#94d2bd', '#e9d8a6', '#ee9b00', '#ca6702', '#bb3e03', '#ae2012', 'grey']
         plt.pie(sizes, colors=colors)
-        plt.legend(bbox_to_anchor=(1, 0.5), loc='center left', labels=newlabels, facecolor="gray",
-                   edgecolor="white")
+        plt.legend(bbox_to_anchor=(1, 0.5), loc='center left', labels=newlabels, facecolor="gray", edgecolor="white")
         filename = f"temp/{random.randint(0,9999999)}.png"
         plt.savefig(filename, bbox_inches="tight", pad_inches=0.1, transparent=True)
         embed = discord.Embed(title=f"Sending chatchart for #{channel}...", color=self.client.embed_color)
