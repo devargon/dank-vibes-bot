@@ -215,7 +215,7 @@ class Fun(dm, commands.Cog, name='fun'):
         authororiginaloverwrite = None if ctx.author not in genchat.overwrites else genchat.overwrites_for(ctx.author) # this is the BEFORE overwrite for an individual member, if the author already had an overwrite (such as no react) it will use that to restore, otherwise None since it won't have any overwrites in the first place
         try:
             await genchat.set_permissions(ctx.author, overwrite=authornewoverwrite, reason=f"Lockdown invoker gets to talk c:") # allows author to talk
-            await genchat.set_permissions(ctx.guild.default_role, overwrite = newoverwrite, reason = f"5 second lockdown initiated by {ctx.author.name}#{ctx.author.discriminator} with the {role.name} perk") # does not allow anyone else to talk
+            await genchat.set_permissions(ctx.guild.default_role, overwrite = newoverwrite, reason = f"5 second lockdown initiated by {ctx.author.name}#{ctx.author.discriminator}") # does not allow anyone else to talk
         except discord.Forbidden:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"I do not have the required permission to lock down **{genchat.name}**.")
@@ -307,7 +307,7 @@ class Fun(dm, commands.Cog, name='fun'):
         async for message in channel.history(limit=5000):
             if message.webhook_id is None:
                 authorid = message.author.id
-                if len(data) > 19 and authorid not in data:
+                if len(data) > 18 and authorid not in data:
                     if "Others" not in data:
                         data["Others"] = 1
                     else:
