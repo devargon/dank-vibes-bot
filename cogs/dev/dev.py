@@ -288,7 +288,7 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
             return await ctx.send(file=text_to_file(msg, "sql.txt"))
         await ctx.send_interactive(self.get_sql(msg))
 
-    @commands.is_owner()
+    @checks.dev()
     @sql.command(name='table', hidden=True, usage="<table>")
     async def sql_table(self, ctx, table: str = None):
         """
