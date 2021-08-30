@@ -297,7 +297,7 @@ class Fun(dm, commands.Cog, name='fun'):
                 if has_warned == False:
                     await ctx.send(f"{member.mention} how bad! You changed your nickname before the three minutes were up. Your scrambled nickname will still remain on you until 3 minutes are up. I will only tell you this once.")
                     has_warned = True
-        return await ctx.send(f"{member.mention} good boy! I have restored your original nickname. :)")
+        return await ctx.send(f"{member.mention}, your nickname has been restored... until someone scrambles your nickname again.")
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.cooldown(600, 1, commands.BucketType.user)
