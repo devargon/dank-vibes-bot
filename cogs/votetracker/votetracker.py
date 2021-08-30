@@ -9,6 +9,7 @@ from PIL import ImageFont, Image, ImageDraw
 from utils.time import humanize_timedelta
 from discord.ext import commands, tasks
 from utils.format import print_exception, ordinal
+from io import BytesIO
 
 guildid = 871734809154707467 if os.name == "nt" else 595457764935991326 #testing server: 871734809154707467
 vdanksterid = 874897331252760586 if os.name == "nt" else 683884762997587998 #testing server role: 874897331252760586
@@ -70,13 +71,11 @@ class VoteTracker(commands.Cog, name='votetracker'):
                 member = self.client.get_user(memberid)
                 channel = self.client.get_channel(channelid)
                 if preferences.get('rmtype') == 1:
+                    message = "You can now vote for Dank Vibes again!"
+                    if first_time:
+                        message += "\n\nTip: You can turn off reminders with `dv.votereminder none` or be pinged for voting with `dv.votereminder ping`"
                     try:
-                        dmembed = discord.Embed(
-                            description="[Vote for Dank Vibes at top.gg](https://top.gg/servers/595457764935991326/vote)",
-                            color=0x57f0f0)
-                        if first_time:
-                            dmembed.add_field(name="Tip:", value="You can turn off vote reminders with `dv.votereminder dm` or `dv.votereminder none`.")
-                        await member.send("You can now vote for Dank Vibes again!", embed=dmembed) # tries to DM the user that it is time for him to vote again
+                        await member.send(message, embed=discord.Embed(description="[Vote for Dank Vibes at top.gg](https://top.gg/servers/595457764935991326/vote)", color=0x57f0f0)) # tries to DM the user that it is time for him to vote again
                     except discord.Forbidden:
                         await channel.send(f"{member.mention} You can now vote for Dank Vibes again!", delete_after=5.0) # uses ping instead if the bot cannot DM this user
                 elif preferences.get('rmtype') == 2:
@@ -113,18 +112,17 @@ class VoteTracker(commands.Cog, name='votetracker'):
             ima = ima.convert("RGB")  # Convert into RGB instead of RGBA so that it can be saved as a jpeg
             draw = ImageDraw.Draw(ima)  # starts the drawing process
             for voter in leaderboard:
-                draw.text(lbpositions[leaderboard.index(voter)], voter[0], font=font,
-                        align="middle left")  # Adds a user's nickname
-                draw.text(countpositions[leaderboard.index(voter)], str(voter[1]), font=font,
-                        align="right")  # adds a user's vote count
-            filename = f"temp/{random.randint(1, 9999999)}.jpg"
-            ima.save(filename, optimize=True, quality=50)  # saves the file under a temporary name
-            file = discord.File(filename)
+                draw.text(lbpositions[leaderboard.index(voter)], voter[0], font=font, align="middle left")  # Adds a user's nickname
+                draw.text(countpositions[leaderboard.index(voter)], str(voter[1]), font=font, align="right")  # adds a user's vote count
+            b = BytesIO()
+            b.seek(0)
+            ima.save(b, format="jpeg", optimize=True, quality=50)  # saves the file under a temporary name
+            b.seek(0)
+            file = discord.File(fp=b, filename="leaderboard.jpg")
             try:
                 await channel.send("This is the vote leaderboard for **Dank Vibes**!" if len(leaderboard) != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://top.gg/servers/595457764935991326/vote !",file=file)
             except discord.Forbidden:
                 await channel.send("I do not have permission to send the leaderboard here.")
-            os.remove(filename)  # deletes the temporary file
             return
 
     @commands.Cog.listener()
@@ -170,15 +168,14 @@ class VoteTracker(commands.Cog, name='votetracker'):
                 ):
                     try:
                         await member.add_roles(role, reason = f"Milestone reached for user") # adds the role
-                        rolesummary += f"\n**In addition, {member.name}#{member.discriminator} has gotten the role {role.mention} for voting {milestone[0]} times!**" # adds on to the summary of roles added
+                        rolesummary += f"\n**In addition, {member.name}#{member.discriminator} has gotten the role {role.mention} for voting {milestone[0]} times!** 🥳" # adds on to the summary of roles added
                     except discord.Forbidden:
                         pass
-        embed = discord.Embed(title=f"Thank you for voting for __{guild.name}__ on Top.gg, {member.name}!",
+        embed = discord.Embed(title=f"Thank you for voting for {guild.name} on Top.gg, {member.name}!",
                               description=f"You have voted {guild.name} for **{votecount}** time(s).\n[You can vote for Dank Vibes here!](https://top.gg/servers/595457764935991326/vote)",
-                              # It will look like this: https://i.ibb.co/g4PvRsQ/Discord-ha-R7-Hsdzo-E.png
                               timestamp=datetime.datetime.utcnow(), color=0x57f0f0)
         embed.set_author(name=f"{member.name}#{member.discriminator} ({member.id})", icon_url=member.avatar_url)
-        embed.set_footer(text=f"{guild.name} • {self.client.user.name}", icon_url=guild.icon_url)
+        embed.set_footer(text=guild.name, icon_url=guild.icon_url)
         qbemojis = ["https://cdn.discordapp.com/emojis/869579459420913715.gif?v=1", "https://cdn.discordapp.com/emojis/869579448708653066.gif?v=1", "https://cdn.discordapp.com/emojis/869579493776457838.gif?v=1", "https://cdn.discordapp.com/emojis/869579480509841428.gif?v=1", "https://cdn.discordapp.com/emojis/873643650607894548.gif?v=1", "https://cdn.discordapp.com/emojis/871970548576559155.gif?v=1", "https://cdn.discordapp.com/emojis/872470665607909417.gif?v=1", "https://cdn.discordapp.com/emojis/830920902019514408.gif?v=1"]
         embed.set_thumbnail(url=random.choice(qbemojis))
         embed.add_field(name="\u200b", value=rolesummary)
@@ -344,9 +341,11 @@ class VoteTracker(commands.Cog, name='votetracker'):
             for voter in leaderboard:
                 draw.text(lbpositions[leaderboard.index(voter)], voter[0], font=font, align="middle left") # Adds a user's nickname
                 draw.text(countpositions[leaderboard.index(voter)], str(voter[1]), font=font, align="right") # adds a user's vote count
-            filename = f"temp/{random.randint(1, 9999999)}.jpg"
-            ima.save(filename, optimize=True, quality=50) # saves the file under a temporary name
-            file = discord.File(filename)
+            b = BytesIO()
+            b.seek(0)
+            ima.save(b, format="jpeg", optimize=True, quality=50) # saves the file under a temporary name
+            b.seek(0)
+            file = discord.File(fp=b, filename="leaderboard.jpg")
             uservotecount = await self.client.pool_pg.fetchrow("SELECT * FROM votecount where member_id = $1", ctx.author.id)
             if uservotecount is None:
                 message = "You're not on the leaderboard yet. Vote for Dank Vibes for a chance to be on the leaderboard! <https://top.gg/servers/595457764935991326/vote>"
@@ -357,7 +356,6 @@ class VoteTracker(commands.Cog, name='votetracker'):
             await ctx.send(f"This is the vote leaderboard for Dank Vibes! {message}" if len(leaderboard) != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://top.gg/servers/595457764935991326/vote !", file=file)
         except discord.Forbidden:
             await ctx.send("I do not have permission to send the leaderboard here.")
-        os.remove(filename) # deletes the temporary file
         return
 
     @commands.command(name="myvotes", brief="Shows the number of times you have voted for Dank Vibes.",
