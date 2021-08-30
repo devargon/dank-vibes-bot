@@ -121,12 +121,12 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
         """
         if channel is None:
             channel = ctx.channel
-        modrole = ctx.guild.get_role(871736440009162772) #608495204399448066)
+        modrole = ctx.guild.get_role(608495204399448066)
         messages = await channel.history(limit=1, oldest_first=True).flatten()
         message = messages[0]
         if modrole not in ctx.author.roles:
             channel = ctx.channel
-            if ctx.channel.category_id not in [878246243913044028]:
+            if ctx.channel.category_id not in [802467427208265728, 763457841133912074, 789195494664306688, 783299769580781588, 805052824185733120, 834696686923284510, 847897065081274409]:
                 return await ctx.send("You can only use this command in your own private channel.")
             messages = await channel.history(limit=1, oldest_first=True).flatten()
             message = messages[0]
