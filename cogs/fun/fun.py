@@ -102,8 +102,9 @@ class Fun(dm, commands.Cog, name='fun'):
         if member.id in [650647680837484556, 321892489470410763] and muted != ctx.author:
             embed.set_footer(text="why did you dumbfight the developer :c", icon_url="https://cdn.discordapp.com/emojis/796407682764505180.png?v=1")
         await ctx.send(embed=embed)
-        specialrole = ctx.guild.get_role(876767313263734805) # 874931276329656370
-        cooldowntime = 1800 if specialrole in ctx.author.roles else 3600
+        kvoterole = ctx.guild.get_role(876767313263734805) # 874931276329656370
+        investor = ctx.guild.get_role(739199912377319427)
+        cooldowntime = 1800 if kvoterole in ctx.author.roles or investor in ctx.author.roles else 3600
         await self.client.pool_pg.execute("INSERT INTO cooldowns VALUES($1, $2, $3)", ctx.command.name, ctx.author.id, timenow + cooldowntime)
         await asyncio.sleep(duration)
         await channel.set_permissions(muted, overwrite=originaloverwrite)
