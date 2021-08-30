@@ -8,11 +8,11 @@ import datetime
 from PIL import ImageFont, Image, ImageDraw
 from utils.time import humanize_timedelta
 from discord.ext import commands, tasks
-from utils.format import print_exception
+from utils.format import print_exception, ordinal
 
-guildid = 595457764935991326 #testing server: 871734809154707467
-vdanksterid = 683884762997587998 #testing server role: 874897331252760586
-channelid = 754725833540894750 # 874897401729671189
+guildid = 871734809154707467 if os.name == "nt" else 595457764935991326 #testing server: 871734809154707467
+vdanksterid = 874897331252760586 if os.name == "nt" else 683884762997587998 #testing server role: 874897331252760586
+channelid = 874897401729671189 if os.name == "nt" else 754725833540894750 # 874897401729671189
 
 class VoteTracker(commands.Cog, name='votetracker'):
     """
@@ -56,6 +56,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
             await self.client.wait_until_ready()
             timenow = round(time.time())
             result = await self.client.pool_pg.fetch("SELECT * FROM roleremove WHERE rmtime < $1", timenow)
+            first_time=False
             if len(result) == 0:
                 return
             for row in result: # iterate through the list of members who have reminders.
@@ -63,8 +64,9 @@ class VoteTracker(commands.Cog, name='votetracker'):
                 await self.client.pool_pg.execute('UPDATE roleremove SET rmtime = $1 WHERE member_id = $2',9223372036854775807, memberid)
                 preferences = await self.client.pool_pg.fetchrow("SELECT rmtype FROM rmpreference WHERE member_id = $1", memberid)
                 if preferences is None: # somehow there is no preference for this user, so i'll create an entry to prevent it from breaking
-                    await self.client.pool_pg.execute("INSERT INTO rmpreference(member_id, rmtype) VALUES($1, $2)", memberid, 0)
+                    await self.client.pool_pg.execute("INSERT INTO rmpreference(member_id, rmtype) VALUES($1, $2)", memberid, 1)
                     preferences = await self.client.pool_pg.fetchrow("SELECT rmtype FROM rmpreference WHERE member_id = $1", memberid) # refetch the configuration for this user after it has been added
+                    first_time = True
                 member = self.client.get_user(memberid)
                 channel = self.client.get_channel(channelid)
                 if preferences.get('rmtype') == 1:
@@ -72,6 +74,8 @@ class VoteTracker(commands.Cog, name='votetracker'):
                         dmembed = discord.Embed(
                             description="[Vote for Dank Vibes at top.gg](https://top.gg/servers/595457764935991326/vote)",
                             color=0x57f0f0)
+                        if first_time:
+                            dmembed.add_field(name="Tip:", value="You can turn off vote reminders with `dv.votereminder dm` or `dv.votereminder none`.")
                         await member.send("You can now vote for Dank Vibes again!", embed=dmembed) # tries to DM the user that it is time for him to vote again
                     except discord.Forbidden:
                         await channel.send(f"{member.mention} You can now vote for Dank Vibes again!", delete_after=5.0) # uses ping instead if the bot cannot DM this user
@@ -323,9 +327,9 @@ class VoteTracker(commands.Cog, name='votetracker'):
     @commands.command(name="voteleaderboard", brief="Shows the leaderboard for the top 10 voters for Dank Vibes.", description = "Shows the leaderboard for the top 10 voters for Dank Vibes.", aliases = ["vlb", "votelb"])
     async def leaderboard(self, ctx):
         with ctx.typing():
-            votecount = await self.client.pool_pg.fetch("SELECT * FROM votecount ORDER BY count DESC LIMIT 10")
+            votecount = await self.client.pool_pg.fetch("SELECT * FROM votecount ORDER BY count DESC")
             leaderboard = []
-            for voter in votecount:
+            for voter in votecount[:10]:
                 member = ctx.guild.get_member(voter.get('member_id'))
                 name = member.display_name.replace("[AFK] ", "") if member is not None else str(voter.get('member_id')) # shows user id if the user left the server
                 name = (name[:15] + '...') if len(name) > 18 else name # shortens the nickname if it's too long
@@ -343,8 +347,14 @@ class VoteTracker(commands.Cog, name='votetracker'):
             filename = f"temp/{random.randint(1, 9999999)}.jpg"
             ima.save(filename, optimize=True, quality=50) # saves the file under a temporary name
             file = discord.File(filename)
+            uservotecount = await self.client.pool_pg.fetchrow("SELECT * FROM votecount where member_id = $1", ctx.author.id)
+            if uservotecount is None:
+                message = "You're not on the leaderboard yet. Vote for Dank Vibes for a chance to be on the leaderboard! <https://top.gg/servers/595457764935991326/vote>"
+            else:
+                position = ordinal(votecount.index(uservotecount)+1)
+                message = f"You're ranked **{position}** out of {len(votecount)} members on the vote leaderboard. {'🏆' if votecount.index(uservotecount) < 10 else ''}"
         try:
-            await ctx.send("This is the vote leaderboard for **Dank Vibes**!" if len(leaderboard) != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://top.gg/servers/595457764935991326/vote !", file=file)
+            await ctx.send(f"This is the vote leaderboard for Dank Vibes! {message}" if len(leaderboard) != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://top.gg/servers/595457764935991326/vote !", file=file)
         except discord.Forbidden:
             await ctx.send("I do not have permission to send the leaderboard here.")
         os.remove(filename) # deletes the temporary file
@@ -369,7 +379,3 @@ class VoteTracker(commands.Cog, name='votetracker'):
         embed.add_field(name="Want to be reminded to vote for Dank Vibes?", value="Use `dv.votereminder dm/ping` to be reminded 12 hours after you vote for Dank Vibes.")
         embed.set_thumbnail(url=ctx.guild.icon_url)
         await ctx.send(embed=embed)
-
-    @commands.command(name="leaderboard", aliases = ["lb"], hidden=True)
-    async def lb(self, ctx):
-        await ctx.send("This command has been renamed to `voteleaderboard` (or `votelb`/`vlb`). To check the OwO count leaderboard, use `owoleaderboard` or `owolb`.", delete_after=10)
