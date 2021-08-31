@@ -23,12 +23,14 @@ class betting(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-
+    @checks.has_permissions_or_role(administrator=True)
     @commands.group(name="bet", invoke_without_command=True)
     async def bet(self, ctx, member: discord.Member = None):
         """
         Bet on someone you think is going to win the competition!
         """
+        if ctx.channel.id != 680002065950703646:
+            return await ctx.send("You can only submit your bet for Dank Vibes' Hunger Games in <#680002065950703646>.")
         for fighter in self.fighters:
             if fighter not in ctx.guild.members:
                 self.fighters.pop(fighter)
@@ -60,7 +62,8 @@ class betting(commands.Cog):
             return await confirmation.edit(embed=discord.Embed(title="Bet cancelled.", color=discord.Color.red()))
         await ctx.send(f"Please send **exactly** `⏣ 1,000,000`to `{holder} ({holder.id})` within the next 60 seconds to place your bet.")
         def check(payload):
-            return payload.author.id == 270904126974590976 and payload.content.startswith(f"{ctx.author.mention} You gave {holder.name} **⏣ 1,000,000**")
+            if payload.author.id == 270904126974590976:
+                return payload.content.startswith(f"<@{ctx.author.id}> You gave {holder.name} **⏣ 1,000,000**") or payload.content.startswith(f"<@!{ctx.author.id}> You gave {holder.name} **⏣ 1,000,000**")
         try:
             await self.client.wait_for("message", check=check, timeout = 60)
         except asyncio.TimeoutError:
