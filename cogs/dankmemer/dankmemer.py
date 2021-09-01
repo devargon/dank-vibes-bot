@@ -194,6 +194,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                     nextlotterytime = round(time.time())
                     while nextlotterytime % 3600 != 0:
                         nextlotterytime += 1
+                    nextlotterytime += 30
                     existing = await self.client.pool_pg.fetch(
                         "SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 3)
                     if len(existing) > 0:
