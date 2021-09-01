@@ -63,7 +63,7 @@ class Teleport(commands.Cog):
             return await ctx.send("You need to include a checkpoint name.")
         if not await self.client.pool_pg.fetchval("SELECT * FROM teleport WHERE member_id=$1 AND checkpoint=$2", ctx.author.id, checkpoint.lower()):
             return await ctx.send("You don't have any checkpoint saved with that name.")
-        await self.client.pool_pg.execute("DELETE FROM teleport WHERE member_id=$1, AND checkpoint=$2", ctx.author.id, checkpoint.lower())
+        await self.client.pool_pg.execute("DELETE FROM teleport WHERE member_id=$1 AND checkpoint=$2", ctx.author.id, checkpoint.lower())
         await ctx.send("Checkpoint removed.")
     
     @teleport.command(name='list')
