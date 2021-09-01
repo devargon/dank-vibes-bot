@@ -27,8 +27,8 @@ class Sticky(commands.Cog):
                 pass
             for entry in result:
                 channel = guild.get_channel(entry.get('channel_id'))
-                print(channel)
                 if channel is not None and channel.last_message_id != entry.get('message_id'):
+                    self.queue.append(channel)
                     try:
                         old_bot_message = await channel.fetch_message(entry.get('message_id'))
                     except discord.NotFound:
@@ -41,6 +41,7 @@ class Sticky(commands.Cog):
                     else:
                         newmessage = await channel.send(entry.get('message'))
                     await self.client.pool_pg.execute("UPDATE stickymessages SET message_id = $1 WHERE guild_id = $2 and channel_id = $3", newmessage.id, guild.id, channel.id)
+                    self.queue.remove(channel)
 
 
     @commands.Cog.listener()
@@ -97,8 +98,8 @@ class Sticky(commands.Cog):
         if message_type == "text" and len(content) > 2000:
             return await ctx.send(f"Your message is currently {len(content)} characters long. It can only be 2000 characters long. Consider using a embed instead, as its description supports up to 4096 characters.")
         all = await self.client.pool_pg.fetch("SELECT * FROM stickymessages WHERE guild_id = $1", ctx.guild.id)
-        if len(all) > 3:
-            await ctx.send("You have already created **3** sticky messages with Dank Vibes Bot. To create more sticky messages, purchase Premium for Dank Vibes Bot. <http://premium.dvbot.nogra.me/>", delete_after = 3.0)
+        if len(all) > 1:
+            await ctx.send("You have already created **2** sticky messages with Dank Vibes Bot. To create more sticky messages, purchase Premium for Dank Vibes Bot. <http://premium.dvbot.nogra.me/>", delete_after = 3.0)
         if message_type == "embed":
             try:
                 embedjson = json.loads(content)
