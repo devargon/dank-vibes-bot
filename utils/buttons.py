@@ -145,10 +145,15 @@ class MenuViewBase(ViewIterationAuthor):
         if self.message:
             return
         message = None
+        print(bot._connection._view_store._synced_message_views.items())
         for m_id, view in bot._connection._view_store._synced_message_views.items():
             if view is self:
-                if m := bot.get_message(m_id):
-                    message = m
+                def get_message():
+                    for cm in bot.cached_messages:
+                        if cm.id == m_id:
+                            return cm
+                    return None
+                message = get_message()
         if message is None:
             return
         for b in self.children:
