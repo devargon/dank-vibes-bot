@@ -368,7 +368,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         count = 0 if votecount is None else votecount.get('count') # number of times user has voted
         result = await self.client.pool_pg.fetchrow("SELECT * FROM roleremove WHERE member_id = $1 and rmtime > $2", ctx.author.id, timenow)
         if result is not None and result.get('rmtime') != 9223372036854775807:
-            desc = f"You can [vote for Dank Vibes](https://top.gg/servers/595457764935991326/vote) in another {humanize_timedelta(seconds=(result.get('rmtime') - timenow))}." #if the user has voted recently
+            desc = f"You can [vote for Dank Vibes](https://top.gg/servers/595457764935991326/vote) <t:{result.get('rmtime')}:R>." #if the user has voted recently
         else:
             desc = f"You can now [vote for Dank Vibes](https://top.gg/servers/595457764935991326/vote) again!" # self explanatory
         embed = discord.Embed(title=f"You have voted for Dank Vibes **__{count}__** times.",
