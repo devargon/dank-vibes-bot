@@ -4,15 +4,17 @@ from abc import ABC
 from datetime import datetime
 from discord.ext import commands
 from .serverrule import ServerRule
+from .sticky import Sticky
 
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
-class Admin(ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass):
+class Admin(Sticky, ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass):
     """
     Server Commands
     """
     def __init__(self, client):
         self.client = client
+        self.queue = []
 
     async def handle_toggle(self, guild, settings) -> bool:
         if (result := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", guild.id, settings)) is not None:

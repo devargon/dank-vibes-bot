@@ -23,12 +23,14 @@ class betting(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-
+    @checks.has_permissions_or_role(administrator=True)
     @commands.group(name="bet", invoke_without_command=True)
     async def bet(self, ctx, member: discord.Member = None):
         """
         Bet on someone you think is going to win the competition!
         """
+        if ctx.channel.id != 680002065950703646:
+            return await ctx.send("You can only submit your bet for Dank Vibes' Hunger Games in <#680002065950703646>.")
         for fighter in self.fighters:
             if fighter not in ctx.guild.members:
                 self.fighters.pop(fighter)
@@ -54,13 +56,14 @@ class betting(commands.Cog):
             await confirmation.clear_reactions()
             return await confirmation.edit(embed=discord.Embed(title="Bet cancelled.", description=f"Are you sure you want to place a bet on **{member.name}**? You cannot change your bet after you have sent the entry fee for your bet."))
         if str(response.emoji) == emojis[0]:
-            await confirmation.edit(embed=discord.Embed(title="Placing a bet...", description=f"Please send **exactly** `⏣ 1,000,000`to `{holder} ({holder.id})` within the next 60 seconds to place your bet for **{member.name}**."))
+            await confirmation.edit(embed=discord.Embed(title="Placing a bet...", description=f"Please send **exactly** ⏣ `1,030,928` (Patreon users need to send only `1,000,000`) to `{holder} ({holder.id})` within the next 60 seconds to place your bet to place your bet for **{member.name}**."))
         elif str(response.emoji) == emojis[1]:
             await confirmation.clear_reactions()
             return await confirmation.edit(embed=discord.Embed(title="Bet cancelled.", color=discord.Color.red()))
-        await ctx.send(f"Please send **exactly** `⏣ 1,000,000`to `{holder} ({holder.id})` within the next 60 seconds to place your bet.")
+        await ctx.send(f"Please send **exactly** ⏣ `1,030,928` (Patreon users need to send only `1,000,000`) to `{holder} ({holder.id})` within the next 60 seconds to place your bet.")
         def check(payload):
-            return payload.author.id == 270904126974590976 and payload.content.startswith(f"{ctx.author.mention} You gave {holder.name} **⏣ 1,000,000**")
+            if payload.author.id == 270904126974590976:
+                return payload.content.startswith(f"<@{ctx.author.id}> You gave {holder.name} **⏣ 1,000,000**") or payload.content.startswith(f"<@!{ctx.author.id}> You gave {holder.name} **⏣ 1,000,000**")
         try:
             await self.client.wait_for("message", check=check, timeout = 60)
         except asyncio.TimeoutError:
@@ -69,7 +72,7 @@ class betting(commands.Cog):
             lst = self.fighters[member]
             lst.append(ctx.author)
             self.fighters[member] = lst
-            await ctx.send(f"Your entry has been added! You are now betting `⏣ 500` on {member}.")
+            await ctx.send(f"Your entry has been added! You have placed a bet on **{member}**.")
 
     @checks.has_permissions_or_role(administrator=True)
     @bet.command(name="check")
@@ -109,7 +112,6 @@ class betting(commands.Cog):
                 self.fighters[member] = []
             elif mod_role in member.roles or modm_role in member.roles:
                 members_with_role.append(member)
-        print(len(members_with_role))
         if len(members_with_role) + len(joined_members) > 24:
             while len(joined_members) < 24:
                 chosen_member = random.choice(members_with_role)

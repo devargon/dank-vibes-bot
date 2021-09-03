@@ -8,11 +8,12 @@ import datetime
 from PIL import ImageFont, Image, ImageDraw
 from utils.time import humanize_timedelta
 from discord.ext import commands, tasks
-from utils.format import print_exception
+from utils.format import print_exception, ordinal
+from io import BytesIO
 
-guildid = 595457764935991326 #testing server: 871734809154707467
-vdanksterid = 683884762997587998 #testing server role: 874897331252760586
-channelid = 754725833540894750 # 874897401729671189
+guildid = 871734809154707467 if os.name == "nt" else 595457764935991326 #testing server: 871734809154707467
+vdanksterid = 874897331252760586 if os.name == "nt" else 683884762997587998 #testing server role: 874897331252760586
+channelid = 874897401729671189 if os.name == "nt" else 754725833540894750 # 874897401729671189
 
 class VoteTracker(commands.Cog, name='votetracker'):
     """
@@ -56,6 +57,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
             await self.client.wait_until_ready()
             timenow = round(time.time())
             result = await self.client.pool_pg.fetch("SELECT * FROM roleremove WHERE rmtime < $1", timenow)
+            first_time=False
             if len(result) == 0:
                 return
             for row in result: # iterate through the list of members who have reminders.
@@ -63,16 +65,17 @@ class VoteTracker(commands.Cog, name='votetracker'):
                 await self.client.pool_pg.execute('UPDATE roleremove SET rmtime = $1 WHERE member_id = $2',9223372036854775807, memberid)
                 preferences = await self.client.pool_pg.fetchrow("SELECT rmtype FROM rmpreference WHERE member_id = $1", memberid)
                 if preferences is None: # somehow there is no preference for this user, so i'll create an entry to prevent it from breaking
-                    await self.client.pool_pg.execute("INSERT INTO rmpreference(member_id, rmtype) VALUES($1, $2)", memberid, 0)
+                    await self.client.pool_pg.execute("INSERT INTO rmpreference(member_id, rmtype) VALUES($1, $2)", memberid, 1)
                     preferences = await self.client.pool_pg.fetchrow("SELECT rmtype FROM rmpreference WHERE member_id = $1", memberid) # refetch the configuration for this user after it has been added
+                    first_time = True
                 member = self.client.get_user(memberid)
                 channel = self.client.get_channel(channelid)
                 if preferences.get('rmtype') == 1:
+                    message = "You can now vote for Dank Vibes again!"
+                    if first_time:
+                        message += "\n\nTip: You can turn off reminders with `dv.votereminder none` or be pinged for voting with `dv.votereminder ping`"
                     try:
-                        dmembed = discord.Embed(
-                            description="[Vote for Dank Vibes at top.gg](https://top.gg/servers/595457764935991326/vote)",
-                            color=0x57f0f0)
-                        await member.send("You can now vote for Dank Vibes again!", embed=dmembed) # tries to DM the user that it is time for him to vote again
+                        await member.send(message, embed=discord.Embed(description="[Vote for Dank Vibes at top.gg](https://top.gg/servers/595457764935991326/vote)", color=0x57f0f0)) # tries to DM the user that it is time for him to vote again
                     except discord.Forbidden:
                         await channel.send(f"{member.mention} You can now vote for Dank Vibes again!", delete_after=5.0) # uses ping instead if the bot cannot DM this user
                 elif preferences.get('rmtype') == 2:
@@ -109,18 +112,17 @@ class VoteTracker(commands.Cog, name='votetracker'):
             ima = ima.convert("RGB")  # Convert into RGB instead of RGBA so that it can be saved as a jpeg
             draw = ImageDraw.Draw(ima)  # starts the drawing process
             for voter in leaderboard:
-                draw.text(lbpositions[leaderboard.index(voter)], voter[0], font=font,
-                        align="middle left")  # Adds a user's nickname
-                draw.text(countpositions[leaderboard.index(voter)], str(voter[1]), font=font,
-                        align="right")  # adds a user's vote count
-            filename = f"temp/{random.randint(1, 9999999)}.jpg"
-            ima.save(filename, optimize=True, quality=50)  # saves the file under a temporary name
-            file = discord.File(filename)
+                draw.text(lbpositions[leaderboard.index(voter)], voter[0], font=font, align="middle left")  # Adds a user's nickname
+                draw.text(countpositions[leaderboard.index(voter)], str(voter[1]), font=font, align="right")  # adds a user's vote count
+            b = BytesIO()
+            b.seek(0)
+            ima.save(b, format="jpeg", optimize=True, quality=50)  # saves the file under a temporary name
+            b.seek(0)
+            file = discord.File(fp=b, filename="leaderboard.jpg")
             try:
                 await channel.send("This is the vote leaderboard for **Dank Vibes**!" if len(leaderboard) != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://top.gg/servers/595457764935991326/vote !",file=file)
             except discord.Forbidden:
                 await channel.send("I do not have permission to send the leaderboard here.")
-            os.remove(filename)  # deletes the temporary file
             return
 
     @commands.Cog.listener()
@@ -166,15 +168,14 @@ class VoteTracker(commands.Cog, name='votetracker'):
                 ):
                     try:
                         await member.add_roles(role, reason = f"Milestone reached for user") # adds the role
-                        rolesummary += f"\n**In addition, {member.name}#{member.discriminator} has gotten the role {role.mention} for voting {milestone[0]} times!**" # adds on to the summary of roles added
+                        rolesummary += f"\n**In addition, {member.name}#{member.discriminator} has gotten the role {role.mention} for voting {milestone[0]} times!** 🥳" # adds on to the summary of roles added
                     except discord.Forbidden:
                         pass
-        embed = discord.Embed(title=f"Thank you for voting for __{guild.name}__ on Top.gg, {member.name}!",
+        embed = discord.Embed(title=f"Thank you for voting for {guild.name} on Top.gg, {member.name}!",
                               description=f"You have voted {guild.name} for **{votecount}** time(s).\n[You can vote for Dank Vibes here!](https://top.gg/servers/595457764935991326/vote)",
-                              # It will look like this: https://i.ibb.co/g4PvRsQ/Discord-ha-R7-Hsdzo-E.png
                               timestamp=datetime.datetime.utcnow(), color=0x57f0f0)
         embed.set_author(name=f"{member.name}#{member.discriminator} ({member.id})", icon_url=member.avatar_url)
-        embed.set_footer(text=f"{guild.name} • {self.client.user.name}", icon_url=guild.icon_url)
+        embed.set_footer(text=guild.name, icon_url=guild.icon_url)
         qbemojis = ["https://cdn.discordapp.com/emojis/869579459420913715.gif?v=1", "https://cdn.discordapp.com/emojis/869579448708653066.gif?v=1", "https://cdn.discordapp.com/emojis/869579493776457838.gif?v=1", "https://cdn.discordapp.com/emojis/869579480509841428.gif?v=1", "https://cdn.discordapp.com/emojis/873643650607894548.gif?v=1", "https://cdn.discordapp.com/emojis/871970548576559155.gif?v=1", "https://cdn.discordapp.com/emojis/872470665607909417.gif?v=1", "https://cdn.discordapp.com/emojis/830920902019514408.gif?v=1"]
         embed.set_thumbnail(url=random.choice(qbemojis))
         embed.add_field(name="\u200b", value=rolesummary)
@@ -323,9 +324,9 @@ class VoteTracker(commands.Cog, name='votetracker'):
     @commands.command(name="voteleaderboard", brief="Shows the leaderboard for the top 10 voters for Dank Vibes.", description = "Shows the leaderboard for the top 10 voters for Dank Vibes.", aliases = ["vlb", "votelb"])
     async def leaderboard(self, ctx):
         with ctx.typing():
-            votecount = await self.client.pool_pg.fetch("SELECT * FROM votecount ORDER BY count DESC LIMIT 10")
+            votecount = await self.client.pool_pg.fetch("SELECT * FROM votecount ORDER BY count DESC")
             leaderboard = []
-            for voter in votecount:
+            for voter in votecount[:10]:
                 member = ctx.guild.get_member(voter.get('member_id'))
                 name = member.display_name.replace("[AFK] ", "") if member is not None else str(voter.get('member_id')) # shows user id if the user left the server
                 name = (name[:15] + '...') if len(name) > 18 else name # shortens the nickname if it's too long
@@ -340,14 +341,21 @@ class VoteTracker(commands.Cog, name='votetracker'):
             for voter in leaderboard:
                 draw.text(lbpositions[leaderboard.index(voter)], voter[0], font=font, align="middle left") # Adds a user's nickname
                 draw.text(countpositions[leaderboard.index(voter)], str(voter[1]), font=font, align="right") # adds a user's vote count
-            filename = f"temp/{random.randint(1, 9999999)}.jpg"
-            ima.save(filename, optimize=True, quality=50) # saves the file under a temporary name
-            file = discord.File(filename)
+            b = BytesIO()
+            b.seek(0)
+            ima.save(b, format="jpeg", optimize=True, quality=50) # saves the file under a temporary name
+            b.seek(0)
+            file = discord.File(fp=b, filename="leaderboard.jpg")
+            uservotecount = await self.client.pool_pg.fetchrow("SELECT * FROM votecount where member_id = $1", ctx.author.id)
+            if uservotecount is None:
+                message = "You're not on the leaderboard yet. Vote for Dank Vibes for a chance to be on the leaderboard! <https://top.gg/servers/595457764935991326/vote>"
+            else:
+                position = ordinal(votecount.index(uservotecount)+1)
+                message = f"You're ranked **{position}** out of {len(votecount)} members on the vote leaderboard. {'🏆' if votecount.index(uservotecount) < 10 else ''}"
         try:
-            await ctx.send("This is the vote leaderboard for **Dank Vibes**!" if len(leaderboard) != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://top.gg/servers/595457764935991326/vote !", file=file)
+            await ctx.send(f"This is the vote leaderboard for Dank Vibes! {message}" if len(leaderboard) != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://top.gg/servers/595457764935991326/vote !", file=file)
         except discord.Forbidden:
             await ctx.send("I do not have permission to send the leaderboard here.")
-        os.remove(filename) # deletes the temporary file
         return
 
     @commands.command(name="myvotes", brief="Shows the number of times you have voted for Dank Vibes.",
@@ -360,7 +368,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         count = 0 if votecount is None else votecount.get('count') # number of times user has voted
         result = await self.client.pool_pg.fetchrow("SELECT * FROM roleremove WHERE member_id = $1 and rmtime > $2", ctx.author.id, timenow)
         if result is not None and result.get('rmtime') != 9223372036854775807:
-            desc = f"You can [vote for Dank Vibes](https://top.gg/servers/595457764935991326/vote) in another {humanize_timedelta(seconds=(result.get('rmtime') - timenow))}." #if the user has voted recently
+            desc = f"You can [vote for Dank Vibes](https://top.gg/servers/595457764935991326/vote) <t:{result.get('rmtime')}:R>." #if the user has voted recently
         else:
             desc = f"You can now [vote for Dank Vibes](https://top.gg/servers/595457764935991326/vote) again!" # self explanatory
         embed = discord.Embed(title=f"You have voted for Dank Vibes **__{count}__** times.",
@@ -369,7 +377,3 @@ class VoteTracker(commands.Cog, name='votetracker'):
         embed.add_field(name="Want to be reminded to vote for Dank Vibes?", value="Use `dv.votereminder dm/ping` to be reminded 12 hours after you vote for Dank Vibes.")
         embed.set_thumbnail(url=ctx.guild.icon_url)
         await ctx.send(embed=embed)
-
-    @commands.command(name="leaderboard", aliases = ["lb"], hidden=True)
-    async def lb(self, ctx):
-        await ctx.send("This command has been renamed to `voteleaderboard` (or `votelb`/`vlb`). To check the OwO count leaderboard, use `owoleaderboard` or `owolb`.", delete_after=10)

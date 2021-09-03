@@ -37,34 +37,6 @@ class Mod(lockdown, commands.Cog, name='mod'):
             else:
                 await ctx.send(embed=discord.Embed(title=f"Raw content of message with ID {message_id} in {channel}", description=f"```\n{content}\n```", color = self.client.embed_color))
 
-    @checks.has_permissions_or_role(administrator=True)
-    @commands.command(name="checkpvc", aliases = ["privchannel", "pvc"])
-    async def checkoverwrites(self, ctx, channel:discord.TextChannel=None):
-        """
-        Checks the permission overwrites for that channel. Can be used to check who is in a private channel.
-        """
-        if channel is None:
-            await ctx.send("Wanted to check another channel, and not this one? You need to mention a channel.\nUsage of command: `checkoverwrites [channel]`")
-            channel = ctx.channel # references the current channel
-        messages = await channel.history(limit=1, oldest_first=True).flatten()
-        message = messages[0]
-        members = [overwriteobject for overwriteobject in channel.overwrites if isinstance(overwriteobject, discord.Member) and not overwriteobject.bot] # gets all members who have some sort of overwrite in that channel
-        membersin = []
-        for member in members:
-            permissions = channel.permissions_for(member)
-            if permissions.view_channel == True:
-                membersin.append(f"**{member}** {member.mention} 🧑‍⚖️" if member.mentioned_in(message) else f"**{member}** {member.mention}") # add them to a final list that shows who is in the channel
-        members = "\n".join(membersin)
-        members += f"\n\nMember Count: `{len(membersin)-1 if '🧑‍⚖️' in members else len(membersin)}`\n*This automatically excludes owners of the channel.*"
-        embed = discord.Embed(
-            title=f"Members in #{channel.name}",
-            description=members[0:4096] or "It appears there's no one in this channel.", # limit the characters in case
-            color=0x57F0F0,
-            timestamp=datetime.datetime.utcnow(),
-        )
-        embed.set_footer(icon_url=ctx.guild.icon.url, text="uwu") # you can remove this if you want idk
-        await ctx.send(embed=embed)
-
     @commands.command(name="memberpvc", brief = "Checks the private channels that a member has access to", description = "Checks the private channels that a member has access to", aliases = ["pvcmember"])
     @commands.has_guild_permissions(manage_roles=True)
     async def memberpvc(self, ctx, member:discord.Member = None):
@@ -143,7 +115,7 @@ class Mod(lockdown, commands.Cog, name='mod'):
             msg = await ctx.send("<a:typing:839487089304141875> DMing grinders... ")
             embed = discord.Embed(title="DV Grinders Team", description=f"<a:dv_pointArrowOwO:837656328482062336> The daily grinder requirement has been checked.\n<a:dv_pointArrowOwO:837656328482062336> <#862574856846704661> is now unlocked and you may send the cash to `Dank Vibes Holder#2553`\n<a:dv_pointArrowOwO:837656328482062336> The next requirement check will take place in about <t:{round(time.time())+86400}:R> ( i.e between 1:30 and 3:30 GMT)", color=0x57F0F0)
             embed.set_thumbnail(url="https://cdn.discordapp.com/icons/595457764935991326/a_58b91a8c9e75742d7b423411b0205b2b.gif")
-            embed.set_footer(text="DM/Ping TheMysticLegacy#0001 or Bav#0507 if you have any queries.",icon_url=ctx.guild.icon.url)
+            embed.set_footer(text="DM/Ping TheMysticLegacy#0001 or Bav#0507 if you have any queries.",icon_url=ctx.guild.icon_url)
             success = 0
             grinders = [member for member in ctx.guild.members if grinderrole in member.roles or tgrinderrole in member.roles] # gets the grinder list again since the earlier one was popped
             faileddms = []

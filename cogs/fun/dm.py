@@ -26,7 +26,6 @@ class dm(commands.Cog):
         else:
             authordetails = f"{dmrequester} ({dmrequester.id})"
         dmtarget = self.client.get_guild(payload.guild_id).get_member(dm_request.get('target_id'))
-        print("HOWIE")
         ID = dm_request.get('id')
         dmcontent = dm_request.get('dmcontent')
         approver = self.client.get_guild(payload.guild_id).get_member(payload.user_id)

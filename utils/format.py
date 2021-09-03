@@ -4,6 +4,7 @@ import traceback
 from io import BytesIO
 from typing import Sequence, Iterator
 from discord.ext import commands
+import inflect
 
 class plural:
     """
@@ -110,6 +111,10 @@ def print_exception(text, error):
     trace = error.__traceback__
     lines = traceback.format_exception(etype, error, trace)
     return ''.join(lines)
+
+def ordinal(number:int):
+    p = inflect.engine()
+    return p.ordinal(number)
 
 def get_command_name(command: commands.command):
     """
