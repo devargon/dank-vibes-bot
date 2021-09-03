@@ -33,6 +33,7 @@ class Teleport(commands.Cog):
         channel = f"<#{channel_id}>"
         await ctx.send(channel, delete_after=5)
 
+    @checks.has_permissions_or_role(administrator=True)
     @teleport.command(name='add', usage="<checkpoint_name> <channel>")
     async def teleport_add(self, ctx, checkpoint: str = None, channel: str = None):
         """
@@ -53,7 +54,8 @@ class Teleport(commands.Cog):
             return await ctx.send("You didn't mention a valid channel, try again!")
         await self.client.pool_pg.execute("INSERT INTO teleport VALUES ($1, $2, $3)", ctx.author.id, checkpoint.lower(), int(channel_id))
         await ctx.send("Checkpoint added.")
-    
+
+    @checks.has_permissions_or_role(administrator=True)
     @teleport.command(name='remove', usage="<checkpoint_name>")
     async def teleport_remove(self, ctx, checkpoint: str = None):
         """
@@ -65,7 +67,8 @@ class Teleport(commands.Cog):
             return await ctx.send("You don't have any checkpoint saved with that name.")
         await self.client.pool_pg.execute("DELETE FROM teleport WHERE member_id=$1 AND checkpoint=$2", ctx.author.id, checkpoint.lower())
         await ctx.send("Checkpoint removed.")
-    
+
+    @checks.has_permissions_or_role(administrator=True)
     @teleport.command(name='list')
     async def teleport_list(self, ctx):
         """
@@ -83,6 +86,7 @@ class Teleport(commands.Cog):
         await pages.start(ctx)
         return await ctx.checkmark()
 
+    @checks.has_permissions_or_role(administrator=True)
     @teleport.command(name='clear', aliases=['reset'])
     async def teleport_clear(self, ctx):
         """
