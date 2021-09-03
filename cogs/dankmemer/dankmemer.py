@@ -2,12 +2,104 @@ import contextlib
 import time
 import asyncio
 import discord
+from discord import ui
 import operator
-from utils import checks
+from utils import checks, buttons
 from datetime import datetime
 from discord.ext import commands, tasks
 from utils.format import print_exception
 from .betting import betting
+from utils.context import DVVTcontext
+
+
+def emojioutput(truefalse):  # shows the enabled or disabled emoji for 0 or 1 values
+    if truefalse == 0:
+        return "<:DVB_disabled:872003709096321024>"
+    elif truefalse == 1:
+        return "<:DVB_enabled:872003679895560193>"
+    else:
+        return "error"
+
+def numberswitcher(no):
+    if no == 1:
+        return 0
+    elif no == 0:
+        return 1
+    else:
+        return 0
+
+class dankreminders(discord.ui.View):
+    def __init__(self, ctx: DVVTcontext, client, timeout):
+        self.value = None
+        self.timeout = timeout
+        self.context = ctx
+        self.response = None
+        self.result = None
+        self.rmtimes = None
+        self.client = client
+        super().__init__(timeout=timeout)
+
+        async def update_message(emoji):
+            print(emoji)
+            if str(emoji) == "<:DVB_calendar:873107952159059991>":
+                print("DAILY")
+                print(self.result.get('daily'))
+                await self.client.pool_pg.execute("UPDATE remindersettings SET daily = $1 WHERE member_id = $2", numberswitcher(self.result.get('daily')), ctx.author.id)  # switches to enabled/disabled reminder
+            elif str(emoji) == "<:DVB_lotteryticket:873110581085880321>":
+                await self.client.pool_pg.execute("UPDATE remindersettings SET lottery = $1 WHERE member_id = $2", numberswitcher(self.result.get('lottery')), ctx.author.id)
+            elif str(emoji) == "<:DVB_workbadge:873110507605872650>":
+                await self.client.pool_pg.execute("UPDATE remindersettings SET work = $1 WHERE member_id = $2", numberswitcher(self.result.get('work')), ctx.author.id)
+            elif str(emoji) == "<:DVB_week:876711052669247528>":
+                await self.client.pool_pg.execute("UPDATE remindersettings SET weekly = $1 WHERE member_id = $2", numberswitcher(self.result.get('weekly')), ctx.author.id)
+            elif str(emoji) == "<:DVB_month:876711072030150707>":
+                await self.client.pool_pg.execute("UPDATE remindersettings SET monthly = $1 WHERE member_id = $2", numberswitcher(self.result.get('monthly')), ctx.author.id)
+            elif str(emoji) == "<:DVB_apple:876627457275469867>":
+                await self.client.pool_pg.execute("UPDATE remindersettings SET apple = $1 WHERE member_id = $2", numberswitcher(self.result.get('apple')), ctx.author.id)
+            elif str(emoji) == "<:DVB_patreon:876628017194082395>":
+                await self.client.pool_pg.execute("UPDATE remindersettings SET redeem = $1 WHERE member_id = $2", numberswitcher(self.result.get('redeem')), ctx.author.id)
+            self.result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
+            embed = discord.Embed(title="Your Dank Memer reminders", description="**React with the emoji that corresponds to the reminder to enable/disable it.**\nChange how you want to be reminded with `dv.dankreminders dm`,  `dv.dankreminders ping/mention` or `dv.dankreminders none`.", color=0x57f0f0, timestamp=datetime.utcnow())
+            embed.set_author(name=ctx.author, icon_url=ctx.author.avatar.url)
+            embed.add_field(name=f"{emojioutput(self.result.get('daily'))} Claim daily <:DVB_calendar:873107952159059991>", value=self.rmtimes[0], inline=True)
+            embed.add_field(name=f"{emojioutput(self.result.get('weekly'))} Claim weekly <:DVB_week:876711052669247528> ", value=self.rmtimes[1], inline=True)  # 8
+            embed.add_field(name=f"{emojioutput(self.result.get('monthly'))} Claim monthly <:DVB_month:876711072030150707> ", value=self.rmtimes[2], inline=True)  # 9
+            embed.add_field(name=f"{emojioutput(self.result.get('lottery'))} Enter the lottery <:DVB_lotteryticket:873110581085880321>", value=self.rmtimes[3], inline=True)
+            embed.add_field(name=f"{emojioutput(self.result.get('work'))} Work <:DVB_workbadge:873110507605872650>", value=self.rmtimes[4], inline=True)
+            embed.add_field(name=f"{emojioutput(self.result.get('apple'))} Use an apple <:DVB_apple:876627457275469867>", value=self.rmtimes[5], inline=True)
+            embed.add_field(name=f"{emojioutput(self.result.get('redeem'))} Redeem donor rewards <:DVB_patreon:876628017194082395>", value=self.rmtimes[6], inline=True)
+            if ctx.author.id == 650647680837484556:
+                embed.add_field(name=f"<:DVB_enabled:872003679895560193> Slap Frenzy <a:DVB_pandaslap:876631217750048798>", value="Always ready", inline=True)
+                embed.add_field(name=f"<:DVB_enabled:872003679895560193> Bonk Blu <a:DVB_bonk:877196623506194452>", value="Always ready", inline=True)
+            embed.add_field(name="\u200b", value="\u200b", inline=False)
+            embed.add_field(name="Reminder preference", value=f"{'DM' if self.result.get('method') == 1 else 'Ping' if self.result.get('method') == 2 else None}", inline=False)
+            embed.set_footer(text="For reminders to work, your reply pings needs to be enabled in Dank Memer's settings.", icon_url=ctx.guild.icon.url)
+            await self.response.edit(embed=embed)
+
+        class somebutton(discord.ui.Button):
+            async def callback(self, interaction: discord.Interaction):
+                print("HI")
+                await update_message(self.emoji)
+        reminderemojis = ["<:DVB_calendar:873107952159059991>", "<:DVB_week:876711052669247528>",
+                          "<:DVB_month:876711072030150707>", "<:DVB_lotteryticket:873110581085880321>",
+                          "<:DVB_workbadge:873110507605872650>", "<:DVB_apple:876627457275469867>",
+                          "<:DVB_patreon:876628017194082395>"]
+        labels = ["Claim daily", "Claim weekly", "Claim monthly", "Enter the Lottery", "Work", "Use an apple",
+                  "Redeem donor rewards"]
+        for emoji in reminderemojis:
+            self.add_item(somebutton(emoji=discord.PartialEmoji.from_str(emoji), style=discord.ButtonStyle.primary))
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        ctx = self.context
+        author = ctx.author
+        if interaction.user != author:
+            await interaction.response.send_message("These are not your Dank Reminders.", ephemeral=True)
+            return False
+        return True
+
+    async def on_timeout(self) -> None:
+        for b in self.children:
+            b.disabled = True
+        await self.response.edit(view=self)
 
 class DankMemer(betting, commands.Cog, name='dankmemer'):
     """
@@ -376,20 +468,6 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
         result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id) # gets the configuration for user to check if they have used dank reminder before
         if result is None:
             await self.client.pool_pg.execute("INSERT into remindersettings VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,$10)", ctx.author.id, 1, 0, 0, 0, 0, 0, 0, 0, 0) # creates new entry for settings
-        def numberswitcher(no):
-            if no == 1:
-                return 0
-            elif no == 0:
-                return 1
-            else:
-                return 0
-        def emojioutput(truefalse): # shows the enabled or disabled emoji for 0 or 1 values
-            if truefalse == 0:
-                return "<:DVB_disabled:872003709096321024>"
-            elif truefalse == 1:
-                return "<:DVB_enabled:872003679895560193>"
-            else:
-                return "error"
         if argument is not None and argument.lower() in ["dm", "ping", "mention", "none", "off", "false", "disable"]:
             if argument.lower() in ["none", "off", "false", "disable"]:
                 await self.client.pool_pg.execute("UPDATE remindersettings SET method = $1 WHERE member_id = $2", 0, ctx.author.id) # disables dank reminders
@@ -418,66 +496,29 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
             if reminder.get('remindertype') == 9:
                 monthlytime = f"<t:{reminder.get('time')}:R>"
         result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
-        embed = discord.Embed(title="Your Dank Memer reminders", description="**React with the emoji that corresponds to the reminder to enable/disable it.**\nChange how you want to be reminded with `dv.dankreminders dm`,  `dv.dankreminders ping/mention` or `dv.dankreminders none`.", color=0x57f0f0, timestamp=datetime.utcnow())
+        reminderemojis = ["<:DVB_calendar:873107952159059991>", "<:DVB_week:876711052669247528>", "<:DVB_month:876711072030150707>", "<:DVB_lotteryticket:873110581085880321>", "<:DVB_workbadge:873110507605872650>", "<:DVB_apple:876627457275469867>", "<:DVB_patreon:876628017194082395>"]
+        labels = ["Claim daily", "Claim weekly", "Claim monthly", "Enter the Lottery", "Work", "Use an apple", "Redeem donor rewards"]
+        cb = ui.View()
+        for emoji in reminderemojis:
+            cb.add_item(ui.Button(emoji = discord.PartialEmoji.from_str(emoji), style=discord.ButtonStyle.primary, label=labels[reminderemojis.index(emoji)]))
+        remindertimes = [dailytime or "Ready!", weeklytime or "Ready!", monthlytime or "Ready!", lotterytime or "Ready!", worktime or "Ready!", appletime or "Ready!", redeemtime or "Ready!"]
+        embed = discord.Embed(title="Your Dank Memer reminders", description="**Select the button that corresponds to the reminder to enable/disable it.**\nChange how you want to be reminded with `dv.dankreminders dm`,  `dv.dankreminders ping/mention` or `dv.dankreminders none`.", color=0x57f0f0, timestamp=datetime.utcnow())
         embed.set_author(name=ctx.author, icon_url=ctx.author.avatar.url)
-        embed.add_field(name=f"{emojioutput(result.get('daily'))} Claim daily <:DVB_calendar:873107952159059991>", value=dailytime or "Ready!", inline=True)
-        embed.add_field(name=f"{emojioutput(result.get('weekly'))} Claim weekly <:DVB_week:876711052669247528> ", value=weeklytime or "Ready!", inline=True) #8
-        embed.add_field(name=f"{emojioutput(result.get('monthly'))} Claim monthly <:DVB_month:876711072030150707> ", value=monthlytime or "Ready!", inline=True) #9
-        embed.add_field(name=f"{emojioutput(result.get('lottery'))} Enter the lottery <:DVB_lotteryticket:873110581085880321>", value=lotterytime or "Ready!", inline=True)
-        embed.add_field(name=f"{emojioutput(result.get('work'))} Work <:DVB_workbadge:873110507605872650>", value=worktime or "Ready!", inline=True)
-        embed.add_field(name=f"{emojioutput(result.get('apple'))} Use an apple <:DVB_apple:876627457275469867>", value=appletime or "Ready!", inline=True)
-        embed.add_field(name=f"{emojioutput(result.get('redeem'))} Redeem donor rewards <:DVB_patreon:876628017194082395>", value=redeemtime or "Ready!", inline=True)
+        embed.add_field(name=f"{emojioutput(result.get('daily'))} Claim daily <:DVB_calendar:873107952159059991>", value=remindertimes[0], inline=True)
+        embed.add_field(name=f"{emojioutput(result.get('weekly'))} Claim weekly <:DVB_week:876711052669247528> ", value=remindertimes[1], inline=True) #8
+        embed.add_field(name=f"{emojioutput(result.get('monthly'))} Claim monthly <:DVB_month:876711072030150707> ", value=remindertimes[2], inline=True) #9
+        embed.add_field(name=f"{emojioutput(result.get('lottery'))} Enter the lottery <:DVB_lotteryticket:873110581085880321>", value=remindertimes[3], inline=True)
+        embed.add_field(name=f"{emojioutput(result.get('work'))} Work <:DVB_workbadge:873110507605872650>", value=remindertimes[4], inline=True)
+        embed.add_field(name=f"{emojioutput(result.get('apple'))} Use an apple <:DVB_apple:876627457275469867>", value=remindertimes[5], inline=True)
+        embed.add_field(name=f"{emojioutput(result.get('redeem'))} Redeem donor rewards <:DVB_patreon:876628017194082395>", value=remindertimes[6], inline=True)
         if ctx.author.id == 650647680837484556:
             embed.add_field(name=f"<:DVB_enabled:872003679895560193> Slap Frenzy <a:DVB_pandaslap:876631217750048798>", value="Always ready", inline=True)
             embed.add_field(name=f"<:DVB_enabled:872003679895560193> Bonk Blu <a:DVB_bonk:877196623506194452>", value="Always ready", inline=True)
         embed.add_field(name="\u200b", value="\u200b", inline=False)
         embed.add_field(name="Reminder preference", value=f"{'DM' if result.get('method') == 1 else 'Ping' if result.get('method') == 2 else None}", inline=False)
-        embed.set_footer(text="For reminders to work, your reply pings needs to be enabled in Dank Memer's settings.", icon_url=ctx.guild.icon.run)
-        message = await ctx.send(embed=embed)
-        reminderemojis = ["<:DVB_calendar:873107952159059991>", "<:DVB_week:876711052669247528>", "<:DVB_month:876711072030150707>", "<:DVB_lotteryticket:873110581085880321>", "<:DVB_workbadge:873110507605872650>", "<:DVB_apple:876627457275469867>", "<:DVB_patreon:876628017194082395>"]
-        for emoji in reminderemojis:
-            await message.add_reaction(emoji)
-        active = True
-        while active:
-            def check(payload):
-                return payload.user_id == ctx.author.id and payload.channel_id == ctx.channel.id and payload.message_id == message.id and str(payload.emoji) in reminderemojis
-            try:
-                response = await self.client.wait_for('raw_reaction_add', timeout=15, check=check)
-            except asyncio.TimeoutError:
-                active = False
-            else:
-                if str(response.emoji) == "<:DVB_calendar:873107952159059991>":
-                    await self.client.pool_pg.execute("UPDATE remindersettings SET daily = $1 WHERE member_id = $2", numberswitcher(result.get('daily')), ctx.author.id) # switches to enabled/disabled reminder
-                elif str(response.emoji) == "<:DVB_lotteryticket:873110581085880321>":
-                    await self.client.pool_pg.execute("UPDATE remindersettings SET lottery = $1 WHERE member_id = $2", numberswitcher(result.get('lottery')), ctx.author.id)
-                elif str(response.emoji) == "<:DVB_workbadge:873110507605872650>":
-                    await self.client.pool_pg.execute("UPDATE remindersettings SET work = $1 WHERE member_id = $2", numberswitcher(result.get('work')), ctx.author.id)
-                elif str(response.emoji) == "<:DVB_week:876711052669247528>":
-                    await self.client.pool_pg.execute("UPDATE remindersettings SET weekly = $1 WHERE member_id = $2", numberswitcher(result.get('weekly')), ctx.author.id)
-                elif str(response.emoji) == "<:DVB_month:876711072030150707>":
-                    await self.client.pool_pg.execute("UPDATE remindersettings SET monthly = $1 WHERE member_id = $2", numberswitcher(result.get('monthly')), ctx.author.id)
-                elif str(response.emoji) == "<:DVB_apple:876627457275469867>":
-                    await self.client.pool_pg.execute("UPDATE remindersettings SET apple = $1 WHERE member_id = $2", numberswitcher(result.get('apple')), ctx.author.id)
-                elif str(response.emoji) == "<:DVB_patreon:876628017194082395>":
-                    await self.client.pool_pg.execute("UPDATE remindersettings SET redeem = $1 WHERE member_id = $2", numberswitcher(result.get('redeem')), ctx.author.id)
-                '''elif str(response.emoji) == "<:DVB_lifesaver:873110547854405722>":
-                    await self.client.pool_pg.execute("UPDATE remindersettings SET lifesaver = $1 WHERE member_id = $2", numberswitcher(result.get('lifesaver')), ctx.author.id)'''
-                await message.remove_reaction(response.emoji, ctx.author)
-                result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
-                embed = discord.Embed(title="Your Dank Memer reminders",  description="**React with the emoji that corresponds to the reminder to enable/disable it.**\nChange how you want to be reminded with `dv.dankreminders dm`,  `dv.dankreminders ping/mention` or `dv.dankreminders none`.", color=0x57f0f0, timestamp=datetime.utcnow())
-                embed.set_author(name=ctx.author, icon_url=ctx.author.avatar.url)
-                embed.add_field(name=f"{emojioutput(result.get('daily'))} Claim daily <:DVB_calendar:873107952159059991>", value=dailytime or "Ready!", inline=True)
-                embed.add_field(name=f"{emojioutput(result.get('weekly'))} Claim weekly <:DVB_week:876711052669247528> ", value=weeklytime or "Ready!", inline=True)  # 8
-                embed.add_field(name=f"{emojioutput(result.get('monthly'))} Claim monthly <:DVB_month:876711072030150707> ", value=monthlytime or "Ready!", inline=True)  # 9
-                embed.add_field(name=f"{emojioutput(result.get('lottery'))} Enter the lottery <:DVB_lotteryticket:873110581085880321>", value=lotterytime or "Ready!", inline=True)
-                embed.add_field(name=f"{emojioutput(result.get('work'))} Work <:DVB_workbadge:873110507605872650>", value=worktime or "Ready!", inline=True)
-                embed.add_field(name=f"{emojioutput(result.get('apple'))} Use an apple <:DVB_apple:876627457275469867>", value=appletime or "Ready!", inline=True)
-                embed.add_field(name=f"{emojioutput(result.get('redeem'))} Redeem donor rewards <:DVB_patreon:876628017194082395>", value=redeemtime or "Ready!", inline=True)
-                if ctx.author.id == 650647680837484556:
-                    embed.add_field(name=f"<:DVB_enabled:872003679895560193> Slap Frenzy <a:DVB_pandaslap:876631217750048798>", value="Always ready", inline=True)
-                    embed.add_field(name=f"<:DVB_enabled:872003679895560193> Bonk Blu <a:DVB_bonk:877196623506194452>", value="Always ready", inline=True)
-                embed.add_field(name="\u200b", value="\u200b", inline=False)
-                embed.add_field(name="Reminder preference", value=f"{'DM' if result.get('method') == 1 else 'Ping' if result.get('method') == 2 else None}", inline=False)
-                embed.set_footer(text="For reminders to work, your reply pings needs to be enabled in Dank Memer's settings.", icon_url=ctx.guild.icon.run)
-                await message.edit(embed=embed)
-        await message.clear_reactions()
+        embed.set_footer(text="For reminders to work, your reply pings needs to be enabled in Dank Memer's settings.", icon_url=ctx.guild.icon.url)
+        newview = dankreminders(ctx, self.client, 15.0)
+        message = await ctx.send(embed=embed, view=newview)
+        newview.response = message
+        newview.result = result
+        newview.rmtimes = remindertimes
