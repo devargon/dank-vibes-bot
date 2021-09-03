@@ -56,11 +56,11 @@ class betting(commands.Cog):
             await confirmation.clear_reactions()
             return await confirmation.edit(embed=discord.Embed(title="Bet cancelled.", description=f"Are you sure you want to place a bet on **{member.name}**? You cannot change your bet after you have sent the entry fee for your bet."))
         if str(response.emoji) == emojis[0]:
-            await confirmation.edit(embed=discord.Embed(title="Placing a bet...", description=f"Please send **exactly** `⏣ 1,000,000`to `{holder} ({holder.id})` within the next 60 seconds to place your bet for **{member.name}**."))
+            await confirmation.edit(embed=discord.Embed(title="Placing a bet...", description=f"Please send **exactly** ⏣ `1,030,928` (Patreon users need to send only `1,000,000`) to `{holder} ({holder.id})` within the next 60 seconds to place your bet to place your bet for **{member.name}**."))
         elif str(response.emoji) == emojis[1]:
             await confirmation.clear_reactions()
             return await confirmation.edit(embed=discord.Embed(title="Bet cancelled.", color=discord.Color.red()))
-        await ctx.send(f"Please send **exactly** `⏣ 1,000,000`to `{holder} ({holder.id})` within the next 60 seconds to place your bet.")
+        await ctx.send(f"Please send **exactly** ⏣ `1,030,928` (Patreon users need to send only `1,000,000`) to `{holder} ({holder.id})` within the next 60 seconds to place your bet.")
         def check(payload):
             if payload.author.id == 270904126974590976:
                 return payload.content.startswith(f"<@{ctx.author.id}> You gave {holder.name} **⏣ 1,000,000**") or payload.content.startswith(f"<@!{ctx.author.id}> You gave {holder.name} **⏣ 1,000,000**")
