@@ -346,7 +346,7 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
             embed=discord.Embed(title=f"Echo action executed with {ctx.me}", description=message, color=discord.Color.green() if status[0] == 1 else discord.Color.red())
             embed.add_field(name="Author", value=f"**{ctx.author}** ({ctx.author.id})", inline=True)
             embed.add_field(name="Status", value=f"**{status[1]}**", inline=True)
-            await webhook.send(embed=embed)
+            await webhook.send(embed=embed, username=f"{self.client.user.name} Logs")
 
     @checks.admoon()
     @d_base.command(name="reply")
@@ -396,5 +396,5 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
             embed=discord.Embed(title=f"Message replied {ctx.me}", description=message_content, color=discord.Color.green() if status[0] == 1 else discord.Color.red())
             embed.add_field(name="Author", value=f"**{ctx.author}** ({ctx.author.id})", inline=True)
             embed.add_field(name="Status", value=f"**{status[1]}**", inline=True)
-            embed.add_field(name="Referenced Message", value=f"Author: {message.author}\nAt: <t:{round(message.created_at.timestamp()) + 28800}>\nChannel: {message.channel}\nURL: [`Jump to message`]({message.jump_url})", inline=False)
-            await webhook.send(embed=embed)
+            embed.add_field(name="Referenced Message", value=f"Author: {message.author}\nAt: <t:{round(message.created_at.timestamp())}>\nChannel: {message.channel}\nURL: [`Jump to message`]({message.jump_url})", inline=False)
+            await webhook.send(embed=embed, username=f"{self.client.user.name} Logs")
