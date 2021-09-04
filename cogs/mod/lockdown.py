@@ -6,7 +6,47 @@ import asyncio
 from discord.ext import commands, menus
 from utils.menus import CustomMenu
 import json
+from utils.buttons import *
 emojis = ["<:checkmark:841187106654519296>", "<:crossmark:841186660662247444>"]
+
+class start_or_end(discord.ui.View):
+    def __init__(self, ctx: DVVTcontext, client, timeout):
+        self.timeout = timeout
+        self.context = ctx
+        self.response = None
+        self.client = client
+        self.returning_value = None
+        super().__init__(timeout=timeout)
+
+    @discord.ui.button(label="Start message", style=discord.ButtonStyle.primary, emoji="▶")
+    async def start_message(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.returning_value = 0
+        for b in self.children:
+            b.disabled = True
+        await self.response.edit(view=self)
+        self.stop()
+
+    @discord.ui.button(label="End message", style=discord.ButtonStyle.primary, emoji="⏹")
+    async def mention(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.returning_value = 1
+        for b in self.children:
+            b.disabled = True
+        await self.response.edit(view=self)
+        self.stop()
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        ctx = self.context
+        author = ctx.author
+        if interaction.user != author:
+            await interaction.response.send_message("These buttons aren't for you!", ephemeral=True)
+            return False
+        return True
+
+    async def on_timeout(self) -> None:
+        self.returning_value = None
+        for b in self.children:
+            b.disabled = True
+        await self.response.edit(view=self)
 
 
 async def send_lockdown_message(self, channel: discord.TextChannel, message: str, extra_message: str = None):
@@ -15,7 +55,7 @@ async def send_lockdown_message(self, channel: discord.TextChannel, message: str
     except json.decoder.JSONDecodeError:
         embed = discord.Embed(title="This channel is under lockdown! 🔒",
                               description=message, color=self.client.embed_color)
-        embed.set_footer(icon_url=channel.guild.icon_url, text=channel.guild.name)
+        embed.set_footer(icon_url=channel.guild.icon.url, text=channel.guild.name)
         return await channel.send(content=extra_message, embed=embed)
     else:
         if "title" in embedjson and "description" in embedjson:
@@ -24,12 +64,12 @@ async def send_lockdown_message(self, channel: discord.TextChannel, message: str
             except discord.HTTPException:
                 embed = discord.Embed(title="This channel is under lockdown! 🔒",
                                       description=message, color=self.client.embed_color)
-                embed.set_footer(icon_url=channel.guild.icon_url, text=channel.guild.name)
+                embed.set_footer(icon_url=channel.guild.icon.url, text=channel.guild.name)
                 return await channel.send(content=extra_message, embed=embed)
         else:
             embed = discord.Embed(title="This channel is under lockdown! 🔒",
                                   description=message, color=self.client.embed_color)
-            embed.set_footer(icon_url=channel.guild.icon_url, text=channel.guild.name)
+            embed.set_footer(icon_url=channel.guild.icon.url, text=channel.guild.name)
             return await channel.send(content=extra_message, embed=embed)
 
 class lockdown_pagination(menus.ListPageSource):
@@ -263,30 +303,31 @@ class lockdown(commands.Cog):
             "SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
         if len(lockdown_profile) == 0:
             return await ctx.send(f"There is no such lockdown profile with the name **{profile_name}**.")
+        confirmview = confirm(ctx, self.client, 30.0)
+        embed = discord.Embed(title="Awaiting Lockdown confirmation...", description=f"Are you sure you want to lock down {len(lockdown_profile)} channels in the lockdown profile **{profile_name}**?", color=discord.Color.orange())
         message = await ctx.send(
-            f"Are you sure you want to lock down {len(lockdown_profile)} channels in the lockdown profile **{profile_name}**?")
-        reactions = ["<:checkmark:841187106654519296>", "<:crossmark:841186660662247444>"]
-        for reaction in reactions:
-            await message.add_reaction(reaction)
-        def check(payload):
-            return payload.user_id == ctx.message.author.id and payload.channel_id == ctx.channel.id and payload.message_id == message.id and str(payload.emoji) in reactions
-        try:
-            response = await self.client.wait_for('raw_reaction_add', timeout=15, check=check)
-            if not str(response.emoji) == '<:checkmark:841187106654519296>':
-                return await message.edit(content="Command stopped.")
-        except asyncio.TimeoutError:
-            ctx.command.reset_cooldown(ctx)
-            return await message.edit(content="You didn't react on time.")
-        else:
-            await message.clear_reactions()
-            await message.edit(content="<a:DVB_lock:878207978371686405> Locking channels... (and like carlbot would say, ETA: 0 seconds)")
+            embed=embed, view = confirmview)
+        confirmview.response = message
+        await confirmview.wait()
+        if confirmview.returning_value is None:
+            embed.description, embed.color = "You didn't react on time.", discord.Color.red()
+            return await message.edit(embed=embed)
+        elif confirmview.returning_value == False:
+            embed.description, embed.color = "Command stopped.", discord.Color.red()
+            return await message.edit(embed=embed)
+        elif confirmview.returning_value == True:
+            embed.description, embed.color = "<a:DVB_unlock:878207978371686408> Locking channels...", discord.Color.green()
+            await message.edit(embed=embed)
             channels_not_found = []
             channels_missing_perms = []
             channels_success = []
             special_cases = []
-            lockdownmsg_entry = await self.client.pool_pg.fetchrow("SELECT lockdownmsg FROM lockdownmsgs WHERE guild_id = $1 and profile_name = $2", ctx.guild.id, profile_name)
+            lockdownmsg_entry = await self.client.pool_pg.fetchrow(
+                "SELECT startmsg FROM lockdownmsgs WHERE guild_id = $1 and profile_name = $2", ctx.guild.id,
+                profile_name)
+            lockdownmsg = None
             if lockdownmsg_entry is not None:
-                lockdownmsg = lockdownmsg_entry.get('lockdownmsg')
+                lockdownmsg = lockdownmsg_entry.get('startmsg')
             for entry in lockdown_profile:
                 channel = ctx.guild.get_channel((entry.get('channel_id')))
                 if channel is None:
@@ -295,13 +336,15 @@ class lockdown(commands.Cog):
                     try:
                         overwrites = channel.overwrites_for(ctx.guild.default_role)
                         if channel.name == "support":
-                            overwrites.view_channel=False
-                            await channel.set_permissions(ctx.guild.default_role,overwrite = overwrites, reason = f"Denied view channel permissions through lockdown issued by {ctx.author} for channels in the {profile_name} Lockdown Profile")
+                            overwrites.view_channel = False
+                            await channel.set_permissions(ctx.guild.default_role, overwrite=overwrites,
+                                                          reason=f"Denied view channel permissions through lockdown issued by {ctx.author} for channels in the {profile_name} Lockdown Profile")
                             special_cases.append((channel.mention, "Denied view channel Permissions",))
                         else:
                             overwrites.send_messages = False
-                            await channel.set_permissions(ctx.guild.default_role, overwrite=overwrites, reason=f"Lockdown issued by {ctx.author} for channels in the {profile_name} Lockdown Profile")
-                            if lockdownmsg_entry is not None:
+                            await channel.set_permissions(ctx.guild.default_role, overwrite=overwrites,
+                                                          reason=f"Lockdown issued by {ctx.author} for channels in the {profile_name} Lockdown Profile")
+                            if lockdownmsg is not None:
                                 await send_lockdown_message(self, channel, lockdownmsg)
                             channels_success.append(channel.mention)
                     except discord.Forbidden:
@@ -317,6 +360,7 @@ class lockdown(commands.Cog):
                     msg_content += f"{case[0]} - {case[1]}"
             await ctx.send(msg_content)
 
+
     @checks.has_permissions_or_role(administrator=True)
     @lockdown.command(name="end")
     async def lockdown_end(self, ctx, *, profile_name = None):
@@ -330,27 +374,29 @@ class lockdown(commands.Cog):
         lockdown_profile = await self.client.pool_pg.fetch("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
         if len(lockdown_profile) == 0:
             return await ctx.send(f"There is no such lockdown profile with the name **{profile_name}**.")
-        message = await ctx.send(
-            f"Are you sure you want to unlock {len(lockdown_profile)} channels in the lockdown profile **{profile_name}**?")
-        reactions = ["<:checkmark:841187106654519296>", "<:crossmark:841186660662247444>"]
-        for reaction in reactions:
-            await message.add_reaction(reaction)
-        def check(payload):
-            return payload.user_id == ctx.message.author.id and payload.channel_id == ctx.channel.id and payload.message_id == message.id and str(payload.emoji) in reactions
-        try:
-            response = await self.client.wait_for('raw_reaction_add', timeout=15, check=check)
-            if not str(response.emoji) == '<:checkmark:841187106654519296>':
-                return await message.edit(content="Command stopped.")
-        except asyncio.TimeoutError:
-            ctx.command.reset_cooldown(ctx)
-            return await message.edit(content="You didn't react on time.")
-        else:
-            await message.clear_reactions()
-            await message.edit(content="<a:DVB_unlock:878207978371686408> Unlocking channels... (and like carlbot would say, ETA: 0 seconds)")
+        confirmview = confirm(ctx, self.client, 30.0)
+        embed = discord.Embed(title="Awaiting Lockdown confirmation...", description=f"Are you sure you want to unlock {len(lockdown_profile)} channels in the lockdown profile **{profile_name}**?", color=discord.Color.orange())
+        message = await ctx.send(embed=embed, view = confirmview)
+        confirmview.response = message
+        await confirmview.wait()
+        if confirmview.returning_value is None:
+            embed.description, embed.color = "You didn't react on time.", discord.Color.red()
+            return await message.edit(embed=embed)
+        elif confirmview.returning_value == False:
+            embed.description, embed.color = "Command stopped.", discord.Color.red()
+            return await message.edit(embed=embed)
+        elif confirmview.returning_value == True:
+            embed.description, embed.color = "<a:DVB_unlock:878207978371686408> Unlocking channels...", discord.Color.green()
+            await message.edit(embed=embed)
             channels_not_found = []
             channels_missing_perms = []
             channels_success = []
             special_cases = []
+            lockdownmsg_entry = await self.client.pool_pg.fetchrow(
+                "SELECT endmsg FROM lockdownmsgs WHERE guild_id = $1 and profile_name = $2", ctx.guild.id, profile_name)
+            lockdownmsg = None
+            if lockdownmsg_entry is not None:
+                lockdownmsg = lockdownmsg_entry.get('endmsg')
             for entry in lockdown_profile:
                 channel = ctx.guild.get_channel((entry.get('channel_id')))
                 if channel is None:
@@ -359,17 +405,17 @@ class lockdown(commands.Cog):
                     try:
                         overwrites = channel.overwrites_for(ctx.guild.default_role)
                         if channel.name == "support":
-                            overwrites.view_channel=True
-                            await channel.set_permissions(ctx.guild.default_role,overwrite = overwrites, reason = f"Allowed to view support channel through lockdown end issued by {ctx.author} for channels in the {profile_name} Lockdown Profile")
+                            overwrites.view_channel = True
+                            await channel.set_permissions(ctx.guild.default_role, overwrite=overwrites,
+                                                          reason=f"Allowed to view support channel through lockdown end issued by {ctx.author} for channels in the {profile_name} Lockdown Profile")
                             special_cases.append((channel.mention, "Allowed view channel Permissions",))
                         else:
                             overwrites.send_messages = None
-                            await channel.set_permissions(ctx.guild.default_role, overwrite=overwrites, reason = f"Lockdown removed, issued by {ctx.author} for channels in the Lockdown Profile '{profile_name}'")
-                            embed = discord.Embed(title="This channel is now unlocked! 🔓", description=f"Have fun in {ctx.guild.name}!", color=self.client.embed_color, timestamp = datetime.utcnow())
-                            embed.set_footer(icon_url=ctx.guild.icon_url, text=ctx.guild.name)
-                            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/867100945773756476.gif?v=1")
-                            await channel.send(embed=embed)
+                            await channel.set_permissions(ctx.guild.default_role, overwrite=overwrites,
+                                                          reason=f"Lockdown removed, issued by {ctx.author} for channels in the Lockdown Profile '{profile_name}'")
                             channels_success.append(channel.mention)
+                            if lockdownmsg is not None:
+                                await send_lockdown_message(self, channel, lockdownmsg)
                     except discord.Forbidden:
                         channels_missing_perms.append(channel.mention)
             msg_content = f"{len(channels_success)} channels were successfully unlocked."
@@ -393,29 +439,47 @@ class lockdown(commands.Cog):
         """
         if profile_name is None:
             return await ctx.send("You need to specify the name of the lockdown profile. `lockdown delete [profile_name]`")
+        profile_name = profile_name.lower()
         lockdown_profile = await self.client.pool_pg.fetch(
             "SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
         if len(lockdown_profile) == 0:
             return await ctx.send(f"There is no such lockdown profile with the name **{profile_name}**.")
+        startEndview = start_or_end(ctx, self.client, 30.0)
+        embed = discord.Embed(title="Selecting lockdown message...",
+                              description=f"Choose the message that you are viewing/editing for the lockdown profile **{profile_name}**.",
+                              color=self.client.embed_color)
+        msg = await ctx.send(embed=embed, view=startEndview)
+        startEndview.response = msg
+        await startEndview.wait()
+        startEndview.response = msg
+        if startEndview.returning_value is None:
+            embed.color = discord.Color.red()
+            embed.description = "You didn't select an option."
+            return await msg.edit(embed=embed)
         if message is None:
-            lockdownmsg_entry = await self.client.pool_pg.fetchrow(
-                "SELECT lockdownmsg FROM lockdownmsgs WHERE guild_id = $1 and profile_name = $2", ctx.guild.id, profile_name)
+            print(startEndview.returning_value)
+            lockdownmsg_entry = await self.client.pool_pg.fetchrow("SELECT * FROM lockdownmsgs WHERE guild_id = $1 and profile_name = $2", ctx.guild.id, profile_name)
             if lockdownmsg_entry is not None:
-                lockdownmsg = lockdownmsg_entry.get('lockdownmsg')
+                if startEndview.returning_value == 0:
+                    lockdownmsg = lockdownmsg_entry.get('startmsg')
+                elif startEndview.returning_value == 1:
+                    lockdownmsg = lockdownmsg_entry.get('endmsg')
+                else:
+                    lockdownmsg = None
+                print(lockdownmsg)
                 if lockdownmsg is not None:
-                    return await send_lockdown_message(self, ctx.channel, lockdownmsg, f"This is the message sent when channels are locked in the lockdown profile **{profile_name}**")
-            return await ctx.send(f"There is no message set for the lockdown profile **{profile_name}**. You can set one with `dv.lockdown msg {profile_name} [message_in_plain_text_or_json]`.")
-        profile_name = profile_name.lower()
-        lockdown_profile = await self.client.pool_pg.fetch("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
-        if len(lockdown_profile) == 0:
-            return await ctx.send(f"There is no such lockdown profile with the name **{profile_name}**.")
+                    return await send_lockdown_message(self, ctx.channel, lockdownmsg, f"This is the message sent when channels are {'locked' if startEndview.returning_value == 0 else 'unlocked'} in the lockdown profile **{profile_name}**")
+            return await ctx.send(f"There is no message set for **{'unlocking' if startEndview.returning_value == 0 else 'locking'}** channels in the lockdown profile **{profile_name}**. You can set one with `dv.lockdown msg {profile_name} [message_in_plain_text_or_json]`.")
         lockdownprofilemsg = await self.client.pool_pg.fetchrow("SELECT * FROM lockdownmsgs WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
+        slug = 'startmsg' if startEndview.returning_value == 0 else 'endmsg'
         if lockdownprofilemsg is not None:
-            await self.client.pool_pg.execute("UPDATE lockdownmsgs SET lockdownmsg = $1 WHERE profile_name = $2 and guild_id = $3", message, profile_name, ctx.guild.id)
+            if startEndview.returning_value == 0:
+                await self.client.pool_pg.execute("UPDATE lockdownmsgs SET startmsg = $1 WHERE profile_name = $2 and guild_id = $3", message, profile_name, ctx.guild.id)
+            elif startEndview.returning_value == 1:
+                await self.client.pool_pg.execute("UPDATE lockdownmsgs SET endmsg = $1 WHERE profile_name = $2 and guild_id = $3", message, profile_name, ctx.guild.id)
         else:
-            await self.client.pool_pg.execute("INSERT INTO lockdownmsgs VALUES($1, $2, $3)", ctx.guild.id, profile_name, message)
+            if startEndview.returning_value == 0:
+                await self.client.pool_pg.execute("INSERT INTO lockdownmsgs (guild_id, profile_name, startmsg) VALUES($1, $2, $3)", ctx.guild.id, profile_name, message)
+            elif startEndview.returning_value == 1:
+                await self.client.pool_pg.execute("INSERT INTO lockdownmsgs (guild_id, profile_name, endmsg) VALUES($1, $2, $3)", ctx.guild.id, profile_name, message)
         return await send_lockdown_message(self, ctx.channel, message, f"I have successfully set your lockdown message for the lockdown profile **{profile_name}**. This is how it will look like:")
-
-
-
-
