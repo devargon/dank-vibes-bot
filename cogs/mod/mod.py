@@ -6,7 +6,7 @@ from discord.ext import commands
 from utils import checks
 from utils.format import text_to_file
 from.lockdown import lockdown
-
+from utils.buttons import *
 
 class Mod(lockdown, commands.Cog, name='mod'):
     """
@@ -96,22 +96,20 @@ class Mod(lockdown, commands.Cog, name='mod'):
             message += f"{member}\n" # add grinders name to embed
         if len(grinders) != 0:
             message += f"And **{len(grinders)}** more."
+        confirmview = confirm(ctx, self.client, 15.0)
         embed = discord.Embed(title="DM Grinders?", description = f"I will be DMing these members with the {grinderrole.mention} and {tgrinderrole.mention} role to update them about the grinder check:\n\n{message}\n\nAre you sure?", color=0x57F0F0)
-        message = await ctx.send(embed=embed)
-        reactions = ["<:checkmark:841187106654519296>", "<:crossmark:841186660662247444>"]
-        for reaction in reactions:
-            await message.add_reaction(reaction)
-        def check(payload):
-            return payload.user_id == ctx.message.author.id and payload.channel_id == ctx.channel.id and payload.message_id == message.id and str(payload.emoji) in reactions
-        try:
-            response = await self.client.wait_for('raw_reaction_add', timeout=15, check=check)
-            if not str(response.emoji) == '<:checkmark:841187106654519296>':
-                return await message.edit(content="Command stopped.")
-        except asyncio.TimeoutError:
-            ctx.command.reset_cooldown(ctx)
-            return await message.edit(content="You didn't react on time.")
-        else:
-            await message.clear_reactions()
+        message = await ctx.send(embed=embed, view=confirmview)
+        confirmview.response = message
+        await confirmview.wait()
+        if confirmview.returning_value is None:
+            embed.description = "Action cancelled."
+            embed.color = discord.Color.red()
+            return await message.edit(content="You didn't click on a button on time. Do you know how to click buttons?", embed=embed)
+        if confirmview.returning_value == False:
+            embed.description = "Action cancelled."
+            embed.color = discord.Color.red()
+            return await message.edit(content="Command stopped.", embed=embed)
+        if confirmview.returning_value == True:
             msg = await ctx.send("<a:typing:839487089304141875> DMing grinders... ")
             embed = discord.Embed(title="DV Grinders Team", description=f"<a:dv_pointArrowOwO:837656328482062336> The daily grinder requirement has been checked.\n<a:dv_pointArrowOwO:837656328482062336> <#862574856846704661> is now unlocked and you may send the cash to `Dank Vibes Holder#2553`\n<a:dv_pointArrowOwO:837656328482062336> The next requirement check will take place in about <t:{round(time.time())+86400}:R> ( i.e between 1:30 and 3:30 GMT)", color=0x57F0F0)
             embed.set_thumbnail(url="https://cdn.discordapp.com/icons/595457764935991326/a_58b91a8c9e75742d7b423411b0205b2b.gif")
