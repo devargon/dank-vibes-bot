@@ -12,6 +12,47 @@ from utils.context import DVVTcontext
 from utils.menus import ListPageInteractionBase, MenuViewInteractionBase
 from utils.helper import BaseEmbed
 
+class confirm(discord.ui.View):
+    def __init__(self, ctx: DVVTcontext, client, timeout):
+        self.timeout = timeout
+        self.context = ctx
+        self.response = None
+        self.client = client
+        self.returning_value = None
+        super().__init__(timeout=30.0)
+
+    @discord.ui.button(label="Yes", style=discord.ButtonStyle.green)
+    async def yes(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.returning_value = True
+        for b in self.children:
+            b.disabled = True
+        await self.response.edit(view=self)
+        self.stop()
+
+    @discord.ui.button(label="No", style=discord.ButtonStyle.red)
+    async def no(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.returning_value = False
+        for b in self.children:
+            b.disabled = True
+        await self.response.edit(view=self)
+        self.stop()
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        ctx = self.context
+        author = ctx.author
+        if interaction.user != author:
+            await interaction.response.send_message("These buttons aren't for you!", ephemeral=True)
+            return False
+        return True
+
+    async def on_timeout(self) -> None:
+        self.returning_value = None
+        for b in self.children:
+            b.disabled = True
+        await self.response.edit(view=self)
+
+
+
 class BaseButton(ui.Button):
     def __init__(self, *, style: discord.ButtonStyle, selected: Union[int, str], row: int,
                  label: Optional[str] = None, **kwargs: Any):
