@@ -120,6 +120,7 @@ class BanBattle(commands.Cog, name='banbattle'):
         confirmView = confirm(ctx, self.client, 30.0)
         message = await ctx.send("Do you wanna unlock the channels? `Yes`|`No`", view=confirmView)
         confirmView.response = message
+        await confirmView.wait()
         if confirmView.returning_value is None:
             await ctx.send('Aborting...')
             return await ctx.send('You can manually unlock the channels.')
