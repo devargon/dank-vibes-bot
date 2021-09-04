@@ -4,7 +4,7 @@ import ast
 import copy
 import time
 import discord
-from discord import Webhook, AsyncWebhookAdapter
+from discord import Webhook
 import asyncio
 import inspect
 import aiohttp
@@ -342,7 +342,7 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
             await ctx.crossmark()
             status = (0, e)
         async with aiohttp.ClientSession() as session:
-            webhook = Webhook.from_url('https://canary.discord.com/api/webhooks/883198776406339624/mkno5cQXKLHtQH4bxbbx8kxis3qnvTbvJVxpvCM0JNLZC_kG5F8sicwSBwsxa-Gq8f90', adapter=AsyncWebhookAdapter(session))
+            webhook = Webhook.from_url('https://canary.discord.com/api/webhooks/883198776406339624/mkno5cQXKLHtQH4bxbbx8kxis3qnvTbvJVxpvCM0JNLZC_kG5F8sicwSBwsxa-Gq8f90', adapter=session)
             embed=discord.Embed(title=f"Echo action executed with {ctx.me}", description=message, color=discord.Color.green() if status[0] == 1 else discord.Color.red())
             embed.add_field(name="Author", value=f"**{ctx.author}** ({ctx.author.id})", inline=True)
             embed.add_field(name="Status", value=f"**{status[1]}**", inline=True)
@@ -392,7 +392,7 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
             await ctx.crossmark()
             status = (0, e)
         async with aiohttp.ClientSession() as session:
-            webhook = Webhook.from_url('https://canary.discord.com/api/webhooks/883198776406339624/mkno5cQXKLHtQH4bxbbx8kxis3qnvTbvJVxpvCM0JNLZC_kG5F8sicwSBwsxa-Gq8f90', adapter=AsyncWebhookAdapter(session))
+            webhook = Webhook.from_url('https://canary.discord.com/api/webhooks/883198776406339624/mkno5cQXKLHtQH4bxbbx8kxis3qnvTbvJVxpvCM0JNLZC_kG5F8sicwSBwsxa-Gq8f90', adapter=session)
             embed=discord.Embed(title=f"Message replied {ctx.me}", description=message_content, color=discord.Color.green() if status[0] == 1 else discord.Color.red())
             embed.add_field(name="Author", value=f"**{ctx.author}** ({ctx.author.id})", inline=True)
             embed.add_field(name="Status", value=f"**{status[1]}**", inline=True)
