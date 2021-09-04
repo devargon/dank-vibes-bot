@@ -2,6 +2,7 @@ import discord
 import asyncio
 import contextlib
 from utils import checks
+from utils.buttons import *
 from discord.ext import commands
 
 DV_STAFF = 827882465452097547
@@ -116,31 +117,27 @@ class BanBattle(commands.Cog, name='banbattle'):
             await ctx.send("Added {} role to `{}` members".format(available_shield.mention, len(done)), allowed_mentions=discord.AllowedMentions(roles=False))
             await ctx.trigger_typing()
         await asyncio.sleep(2)
-        await ctx.send("Do you wanna unlock the channels? `Yes`|`No`")
-        def check(message):
-            return message.author == ctx.author and message.channel == ctx.channel
-        try:
-            response = await self.client.wait_for('message', check=check, timeout=60)
-        except asyncio.TimeoutError:
+        confirmView = confirm(ctx, self.client, 30.0)
+        message = await ctx.send("Do you wanna unlock the channels? `Yes`|`No`", view=confirmView)
+        confirmView.response = message
+        if confirmView.returning_value is None:
             await ctx.send('Aborting...')
             return await ctx.send('You can manually unlock the channels.')
-        else:
-            if response.content.lower() == 'yes':
-                async with ctx.typing():
-                    channels = [ctx.guild.get_channel(channel) for channel in [829770172285976606, 829769980709961758, 829770015187140608, 829770052378689565]]
-                    for channel in channels:
-                        current_perms = channel.overwrites_for(ctx.guild.default_role)
-                        if current_perms.send_messages != False:
-                            continue
-                        current_perms.update(send_messages=None)
-                        with contextlib.suppress(Exception):
-                            await channel.set_permissions(ctx.guild.default_role, overwrite=current_perms)
-                return await ctx.send('Channels are now unlocked.')
-            elif response.content.lower() == 'no':
-                await ctx.send('Aborting...')
-                return await ctx.send('You can manually unlock the channels.')
-            else:
-                return await ctx.send("That's not a valid response.")
+        elif confirmView.returning_value == True:
+            async with ctx.typing():
+                channels = [ctx.guild.get_channel(channel) for channel in
+                            [829770172285976606, 829769980709961758, 829770015187140608, 829770052378689565]]
+                for channel in channels:
+                    current_perms = channel.overwrites_for(ctx.guild.default_role)
+                    if current_perms.send_messages != False:
+                        continue
+                    current_perms.update(send_messages=None)
+                    with contextlib.suppress(Exception):
+                        await channel.set_permissions(ctx.guild.default_role, overwrite=current_perms)
+            return await ctx.send('Channels are now unlocked.')
+        elif confirmView.returning_value == False:
+            await ctx.send('Aborting...')
+            return await ctx.send('You can manually unlock the channels.')
 
     @checks.is_dvbm()
     @banbattle.command(name='leaderboard', aliases=['lb'])
