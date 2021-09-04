@@ -18,7 +18,7 @@ class start_or_end(discord.ui.View):
         self.returning_value = None
         super().__init__(timeout=timeout)
 
-    @discord.ui.button(label="Start message", style=discord.ButtonStyle.primary, emoji="▶")
+    @discord.ui.button(label="When lockdown starts", style=discord.ButtonStyle.primary, emoji="▶")
     async def start_message(self, button: discord.ui.Button, interaction: discord.Interaction):
         self.returning_value = 0
         for b in self.children:
@@ -26,7 +26,7 @@ class start_or_end(discord.ui.View):
         await self.response.edit(view=self)
         self.stop()
 
-    @discord.ui.button(label="End message", style=discord.ButtonStyle.primary, emoji="⏹")
+    @discord.ui.button(label="When lockdown ends", style=discord.ButtonStyle.primary, emoji="⏹")
     async def mention(self, button: discord.ui.Button, interaction: discord.Interaction):
         self.returning_value = 1
         for b in self.children:
