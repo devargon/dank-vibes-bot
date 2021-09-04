@@ -5,6 +5,7 @@ import asyncio
 import contextlib
 from utils import checks
 from typing import Union
+from utils.buttons import *
 from utils.menus import CustomMenu
 from discord.ext import commands
 from utils.format import plural
@@ -78,45 +79,6 @@ class name_or_mention(discord.ui.View):
     async def mention(self, button: discord.ui.Button, interaction: discord.Interaction):
         ctx = self.context
         self.returning_value = (f"<@!{ctx.author.id}>", ctx.guild.id)  # Ar for mention
-        for b in self.children:
-            b.disabled = True
-        await self.response.edit(view=self)
-        self.stop()
-
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        ctx = self.context
-        author = ctx.author
-        if interaction.user != author:
-            await interaction.response.send_message("These buttons aren't for you!", ephemeral=True)
-            return False
-        return True
-
-    async def on_timeout(self) -> None:
-        self.returning_value = None
-        for b in self.children:
-            b.disabled = True
-        await self.response.edit(view=self)
-
-class confirm(discord.ui.View):
-    def __init__(self, ctx: DVVTcontext, client, timeout):
-        self.timeout = timeout
-        self.context = ctx
-        self.response = None
-        self.client = client
-        self.returning_value = None
-        super().__init__(timeout=timeout)
-
-    @discord.ui.button(label="Yes", style=discord.ButtonStyle.green)
-    async def yes(self, button: discord.ui.Button, interaction: discord.Interaction):
-        self.returning_value = True
-        for b in self.children:
-            b.disabled = True
-        await self.response.edit(view=self)
-        self.stop()
-
-    @discord.ui.button(label="No", style=discord.ButtonStyle.red)
-    async def no(self, button: discord.ui.Button, interaction: discord.Interaction):
-        self.returning_value = False
         for b in self.children:
             b.disabled = True
         await self.response.edit(view=self)
