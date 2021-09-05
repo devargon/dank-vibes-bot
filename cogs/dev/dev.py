@@ -318,7 +318,7 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
     @commands.group(name="d", invoke_without_command=True)
     async def d_base(self, ctx):
         """
-        Commands to talk as the bot.
+        Developer utilities to simulate the bot.
         """
         return await ctx.help()
 
@@ -351,6 +351,9 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
     @checks.admoon()
     @d_base.command(name="reply")
     async def d_reply(self, ctx, messageID_or_messageLink:Union[int, str] = None, channel:Optional[discord.TextChannel] = None, *, message_content=None):
+        """
+        Replies to message as the bot.
+        """
         #Getting message by message ID
         if type(messageID_or_messageLink) == int:
             if channel is None:
@@ -398,3 +401,12 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
             embed.add_field(name="Status", value=f"**{status[1]}**", inline=True)
             embed.add_field(name="Referenced Message", value=f"Author: {message.author}\nAt: <t:{round(message.created_at.timestamp())}>\nChannel: {message.channel}\nURL: [`Jump to message`]({message.jump_url})", inline=False)
             await webhook.send(embed=embed, username=f"{self.client.user.name} Logs")
+
+    @checks.dev()
+    @commands.command(name="error", aliases=["raiseerror"])
+    async def raise_mock_error(self, ctx, *, message=None):
+        """
+        Raises a ValueError for testing purposes.
+        """
+        await ctx.send("Mimicking an error...")
+        raise ValueError(message)
