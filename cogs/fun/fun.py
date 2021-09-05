@@ -182,6 +182,8 @@ class Fun(dm, commands.Cog, name='fun'):
             await ctx.send("You missed out `member` for this command.\n**Usage**: `hideping [member] [message]`")
             return
         message = "" if message is None else message
+        if len(message) > 1900:
+            return await ctx.send("Your accompanying message can only be at most 1900 characters.")
         try:
             await ctx.message.delete() # hides the ping so it has to delete the message that was sent to ping user
         except discord.Forbidden:
