@@ -10,7 +10,7 @@ from discord.ext import commands, tasks
 from utils.format import print_exception
 from .betting import betting
 from utils.context import DVVTcontext
-
+from utils.buttons import *
 
 def emojioutput(truefalse):  # shows the enabled or disabled emoji for 0 or 1 values
     if truefalse == 0:
@@ -375,25 +375,20 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
         if argument and argument.lower() == "reset":
             alltime = await self.client.pool_pg.fetch("SELECT * from stats")
             embed = discord.Embed(title="Reset Dank reminder database?", description=f"{len(alltime)} entries will be deleted. Are you sure?", color=discord.Color.red())
-            message = await ctx.send(embed=embed)
-            reactions = ["<:checkmark:841187106654519296>", "<:crossmark:841186660662247444>"] # request to confirm
-            for reaction in reactions:
-                await message.add_reaction(reaction)
-            def check(payload):
-                return payload.user_id == ctx.message.author.id and payload.channel_id == ctx.channel.id and payload.message_id == message.id and str(
-                    payload.emoji) in reactions
-            try:
-                response = await self.client.wait_for('raw_reaction_add', timeout=15, check=check)
-                if not str(response.emoji) == '<:checkmark:841187106654519296>':
-                    return await message.edit(content="Command stopped.")
-            except asyncio.TimeoutError:
-                ctx.command.reset_cooldown(ctx)
-                return await message.edit(content="You didn't react on time.")
-            else:
-                await message.clear_reactions()
+            confirmview = confirm(ctx, self.client, 15.0)
+            message = await ctx.send(embed=embed, view=confirmview)
+            confirmview.response = message
+            await confirmview.wait()
+            if confirmview.returning_value is None:
+                embed.description, embed.color = "You didn't react on time.", discord.Color.red()
+                return await message.edit(embed=embed)
+            elif confirmview.returning_value is False:
+                embed.description, embed.color = "Command stopped.", discord.Color.red()
+                return await message.edit(embed=embed)
+            elif confirmview.returning_value is True:
                 async with ctx.typing():
                     await self.client.pool_pg.execute("DELETE FROM stats") # delete statistics database
-                    embed = discord.Embed(title="Reset Dank reminder database?", description=f"Database has been reset.", color=discord.Color.green())
+                    embed.description, embed.color = "Database has been reset :,)", discord.Color.green()
                     await message.edit(embed=embed)
                     return await message.delete(delay=10)
         def remindertype(num):
