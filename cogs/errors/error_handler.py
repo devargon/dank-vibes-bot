@@ -1,9 +1,13 @@
+import contextlib
+
 import discord
 from datetime import datetime
 from utils.time import humanize_timedelta
 from discord.ext import commands
 from utils.format import print_exception
 from utils.errors import ArgumentBaseError
+import requests
+import json
 
 class ErrorHandler(commands.Cog):
     """
@@ -48,6 +52,8 @@ class ErrorHandler(commands.Cog):
             await send_error(error, delete_after=10)
         else:
             embed = discord.Embed(title="Oh no! something went wrong.", description="It has been sent to the bot developer, it'll be fixed soon.", color=discord.Color.red())
+            if ctx.author.id in [650647680837484556, 321892489470410763]:
+                embed.add_field(name="Error", value=f"```prolog\n{error}\n```\n<#871737028105109574>")
             await send_error(embed=embed, delete_after=10)
             traceback_error = print_exception(f'Ignoring exception in command {ctx.command}:', error)
             error_message = f"**Command:** `{ctx.message.content}`\n" \
@@ -58,4 +64,15 @@ class ErrorHandler(commands.Cog):
                             f"**Jump:** [`jump`]({ctx.message.jump_url})```py\n" \
                             f"{traceback_error}\n" \
                             f"```"
+            data = {
+                'user': f"{ctx.author} ({ctx.author.id})",
+                'guild': f"{ctx.guild.name} ({ctx.guild.id})",
+                'channel': f"{ctx.channel.name} ({ctx.channel.id})",
+                'message': ctx.message.content,
+                'url': ctx.message.jump_url,
+                'error': traceback_error
+            }
+
+            with contextlib.suppress(Exception):
+                requests.post(url='http://161.35.235.103:5000/webhook', data = json.dumps(data), headers={'Content-Type':'application/json'})
             await self.client.error_channel.send(content=f"<@&871740422932824095> Check this out",embed=discord.Embed(color=0xffcccb, description=error_message, timestamp=datetime.utcnow()).set_footer(text=f"From: {ctx.guild.name}", icon_url=ctx.guild.icon_url), allowed_mentions=discord.AllowedMentions(roles=True))
