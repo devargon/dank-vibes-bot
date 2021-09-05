@@ -54,7 +54,9 @@ class ErrorHandler(commands.Cog):
             embed = discord.Embed(title="Oh no! something went wrong.", description="It has been sent to the bot developer, it'll be fixed soon.", color=discord.Color.red())
             if ctx.author.id in [650647680837484556, 321892489470410763]:
                 embed.add_field(name="Error", value=f"```prolog\n{error}\n```\n<#871737028105109574>")
-            await send_error(embed=embed, delete_after=10)
+                await send_error(embed=embed)
+            else:
+                await send_error(embed=embed, delete_after=10)
             traceback_error = print_exception(f'Ignoring exception in command {ctx.command}:', error)
             error_message = f"**Command:** `{ctx.message.content}`\n" \
                             f"**Message ID:** `{ctx.message.id}`\n" \
