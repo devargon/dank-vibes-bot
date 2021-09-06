@@ -171,14 +171,14 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
         modrole = ctx.guild.get_role(608495204399448066)
         messages = await channel.history(limit=1, oldest_first=True).flatten()
         message = messages[0]
-        """if modrole not in ctx.author.roles:
+        if modrole not in ctx.author.roles:
             channel = ctx.channel
             if ctx.channel.category_id not in [802467427208265728, 763457841133912074, 789195494664306688, 783299769580781588, 805052824185733120, 834696686923284510, 847897065081274409]:
                 return await ctx.send("You can only use this command in your own private channel.")
             messages = await channel.history(limit=1, oldest_first=True).flatten()
             message = messages[0]
             if not ctx.author.mentioned_in(message):
-                return await ctx.send("You can't check the members in this channel as you do not own this channel. If you think there is an error, please contact a Moderator in <#870880772985344010>.")"""
+                return await ctx.send("You can't check the members in this channel as you do not own this channel. If you think there is an error, please contact a Moderator in <#870880772985344010>.")
         owner = None
         if len(message.mentions) > 0:
             owner_member = message.mentions[0]
