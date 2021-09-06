@@ -402,7 +402,7 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
             embed.add_field(name="Referenced Message", value=f"Author: {message.author}\nAt: <t:{round(message.created_at.timestamp())}>\nChannel: {message.channel}\nURL: [`Jump to message`]({message.jump_url})", inline=False)
             await webhook.send(embed=embed, username=f"{self.client.user.name} Logs")
 
-    @checks.dev()
+    @checks.admoon()
     @commands.command(name="error", aliases=["raiseerror"])
     async def raise_mock_error(self, ctx, *, message=None):
         """
