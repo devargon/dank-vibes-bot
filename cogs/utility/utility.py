@@ -10,6 +10,35 @@ from .nicknames import nicknames
 from discord.ext import commands
 from .teleport import Teleport
 from .suggestion import Suggestion
+from utils.format import ordinal
+
+footertext = {
+    752403154259148810: 'stinky !! 😤',
+    395020663116529674: 'diarhea human',
+    594959254369337345: 'Kannazumi',
+    602066975866355752: 'thick ice',
+    542905463541465088: 'DiAri',
+    27409176946409543: 'funky',
+    650647680837484556: 'wow, the cleanest human has summoned me',
+    406748083377012746: 'jitu :)',
+    436720581501517824: 'clayde nice pfp',
+    493063931191885825: 'Doryyy :D',
+    515725341910892555: 'no you are not getting su perms ven',
+    642318626044772362: 'sussy amogus impostor',
+    752242566493372539: 'ley please tell blu to be less stinky ty',
+    264019387009204224: 'DiAri',
+    424685275793457173: 'foxy',
+    740783485270229084: 'AKEH',
+    506320624377921546: 'Hi Jenn :)',
+    366069251137863681: 'bobbi sleep earlier',
+    560251854399733760: 'frenzy :3 O///O',
+    392127809939570688: 'hi kathy :)',
+    697969807789654076: 'desteva uwu',
+    517115653623119913: 'dany :)',
+    689561648863772813: 'Kannazumi',
+    722202979532275752: 'the delete button is so close to the enter button',
+    695161675782815825: 'ann hiihihihihii'
+}
 
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
@@ -114,6 +143,24 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
         embed.timestamp = datetime.datetime.utcnow()
         await ctx.send(embed=embed)
 
+    @commands.command(name="messagecount", aliases=["mymessages"])
+    async def messagecount(self, ctx, member:discord.Member = None):
+        """
+        Shows the number of messages a member has sent in <#608498967474601995>.
+        """
+        if member is None:
+            member = ctx.author
+        user = await self.client.pool_pg.fetchrow("SELECT * FROM messagelog WHERE user_id = $1", ctx.author.id)
+        if user is None:
+            return await ctx.send("Hmm... it appears that you have not sent a message in <#608498967474601995>. Contact a mod if you think this is wrong.")
+        all = await self.client.pool_pg.fetch("SELECT * FROM messagelog ORDER BY messagecount DESC")
+        position = ordinal(all.index(user)+1)
+        embed = discord.Embed(title="Your number of messages sent in #general-chat", color=self.client.embed_color, timestamp=datetime.datetime.utcnow())
+        embed.set_author(name=member, icon_url=member.avatar.url)
+        embed.add_field(name="Message count", value=user.get('messagecount'), inline=True)
+        embed.add_field(name="Position", value=f"{position} {'🏆' if all.index(user) < 10 else ''}", inline=True)
+        await ctx.reply(embed=embed)
+
     @commands.command(name="checkpvc", aliases = ["privchannel", "pvc"])
     async def checkoverwrites(self, ctx, channel:discord.TextChannel=None):
         """
@@ -124,27 +171,37 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
         modrole = ctx.guild.get_role(608495204399448066)
         messages = await channel.history(limit=1, oldest_first=True).flatten()
         message = messages[0]
-        if modrole not in ctx.author.roles:
+        """if modrole not in ctx.author.roles:
             channel = ctx.channel
             if ctx.channel.category_id not in [802467427208265728, 763457841133912074, 789195494664306688, 783299769580781588, 805052824185733120, 834696686923284510, 847897065081274409]:
                 return await ctx.send("You can only use this command in your own private channel.")
             messages = await channel.history(limit=1, oldest_first=True).flatten()
             message = messages[0]
             if not ctx.author.mentioned_in(message):
-                return await ctx.send("You can't check the members in this channel as you do not own this channel. If you think there is an error, please contact a Moderator in <#870880772985344010>.")
+                return await ctx.send("You can't check the members in this channel as you do not own this channel. If you think there is an error, please contact a Moderator in <#870880772985344010>.")"""
+        owner = None
+        if len(message.mentions) > 0:
+            owner_member = message.mentions[0]
+            owner = f"**{owner_member}** {owner_member.mention}"
+            if owner_member not in channel.overwrites:
+                owner += "\n⚠️ Not in channel"
         members = [overwriteobject for overwriteobject in channel.overwrites if isinstance(overwriteobject, discord.Member) and not overwriteobject.bot] # gets all members who have some sort of overwrite in that channel
         membersin = []
         for member in members:
-            permissions = channel.permissions_for(member)
-            if permissions.view_channel == True:
-                membersin.append(f"**{member}** {member.mention} 🧑‍⚖️" if member.mentioned_in(message) else f"**{member}** {member.mention}") # add them to a final list that shows who is in the channel
-        members = "\n".join(membersin)
-        members += f"\n\nMember Count: `{len(membersin)-1 if '🧑‍⚖️' in members else len(membersin)}`\n*This automatically excludes owners of the channel.*"
-        embed = discord.Embed(
-            title=f"Members in #{channel.name}",
-            description=members[0:4096] or "It appears there's no one in this channel.", # limit the characters in case
-            color=0x57F0F0,
-            timestamp=datetime.datetime.utcnow(),
-        )
-        embed.set_footer(icon_url=ctx.guild.icon_url, text="uwu") # you can remove this if you want idk
+            if member != owner_member:
+                permissions = channel.permissions_for(member)
+                if permissions.view_channel == True:
+                    membersin.append(f"**{member}** {member.mention}")
+        membermsg = "".join(f"`{count}.` {i}\n" for count, i in enumerate(membersin, start=1))
+        print(owner)
+        embed = discord.Embed(title=f"Private Channel Details of #{channel.name}", color=self.client.embed_color, timestamp=datetime.datetime.utcnow())
+        embed.add_field(name="Owner 🧑‍⚖️", value = owner or "Unknown", inline=True)
+        embed.add_field(name="Members", value=membermsg if len(membermsg) > 0 else "No one is in this channel.", inline=True)
+        embed.add_field(name="\u200b", value="\u200b", inline=True)
+        embed.add_field(name="Member Count", value=f"`{len(membersin)}`", inline=True)
+        embed.add_field(name="Created at", value=channel.created_at.strftime("%a, %b %d, %Y") if channel.created_at is not None else 'Unknown')
+        category = discord.utils.get(ctx.guild.categories, id=channel.category_id)
+        embed.add_field(name="Under Category", value=category.name or "Unknown")
+        if ctx.author.id in footertext:
+            embed.set_footer(icon_url=ctx.guild.icon.url, text=footertext[ctx.author.id]) # you can remove this if you want idk
         await ctx.send(embed=embed)
