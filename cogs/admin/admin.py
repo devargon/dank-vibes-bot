@@ -5,10 +5,11 @@ from datetime import datetime
 from discord.ext import commands
 from .serverrule import ServerRule
 from .sticky import Sticky
+from .messagelog import MessageLog
 
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
-class Admin(Sticky, ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass):
+class Admin(MessageLog, Sticky, ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass):
     """
     Server Commands
     """
