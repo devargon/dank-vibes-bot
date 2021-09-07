@@ -34,6 +34,15 @@ def is_owner_or_perms(**perms):
         return await base_check(ctx)
     return commands.check(predicate=predicate)
 
+def in_beta() -> Callable:
+    async def predicate(ctx):
+        if ctx.author.id in [515725341910892555, 366069251137863681, 650647680837484556, 321892489470410763,
+                                 602066975866355752]:
+            return True
+        else:
+            raise ArgumentBaseError(message="This feature is still in development and is not available to the public at the moment. Be sure to check it again soon!")
+    return commands.check(predicate)
+
 def dev() -> callable:
     async def predicate(ctx):
         if ctx.message.author.id in [321892489470410763, 650647680837484556]:
