@@ -167,7 +167,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
         """
         if response is None:
             ctx.command.reset_cooldown(ctx)
-            return await ctx.send("You need to include a response.")
+            return await ctx.send("Include an emoji you want from the server! Example:`dv.ar claim :dv_DankVibesOwO:`")
         if isinstance(response, discord.Emoji):
             reaction = str(response)
         else:

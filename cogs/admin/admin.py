@@ -5,11 +5,11 @@ from datetime import datetime
 from discord.ext import commands
 from .serverrule import ServerRule
 from .sticky import Sticky
-from .messagelog import MessageLog
+from utils import checks
 
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
-class Admin(MessageLog, Sticky, ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass):
+class Admin(Sticky, ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass):
     """
     Server Commands
     """
@@ -50,7 +50,7 @@ class Admin(MessageLog, Sticky, ServerRule, commands.Cog, name='admin', metaclas
         embed.add_field(name=f"{get_emoji(owodaily)} OwO Daily Leaderboard", value=f"{'Enabled' if owodaily else 'Disabled'}", inline=False)
         embed.add_field(name=f"{get_emoji(owoweekly)} OwO Weekly Leaderboard", value=f"{'Enabled' if owoweekly else 'Disabled'}", inline=False)
         embed.add_field(name=f"{get_emoji(votelb)} Vote Leaderboard", value=f"{'Enabled' if votelb else 'Disabled'}", inline=False)
-        embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon.url)
+        embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon_url)
         message = await ctx.send(embed=embed)
         emojis = ['1⃣', '2⃣', '3⃣', 'ℹ']
         for emoji in emojis:
@@ -99,7 +99,7 @@ class Admin(MessageLog, Sticky, ServerRule, commands.Cog, name='admin', metaclas
     @commands.has_guild_permissions(administrator=True)
     async def setdmchannel(self, ctx, channel:discord.TextChannel=None):
         """
-        Set the channel for DM requests to be sent to.
+        Set the channel for dmname requests to be sent to.
         """
         result = await self.client.pool_pg.fetch("SELECT * FROM channelconfigs where guild_id = $1", ctx.guild.id)
         if len(result) == 0:
@@ -112,7 +112,7 @@ class Admin(MessageLog, Sticky, ServerRule, commands.Cog, name='admin', metaclas
 
     @commands.command(name="viewconfig")
     @commands.has_guild_permissions(administrator=True)
-    async def viewconfig(self, ctx):
+    async def viewconfig(self, ctx, channel: discord.TextChannel = None):
         """
         Show configurations for nickname and DM requests.
         """
@@ -121,3 +121,19 @@ class Admin(MessageLog, Sticky, ServerRule, commands.Cog, name='admin', metaclas
             return await ctx.send(f"No configuration for DM and nickname requests have been set yet. ")
         else:
             await ctx.send(embed=discord.Embed(title=f"Configurations for {ctx.guild.name}", description = f"Nickname requests: {ctx.guild.get_channel(result.get('nicknamechannel_id'))}\nDM requests: {ctx.guild.get_channel(result.get('dmchannel_id'))}", color = 0x57F0F0))
+
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.command(name="messagereset", aliases=["mreset"], invoke_without_command=True)
+    async def messagelog(self, ctx):
+        """
+        Resets the database for counting messages sent.
+        """
+        messagecount = await self.client.pool_pg.fetch("SELECT * FROM messagelog")
+        if len(messagecount) == 0:  # if there's nothing to be deleted
+            return await ctx.send("There's no message count to be removed.")
+        totalvote = sum(userentry.get('messagecount') for userentry in messagecount)
+        embed = discord.Embed(title="Action awaiting confirmation", description=f"There are {len(messagecount)} who have chatted, amounting to a total of {totalvote} messages. Are you sure you want to reset the message count?", color=self.client.embed_color, timestamp=datetime.utcnow())
+        msg = await ctx.reply(embed=embed)
+        await self.client.pool_pg.execute("DELETE FROM messagelog")
+        embed.color, embed.description = discord.Color.green(), "The message count has been cleared."
+        await msg.edit(embed=embed)

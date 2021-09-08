@@ -161,7 +161,7 @@ class OwO(commands.Cog, name='owo'):
         self.active = False
         if datetime.utcnow().weekday() == 6:
             if await self.client.pool_pg.fetchval("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", guild.id, "owoweeklylb"): # check if the weekly owo lb is enabled or not 
-                query = "SELECT member_id, weekly_count FROM owocount ORDER BY daily_count DESC LIMIT $1"
+                query = "SELECT member_id, weekly_count FROM owocount ORDER BY weekly_count DESC LIMIT $1"
                 embed = await self.get_leaderboard(guild, query, top=5)
                 embed.title = "This week's OwO leaderboard"
                 if channel is not None:

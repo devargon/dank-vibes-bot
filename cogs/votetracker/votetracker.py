@@ -119,6 +119,8 @@ class VoteTracker(commands.Cog, name='votetracker'):
                     first_time = True
                 member = self.client.get_user(memberid)
                 channel = self.client.get_channel(channelid)
+                if member is None:
+                    return
                 if preferences.get('rmtype') == 1:
                     message = "You can now vote for Dank Vibes again!"
                     if first_time:
