@@ -99,7 +99,7 @@ class Admin(MessageLog, Sticky, ServerRule, commands.Cog, name='admin', metaclas
     @commands.has_guild_permissions(administrator=True)
     async def setdmchannel(self, ctx, channel:discord.TextChannel=None):
         """
-        Set the channel for dmname requests to be sent to.
+        Set the channel for DM requests to be sent to.
         """
         result = await self.client.pool_pg.fetch("SELECT * FROM channelconfigs where guild_id = $1", ctx.guild.id)
         if len(result) == 0:
@@ -112,7 +112,7 @@ class Admin(MessageLog, Sticky, ServerRule, commands.Cog, name='admin', metaclas
 
     @commands.command(name="viewconfig")
     @commands.has_guild_permissions(administrator=True)
-    async def viewconfig(self, ctx, channel: discord.TextChannel = None):
+    async def viewconfig(self, ctx):
         """
         Show configurations for nickname and DM requests.
         """

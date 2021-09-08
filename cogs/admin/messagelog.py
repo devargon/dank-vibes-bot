@@ -5,19 +5,6 @@ from utils import checks
 from datetime import datetime
 from utils.buttons import *
 
-
-class Leaderboard(menus.ListPageSource):
-    def __init__(self, entries, title):
-        self.title = title
-        super().__init__(entries, per_page=10)
-
-    async def format_page(self, menu, entries):
-        embed = discord.Embed(title=self.title, color=menu.ctx.bot.embed_color, timestamp=datetime.utcnow())
-        for entry in entries:
-            embed.add_field(name=f"{entry[0]}", value=f"**{entry[1]}** Messages", inline=False)
-        embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
-        return embed
-
 class MessageLog(commands.Cog):
     def __init(self, client):
         self.client = client

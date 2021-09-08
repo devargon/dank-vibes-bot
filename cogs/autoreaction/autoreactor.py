@@ -62,7 +62,7 @@ class name_or_mention(discord.ui.View):
         self.returning_value = None
         super().__init__(timeout=timeout)
 
-    @discord.ui.button(label="Name", style=discord.ButtonStyle.primary)
+    @discord.ui.button(label="When your name is said", style=discord.ButtonStyle.primary)
     async def name(self, button: discord.ui.Button, interaction: discord.Interaction):
         ctx = self.context
         if cancerous_name(ctx.author.name):
@@ -75,7 +75,7 @@ class name_or_mention(discord.ui.View):
         await self.response.edit(view=self)
         self.stop()
 
-    @discord.ui.button(label="Mention", style=discord.ButtonStyle.primary)
+    @discord.ui.button(label="When you are mentioned", style=discord.ButtonStyle.primary)
     async def mention(self, button: discord.ui.Button, interaction: discord.Interaction):
         ctx = self.context
         self.returning_value = (f"<@!{ctx.author.id}>", ctx.guild.id)  # Ar for mention
