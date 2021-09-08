@@ -42,6 +42,7 @@ class Fun(dm, commands.Cog, name='fun'):
         self.dmconfig = {}
         self.mutedusers = []
         self.scrambledusers = []
+        self.persistent_views_added = False
 
     @checks.has_permissions_or_role(administrator=True)
     @commands.group(name="dumbfight", aliases = ["df"], invoke_without_command=True)
