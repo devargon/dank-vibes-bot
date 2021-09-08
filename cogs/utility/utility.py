@@ -50,6 +50,7 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
     def __init__(self, client):
         self.client = client
         self.nickconfig = {}
+        self.persistent_views_added = False
 
     @commands.guild_only()
     @commands.command(name='uptime')

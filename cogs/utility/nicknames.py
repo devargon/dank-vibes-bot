@@ -159,9 +159,6 @@ class nicknames(commands.Cog):
                 await self.client.pool_pg.execute("UPDATE nicknames set messageid = $1 where id = $2", request_message.id, ID)
             else:
                 await request_message.edit(embed=requestembed)
-            for emoji in emojis:
-                if emoji not in request_message.reactions:
-                    await request_message.add_reaction(emoji)
 
         else:
             await self.client.pool_pg.execute("INSERT INTO nicknames(member_id, nickname) values($1, $2)", ctx.author.id, nickname)
