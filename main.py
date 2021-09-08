@@ -21,6 +21,7 @@ AVAILABLE_EXTENSIONS = ['cogs.dev',
 'cogs.owo',
 'cogs.utility',
 'cogs.votetracker',
+'cogs.messagetracking'
 ]
 
 load_dotenv('credentials.env')

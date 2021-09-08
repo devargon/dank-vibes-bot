@@ -77,4 +77,4 @@ class ErrorHandler(commands.Cog):
 
             with contextlib.suppress(Exception):
                 requests.post(url='http://161.35.235.103:5000/webhook', data = json.dumps(data), headers={'Content-Type':'application/json'})
-            await self.client.error_channel.send(content=f"<@&871740422932824095> Check this out",embed=discord.Embed(color=0xffcccb, description=error_message, timestamp=datetime.utcnow()).set_footer(text=f"From: {ctx.guild.name}", icon_url=ctx.guild.icon_url), allowed_mentions=discord.AllowedMentions(roles=True))
+            await self.client.error_channel.send(content=f"<@&871740422932824095> Check this out",embed=discord.Embed(color=0xffcccb, description=error_message, timestamp=datetime.utcnow()).set_footer(text=f"From: {ctx.guild.name}", icon_url=ctx.guild.icon.url), allowed_mentions=discord.AllowedMentions(roles=True))

@@ -204,7 +204,7 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
         all = await self.client.pool_pg.fetch("SELECT * FROM messagelog ORDER BY messagecount DESC")
         position = ordinal(all.index(user)+1)
         embed = discord.Embed(title="Your number of messages sent in #general-chat", color=self.client.embed_color, timestamp=datetime.datetime.utcnow())
-        embed.set_author(name=member, icon_url=member.avatar_url)
+        embed.set_author(name=member, icon_url=member.avatar.url)
         embed.add_field(name="Message count", value=user.get('messagecount'), inline=True)
         embed.add_field(name="Position", value=f"{position} {'🏆' if all.index(user) < 10 else ''}", inline=True)
         await ctx.reply(embed=embed)

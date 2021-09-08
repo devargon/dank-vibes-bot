@@ -6,6 +6,7 @@ from discord.ext import commands
 from .serverrule import ServerRule
 from .sticky import Sticky
 from utils import checks
+from utils.buttons import *
 
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
@@ -50,7 +51,7 @@ class Admin(Sticky, ServerRule, commands.Cog, name='admin', metaclass=CompositeM
         embed.add_field(name=f"{get_emoji(owodaily)} OwO Daily Leaderboard", value=f"{'Enabled' if owodaily else 'Disabled'}", inline=False)
         embed.add_field(name=f"{get_emoji(owoweekly)} OwO Weekly Leaderboard", value=f"{'Enabled' if owoweekly else 'Disabled'}", inline=False)
         embed.add_field(name=f"{get_emoji(votelb)} Vote Leaderboard", value=f"{'Enabled' if votelb else 'Disabled'}", inline=False)
-        embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon_url)
+        embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon.url)
         message = await ctx.send(embed=embed)
         emojis = ['1⃣', '2⃣', '3⃣', 'ℹ']
         for emoji in emojis:
@@ -128,12 +129,22 @@ class Admin(Sticky, ServerRule, commands.Cog, name='admin', metaclass=CompositeM
         """
         Resets the database for counting messages sent.
         """
+        confirm_view = confirm(ctx, self.client, 30.0)
         messagecount = await self.client.pool_pg.fetch("SELECT * FROM messagelog")
         if len(messagecount) == 0:  # if there's nothing to be deleted
             return await ctx.send("There's no message count to be removed.")
         totalvote = sum(userentry.get('messagecount') for userentry in messagecount)
-        embed = discord.Embed(title="Action awaiting confirmation", description=f"There are {len(messagecount)} who have chatted, amounting to a total of {totalvote} messages. Are you sure you want to reset the message count?", color=self.client.embed_color, timestamp=datetime.utcnow())
-        msg = await ctx.reply(embed=embed)
-        await self.client.pool_pg.execute("DELETE FROM messagelog")
-        embed.color, embed.description = discord.Color.green(), "The message count has been cleared."
-        await msg.edit(embed=embed)
+        embed = discord.Embed(title="Action awaiting confirmation", description=f"There are {len(messagecount)} people who have chatted, amounting to a total of {totalvote} messages. Are you sure you want to reset the message count?", color=self.client.embed_color, timestamp=datetime.utcnow())
+        msg = await ctx.reply(embed=embed, view=confirm_view)
+        confirm_view.response = msg
+        await confirm_view.wait()
+        if confirm_view.returning_value is None:
+            embed.color, embed.description = discord.Color.red(), "You didn't respond."
+            return await msg.edit(embed=embed)
+        if confirm_view.returning_value == False:
+            embed.color, embed.description = discord.Color.red(), "Action cancelled."
+            return await msg.edit(embed=embed)
+        if confirm_view.returning_value == True:
+            await self.client.pool_pg.execute("DELETE FROM messagelog")
+            embed.color, embed.description = discord.Color.green(), "The message count has been cleared."
+            await msg.edit(embed=embed)
