@@ -16,7 +16,6 @@ class VoteSetting(discord.ui.Select):
     def __init__(self, client, context, response):
         self.client = client
         self.response = response
-        print(self.response)
         self.context = context
         options = [
             discord.SelectOption(label = "DM", description = f"{self.client.user.name} will DM you after 12 hours to vote for the server.", emoji = discord.PartialEmoji.from_str("<:DVB_Letter:884743813166407701>"), default = False),
@@ -45,7 +44,6 @@ class VoteSettingView(discord.ui.View):
         self.context = ctx
         super().__init__(timeout=timeout)
         self.add_item(VoteSetting(client=self.client, context=self.context, response=self.response))
-        print(self.response)
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         ctx = self.context

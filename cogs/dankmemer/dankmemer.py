@@ -40,10 +40,7 @@ class dankreminders(discord.ui.View):
         super().__init__(timeout=timeout)
 
         async def update_message(emoji):
-            print(emoji)
             if str(emoji) == "<:DVB_calendar:873107952159059991>":
-                print("DAILY")
-                print(self.result.get('daily'))
                 await self.client.pool_pg.execute("UPDATE remindersettings SET daily = $1 WHERE member_id = $2", numberswitcher(self.result.get('daily')), ctx.author.id)  # switches to enabled/disabled reminder
             elif str(emoji) == "<:DVB_lotteryticket:873110581085880321>":
                 await self.client.pool_pg.execute("UPDATE remindersettings SET lottery = $1 WHERE member_id = $2", numberswitcher(self.result.get('lottery')), ctx.author.id)
@@ -77,7 +74,6 @@ class dankreminders(discord.ui.View):
 
         class somebutton(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
-                print("HI")
                 await update_message(self.emoji)
         reminderemojis = ["<:DVB_calendar:873107952159059991>", "<:DVB_week:876711052669247528>",
                           "<:DVB_month:876711072030150707>", "<:DVB_lotteryticket:873110581085880321>",

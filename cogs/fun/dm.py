@@ -63,7 +63,6 @@ class DMPersistentView(discord.ui.View):
             msgcontent = f"Your message was successfully sent to {dmtarget}!"
         else:
             msgcontent = f"Your DM request was denied."
-        print(msgcontent)
         if msgcontent is not None and dmrequester is not None:
             try:
                 await dmrequester.send(msgcontent)

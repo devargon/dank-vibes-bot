@@ -457,7 +457,6 @@ class lockdown(commands.Cog):
             embed.description = "You didn't select an option."
             return await msg.edit(embed=embed)
         if message is None:
-            print(startEndview.returning_value)
             lockdownmsg_entry = await self.client.pool_pg.fetchrow("SELECT * FROM lockdownmsgs WHERE guild_id = $1 and profile_name = $2", ctx.guild.id, profile_name)
             if lockdownmsg_entry is not None:
                 if startEndview.returning_value == 0:
@@ -466,7 +465,6 @@ class lockdown(commands.Cog):
                     lockdownmsg = lockdownmsg_entry.get('endmsg')
                 else:
                     lockdownmsg = None
-                print(lockdownmsg)
                 if lockdownmsg is not None:
                     return await send_lockdown_message(self, ctx.channel, lockdownmsg, f"This is the message sent when channels are {'locked' if startEndview.returning_value == 0 else 'unlocked'} in the lockdown profile **{profile_name}**")
             return await ctx.send(f"There is no message set for **{'unlocking' if startEndview.returning_value == 0 else 'locking'}** channels in the lockdown profile **{profile_name}**. You can set one with `dv.lockdown msg {profile_name} [message_in_plain_text_or_json]`.")

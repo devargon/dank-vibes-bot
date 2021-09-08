@@ -366,7 +366,6 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
             try:
                 guild = self.client.get_guild(int(split[4]))
                 channel = guild.get_channel(int(split[5]))
-                print(guild.name, channel.name)
                 message = await channel.fetch_message(int(split[6]))
             except discord.NotFound:
                 return await ctx.send(f"A message with that link was not found. ")
@@ -380,7 +379,6 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
         if len(message_content) > 2000:
             return await ctx.send(f"Your message is {len(message_content)} characters long. It can only be 2000 characters long.")
         try:
-            print(ping)
             await message.reply(
                 message_content,
                 allowed_mentions=discord.AllowedMentions(everyone=False, users=True, roles=False, replied_user=ping),

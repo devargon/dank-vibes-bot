@@ -194,7 +194,6 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
                 if permissions.view_channel == True:
                     membersin.append(f"**{member}** {member.mention}")
         membermsg = "".join(f"`{count}.` {i}\n" for count, i in enumerate(membersin, start=1))
-        print(owner)
         embed = discord.Embed(title=f"Private Channel Details of #{channel.name}", color=self.client.embed_color, timestamp=datetime.datetime.utcnow())
         embed.add_field(name="Owner 🧑‍⚖️", value = owner or "Unknown", inline=True)
         embed.add_field(name="Members", value=membermsg if len(membermsg) > 0 else "No one is in this channel.", inline=True)
