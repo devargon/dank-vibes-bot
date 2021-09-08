@@ -1,49 +1,40 @@
+import asyncio
 import discord
 from datetime import datetime
 from discord.ext import commands
 emojis = ["<:checkmark:841187106654519296>", "<:crossmark:841186660662247444>"]
-class nicknames(commands.Cog):
+
+
+class NicknamePersistentView(discord.ui.View):
     def __init__(self, client):
         self.client = client
+        super().__init__(timeout=None)
 
-    @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
-        if payload.member.bot:
+    @discord.ui.button(label='Approve', emoji=discord.PartialEmoji.from_str("<:checkmark:841187106654519296>"), style=discord.ButtonStyle.green, custom_id="button:approve_nickname") #, custom_id='persistent_view:approve')
+    async def green(self, button: discord.ui.Button, interaction: discord.Interaction):
+        config = await self.client.pool_pg.fetchrow("SELECT nicknamechannel_id FROM channelconfigs WHERE guild_id = $1", interaction.guild_id)
+        if config is None or config.get('nicknamechannel_id') != interaction.channel_id:
             return
-        if str(payload.emoji) not in emojis:
-            return
-        config = await self.client.pool_pg.fetchrow("SELECT nicknamechannel_id FROM channelconfigs WHERE guild_id = $1", payload.guild_id)
-        if config is None or config.get('nicknamechannel_id') != payload.channel_id:
-            return
-        nickname_request = await self.client.pool_pg.fetchrow("SELECT * FROM nicknames WHERE messageid = $1", payload.message_id)
+        nickname_request = await self.client.pool_pg.fetchrow("SELECT * FROM nicknames WHERE messageid = $1", interaction.message.id)
         if nickname_request is None:
             return
-        print(nickname_request)
-        nicktarget = self.client.get_guild(payload.guild_id).get_member(nickname_request.get('member_id'))
+        nicktarget = self.client.get_guild(interaction.guild_id).get_member(nickname_request.get('member_id'))
         if nicktarget is None:
             authordetails = nickname_request.get('member_id')
         else:
             authordetails = f"{nicktarget} ({nicktarget.id})"
-        print("HOWIE")
-        ID = nickname_request.get('id')
-        nickname = nickname_request.get('nickname')
-        approver = self.client.get_guild(payload.guild_id).get_member(payload.user_id)
-        requestmessage = await self.client.get_channel(payload.channel_id).fetch_message(payload.message_id)
+        ID, nickname, approver = nickname_request.get('id'), nickname_request.get('nickname'), interaction.guild.get_member(interaction.user.id)
         if not approver.guild_permissions.manage_roles:
-            return await requestmessage.remove_reaction(payload.emoji, approver)
-
-        if str(payload.emoji) == "<:checkmark:841187106654519296>":
-            if nicktarget is None:
-                output = (1, "Failed: Member has left the server",)
-            else:
-                try:
-                    await nicktarget.edit(nick=nickname, reason=f"Nickname Change approved by {approver}")
-                except discord.Forbidden:
-                    output = (1, "Failed: Missing Permissions",)
-                else:
-                    output = (2, "Approved and Changed",)
+            return await interaction.response.send_message("You don't have the required permissions to approve this nickname.", ephemeral=True)
+        if nicktarget is None:
+            output = (1, "Failed: Member has left the server",)
         else:
-            output = (0, "Denied")
+            try:
+                await nicktarget.edit(nick=nickname, reason=f"Nickname Change approved by {approver}")
+            except discord.Forbidden:
+                output = (1, "Failed: Missing Permissions",)
+            else:
+                output = (2, "Approved and Changed",)
         await self.client.pool_pg.execute("DELETE from nicknames WHERE id = $1", ID)
         embed = discord.Embed(title="Nickname Change Request", color=discord.Color.green() if output[0] == 2 else discord.Color.red(), timestamp=datetime.utcnow())
         embed.set_author(name=authordetails)
@@ -51,9 +42,11 @@ class nicknames(commands.Cog):
         embed.add_field(name="Status", value=output[1], inline=True)
         if nicktarget is not None:
             embed.set_thumbnail(url=nicktarget.avatar.url)
-        embed.set_footer(text=f"This message will be deleted in 10 seconds. | wicked is very nice !!")
-        await requestmessage.clear_reactions()
-        await requestmessage.edit(embed=embed)
+        embed.set_footer(text=f"This message will be deleted in 10 seconds.")
+        for b in self.children:
+            b.disabled = True
+        await interaction.response.edit_message(embed=embed, view=self)
+        self.stop()
         if output[0] == 1 and output[1] == "Failed: Member has left the server" or output[0] not in [1, 2, 0]:
             msgcontent = None
         elif output[0] == 1:
@@ -61,13 +54,72 @@ class nicknames(commands.Cog):
         elif output[0] == 2:
             msgcontent = f"Your nickname was successfully changed to {nickname}!"
         else:
-            msgcontent = f"Your requested nickname was denied."
+            msgcontent = "error"
         if msgcontent is not None:
             try:
                 await nicktarget.send(msgcontent)
             except discord.Forbidden:
                 pass
-        await requestmessage.delete(delay=10)
+        await asyncio.sleep(10)
+        await interaction.delete_original_message()
+
+    @discord.ui.button(label='Deny', emoji=discord.PartialEmoji.from_str("<:crossmark:841186660662247444>"), style=discord.ButtonStyle.red, custom_id="button:deny_nickname") #c, custom_id='persistent_view:red')
+    async def red(self, button: discord.ui.Button, interaction: discord.Interaction):
+        config = await self.client.pool_pg.fetchrow("SELECT nicknamechannel_id FROM channelconfigs WHERE guild_id = $1", interaction.guild_id)
+        if config is None or config.get('nicknamechannel_id') != interaction.channel_id:
+            return
+        nickname_request = await self.client.pool_pg.fetchrow("SELECT * FROM nicknames WHERE messageid = $1", interaction.message.id)
+        if nickname_request is None:
+            return
+        nicktarget = self.client.get_guild(interaction.guild_id).get_member(nickname_request.get('member_id'))
+        if nicktarget is None:
+            authordetails = nickname_request.get('member_id')
+        else:
+            authordetails = f"{nicktarget} ({nicktarget.id})"
+        ID = nickname_request.get('id')
+        approver = interaction.guild.get_member(interaction.user.id)
+        if not approver.guild_permissions.manage_roles:
+            return await interaction.response.send_message("You don't have the required permissions to approve this nickname.", ephemeral=True)
+        if nicktarget is None:
+            output = (1, "Failed: Member has left the server",)
+        else:
+            output = (0, "Denied",)
+        await self.client.pool_pg.execute("DELETE from nicknames WHERE id = $1", ID)
+        embed = discord.Embed(title="Nickname Change Request", color=discord.Color.green() if output[0] == 2 else discord.Color.red(), timestamp=datetime.utcnow())
+        embed.set_author(name=authordetails)
+        embed.add_field(name="Status", value=output[1], inline=True)
+        if nicktarget is not None:
+            embed.set_thumbnail(url=nicktarget.avatar.url)
+        embed.set_footer(text=f"This message will be deleted in 10 seconds.")
+        for b in self.children:
+            b.disabled = True
+        await interaction.response.edit_message(embed=embed, view=self)
+        self.stop()
+        msgcontent = "Your requested nickname was denied."
+        if msgcontent is not None and output[0] == 0:
+            try:
+                await nicktarget.send(msgcontent)
+            except discord.Forbidden:
+                pass
+        await asyncio.sleep(10)
+        await interaction.delete_original_message()
+
+
+class nicknames(commands.Cog):
+    def __init__(self, client):
+        self.client = client
+
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        existing_requests = await self.client.pool_pg.fetch("SELECT messageid FROM nicknames")
+        if not self.persistent_views_added:
+            if len(existing_requests) == 0:
+                return
+            for entry in existing_requests:
+                if entry.get('messageid'):
+                    self.client.add_view(NicknamePersistentView(self.client), message_id=entry.get('messageid'))
+            self.persistent_views_added = True
 
     @commands.command(name="nick", aliases = ["requestnick", "setnick"])
     async def setnick(self, ctx, *, nickname = None):
@@ -90,15 +142,16 @@ class nicknames(commands.Cog):
             await self.client.pool_pg.execute("DELETE FROM channelconfigs WHERE guild_id = $1", ctx.guild.id)
             return await ctx.send("I could not find the channel to send nickname requests to. Please contact an admin about this!")
         pastnickname = await self.client.pool_pg.fetchrow("SELECT * FROM nicknames where member_id = $1", ctx.author.id)
+        approveview = NicknamePersistentView(self.client)
         if pastnickname is not None:
             ID = pastnickname.get('id')
             await self.client.pool_pg.execute("UPDATE nicknames set nickname = $1 where id = $2", nickname, ID)
             requestembed = discord.Embed(title="Nickname Change Request", color=0x57F0F0, timestamp=datetime.utcnow())
             requestembed.set_author(name=f"{ctx.author} ({ctx.author.id})")
             requestembed.add_field(name="Nickname", value=nickname, inline=True)
-            requestembed.add_field(name="Status", value="Not approved", inline=True)
+            requestembed.add_field(name="Status", value="Awaiting Approval", inline=True)
             requestembed.set_thumbnail(url=ctx.author.avatar.url)
-            requestembed.set_footer(text=f"Request ID: {pastnickname.get('id')} | wicked is very nice !!", icon_url=ctx.guild.icon.url) # DONT REMOVE IT PLEASDSWD
+            requestembed.set_footer(text=f"Request ID: {pastnickname.get('id')}", icon_url=ctx.guild.icon.url)
             try:
                 request_message = await request_channel.fetch_message(pastnickname.get('messageid'))
             except discord.NotFound:
@@ -116,10 +169,10 @@ class nicknames(commands.Cog):
             embed = discord.Embed(title="Nickname Change Request", color=0x57F0F0, timestamp=datetime.utcnow())
             embed.set_author(name=f"{ctx.author} ({ctx.author.id})")
             embed.add_field(name="Nickname", value=nickname, inline=True)
-            embed.add_field(name="Status", value="Not approved", inline=True)
+            embed.add_field(name="Status", value="Awaiting Approval", inline=True)
             embed.set_thumbnail(url=ctx.author.avatar.url)
-            embed.set_footer(text=f"Request ID: {ID} | wicked is very nice !!", icon_url=ctx.guild.icon.url)
-            new_message = await request_channel.send(embed=embed)
+            embed.set_footer(text=f"Request ID: {ID}", icon_url=ctx.guild.icon.url)
+            new_message = await request_channel.send(embed=embed, view=approveview)
             await self.client.pool_pg.execute("UPDATE nicknames set messageid = $1 where id = $2", new_message.id, ID)
             for emoji in emojis:
                 if emoji not in new_message.reactions:
