@@ -20,7 +20,7 @@ class MessageTracking(commands.Cog, name='MessageTracking'):
             return
         if message.webhook_id:
             return
-        if message.channel.id != 871734809653833740:
+        if message.channel.id != 608498967474601995:
             return
         self.queue.append(message.channel)
         result = await self.client.pool_pg.fetchrow("SELECT * FROM messagelog WHERE user_id = $1", message.author.id)
