@@ -55,7 +55,7 @@ class dankreminders(discord.ui.View):
             elif str(emoji) == "<:DVB_patreon:876628017194082395>":
                 await self.client.pool_pg.execute("UPDATE remindersettings SET redeem = $1 WHERE member_id = $2", numberswitcher(self.result.get('redeem')), ctx.author.id)
             self.result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
-            embed = discord.Embed(title="Your Dank Memer reminders", description="**React with the emoji that corresponds to the reminder to enable/disable it.**\nChange how you want to be reminded with `dv.dankreminders dm`,  `dv.dankreminders ping/mention` or `dv.dankreminders none`.", color=0x57f0f0, timestamp=datetime.utcnow())
+            embed = discord.Embed(title="Your Dank Memer reminders", description="**Select the button that corresponds to the reminder to enable/disable it.**\nChange how you want to be reminded with `dv.dankreminders dm`,  `dv.dankreminders ping/mention` or `dv.dankreminders none`.", color=0x57f0f0, timestamp=datetime.utcnow())
             embed.set_author(name=ctx.author, icon_url=ctx.author.avatar.url)
             embed.add_field(name=f"{emojioutput(self.result.get('daily'))} Claim daily <:DVB_calendar:873107952159059991>", value=self.rmtimes[0], inline=True)
             embed.add_field(name=f"{emojioutput(self.result.get('weekly'))} Claim weekly <:DVB_week:876711052669247528> ", value=self.rmtimes[1], inline=True)  # 8
