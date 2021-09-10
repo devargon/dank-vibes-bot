@@ -28,6 +28,30 @@ def numberswitcher(no):
     else:
         return 0
 
+class VoteSetting(discord.ui.Select):
+    def __init__(self, client, context, response):
+        self.client = client
+        self.response = response
+        self.context = context
+        options = [
+            discord.SelectOption(label = "DM", description = f"{self.client.user.name} will DM you to remind you to perform Dank Memer commands.", emoji = discord.PartialEmoji.from_str("<:DVB_Letter:884743813166407701>"), default = False),
+            discord.SelectOption(label = "Ping", description = f"{self.client.user.name} will ping you in the channel where you used Dank Memer.", emoji = discord.PartialEmoji.from_str("<:DVB_Ping:883744614295674950>"), default =False),
+            discord.SelectOption(label = "None", description = f"{self.client.user.name} will not remind you for your Dank Memer reminders.", emoji = discord.PartialEmoji.from_str("<:DVB_None:884743780027219989>"), default = False)
+        ]
+
+        super().__init__(placeholder='Choose your type of Dank Memer reminder...', min_values=1, max_values=1, options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        if self.values[0] == "DM":
+            await self.client.pool_pg.execute("UPDATE remindersettings SET method = $1 WHERE member_id = $2", 1, self.context.author.id)
+            await interaction.response.send_message("Got it. You will **now be DMed** for your enabled Dank Memer reminders.", ephemeral=True)
+        if self.values[0] == "Ping":
+            await self.client.pool_pg.execute("UPDATE remindersettings SET method = $1 WHERE member_id = $2", 2, self.context.author.id)
+            await interaction.response.send_message("Got it. You will **now pinged in the channel where you used the command** for your enabled Dank Memer reminders.", ephemeral=True)
+        if self.values[0] == "None":
+            await self.client.pool_pg.execute("UPDATE remindersettings SET method = $1 WHERE member_id = $2", 0, self.context.author.id)
+            await interaction.response.send_message("Got it. You will **not be reminded** for your Dank Memer actions.", ephemeral=True)
+
 class dankreminders(discord.ui.View):
     def __init__(self, ctx: DVVTcontext, client, timeout):
         self.value = None
@@ -82,7 +106,9 @@ class dankreminders(discord.ui.View):
         labels = ["Claim daily", "Claim weekly", "Claim monthly", "Enter the Lottery", "Work", "Use an apple",
                   "Redeem donor rewards"]
         for emoji in reminderemojis:
-            self.add_item(somebutton(emoji=discord.PartialEmoji.from_str(emoji), style=discord.ButtonStyle.primary))
+            self.add_item(somebutton(emoji=discord.PartialEmoji.from_str(emoji), label=labels[reminderemojis.index(emoji)], style=discord.ButtonStyle.primary))
+
+        self.add_item(VoteSetting(self.client, self.context, self.response))
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         ctx = self.context
@@ -459,16 +485,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
         result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id) # gets the configuration for user to check if they have used dank reminder before
         if result is None:
             await self.client.pool_pg.execute("INSERT into remindersettings VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,$10)", ctx.author.id, 1, 0, 0, 0, 0, 0, 0, 0, 0) # creates new entry for settings
-        if argument is not None and argument.lower() in ["dm", "ping", "mention", "none", "off", "false", "disable"]:
-            if argument.lower() in ["none", "off", "false", "disable"]:
-                await self.client.pool_pg.execute("UPDATE remindersettings SET method = $1 WHERE member_id = $2", 0, ctx.author.id) # disables dank reminders
-                return await ctx.send("Got it. You will not be reminded for any Dank Memer reminders.")
-            elif argument.lower() == "dm":
-                await self.client.pool_pg.execute("UPDATE remindersettings SET method = $1 WHERE member_id = $2", 1, ctx.author.id) # sets to DMs
-                return await ctx.send("Got it. You will **now be DMed** for your enabled Dank Memer reminders.")
-            elif argument.lower() in ["ping", "mention"]:
-                await self.client.pool_pg.execute("UPDATE remindersettings SET method = $1 WHERE member_id = $2", 2, ctx.author.id) # sets to mentions
-                return await ctx.send(f"Got it. You will **now pinged in the channel where you used the command** for your enabled Dank Memer reminders.\n{'<a:DVB_Exclamation:873635993427779635> **Daily** and **lottery** reminders will still be sent in your DMs.' if (await self.client.pool_pg.fetchrow('SELECT truefalse from dankmemersetting')).get('truefalse') == 0 else ''}")
+            result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
         reminders = await self.client.pool_pg.fetch("SELECT * FROM dankreminders WHERE member_id = $1 and guild_id = $2", ctx.author.id, ctx.guild.id) # gets user's reminders
         dailytime, lotterytime, worktime, appletime, redeemtime, weeklytime, monthlytime = None, None, None, None, None, None, None
         for reminder in reminders:
@@ -486,7 +503,6 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                 weeklytime = f"<t:{reminder.get('time')}:R>"
             if reminder.get('remindertype') == 9:
                 monthlytime = f"<t:{reminder.get('time')}:R>"
-        result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
         reminderemojis = ["<:DVB_calendar:873107952159059991>", "<:DVB_week:876711052669247528>", "<:DVB_month:876711072030150707>", "<:DVB_lotteryticket:873110581085880321>", "<:DVB_workbadge:873110507605872650>", "<:DVB_apple:876627457275469867>", "<:DVB_patreon:876628017194082395>"]
         labels = ["Claim daily", "Claim weekly", "Claim monthly", "Enter the Lottery", "Work", "Use an apple", "Redeem donor rewards"]
         cb = ui.View()
@@ -506,7 +522,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
             embed.add_field(name=f"<:DVB_enabled:872003679895560193> Slap Frenzy <a:DVB_pandaslap:876631217750048798>", value="Always ready", inline=True)
             embed.add_field(name=f"<:DVB_enabled:872003679895560193> Bonk Blu <a:DVB_bonk:877196623506194452>", value="Always ready", inline=True)
         embed.add_field(name="\u200b", value="\u200b", inline=False)
-        embed.add_field(name="Reminder preference", value=f"{'DM' if result.get('method') == 1 else 'Ping' if result.get('method') == 2 else None}", inline=False)
+        embed.add_field(name="Reminder preference", value=f"{'<:DVB_Letter:884743813166407701> DM' if result.get('method') == 1 else '<:DVB_Ping:883744614295674950> Ping' if result.get('method') == 2 else '<:DVB_None:884743780027219989> None'}", inline=False)
         embed.set_footer(text="For reminders to work, your reply pings needs to be enabled in Dank Memer's settings.", icon_url=ctx.guild.icon.url)
         newview = dankreminders(ctx, self.client, 15.0)
         message = await ctx.send(embed=embed, view=newview)
