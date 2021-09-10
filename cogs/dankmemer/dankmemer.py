@@ -12,6 +12,12 @@ from .betting import betting
 from utils.context import DVVTcontext
 from utils.buttons import *
 
+async def checkmark(message:discord.Message):
+    try:
+        await message.add_reaction("<:crossmark:841186660662247444>")
+    except discord.NotFound:
+        return None
+
 def emojioutput(truefalse):  # shows the enabled or disabled emoji for 0 or 1 values
     if truefalse == 0:
         return "<:DVB_disabled:872003709096321024>"
@@ -218,7 +224,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                 try:
                     botresponse = await self.client.wait_for("message", check=check_daily, timeout=10)
                 except asyncio.TimeoutError:
-                    await message.add_reaction("<:crossmark:841186660662247444>")
+                    return await checkmark(message)
                 else:
                     member = message.author
                     nextdailytime = round(time.time())
@@ -244,10 +250,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                 try:
                     botresponse = await self.client.wait_for("message", check=check_weekly, timeout=10)
                 except asyncio.TimeoutError:
-                    try:
-                        await message.add_reaction("<:crossmark:841186660662247444>")
-                    except discord.NotFound:
-                        return
+                    return await checkmark(message)
                 else:
                     member = message.author
                     nextweeklytime = round(time.time()) + 604800
@@ -276,7 +279,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                 try:
                     botresponse = await self.client.wait_for("message", check=check_monthly, timeout=10)
                 except asyncio.TimeoutError:
-                    await message.add_reaction("<:crossmark:841186660662247444>")
+                    await checkmark(message)
                 else:
                     member = message.author
                     nextmonthlytime = round(time.time()) + 2592000
@@ -303,7 +306,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
             try:
                 newedit = await self.client.wait_for("message_edit", check=check_lottery, timeout=20)
             except asyncio.TimeoutError:
-                return await message.add_reaction("<:crossmark:841186660662247444>")
+                return await checkmark(message)
             else:
                 if message.embeds[0].title == "Action Canceled" or message.embeds[0].title == "Action Canceled":
                     return await message.add_reaction("<:crossmark:841186660662247444>")
@@ -331,7 +334,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
             try:
                 redeemresponse = await self.client.wait_for("message", check=check_redeem, timeout = 15)
             except asyncio.TimeoutError:
-                return await message.add_reaction("<:crossmark:841186660662247444>")
+                return await checkmark(message)
             else:
                 if f"{message.author.name} has redeemed their" in redeemresponse.embeds[0].title:
                     member = message.author
@@ -363,7 +366,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
             try:
                 botresponse = await self.client.wait_for("message", check=check_work, timeout=60)
             except asyncio.TimeoutError:
-                await message.add_reaction("<:crossmark:841186660662247444>")
+                return await checkmark(message)
             else:
                 member = botresponse.mentions[0]
                 nextdailytime = round(time.time()) + 3600
