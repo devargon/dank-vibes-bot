@@ -269,25 +269,22 @@ class lockdown(commands.Cog):
             "SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
         if len(lockdown_profile) == 0:
             return await ctx.send(f"There is no such lockdown profile with the name **{profile_name}**.")
-        message = await ctx.send(f"Are you sure you want to remove the lockdown profile **{profile_name}** with {len(lockdown_profile)} channels? **This action is irreversible!**")
-        reactions = ["<:checkmark:841187106654519296>", "<:crossmark:841186660662247444>"]
-        for reaction in reactions:
-            await message.add_reaction(reaction)
-        def check(payload):
-            return payload.user_id == ctx.message.author.id and payload.channel_id == ctx.channel.id and payload.message_id == message.id and str(
-                payload.emoji) in reactions
-        try:
-            response = await self.client.wait_for('raw_reaction_add', timeout=15, check=check)
-            if not str(response.emoji) == '<:checkmark:841187106654519296>':
-                return await message.edit(content="Command stopped.")
-        except asyncio.TimeoutError:
-            ctx.command.reset_cooldown(ctx)
-            return await message.edit(content="You didn't react on time.")
-        else:
-            await message.clear_reactions()
+        confirmview = confirm(ctx, self.client, 30.0)
+        embed = discord.Embed(title="Action awaiting confirmation", description=f"Are you sure you want to remove the lockdown profile **{profile_name}** with {len(lockdown_profile)} channels? **This action is irreversible!**", color=discord.Color.orange())
+        msg = await ctx.send(embed=embed, view=confirmview)
+        confirmview.response = msg
+        await confirmview.wait()
+        if confirmview.returning_value is None:
+            embed.color, embed.description = discord.Color.red(), "You didn't respond in time."
+            return await msg.edit(embed=embed)
+        if confirmview.returning_value == False:
+            embed.color, embed.description = discord.Color.red(), "Action cancelled."
+            return await msg.edit(embed=embed)
+        if confirmview.returning_value == True:
             await self.client.pool_pg.execute("DELETE FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
             await self.client.pool_pg.execute("DELETE FROM lockdownmsgs WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
-            await message.edit(content = f"The lockdown profile **{profile_name}** has been removed.")
+            embed.color, embed.description = discord.Color.green(), f"The lockdown profile **{profile_name}** has been removed."
+            return await msg.edit(embed=embed)
 
     @checks.has_permissions_or_role(administrator=True)
     @lockdown.command(name="start", aliases = ["initiate"])
