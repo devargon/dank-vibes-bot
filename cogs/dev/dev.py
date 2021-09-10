@@ -342,7 +342,7 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
             await ctx.crossmark()
             status = (0, e)
         async with aiohttp.ClientSession() as session:
-            webhook = Webhook.from_url('https://canary.discord.com/api/webhooks/883198776406339624/mkno5cQXKLHtQH4bxbbx8kxis3qnvTbvJVxpvCM0JNLZC_kG5F8sicwSBwsxa-Gq8f90', adapter=session)
+            webhook = Webhook.from_url('https://canary.discord.com/api/webhooks/883198776406339624/mkno5cQXKLHtQH4bxbbx8kxis3qnvTbvJVxpvCM0JNLZC_kG5F8sicwSBwsxa-Gq8f90', session=session)
             embed=discord.Embed(title=f"Echo action executed with {ctx.me}", description=message, color=discord.Color.green() if status[0] == 1 else discord.Color.red())
             embed.add_field(name="Author", value=f"**{ctx.author}** ({ctx.author.id})", inline=True)
             embed.add_field(name="Status", value=f"**{status[1]}**", inline=True)
@@ -352,7 +352,8 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
     @d_base.command(name="reply")
     async def d_reply(self, ctx, messageID_or_messageLink:Union[int, str] = None, channel:Optional[discord.TextChannel] = None, *, message_content=None):
         """
-        Replies to message as the bot.
+        Replies to a specified message as the bot.
+        Add --noping to disable pinging when replying.
         """
         #Getting message by message ID
         if type(messageID_or_messageLink) == int:
@@ -393,7 +394,7 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
             await ctx.crossmark()
             status = (0, e)
         async with aiohttp.ClientSession() as session:
-            webhook = Webhook.from_url('https://canary.discord.com/api/webhooks/883198776406339624/mkno5cQXKLHtQH4bxbbx8kxis3qnvTbvJVxpvCM0JNLZC_kG5F8sicwSBwsxa-Gq8f90', adapter=session)
+            webhook = Webhook.from_url('https://canary.discord.com/api/webhooks/883198776406339624/mkno5cQXKLHtQH4bxbbx8kxis3qnvTbvJVxpvCM0JNLZC_kG5F8sicwSBwsxa-Gq8f90', session=session)
             embed=discord.Embed(title=f"Message replied {ctx.me}", description=message_content, color=discord.Color.green() if status[0] == 1 else discord.Color.red())
             embed.add_field(name="Author", value=f"**{ctx.author}** ({ctx.author.id})", inline=True)
             embed.add_field(name="Status", value=f"**{status[1]}**", inline=True)
