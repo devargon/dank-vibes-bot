@@ -190,7 +190,6 @@ class Fun(dm, commands.Cog, name='fun'):
             await ctx.send("I could not complete this command as I am missing the permissions to delete your message.")
             return
         if message is not None:
-            print('test')
             embed=discord.Embed(description=message, color=self.client.embed_color)
             embed.set_footer(text="Ha, you got hidepinged!")
         else:
