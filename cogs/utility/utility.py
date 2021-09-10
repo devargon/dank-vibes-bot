@@ -181,7 +181,7 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
         embed = discord.Embed(title=f"Private Channel Details of #{channel.name}", color=self.client.embed_color, timestamp=datetime.datetime.utcnow())
         embed.add_field(name="Owner 🧑‍⚖️", value = owner or "Unknown", inline=True)
         embed.add_field(name="Members", value=membermsg if len(membermsg) > 0 else "No one is in this channel.", inline=True)
-        embed.add_field(name="\u200b", value="\u200b", inline=True)
+        embed.add_field(name="\u200b", value="\u200b", inline=False)
         embed.add_field(name="Member Count", value=f"`{len(membersin)}`", inline=True)
         embed.add_field(name="Created at", value=channel.created_at.strftime("%a, %b %d, %Y") if channel.created_at is not None else 'Unknown')
         category = discord.utils.get(ctx.guild.categories, id=channel.category_id)
@@ -190,7 +190,6 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
             embed.set_footer(icon_url=ctx.guild.icon.url, text=footertext[ctx.author.id]) # you can remove this if you want idk
         await ctx.send(embed=embed)
 
-    @checks.in_beta()
     @commands.command(name="messagecount", aliases=["mymessages"])
     async def messagecount(self, ctx, member:discord.Member = None):
         """
