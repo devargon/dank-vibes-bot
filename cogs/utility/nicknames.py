@@ -171,9 +171,6 @@ class nicknames(commands.Cog):
             embed.set_footer(text=f"Request ID: {ID}", icon_url=ctx.guild.icon.url)
             new_message = await request_channel.send(embed=embed, view=approveview)
             await self.client.pool_pg.execute("UPDATE nicknames set messageid = $1 where id = $2", new_message.id, ID)
-            for emoji in emojis:
-                if emoji not in new_message.reactions:
-                    await new_message.add_reaction(emoji)
         authorembed = discord.Embed(title="Your nickname request has been submitted!", description="I will DM you on the status of your nickname request.", color=0x57F0F0, timestamp=datetime.utcnow())
         authorembed.set_author(icon_url=ctx.guild.icon.url, name=ctx.guild.name)
         authorembed.add_field(name="Nickname", value=nickname, inline=True)
