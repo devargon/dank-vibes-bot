@@ -244,7 +244,10 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                 try:
                     botresponse = await self.client.wait_for("message", check=check_weekly, timeout=10)
                 except asyncio.TimeoutError:
-                    await message.add_reaction("<:crossmark:841186660662247444>")
+                    try:
+                        await message.add_reaction("<:crossmark:841186660662247444>")
+                    except discord.NotFound:
+                        return
                 else:
                     member = message.author
                     nextweeklytime = round(time.time()) + 604800
