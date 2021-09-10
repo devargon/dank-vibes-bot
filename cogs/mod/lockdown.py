@@ -313,7 +313,7 @@ class lockdown(commands.Cog):
             embed.description, embed.color = "Command stopped.", discord.Color.red()
             return await message.edit(embed=embed)
         elif confirmview.returning_value == True:
-            embed.description, embed.color = "<a:DVB_unlock:878207978371686408> Locking channels...", discord.Color.green()
+            embed.description, embed.color = "<a:DVB_Lock:884390743714725889> Locking channels...", discord.Color.green()
             await message.edit(embed=embed)
             channels_not_found = []
             channels_missing_perms = []
@@ -383,7 +383,7 @@ class lockdown(commands.Cog):
             embed.description, embed.color = "Command stopped.", discord.Color.red()
             return await message.edit(embed=embed)
         elif confirmview.returning_value == True:
-            embed.description, embed.color = "<a:DVB_unlock:878207978371686408> Unlocking channels...", discord.Color.green()
+            embed.description, embed.color = "<a:DVB_Unlock:884392509432807424> Unlocking channels...", discord.Color.green()
             await message.edit(embed=embed)
             channels_not_found = []
             channels_missing_perms = []
