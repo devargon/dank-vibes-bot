@@ -288,6 +288,7 @@ class Fun(dm, commands.Cog, name='fun'):
             await member.edit(nick=new_name)
             self.scrambledusers.append(member)
         except discord.Forbidden:
+            ctx.command.reset_cooldown(ctx)
             return await ctx.send("Sorry! I am unable to change that user's name, probably due to role hierachy or missing permissions.")
         await ctx.send(f"{member}'s name is now {new_name}!\n{member.mention}, your nickname has been scrambled by **{ctx.author.name}**. It will automatically revert to your previous nickname after 3 minutes. If you try to change your nickname, you will have to wait for another 3 minutes until your original nickname will be restored.")
         def check(payload_before, payload_after):
