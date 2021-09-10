@@ -55,12 +55,12 @@ class Sticky(commands.Cog):
         result = await self.client.pool_pg.fetchrow("SELECT * FROM stickymessages WHERE guild_id = $1 and channel_id = $2", message.guild.id, message.channel.id)
         if result is None:
             return
-        self.queue.append(message.channel)
         try:
             old_bot_message = await message.channel.fetch_message(result.get('message_id'))
         except discord.NotFound:
-            pass
+            self.queue.append(message.channel)
         else:
+            self.queue.append(message.channel)
             await old_bot_message.delete()
         if result.get('type') == 0:
             embedjson = json.loads(result.get('message'))
