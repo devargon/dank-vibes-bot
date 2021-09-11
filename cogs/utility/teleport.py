@@ -12,7 +12,7 @@ class get_checkpoint_pages(menus.ListPageSource):
     
     async def format_page(self, menu, entries):
         embed = discord.Embed(color=0x57F0F0)
-        embed.set_author(name=f"{self.author.name}'s checkpoints", icon_url=self.author.avatar.url)
+        embed.set_author(name=f"{self.author.name}'s checkpoints", icon_url=self.author.display_avatar.url)
         embed.description = "\n".join(f"• {entry[0]}: {entry[1]}" for entry in entries)
         return embed
 

@@ -115,7 +115,7 @@ class HelpSource(ListPageInteractionBase):
         for command in list_commands:
             embed.add_field(name=command.command, value=command.brief, inline=False)
         author = menu.ctx.author
-        return embed.set_footer(text=f"Requested by {author}", icon_url=author.avatar.url)
+        return embed.set_footer(text=f"Requested by {author}", icon_url=author.display_avatar.url)
 
     async def format_view(self, menu: HelpMenu, entry: Tuple[Optional[commands.Cog], List[CommandHelp]]) -> HelpMenuView:
         if not menu._running:
@@ -222,12 +222,12 @@ class DVBotHelp(commands.DefaultHelpCommand):
         mapped = itertools.starmap(get_cog_help, command_data.items())
         sort_cog = [*sorted(mapped, key=lambda c: c.commands, reverse=True)]
         embed = discord.Embed(description=f"{bot.description}\n\n**Select a Category**", color=0x5464B4)
-        embed.set_author(name=f"{self.context.me.name}'s Help Command", icon_url=self.context.me.avatar.url)
+        embed.set_author(name=f"{self.context.me.name}'s Help Command", icon_url=self.context.me.display_avatar.url)
         embed.timestamp = discord.utils.utcnow()
         sort_cog = sorted(sort_cog, key=lambda x: x.name)
         for abc in sort_cog:
             embed.add_field(name=abc.name, value=abc.description)
-        embed.set_footer(text=f"Requested by {self.context.author}", icon_url=self.context.author.avatar.url)
+        embed.set_footer(text=f"Requested by {self.context.author}", icon_url=self.context.author.display_avatar.url)
         loads = {
             "embed": embed,
             "help_object": self,
@@ -252,7 +252,7 @@ class DVBotHelp(commands.DefaultHelpCommand):
         if alias := self.get_aliases(command):
             embed.add_field(name="Aliases", value=f'[{" | ".join(f"`{x}`" for x in alias)}]', inline=True)
         embed.add_field(name='Usage', value=self.get_command_usage(command), inline=True)
-        embed.set_footer(text=f"Requested by {self.context.author}", icon_url=self.context.author.avatar.url)
+        embed.set_footer(text=f"Requested by {self.context.author}", icon_url=self.context.author.display_avatar.url)
         if isinstance(command, commands.Group):
             subcommand = command.commands
             value = "\n".join(self.get_command_signature(c) for c in subcommand)
@@ -270,7 +270,7 @@ class DVBotHelp(commands.DefaultHelpCommand):
         embeds = []
         for chunks in more_itertools.chunked(list_commands, 5):
             embed = discord.Embed(title=f"{getattr(cog, 'qualified_name', 'No').capitalize()} Category", color=0x57F0F0)
-            embed.set_footer(text=f"Requested by {self.context.author}", icon_url=self.context.author.avatar.url)
+            embed.set_footer(text=f"Requested by {self.context.author}", icon_url=self.context.author.display_avatar.url)
             for command in chunks:
                 embed.add_field(name=self.get_command_name(command), value=self.get_help(command, brief=True), inline=False)
             embeds.append(embed)
@@ -287,7 +287,7 @@ class DVBotHelp(commands.DefaultHelpCommand):
         for chunks in more_itertools.chunked(list_commands, 4):
             embed = discord.Embed(title=self.get_command_name(group), color=0x57F0F0)
             embed.description = f"{self.get_help(group, brief=False)}\nUsage: {self.get_command_usage(group)}"
-            embed.set_footer(text=f"Requested by {self.context.author}", icon_url=self.context.author.avatar.url)
+            embed.set_footer(text=f"Requested by {self.context.author}", icon_url=self.context.author.display_avatar.url)
             for command in chunks:
                 embed.add_field(name=self.get_command_name(command), value=self.get_help(command, brief=True), inline=False)
             embeds.append(embed)

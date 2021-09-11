@@ -41,7 +41,7 @@ class NicknamePersistentView(discord.ui.View):
         embed.add_field(name="Nickname", value=nickname, inline=True)
         embed.add_field(name="Status", value=output[1], inline=True)
         if nicktarget is not None:
-            embed.set_thumbnail(url=nicktarget.avatar.url)
+            embed.set_thumbnail(url=nicktarget.display_avatar.url)
         embed.set_footer(text=f"This message will be deleted in 10 seconds.")
         for b in self.children:
             b.disabled = True
@@ -89,7 +89,7 @@ class NicknamePersistentView(discord.ui.View):
         embed.set_author(name=authordetails)
         embed.add_field(name="Status", value=output[1], inline=True)
         if nicktarget is not None:
-            embed.set_thumbnail(url=nicktarget.avatar.url)
+            embed.set_thumbnail(url=nicktarget.display_avatar.url)
         embed.set_footer(text=f"This message will be deleted in 10 seconds.")
         for b in self.children:
             b.disabled = True
@@ -150,7 +150,7 @@ class nicknames(commands.Cog):
             requestembed.set_author(name=f"{ctx.author} ({ctx.author.id})")
             requestembed.add_field(name="Nickname", value=nickname, inline=True)
             requestembed.add_field(name="Status", value="Awaiting Approval", inline=True)
-            requestembed.set_thumbnail(url=ctx.author.avatar.url)
+            requestembed.set_thumbnail(url=ctx.author.display_avatar.url)
             requestembed.set_footer(text=f"Request ID: {pastnickname.get('id')}", icon_url=ctx.guild.icon.url)
             try:
                 request_message = await request_channel.fetch_message(pastnickname.get('messageid'))
@@ -167,7 +167,7 @@ class nicknames(commands.Cog):
             embed.set_author(name=f"{ctx.author} ({ctx.author.id})")
             embed.add_field(name="Nickname", value=nickname, inline=True)
             embed.add_field(name="Status", value="Awaiting Approval", inline=True)
-            embed.set_thumbnail(url=ctx.author.avatar.url)
+            embed.set_thumbnail(url=ctx.author.display_avatar.url)
             embed.set_footer(text=f"Request ID: {ID}", icon_url=ctx.guild.icon.url)
             new_message = await request_channel.send(embed=embed, view=approveview)
             await self.client.pool_pg.execute("UPDATE nicknames set messageid = $1 where id = $2", new_message.id, ID)

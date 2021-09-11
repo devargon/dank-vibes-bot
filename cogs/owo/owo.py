@@ -111,7 +111,7 @@ class OwO(commands.Cog, name='owo'):
         embed = discord.Embed(color=self.client.embed_color, timestamp=datetime.utcnow())
         embed.add_field(name='Current Stats', value=f"Today's OwO count: `{count.get('daily_count') if count else 0}`\nThis week's OwO count: `{count.get('weekly_count') if count else 0}`\nTotal OwO count: `{count.get('total_count') if count else 0}`")
         embed.add_field(name='Past Stats', value=f"Yesterday's OwO count: `{count.get('yesterday') if count else 0}`\nLast week's OwO count: `{count.get('last_week') if count else 0}`")
-        embed.set_author(name=str(member), icon_url=member.avatar.url)
+        embed.set_author(name=str(member), icon_url=member.display_avatar.url)
         embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon.url)
         await ctx.send(embed=embed)
 

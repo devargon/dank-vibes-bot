@@ -225,7 +225,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         embed = discord.Embed(title=f"Thank you for voting for {guild.name} on Top.gg, {member.name}!",
                               description=f"You have voted {guild.name} for **{votecount}** time(s).\n[You can vote for Dank Vibes here!](https://top.gg/servers/595457764935991326/vote)",
                               timestamp=datetime.datetime.utcnow(), color=0x57f0f0)
-        embed.set_author(name=f"{member.name}#{member.discriminator} ({member.id})", icon_url=member.avatar.url)
+        embed.set_author(name=f"{member.name}#{member.discriminator} ({member.id})", icon_url=member.display_avatar.url)
         embed.set_footer(text=guild.name, icon_url=guild.icon.url)
         qbemojis = ["https://cdn.discordapp.com/emojis/869579459420913715.gif?v=1", "https://cdn.discordapp.com/emojis/869579448708653066.gif?v=1", "https://cdn.discordapp.com/emojis/869579493776457838.gif?v=1", "https://cdn.discordapp.com/emojis/869579480509841428.gif?v=1", "https://cdn.discordapp.com/emojis/873643650607894548.gif?v=1", "https://cdn.discordapp.com/emojis/871970548576559155.gif?v=1", "https://cdn.discordapp.com/emojis/872470665607909417.gif?v=1", "https://cdn.discordapp.com/emojis/830920902019514408.gif?v=1"]
         embed.set_thumbnail(url=random.choice(qbemojis))
@@ -411,7 +411,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
             desc = f"You can now [vote for Dank Vibes](https://top.gg/servers/595457764935991326/vote) again!" # self explanatory
         embed = discord.Embed(title=f"You have voted for Dank Vibes **__{count}__** times.",
                               description=desc, color=0x57f0f0, timestamp = datetime.datetime.utcnow())
-        embed.set_author(name=f"{ctx.author.name}#{ctx.author.discriminator}", icon_url=ctx.author.avatar.url)
+        embed.set_author(name=f"{ctx.author.name}#{ctx.author.discriminator}", icon_url=ctx.author.display_avatar.url)
         embed.add_field(name="Want to be reminded to vote for Dank Vibes?", value="Use `dv.votereminder dm/ping` to be reminded 12 hours after you vote for Dank Vibes.")
         embed.set_thumbnail(url=ctx.guild.icon.url)
         await ctx.send(embed=embed)

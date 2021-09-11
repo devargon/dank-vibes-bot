@@ -39,7 +39,7 @@ class Suggestion(commands.Cog):
             embed = discord.Embed(color=0xffcccb,
                                     description=message,
                                     timestamp=datetime.utcnow())
-            embed.set_author(name=f"{ctx.author} made a suggestion", icon_url=ctx.author.avatar.url)
+            embed.set_author(name=f"{ctx.author} made a suggestion", icon_url=ctx.author.display_avatar.url)
             embed.set_footer(text=f"Suggestion ID: {suggestion_id}")
             msg = await channel.send(embed=embed)
             await ctx.checkmark()

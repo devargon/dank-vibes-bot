@@ -45,7 +45,7 @@ class DMPersistentView(discord.ui.View):
         embed.add_field(name="DM Target", value=f"{dmtargetdetails}")
         embed.add_field(name="Status", value=output[1], inline=True)
         if dmrequester is not None:
-            embed.set_thumbnail(url=dmrequester.avatar.url)
+            embed.set_thumbnail(url=dmrequester.display_avatar.url)
         embed.set_footer(text=f"This message will be deleted in 10 seconds.")
         for b in self.children:
             b.disabled = True
@@ -99,7 +99,7 @@ class DMPersistentView(discord.ui.View):
         embed.add_field(name="DM Target", value=f"{dmtargetdetails}")
         embed.add_field(name="Status", value=output[1], inline=True)
         if dmrequester is not None:
-            embed.set_thumbnail(url=dmrequester.avatar.url)
+            embed.set_thumbnail(url=dmrequester.display_avatar.url)
         embed.set_footer(text=f"This message will be deleted in 10 seconds.")
         for b in self.children:
             b.disabled = True
@@ -166,7 +166,7 @@ class dm(commands.Cog):
         embed.set_author(name=f"{ctx.author} ({ctx.author.id})")
         embed.add_field(name="DM Target", value=f"{member} {member.mention}")
         embed.add_field(name="Status", value="Not approved", inline=True)
-        embed.set_thumbnail(url=ctx.author.avatar.url)
+        embed.set_thumbnail(url=ctx.author.display_avatar.url)
         embed.set_footer(text=f"Request ID: {ID}", icon_url=ctx.guild.icon.url)
         view = DMPersistentView(self.client)
         new_message = await request_channel.send(embed=embed, view=view)
