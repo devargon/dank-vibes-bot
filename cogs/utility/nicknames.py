@@ -36,7 +36,7 @@ class NicknamePersistentView(discord.ui.View):
             else:
                 output = (2, "Approved and Changed",)
         await self.client.pool_pg.execute("DELETE from nicknames WHERE id = $1", ID)
-        embed = discord.Embed(title="Nickname Change Request", color=discord.Color.green() if output[0] == 2 else discord.Color.red(), timestamp=datetime.utcnow())
+        embed = discord.Embed(title="Nickname Change Request", color=discord.Color.green() if output[0] == 2 else discord.Color.red(), timestamp=discord.utils.utcnow())
         embed.set_author(name=authordetails)
         embed.add_field(name="Nickname", value=nickname, inline=True)
         embed.add_field(name="Status", value=output[1], inline=True)
@@ -85,7 +85,7 @@ class NicknamePersistentView(discord.ui.View):
         else:
             output = (0, "Denied",)
         await self.client.pool_pg.execute("DELETE from nicknames WHERE id = $1", ID)
-        embed = discord.Embed(title="Nickname Change Request", color=discord.Color.green() if output[0] == 2 else discord.Color.red(), timestamp=datetime.utcnow())
+        embed = discord.Embed(title="Nickname Change Request", color=discord.Color.green() if output[0] == 2 else discord.Color.red(), timestamp=discord.utils.utcnow())
         embed.set_author(name=authordetails)
         embed.add_field(name="Status", value=output[1], inline=True)
         if nicktarget is not None:
@@ -146,7 +146,7 @@ class nicknames(commands.Cog):
         if pastnickname is not None:
             ID = pastnickname.get('id')
             await self.client.pool_pg.execute("UPDATE nicknames set nickname = $1 where id = $2", nickname, ID)
-            requestembed = discord.Embed(title="Nickname Change Request", color=0x57F0F0, timestamp=datetime.utcnow())
+            requestembed = discord.Embed(title="Nickname Change Request", color=0x57F0F0, timestamp=discord.utils.utcnow())
             requestembed.set_author(name=f"{ctx.author} ({ctx.author.id})")
             requestembed.add_field(name="Nickname", value=nickname, inline=True)
             requestembed.add_field(name="Status", value="Awaiting Approval", inline=True)
@@ -163,7 +163,7 @@ class nicknames(commands.Cog):
         else:
             await self.client.pool_pg.execute("INSERT INTO nicknames(member_id, nickname) values($1, $2)", ctx.author.id, nickname)
             ID = (await self.client.pool_pg.fetchrow("SELECT id FROM nicknames where member_id = $1 and nickname = $2", ctx.author.id, nickname)).get('id')
-            embed = discord.Embed(title="Nickname Change Request", color=0x57F0F0, timestamp=datetime.utcnow())
+            embed = discord.Embed(title="Nickname Change Request", color=0x57F0F0, timestamp=discord.utils.utcnow())
             embed.set_author(name=f"{ctx.author} ({ctx.author.id})")
             embed.add_field(name="Nickname", value=nickname, inline=True)
             embed.add_field(name="Status", value="Awaiting Approval", inline=True)
@@ -171,7 +171,7 @@ class nicknames(commands.Cog):
             embed.set_footer(text=f"Request ID: {ID}", icon_url=ctx.guild.icon.url)
             new_message = await request_channel.send(embed=embed, view=approveview)
             await self.client.pool_pg.execute("UPDATE nicknames set messageid = $1 where id = $2", new_message.id, ID)
-        authorembed = discord.Embed(title="Your nickname request has been submitted!", description="I will DM you on the status of your nickname request.", color=0x57F0F0, timestamp=datetime.utcnow())
+        authorembed = discord.Embed(title="Your nickname request has been submitted!", description="I will DM you on the status of your nickname request.", color=0x57F0F0, timestamp=discord.utils.utcnow())
         authorembed.set_author(icon_url=ctx.guild.icon.url, name=ctx.guild.name)
         authorembed.add_field(name="Nickname", value=nickname, inline=True)
         authorembed.add_field(name="Request ID", value=str(ID), inline=True)

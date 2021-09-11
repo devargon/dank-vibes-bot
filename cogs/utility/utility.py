@@ -61,9 +61,9 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
         Shows the bot uptime from when it was started.
         """
         since = self.client.uptime.strftime("%b %d, %H:%M:%S")
-        delta = datetime.datetime.utcnow() - self.client.uptime
+        delta = discord.utils.utcnow() - self.client.uptime
         uptime_str = humanize.precisedelta(delta, format="%0.0f")
-        embed = discord.Embed(color=self.client.embed_color, timestamp=datetime.datetime.utcnow())
+        embed = discord.Embed(color=self.client.embed_color, timestamp=discord.utils.utcnow())
         embed.add_field(name="Uptime", value=uptime_str, inline=False)
         embed.add_field(name='Since', value=since, inline=False)
         embed.set_author(name=ctx.me.name)
@@ -143,7 +143,7 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
         embed.set_author(name=str(ctx.guild.me), icon_url=ctx.guild.me.display_avatar.url)
         embed.set_thumbnail(url=ctx.guild.me.display_avatar.url)
         embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.display_avatar.url)
-        embed.timestamp = datetime.datetime.utcnow()
+        embed.timestamp = discord.utils.utcnow()
         await ctx.send(embed=embed)
 
     @commands.command(name="checkpvc", aliases = ["privchannel", "pvc"])
@@ -178,7 +178,7 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
                 if permissions.view_channel == True:
                     membersin.append(f"**{member}** {member.mention}")
         membermsg = "".join(f"`{count}.` {i}\n" for count, i in enumerate(membersin, start=1))
-        embed = discord.Embed(title=f"Private Channel Details of #{channel.name}", color=self.client.embed_color, timestamp=datetime.datetime.utcnow())
+        embed = discord.Embed(title=f"Private Channel Details of #{channel.name}", color=self.client.embed_color, timestamp=discord.utils.utcnow())
         embed.add_field(name="Owner 🧑‍⚖️", value = owner or "Unknown", inline=True)
         embed.add_field(name="Members", value=membermsg if len(membermsg) > 0 else "No one is in this channel.", inline=True)
         embed.add_field(name="\u200b", value="\u200b", inline=False)
@@ -202,7 +202,7 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
             return await ctx.send("Hmm... it appears that you have not sent a message in <#608498967474601995>. Contact a mod if you think this is wrong.")
         all = await self.client.pool_pg.fetch("SELECT * FROM messagelog ORDER BY messagecount DESC")
         position = ordinal(all.index(user)+1)
-        embed = discord.Embed(title="Your number of messages sent in #general-chat", color=self.client.embed_color, timestamp=datetime.datetime.utcnow())
+        embed = discord.Embed(title="Your number of messages sent in #general-chat", color=self.client.embed_color, timestamp=discord.utils.utcnow())
         embed.set_author(name=member, icon_url=member.display_avatar.url)
         embed.add_field(name="Message count", value=user.get('messagecount'), inline=True)
         embed.add_field(name="Position", value=f"{position} {'🏆' if all.index(user) < 10 else ''}", inline=True)

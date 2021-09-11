@@ -120,7 +120,7 @@ class lockdown(commands.Cog):
         `lockdown end [profile_name]`
         Unlocks down all channels in a lockdown profile. It will send a default message when unlocking channels.
         """
-        await ctx.send(embed=discord.Embed(title=f"{self.client.user.name}'s Lockdown Guide", description=message, color=self.client.embed_color, timestamp=datetime.utcnow()))
+        await ctx.send(embed=discord.Embed(title=f"{self.client.user.name}'s Lockdown Guide", description=message, color=self.client.embed_color, timestamp=discord.utils.utcnow()))
 
     @checks.has_permissions_or_role(administrator=True)
     @lockdown.command(name="create")

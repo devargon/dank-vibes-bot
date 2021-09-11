@@ -41,7 +41,7 @@ class Admin(Sticky, ServerRule, commands.Cog, name='admin', metaclass=CompositeM
             if enabled:
                 return "<:DVB_enabled:872003679895560193>"
             return "<:DVB_disabled:872003709096321024>"
-        embed = discord.Embed(title=f"Leaderboard Settings For {ctx.guild.name}", color=self.client.embed_color, timestamp=datetime.utcnow())
+        embed = discord.Embed(title=f"Leaderboard Settings For {ctx.guild.name}", color=self.client.embed_color, timestamp=discord.utils.utcnow())
         if (owodaily := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "owodailylb")) is not None:
             owodaily = owodaily.get('enabled')
         if (owoweekly := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "owoweeklylb")) is not None:
@@ -134,7 +134,7 @@ class Admin(Sticky, ServerRule, commands.Cog, name='admin', metaclass=CompositeM
         if len(messagecount) == 0:  # if there's nothing to be deleted
             return await ctx.send("There's no message count to be removed.")
         totalvote = sum(userentry.get('messagecount') for userentry in messagecount)
-        embed = discord.Embed(title="Action awaiting confirmation", description=f"There are {len(messagecount)} people who have chatted, amounting to a total of {totalvote} messages. Are you sure you want to reset the message count?", color=self.client.embed_color, timestamp=datetime.utcnow())
+        embed = discord.Embed(title="Action awaiting confirmation", description=f"There are {len(messagecount)} people who have chatted, amounting to a total of {totalvote} messages. Are you sure you want to reset the message count?", color=self.client.embed_color, timestamp=discord.utils.utcnow())
         msg = await ctx.reply(embed=embed, view=confirm_view)
         confirm_view.response = msg
         await confirm_view.wait()

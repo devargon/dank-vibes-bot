@@ -125,7 +125,7 @@ class dvvt(commands.AutoShardedBot):
         except Exception as e:
             print_exception("Could not connect to databases:", e)
         else:
-            self.uptime = datetime.datetime.utcnow()
+            self.uptime = discord.utils.utcnow()
             self.pool_pg = pool_pg
             print(f"Connected to the database ({round(time.time() - start, 2)})s")
             self.loop.create_task(self.after_ready())

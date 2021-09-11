@@ -39,7 +39,7 @@ class DMPersistentView(discord.ui.View):
                 output = (2, "Approved DM sent",)
         await self.client.pool_pg.execute("DELETE from dmrequests WHERE id = $1", ID)
         await self.client.pool_pg.execute("INSERT INTO dmrequestslog values($1, $2, $3, $4, $5, $6)", ID, dmrequester.id if dmrequester else dm_request.get('member_id'), dmtarget.id if dmtarget else dm_request.get('target_id'), interaction.user.id, dmcontent, output[0]) # 0 : Denied, 1: Failed, 2 : Approved
-        embed = discord.Embed(title="DM Request", description = dmcontent, color=discord.Color.green() if output[0] == 2 else discord.Color.red(), timestamp=datetime.utcnow())
+        embed = discord.Embed(title="DM Request", description = dmcontent, color=discord.Color.green() if output[0] == 2 else discord.Color.red(), timestamp=discord.utils.utcnow())
         embed.set_author(name=authordetails)
         dmtargetdetails = f"{dmtarget} {dmtarget.mention}" if dmtarget is not None else dmtarget
         embed.add_field(name="DM Target", value=f"{dmtargetdetails}")
@@ -93,7 +93,7 @@ class DMPersistentView(discord.ui.View):
             output = (0, "Denied")
         await self.client.pool_pg.execute("DELETE from dmrequests WHERE id = $1", ID)
         await self.client.pool_pg.execute("INSERT INTO dmrequestslog values($1, $2, $3, $4, $5, $6)", ID, dmrequester.id if dmrequester else dm_request.get('member_id'), dmtarget.id if dmtarget else dm_request.get('target_id'), interaction.user.id, dmcontent, output[0]) # 0 : Denied, 1: Failed, 2 : Approved
-        embed = discord.Embed(title="DM Request", description = dmcontent, color=discord.Color.green() if output[0] == 2 else discord.Color.red(), timestamp=datetime.utcnow())
+        embed = discord.Embed(title="DM Request", description = dmcontent, color=discord.Color.green() if output[0] == 2 else discord.Color.red(), timestamp=discord.utils.utcnow())
         embed.set_author(name=authordetails)
         dmtargetdetails = f"{dmtarget} {dmtarget.mention}" if dmtarget is not None else dmtarget
         embed.add_field(name="DM Target", value=f"{dmtargetdetails}")
@@ -162,7 +162,7 @@ class dm(commands.Cog):
         await self.client.pool_pg.execute("INSERT INTO dmrequests(member_id, target_id, dmcontent) values($1, $2, $3)", ctx.author.id, member.id, message)
         ID = (await self.client.pool_pg.fetchrow("SELECT id FROM dmrequests where member_id = $1 and dmcontent = $2", ctx.author.id, message)).get('id')
 
-        embed = discord.Embed(title="DM Request", description = message, color=0x57F0F0, timestamp=datetime.utcnow())
+        embed = discord.Embed(title="DM Request", description = message, color=0x57F0F0, timestamp=discord.utils.utcnow())
         embed.set_author(name=f"{ctx.author} ({ctx.author.id})")
         embed.add_field(name="DM Target", value=f"{member} {member.mention}")
         embed.add_field(name="Status", value="Not approved", inline=True)
@@ -171,7 +171,7 @@ class dm(commands.Cog):
         view = DMPersistentView(self.client)
         new_message = await request_channel.send(embed=embed, view=view)
         await self.client.pool_pg.execute("UPDATE dmrequests set messageid = $1 where id = $2", new_message.id, ID)
-        authorembed = discord.Embed(title="Your DM request has been submitted!", description="I will notify you on the status of your DM request.", color=0x57F0F0, timestamp=datetime.utcnow())
+        authorembed = discord.Embed(title="Your DM request has been submitted!", description="I will notify you on the status of your DM request.", color=0x57F0F0, timestamp=discord.utils.utcnow())
         authorembed.set_author(icon_url=ctx.guild.icon.url, name=ctx.guild.name)
         authorembed.add_field(name="Message", value=(message[:1020] + '...') if len(message) > 1024 else message, inline=False)
         authorembed.add_field(name="DM Target", value=f"{member} {member.mention}", inline=True)

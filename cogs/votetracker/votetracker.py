@@ -136,7 +136,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
                     return
         except Exception as error:
             traceback_error = print_exception(f'Ignoring exception in Reminder task', error)
-            embed = discord.Embed(color=0xffcccb, description=f"Error encountered on a Reminder task.\n```py\n{traceback_error}```", timestamp=datetime.datetime.utcnow())
+            embed = discord.Embed(color=0xffcccb, description=f"Error encountered on a Reminder task.\n```py\n{traceback_error}```", timestamp=discord.utils.utcnow())
             await self.client.get_guild(871734809154707467).get_channel(871737028105109574).send(embed=embed)
 
     @tasks.loop(hours=24.0)
@@ -224,7 +224,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
                         pass
         embed = discord.Embed(title=f"Thank you for voting for {guild.name} on Top.gg, {member.name}!",
                               description=f"You have voted {guild.name} for **{votecount}** time(s).\n[You can vote for Dank Vibes here!](https://top.gg/servers/595457764935991326/vote)",
-                              timestamp=datetime.datetime.utcnow(), color=0x57f0f0)
+                              timestamp=discord.utils.utcnow(), color=0x57f0f0)
         embed.set_author(name=f"{member.name}#{member.discriminator} ({member.id})", icon_url=member.display_avatar.url)
         embed.set_footer(text=guild.name, icon_url=guild.icon.url)
         qbemojis = ["https://cdn.discordapp.com/emojis/869579459420913715.gif?v=1", "https://cdn.discordapp.com/emojis/869579448708653066.gif?v=1", "https://cdn.discordapp.com/emojis/869579493776457838.gif?v=1", "https://cdn.discordapp.com/emojis/869579480509841428.gif?v=1", "https://cdn.discordapp.com/emojis/873643650607894548.gif?v=1", "https://cdn.discordapp.com/emojis/871970548576559155.gif?v=1", "https://cdn.discordapp.com/emojis/872470665607909417.gif?v=1", "https://cdn.discordapp.com/emojis/830920902019514408.gif?v=1"]
@@ -246,7 +246,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
             preferences = await self.client.pool_pg.fetchrow("SELECT rmtype FROM rmpreference WHERE member_id = $1", ctx.author.id) # fetches the new settings after the user's entry containing the 'none' setting has been created
         currentpreference = preferences.get('rmtype')
         if argument is None:
-            embed = discord.Embed(title=f"Dank Vibes vote reminder", description=f"Every 12 hours after you vote, you can be reminded to [vote for Dank Vibes on top.gg](https://top.gg/servers/595457764935991326/vote).", timestamp=datetime.datetime.utcnow(), color=0x57f0f0)
+            embed = discord.Embed(title=f"Dank Vibes vote reminder", description=f"Every 12 hours after you vote, you can be reminded to [vote for Dank Vibes on top.gg](https://top.gg/servers/595457764935991326/vote).", timestamp=discord.utils.utcnow(), color=0x57f0f0)
             embed.add_field(name="Your current reminder setting", value="DM" if currentpreference == 1 else "Ping" if currentpreference == 2 else "No reminder" if currentpreference == 0 else "Unknown; Please try to choose a reminder setting!", inline=False) #shows current reminder setting
             embed.set_footer(text=f"Choose your preferred reminder type via the menu.")
             embed.set_thumbnail(url=ctx.guild.icon.url)
@@ -263,7 +263,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         """
         embed = discord.Embed(title=f"Dank Vibes Vote Roles configuration",
                               description=f"",
-                              timestamp=datetime.datetime.utcnow(), color=0x57f0f0)
+                              timestamp=discord.utils.utcnow(), color=0x57f0f0)
         embed.add_field(name="How to configure the vote roles?",
                         value=f"`voteroles list` shows all milestones for vote roles.\n`votereminder add [votecount] [role]` adds a milestone for vote roles.\n`votereminder remove [votecount]` will remove the milestone for vote count.") # description on this command
         embed.set_thumbnail(url=ctx.guild.icon.url)
@@ -292,7 +292,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
             output += f"**{row.get('votecount')} votes: **{rolemention}\n" # adds the milestone vote count and role to the descriptionn
         embed = discord.Embed(title="Vote count milestones",
                               description=output,
-                              color=0x57f0f0, timestamp=datetime.datetime.utcnow()) # final embed send after iterating throgh
+                              color=0x57f0f0, timestamp=discord.utils.utcnow()) # final embed send after iterating throgh
         embed.set_footer(text="To edit the milestones, use the subcommands `add` and `remove`.")
         await ctx.send(embed=embed)
 
@@ -344,7 +344,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         if len(votecount) == 0:  # if there's nothing to be deleted
             return await ctx.send("There's nothing in the database to be removed.")
         totalvote = sum(voter.get('count') for voter in votecount)
-        embed = discord.Embed(title="Database pending removal", description = f"There are **{len(votecount)}** entries (or users) currently in the database, amounting to a total of {totalvote} votes. \n Are you sure you want to remove them? **This action is irreversible**! This will not remove users' vote reminder settings.", color=0x57f0f0, timestamp = datetime.datetime.utcnow()) # summary of what's going to be removed
+        embed = discord.Embed(title="Database pending removal", description = f"There are **{len(votecount)}** entries (or users) currently in the database, amounting to a total of {totalvote} votes. \n Are you sure you want to remove them? **This action is irreversible**! This will not remove users' vote reminder settings.", color=0x57f0f0, timestamp = discord.utils.utcnow()) # summary of what's going to be removed
         confirmview = confirm(ctx, self.client, 15.0)
         message = await ctx.send(embed=embed, view=confirmview)
         confirmview.response = message
@@ -410,7 +410,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         else:
             desc = f"You can now [vote for Dank Vibes](https://top.gg/servers/595457764935991326/vote) again!" # self explanatory
         embed = discord.Embed(title=f"You have voted for Dank Vibes **__{count}__** times.",
-                              description=desc, color=0x57f0f0, timestamp = datetime.datetime.utcnow())
+                              description=desc, color=0x57f0f0, timestamp = discord.utils.utcnow())
         embed.set_author(name=f"{ctx.author.name}#{ctx.author.discriminator}", icon_url=ctx.author.display_avatar.url)
         embed.add_field(name="Want to be reminded to vote for Dank Vibes?", value="Use `dv.votereminder dm/ping` to be reminded 12 hours after you vote for Dank Vibes.")
         embed.set_thumbnail(url=ctx.guild.icon.url)

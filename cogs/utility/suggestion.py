@@ -23,7 +23,7 @@ class Suggestion(commands.Cog):
             embed = discord.Embed(color=0xffcccb,
                                     title="Suggestion sent to the developers",
                                     description=f"**You sent:** {message}",
-                                    timestamp=datetime.utcnow())
+                                    timestamp=discord.utils.utcnow())
             embed.set_footer(text=f"Any response from the developers will be through DM.")
             response = await ctx.author.send(embed=embed)
         except:
@@ -38,7 +38,7 @@ class Suggestion(commands.Cog):
             channel = self.client.get_guild(871734809154707467).get_channel(876346196564803614)
             embed = discord.Embed(color=0xffcccb,
                                     description=message,
-                                    timestamp=datetime.utcnow())
+                                    timestamp=discord.utils.utcnow())
             embed.set_author(name=f"{ctx.author} made a suggestion", icon_url=ctx.author.display_avatar.url)
             embed.set_footer(text=f"Suggestion ID: {suggestion_id}")
             msg = await channel.send(embed=embed)
@@ -73,12 +73,12 @@ class Suggestion(commands.Cog):
         dmembed = discord.Embed(color=0xffcccb,
                                 title='Suggestion Closed',
                                 description=f"{ctx.author} has closed the suggestion.",
-                                timestamp=datetime.utcnow())
+                                timestamp=discord.utils.utcnow())
         dmembed.set_footer(text=f"Suggestion ID: {suggestion_id}")
         dmembed.add_field(name="Reason", value=message)
         msg = await channel.fetch_message(stats.get('message_id'))
         embed = msg.embeds[0]
-        embed.timestamp = datetime.utcnow()
+        embed.timestamp = discord.utils.utcnow()
         embed.add_field(name=f"Suggestion closed by {ctx.author}", value=message)
         await dm_msg.reply(embed=dmembed)
         await msg.edit(embed=embed)
@@ -110,7 +110,7 @@ class Suggestion(commands.Cog):
         embed = discord.Embed(color=0xffcccb,
                                 title=f"Response from {ctx.author}",
                                 description=message,
-                                timestamp=datetime.utcnow())
+                                timestamp=discord.utils.utcnow())
         response = await msg.reply(embed=embed)
         query = "INSERT INTO suggestion_response VALUES ($1, $2, $3, $4, $5)"
         values = (suggestion_id, stats.get('user_id'), response.id, stats.get('message_id'), message)

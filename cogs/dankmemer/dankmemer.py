@@ -85,7 +85,7 @@ class dankreminders(discord.ui.View):
             elif str(emoji) == "<:DVB_patreon:876628017194082395>":
                 await self.client.pool_pg.execute("UPDATE remindersettings SET redeem = $1 WHERE member_id = $2", numberswitcher(self.result.get('redeem')), ctx.author.id)
             self.result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
-            embed = discord.Embed(title="Your Dank Memer reminders", description="**Select the button that corresponds to the reminder to enable/disable it.**\nChange how you want to be reminded with `dv.dankreminders dm`,  `dv.dankreminders ping/mention` or `dv.dankreminders none`.", color=0x57f0f0, timestamp=datetime.utcnow())
+            embed = discord.Embed(title="Your Dank Memer reminders", description="**Select the button that corresponds to the reminder to enable/disable it.**\nChange how you want to be reminded with `dv.dankreminders dm`,  `dv.dankreminders ping/mention` or `dv.dankreminders none`.", color=0x57f0f0, timestamp=discord.utils.utcnow())
             embed.set_author(name=ctx.author, icon_url=ctx.author.display_avatar.url)
             embed.add_field(name=f"{emojioutput(self.result.get('daily'))} Claim daily <:DVB_calendar:873107952159059991>", value=self.rmtimes[0], inline=True)
             embed.add_field(name=f"{emojioutput(self.result.get('weekly'))} Claim weekly <:DVB_week:876711052669247528> ", value=self.rmtimes[1], inline=True)  # 8
@@ -198,7 +198,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
             traceback_error = print_exception(f'Ignoring exception in Reminder task', error)
             embed = discord.Embed(color=0xffcccb,
                                   description=f"Error encountered on a Reminder task.\n```py\n{traceback_error}```",
-                                  timestamp=datetime.utcnow())
+                                  timestamp=discord.utils.utcnow())
             await self.client.get_guild(871734809154707467).get_channel(871737028105109574).send(embed=embed)
 
     @commands.Cog.listener()
@@ -472,7 +472,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
         monthly = len(await self.client.pool_pg.fetch("SELECT * from stats WHERE remindertype = $1", 9))
 
         onhold = len(await self.client.pool_pg.fetch("SELECT * FROM dankreminders"))
-        embed = discord.Embed(title="Dank Memer Reminder Statistics", description=f"Fetched in {round(time.perf_counter() - timecounter, 3)} seconds.", color = 0x57F0F0, timestamp= datetime.utcnow())
+        embed = discord.Embed(title="Dank Memer Reminder Statistics", description=f"Fetched in {round(time.perf_counter() - timecounter, 3)} seconds.", color = 0x57F0F0, timestamp= discord.utils.utcnow())
         embed.add_field(name="Top 3 reminder types:", value=listof or "None", inline=True)
         embed.add_field(name="Top 3 reminder users:", value=listofreminders or "None", inline=True)
         embed.add_field(name="Number of activated settings", value=str(len(await self.client.pool_pg.fetch("SELECT * FROM remindersettings"))), inline=False)
@@ -515,7 +515,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
         for emoji in reminderemojis:
             cb.add_item(ui.Button(emoji = discord.PartialEmoji.from_str(emoji), style=discord.ButtonStyle.primary, label=labels[reminderemojis.index(emoji)]))
         remindertimes = [dailytime or "Ready!", weeklytime or "Ready!", monthlytime or "Ready!", lotterytime or "Ready!", worktime or "Ready!", appletime or "Ready!", redeemtime or "Ready!"]
-        embed = discord.Embed(title="Your Dank Memer reminders", description="**Select the button that corresponds to the reminder to enable/disable it.**\nChange how you want to be reminded with `dv.dankreminders dm`,  `dv.dankreminders ping/mention` or `dv.dankreminders none`.", color=0x57f0f0, timestamp=datetime.utcnow())
+        embed = discord.Embed(title="Your Dank Memer reminders", description="**Select the button that corresponds to the reminder to enable/disable it.**\nChange how you want to be reminded with `dv.dankreminders dm`,  `dv.dankreminders ping/mention` or `dv.dankreminders none`.", color=0x57f0f0, timestamp=discord.utils.utcnow())
         embed.set_author(name=ctx.author, icon_url=ctx.author.display_avatar.url)
         embed.add_field(name=f"{emojioutput(result.get('daily'))} Claim daily <:DVB_calendar:873107952159059991>", value=remindertimes[0], inline=True)
         embed.add_field(name=f"{emojioutput(result.get('weekly'))} Claim weekly <:DVB_week:876711052669247528> ", value=remindertimes[1], inline=True) #8

@@ -74,7 +74,7 @@ def human_timedelta(dt, *, source=None, accuracy=3, brief=False, suffix=True):
     """
     Get locale aware human timedelta representation.
     """
-    now = source or datetime.datetime.utcnow()
+    now = source or discord.utils.utcnow()
     now = now.replace(microsecond=0)
     dt = dt.replace(microsecond=0)
     if dt > now:

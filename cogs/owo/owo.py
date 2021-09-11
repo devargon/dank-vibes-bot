@@ -17,7 +17,7 @@ class Leaderboard(menus.ListPageSource):
         super().__init__(entries, per_page=10)
     
     async def format_page(self, menu, entries):
-        embed = discord.Embed(title=self.title, color=menu.ctx.bot.embed_color, timestamp=datetime.utcnow())
+        embed = discord.Embed(title=self.title, color=menu.ctx.bot.embed_color, timestamp=discord.utils.utcnow())
         for entry in entries:
             embed.add_field(name=f"{entry[0]}", value=f"**{entry[1]}** OwOs", inline=False)
         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
@@ -59,7 +59,7 @@ class OwO(commands.Cog, name='owo'):
             name = member.name if member is not None else count[0]
             leaderboard.append((name, count[1]))
         if len(leaderboard) <= 10:
-            embed = discord.Embed(color=self.client.embed_color, timestamp=datetime.utcnow())
+            embed = discord.Embed(color=self.client.embed_color, timestamp=discord.utils.utcnow())
             for index, position in enumerate(leaderboard, 1):
                 embed.add_field(name=f"#{index} {position[0]}", value=f"**{position[1]}** OwOs", inline=False)
             return embed
@@ -108,7 +108,7 @@ class OwO(commands.Cog, name='owo'):
         """
         member = member if member is not None else ctx.author
         count = await self.client.pool_pg.fetchrow("SELECT daily_count, weekly_count, total_count, yesterday, last_week FROM owocount WHERE member_id=$1", member.id)
-        embed = discord.Embed(color=self.client.embed_color, timestamp=datetime.utcnow())
+        embed = discord.Embed(color=self.client.embed_color, timestamp=discord.utils.utcnow())
         embed.add_field(name='Current Stats', value=f"Today's OwO count: `{count.get('daily_count') if count else 0}`\nThis week's OwO count: `{count.get('weekly_count') if count else 0}`\nTotal OwO count: `{count.get('total_count') if count else 0}`")
         embed.add_field(name='Past Stats', value=f"Yesterday's OwO count: `{count.get('yesterday') if count else 0}`\nLast week's OwO count: `{count.get('last_week') if count else 0}`")
         embed.set_author(name=str(member), icon_url=member.display_avatar.url)
@@ -159,7 +159,7 @@ class OwO(commands.Cog, name='owo'):
         owo50 = guild.get_role(owo50_id)
         owo100 = guild.get_role(owo100_id)
         self.active = False
-        if datetime.utcnow().weekday() == 6:
+        if discord.utils.utcnow().weekday() == 6:
             if await self.client.pool_pg.fetchval("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", guild.id, "owoweeklylb"): # check if the weekly owo lb is enabled or not 
                 query = "SELECT member_id, weekly_count FROM owocount ORDER BY weekly_count DESC LIMIT $1"
                 embed = await self.get_leaderboard(guild, query, top=5)
@@ -199,7 +199,7 @@ class OwO(commands.Cog, name='owo'):
     @daily_owo_reset.before_loop
     async def wait_until_7am(self):
         await self.client.wait_until_ready()
-        now = datetime.utcnow()
+        now = discord.utils.utcnow()
         next_run = now.replace(hour=7, minute=0, second=0)
         if next_run < now:
             next_run += timedelta(days=1)

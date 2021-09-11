@@ -248,7 +248,7 @@ class DVBotHelp(commands.DefaultHelpCommand):
         embed = discord.Embed(title=self.get_command_name(command))
         embed.description = self.get_help(command, brief=False)
         embed.color = 0x57F0F0
-        embed.timestamp = datetime.utcnow()
+        embed.timestamp = discord.utils.utcnow()
         if alias := self.get_aliases(command):
             embed.add_field(name="Aliases", value=f'[{" | ".join(f"`{x}`" for x in alias)}]', inline=True)
         embed.add_field(name='Usage', value=self.get_command_usage(command), inline=True)
