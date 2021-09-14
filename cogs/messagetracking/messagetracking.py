@@ -10,7 +10,7 @@ class MessageTracking(commands.Cog, name='MessageTracking'):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.channel in self.queue:
+        if message.author in self.queue:
             return
         if message.author == self.client.user:
             return
@@ -22,7 +22,7 @@ class MessageTracking(commands.Cog, name='MessageTracking'):
             return
         if message.channel.id != 608498967474601995:
             return
-        self.queue.append(message.channel)
+        self.queue.append(message.author)
         result = await self.client.pool_pg.fetchrow("SELECT * FROM messagelog WHERE user_id = $1", message.author.id)
         if result is None:
             await self.client.pool_pg.execute("INSERT INTO messagelog VALUES($1, $2)", message.author.id, 1)
@@ -30,4 +30,4 @@ class MessageTracking(commands.Cog, name='MessageTracking'):
             existing_count = result.get('messagecount')
             await self.client.pool_pg.execute("UPDATE messagelog SET messagecount = $1 WHERE user_id = $2", existing_count+1, message.author.id)
         await asyncio.sleep(8)
-        self.queue.remove(message.channel)
+        self.queue.remove(message.author)
