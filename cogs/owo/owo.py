@@ -49,6 +49,8 @@ class OwO(commands.Cog, name='owo'):
             msg = msg[1:].split()
             if len(msg) != 0 and msg[0] in self.owo_commands:
                 return False
+            if msg[0].startswith('ls'):
+                return False
             return True
 
     async def get_leaderboard(self, guild, query, top):
@@ -243,5 +245,5 @@ class OwO(commands.Cog, name='owo'):
                     with contextlib.suppress(discord.Forbidden):
                         await message.author.add_roles(owo100, reason="100 OwO count reached.")
         self.waitlist.append(message.author.id)
-        await asyncio.sleep(10)
+        await asyncio.sleep(10.0)
         self.waitlist.remove(message.author.id)
