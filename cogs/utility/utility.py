@@ -190,20 +190,23 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
             embed.set_footer(icon_url=ctx.guild.icon.url, text=footertext[ctx.author.id]) # you can remove this if you want idk
         await ctx.send(embed=embed)
 
-    @commands.command(name="messagecount", aliases=["mymessages"])
+    @commands.command(name="mymessages", aliases=["messagecount", "mym"])
     async def messagecount(self, ctx, member:discord.Member = None):
         """
         Shows the number of messages a member has sent in <#608498967474601995>.
         """
+        if ctx.channel.id == 608498967474601995:
+            return await ctx.send("Please use this command in <#698462922682138654> instead!", delete_after=5.0)
         if member is None:
             member = ctx.author
         user = await self.client.pool_pg.fetchrow("SELECT * FROM messagelog WHERE user_id = $1", member.id)
         if user is None:
             return await ctx.send("Hmm... it appears that you have not sent a message in <#608498967474601995>. Contact a mod if you think this is wrong.")
-        all = await self.client.pool_pg.fetch("SELECT * FROM messagelog ORDER BY messagecount DESC")
-        position = ordinal(all.index(user)+1)
+        all = await self.client.pool_pg.fetch("SELECT user_id FROM messagelog ORDER BY messagecount DESC")
+        user2 = await self.client.pool_pg.fetchrow("SELECT user_id FROM messagelog WHERE user_id = $1", member.id)
+        position = ordinal(all.index(user2)+1)
         embed = discord.Embed(title="Your number of messages sent in #general-chat", color=self.client.embed_color, timestamp=discord.utils.utcnow())
         embed.set_author(name=member, icon_url=member.display_avatar.url)
         embed.add_field(name="Message count", value=user.get('messagecount'), inline=True)
-        embed.add_field(name="Position", value=f"{position} {'🏆' if all.index(user) < 10 else ''}", inline=True)
+        embed.add_field(name="Position", value=f"{position} {'🏆' if all.index(user2) < 10 else ''}", inline=True)
         await ctx.reply(embed=embed)
