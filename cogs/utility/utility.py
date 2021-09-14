@@ -16,7 +16,7 @@ footertext = {
     752403154259148810: 'stinky !! 😤',
     395020663116529674: 'diarhea human',
     594959254369337345: 'Kannazumi',
-    602066975866355752: 'thick ice',
+    602066975866355752: 'i\'m standing on thick ice',
     542905463541465088: 'DiAri',
     27409176946409543: 'funky',
     650647680837484556: 'wow, the cleanest human has summoned me',
@@ -30,14 +30,24 @@ footertext = {
     424685275793457173: 'foxy',
     740783485270229084: 'AKEH',
     506320624377921546: 'Hi Jenn :)',
-    366069251137863681: 'bobbi sleep earlier',
-    560251854399733760: 'frenzy :3 O///O',
+    366069251137863681: 'bobbi :(',
+    560251854399733760: 'frenzy uwu :3',
     392127809939570688: 'hi kathy :)',
     697969807789654076: 'desteva uwu',
     517115653623119913: 'dany :)',
     689561648863772813: 'Kannazumi',
     722202979532275752: 'the delete button is so close to the enter button',
-    695161675782815825: 'ann hiihihihihii'
+    695161675782815825: 'ann hiihihihihii',
+    592092580846632994: 'hey tanzil',
+    727409176946409543: 'jazyyyyyy',
+    663867896195186698: 'hello leslie :)',
+    267608116370079745: 'hey kate :))',
+    886598864965103727: 'azumi i hope you lose all your dumbfights',
+    722109586487640074: 'hello demon :))',
+    719890992723001354: 'mystic :(',
+    542447261658120221: 'bav you pro',
+    501319699167051777: 'hello ghosty :)',
+    391242096201302039: 'hello pacific',
 }
 from utils.format import ordinal
 from utils import checks
@@ -155,13 +165,11 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
             channel = ctx.channel
         modrole = ctx.guild.get_role(608495204399448066)
         messages = await channel.history(limit=1, oldest_first=True).flatten()
-        message = messages[0]
+        message = None if len(messages) == 0 else messages[0]
         if modrole not in ctx.author.roles:
             channel = ctx.channel
             if ctx.channel.category_id not in [802467427208265728, 763457841133912074, 789195494664306688, 783299769580781588, 805052824185733120, 834696686923284510, 847897065081274409]:
                 return await ctx.send("You can only use this command in your own private channel.")
-            messages = await channel.history(limit=1, oldest_first=True).flatten()
-            message = messages[0]
             if not ctx.author.mentioned_in(message):
                 return await ctx.send("You can't check the members in this channel as you do not own this channel. If you think there is an error, please contact a Moderator in <#870880772985344010>.")
         owner = None
@@ -170,6 +178,8 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
             owner = f"**{owner_member}** {owner_member.mention}"
             if owner_member not in channel.overwrites:
                 owner += "\n⚠️ Not in channel"
+        else:
+            owner_member = None
         members = [overwriteobject for overwriteobject in channel.overwrites if isinstance(overwriteobject, discord.Member) and not overwriteobject.bot] # gets all members who have some sort of overwrite in that channel
         membersin = []
         for member in members:
