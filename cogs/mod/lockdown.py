@@ -49,7 +49,7 @@ class start_or_end(discord.ui.View):
         await self.response.edit(view=self)
 
 
-async def send_lockdown_message(self, channel: discord.TextChannel, message: str, extra_message: str = None):
+async def send_lockdown_message(self, channel: discord.TextChannel, message: str, extra_message: str = None, isStart: bool = None):
     try:
         embedjson = json.loads(message)
     except json.decoder.JSONDecodeError:
@@ -62,12 +62,12 @@ async def send_lockdown_message(self, channel: discord.TextChannel, message: str
             try:
                 return await channel.send(content=extra_message, embed=discord.Embed.from_dict(embedjson))
             except discord.HTTPException:
-                embed = discord.Embed(title="This channel is under lockdown! 🔒",
+                embed = discord.Embed(title="This channel is under lockdown! 🔒" if isStart else 'This channel is unlocked 🔓',
                                       description=message, color=self.client.embed_color)
                 embed.set_footer(icon_url=channel.guild.icon.url, text=channel.guild.name)
                 return await channel.send(content=extra_message, embed=embed)
         else:
-            embed = discord.Embed(title="This channel is under lockdown! 🔒",
+            embed = discord.Embed(title="This channel is under lockdown! 🔒" if isStart else 'This channel is unlocked 🔓',
                                   description=message, color=self.client.embed_color)
             embed.set_footer(icon_url=channel.guild.icon.url, text=channel.guild.name)
             return await channel.send(content=extra_message, embed=embed)
@@ -78,8 +78,10 @@ class lockdown_pagination(menus.ListPageSource):
         super().__init__(entries, per_page=20)
 
     async def format_page(self, menu, page):
-        embed = discord.Embed(color=0x57F0F0, title=self.title)
+        embed = discord.Embed(color=0x57F0F0, title=self.title, timestamp=discord.utils.utcnow())
         embed.description = "\n".join(page)
+        embed.add_field(name="Legend", value="<:DVB_Neutral:887589643686670366> `-` Unknown\n<:DVB_False:887589731515392000> `-` **Locked** for <@&649499248320184320>\n<:DVB_True:887589686808309791> `-` **Unlocked** for <@&649499248320184320>")
+        embed.set_footer(text="The lockdown status may not be 100% accurate.")
         return embed
 
 class lockdown(commands.Cog):
@@ -94,31 +96,33 @@ class lockdown(commands.Cog):
         """
         message = """
         This lockdown feature allows you to create separate groups of channels (or lockdown profiles) to be able to lock and unlock many channels at once. It also allows you to set a separate message for each profile. When quoting profile names, add quotations `""` for names with spaces, unless you're using `view`, `delete`, `start` and `end`.
-        **__Editing lockdown profiles__**
-        `lockdown create [profile_name] [channel]`
-        Creates a lockdown profile with the name specified in `profile_name`.
-        
-        `lockdown add [profile_name] [channel1] <channel2> ...`
-        Adds channels to the specified lockdown profile. You can add more than one channel in this command to add various channels at once.
-        
-        `lockdown remove [profile_name] [channel1] <channel2> ...`
-        Removes channels from the specified lockdown profile. You can add more than one channel in this command to remove various channels at once.
-        
-        `lockdown delete [profille_name]`
-        Deletes all channels in a lockdown profile, hence removing a lockdown profile.
-        
-        `lockdown view <profile_name>`
-        Using this command without any arguments will show the lockdown profiles. Viewing a lockdown profile will show you the channels in it.
-        
-        `lockdown msg [profile_name] [message_or_json_embed]`
-        This will set a message for the lockdown profile when it is used to lock channels.
         
         **__Using lockdown profiles__**
         `lockdown start [profile_name]`
         Locks down all channels in a lockdown profile. If a message is specified, it will send that message when locking down the channels.
         
         `lockdown end [profile_name]`
-        Unlocks down all channels in a lockdown profile. It will send a default message when unlocking channels.
+        Unlocks down all channels in a lockdown profile. If a message is specified, it will send that message when unlocking down the channels.
+        
+        
+        **__Editing lockdown profiles__**
+        `lockdown create [profile_name] [channel]`
+        Creates a lockdown profile with the name specified in `profile_name`.
+        
+        `lockdown add [profile_name] [channel1] <channel2> <channel3> ...`
+        Adds channels to the specified lockdown profile.
+        
+        `lockdown remove [profile_name] [channel1] <channel2> <channel3> ...`
+        Removes channels from the specified lockdown profile.
+        
+        `lockdown delete [profile_name]`
+        Deletes all channels in a lockdown profile, hence removing a lockdown profile.
+        
+        `lockdown view <profile_name>`
+        Using this command without any arguments will show the existing lockdown profiles. Viewing a lockdown profile will show you the channels in it + whether they're locked.
+        
+        `lockdown msg [profile_name] [message_or_json_embed]`
+        This will set a message for the lockdown profile when it is used to lock channels. To see the existing message for the profile, don't include a message.
         """
         await ctx.send(embed=discord.Embed(title=f"{self.client.user.name}'s Lockdown Guide", description=message, color=self.client.embed_color, timestamp=discord.utils.utcnow()))
 
@@ -184,8 +188,8 @@ class lockdown(commands.Cog):
         """
         if profile_name is not None:
             profile_name = profile_name.lower()
-            lockdown_profile = await self.client.pool_pg.fetch("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2",
-                                                               profile_name, ctx.guild.id)
+            lockdown_profile = await self.client.pool_pg.fetch(
+                "SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
             if len(lockdown_profile) == 0:
                 return await ctx.send(f"There is no such lockdown profile with the name **{profile_name}**.")
             channel_list = []
@@ -193,13 +197,23 @@ class lockdown(commands.Cog):
             for ele in lockdown_profile:
                 channel = self.client.get_channel(ele.get('channel_id'))
                 if channel is None:
-                    await self.client.pool_pg.execute("DELETE FROM lockdownprofiles WHERE profile_name = $1 and channel_id = $2 and guild_id = $3", profile_name, ele.get('channel_id'), ctx.guild.id)
+                    await self.client.pool_pg.execute(
+                        "DELETE FROM lockdownprofiles WHERE profile_name = $1 and channel_id = $2 and guild_id = $3",profile_name, ele.get('channel_id'), ctx.guild.id)
                     deleted_channels += 1
                 else:
-                    channel_list.append(f"• {channel.mention}")
+                    peepo = ctx.guild.get_role(649499248320184320)
+                    able_to_speak = channel.permissions_for(peepo).send_messages
+                    if able_to_speak:
+                        emoji = "<:DVB_True:887589686808309791>"
+                    elif able_to_speak == False:
+                        emoji = "<:DVB_False:887589731515392000>"
+                    else:
+                        emoji = "<:DVB_Neutral:887589643686670366>"
+                    channel_list.append(f"{emoji} `|` {channel.mention}")
             if deleted_channels > 0:
-                channel_list.append(f"\n{deleted_channels} channels have been removed from this profile as {self.client.user.name} was unable to find those channels.")
-            title = f"Channels in {profile_name}"
+                channel_list.append(
+                    f"\n{deleted_channels} channels have been removed from this profile as {self.client.user.name} was unable to find those channels.")
+            title = f"Channels in the lockdown profile {profile_name}"
             pages = CustomMenu(source=lockdown_pagination(channel_list, title), clear_reactions_after=True, timeout=30)
             await pages.start(ctx)
         else:
@@ -342,7 +356,7 @@ class lockdown(commands.Cog):
                             await channel.set_permissions(ctx.guild.default_role, overwrite=overwrites,
                                                           reason=f"Lockdown issued by {ctx.author} for channels in the {profile_name} Lockdown Profile")
                             if lockdownmsg is not None:
-                                await send_lockdown_message(self, channel, lockdownmsg)
+                                await send_lockdown_message(self, channel, lockdownmsg, None, True)
                             channels_success.append(channel.mention)
                     except discord.Forbidden:
                         channels_missing_perms.append(channel.mention)
@@ -412,7 +426,7 @@ class lockdown(commands.Cog):
                                                           reason=f"Lockdown removed, issued by {ctx.author} for channels in the Lockdown Profile '{profile_name}'")
                             channels_success.append(channel.mention)
                             if lockdownmsg is not None:
-                                await send_lockdown_message(self, channel, lockdownmsg)
+                                await send_lockdown_message(self, channel, lockdownmsg, None, False)
                     except discord.Forbidden:
                         channels_missing_perms.append(channel.mention)
             msg_content = f"{len(channels_success)} channels were successfully unlocked."
@@ -434,6 +448,8 @@ class lockdown(commands.Cog):
         ⚠️ This only applies to lockdown messages, and not unlock messages.
         To view the message for a lockdown profile, just use the command without a message.
         """
+        if not ctx.author.guild_permissions.manage_roles:
+            message = None
         if profile_name is None:
             return await ctx.send("You need to specify the name of the lockdown profile. `lockdown delete [profile_name]`")
         profile_name = profile_name.lower()
@@ -463,7 +479,7 @@ class lockdown(commands.Cog):
                 else:
                     lockdownmsg = None
                 if lockdownmsg is not None:
-                    return await send_lockdown_message(self, ctx.channel, lockdownmsg, f"This is the message sent when channels are {'locked' if startEndview.returning_value == 0 else 'unlocked'} in the lockdown profile **{profile_name}**")
+                    return await send_lockdown_message(self, ctx.channel, lockdownmsg, f"This is the message sent when channels are {'locked' if startEndview.returning_value == 0 else 'unlocked'} in the lockdown profile **{profile_name}**.", startEndview.returning_value == 0)
             return await ctx.send(f"There is no message set for **{'unlocking' if startEndview.returning_value == 0 else 'locking'}** channels in the lockdown profile **{profile_name}**. You can set one with `dv.lockdown msg {profile_name} [message_in_plain_text_or_json]`.")
         lockdownprofilemsg = await self.client.pool_pg.fetchrow("SELECT * FROM lockdownmsgs WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
         slug = 'startmsg' if startEndview.returning_value == 0 else 'endmsg'
@@ -477,4 +493,4 @@ class lockdown(commands.Cog):
                 await self.client.pool_pg.execute("INSERT INTO lockdownmsgs (guild_id, profile_name, startmsg) VALUES($1, $2, $3)", ctx.guild.id, profile_name, message)
             elif startEndview.returning_value == 1:
                 await self.client.pool_pg.execute("INSERT INTO lockdownmsgs (guild_id, profile_name, endmsg) VALUES($1, $2, $3)", ctx.guild.id, profile_name, message)
-        return await send_lockdown_message(self, ctx.channel, message, f"I have successfully set your lockdown message for the lockdown profile **{profile_name}**. This is how it will look like:")
+        return await send_lockdown_message(self, ctx.channel, message, f"I have successfully set your lockdown message for the lockdown profile **{profile_name}**. This is how it will look like:", True if startEndview.returning_value == 0 else False)
