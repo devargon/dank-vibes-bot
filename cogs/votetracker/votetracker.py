@@ -318,7 +318,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
     @commands.has_guild_permissions(administrator=True)
     async def roleremove(self, ctx, votecount=None):
         """
-        Removes milestones for vote roles
+        Removes milestones for vote roles.
         """
         if votecount is None:
             return await ctx.send("The correct usage of this command is `voteroles remove [votecount]`.")
@@ -358,8 +358,12 @@ class VoteTracker(commands.Cog, name='votetracker'):
             await self.client.pool_pg.execute("DELETE FROM votecount")
             return await message.edit(embed=discord.Embed(title="Database pending removal", description="All vote counts have been reset, and all entries in the database has been deleted.", color = discord.Color.green()))
 
-    @commands.command(name="voteleaderboard", brief="Shows the leaderboard for the top 10 voters for Dank Vibes.", description = "Shows the leaderboard for the top 10 voters for Dank Vibes.", aliases = ["vlb", "votelb"])
+    @commands.command(name="voteleaderboard", aliases = ["vlb", "votelb"])
     async def leaderboard(self, ctx):
+        """
+        Shows the leaderboard for the top 10 voters for Dank Vibes.
+        You can also view your rank on the vote leaderboard.
+        """
         with ctx.typing():
             votecount = await self.client.pool_pg.fetch("SELECT * FROM votecount ORDER BY count DESC")
             leaderboard = []
@@ -395,9 +399,26 @@ class VoteTracker(commands.Cog, name='votetracker'):
             await ctx.send("I do not have permission to send the leaderboard here.")
         return
 
-    @commands.command(name="myvotes", brief="Shows the number of times you have voted for Dank Vibes.",
-                      description="Shows the number of times you have voted for Dank Vibes.", aliases=["myv", "myvote", "votes"])
+    @commands.command(name="vote", aliases=["upvote"])
+    async def vote(self, ctx):
+        """
+        Shows you where to vote for Dank Vibes.
+        """
+        embed = discord.Embed(title="Show Your Support!", description="If you like what you're seeing from Dank Vibes, feel free to upvote the server [here](https://top.gg/servers/595457764935991326/vote). You can upvote the server every 12 hours! <a:dv_qbThumbsupOwO:837666232811257907>\n\n**__Voter Perks__** \n<a:dv_pointArrowOwO:837656328482062336> Obtain the <@&683884762997587998> role\n<a:dv_pointArrowOwO:837656328482062336> Access to <#753577021950656583> ~ **2x** multi \n<a:dv_pointArrowOwO:837656328482062336> Access to <#751740855269851236> ~ **2x** multi\n\n⭐ View the additional perks for voting by running `-voterperks`\n\n**TIP**: Set reminders to vote using `dv.votereminder`\n**NOTE**: Perks are limited to 1 day | Revote to obtain the perks again", timestamp=discord.utils.utcnow(), color=0xB8D5FF)
+        embed.set_thumbnail(url="https://i.imgur.com/kLVa5dD.gif")
+        embed.set_footer(text="Dank Vibes | Thank you for all your support ♡", icon_url="https://cdn.discordapp.com/icons/595457764935991326/a_58b91a8c9e75742d7b423411b0205b2b.png?size=1024")
+        class Vote(discord.ui.View):
+            def __init__(self):
+                super().__init__()
+                self.add_item(discord.ui.Button(label='Vote for Dank Vibes', url="https://top.gg/servers/595457764935991326/vote",emoji=discord.PartialEmoji.from_str('<a:dv_iconOwO:837943874973466664>')))
+
+        await ctx.send(embed=embed, view=Vote())
+
+    @commands.command(name="myvotes", aliases=["myv", "myvote", "votes"])
     async def myvotes(self, ctx, member = None): # member variable is not used actually
+        """
+        See how many times you have voted for Dank Vibes.
+        """
         timenow = round(time.time())
         if member is not None and "<@" in ctx.message.content: # you can delete this if you want, I just added it to tease them hehe
             await ctx.send("Nice try, but you can't view other users' votecount.")
@@ -411,6 +432,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         embed = discord.Embed(title=f"You have voted for Dank Vibes **__{count}__** times.",
                               description=desc, color=0x57f0f0, timestamp = discord.utils.utcnow())
         embed.set_author(name=f"{ctx.author.name}#{ctx.author.discriminator}", icon_url=ctx.author.display_avatar.url)
-        embed.add_field(name="Want to be reminded to vote for Dank Vibes?", value="Select `**DM** or **Ping** in `dv.votereminder`.")
+        embed.add_field(name="Want to be reminded to vote for Dank Vibes?", value="Select **DM** or **Ping** in `dv.votereminder`.")
+        embed.set_footer(text="You can see your rank on the vote leaderboard with dv.voteleaderboard!")
         embed.set_thumbnail(url=ctx.guild.icon.url)
         await ctx.send(embed=embed)
