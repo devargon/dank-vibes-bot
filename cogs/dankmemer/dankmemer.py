@@ -483,10 +483,10 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
 
 
     @commands.command(name="dankreminders", aliases = ["dankrm", "drm"])
-    async def dankreminders(self, ctx, argument=None):
+    async def dankreminders(self, ctx):
         """
-        Shows your reminders for Dank Memer and allows you to enable/disable them, without any arguments.
-        Change your type of reminder with `dv.dankreminders dm`,  `dv.dankreminders ping/mention` or `dv.dankreminders none`.
+        Shows your reminders for Dank Memer and allows you to enable/disable them.
+        Change your type of reminder via the select menu.
         """
         result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id) # gets the configuration for user to check if they have used dank reminder before
         if result is None:
@@ -515,7 +515,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
         for emoji in reminderemojis:
             cb.add_item(ui.Button(emoji = discord.PartialEmoji.from_str(emoji), style=discord.ButtonStyle.primary, label=labels[reminderemojis.index(emoji)]))
         remindertimes = [dailytime or "Ready!", weeklytime or "Ready!", monthlytime or "Ready!", lotterytime or "Ready!", worktime or "Ready!", appletime or "Ready!", redeemtime or "Ready!"]
-        embed = discord.Embed(title="Your Dank Memer reminders", description="**Select the button that corresponds to the reminder to enable/disable it.**\nChange how you want to be reminded with `dv.dankreminders dm`,  `dv.dankreminders ping/mention` or `dv.dankreminders none`.", color=0x57f0f0, timestamp=discord.utils.utcnow())
+        embed = discord.Embed(title="Your Dank Memer reminders", description="**Select the button that corresponds to the reminder to enable/disable it.**\nChange how you want to be reminded with the select menu.", color=0x57f0f0, timestamp=discord.utils.utcnow())
         embed.set_author(name=ctx.author, icon_url=ctx.author.display_avatar.url)
         embed.add_field(name=f"{emojioutput(result.get('daily'))} Claim daily <:DVB_calendar:873107952159059991>", value=remindertimes[0], inline=True)
         embed.add_field(name=f"{emojioutput(result.get('weekly'))} Claim weekly <:DVB_week:876711052669247528> ", value=remindertimes[1], inline=True) #8
