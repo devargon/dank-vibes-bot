@@ -22,6 +22,8 @@ class MessageTracking(commands.Cog, name='MessageTracking'):
             return
         if message.channel.id != 608498967474601995:
             return
+        if len(str(message.content)) == 1:
+            return
         self.queue.append(message.author)
         result = await self.client.pool_pg.fetchrow("SELECT * FROM messagelog WHERE user_id = $1", message.author.id)
         if result is None:
