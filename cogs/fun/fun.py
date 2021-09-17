@@ -6,6 +6,7 @@ from discord.ext import commands
 import random
 from utils.time import humanize_timedelta
 from .dm import dm
+from .imgen import imgen
 from utils import checks
 import operator
 from typing import Union
@@ -35,7 +36,7 @@ blacklisted_words = ['N-renoteQ3R', 'n.i.g.g.e.r', 'n i g a', 'nygga', 'niuggers
                      'faggot', 'niceca||r', 'nig gas', 'n!gg@', 'hey, free discord gifted nitro for 1 month:',
                      'neeger', 'nighha', 'n1gg@', 'n!g3r', 'nig', 'nigg', 'anigame']
 
-class Fun(dm, commands.Cog, name='fun'):
+class Fun(imgen, dm, commands.Cog, name='fun'):
     """
     Fun commands
     """
@@ -253,7 +254,6 @@ class Fun(dm, commands.Cog, name='fun'):
     async def scramble(self, ctx, member: discord.Member=None):
         """
         Scrambles your target's nickname for 3 minutes, effectively freezing it until the 3 minutes are up.
-        In this testing server, the duration is just 20 seconds.
         """
         if member is None:
             ctx.command.reset_cooldown(ctx)
@@ -273,7 +273,6 @@ class Fun(dm, commands.Cog, name='fun'):
             return await ctx.send("Their name only has one character, it's not worth it.")
         def scramble_nickname():
             tries = 0
-
             while True:
                 if tries < 10:
                     lst_member_name = list(member_name)
@@ -402,32 +401,3 @@ class Fun(dm, commands.Cog, name='fun'):
         os.remove(filename)
         if ctx.author.id in [650647680837484556, 321892489470410763]:
             ctx.command.reset_cooldown(ctx)
-
-    @checks.dev()
-    @commands.command(name="goeatpoop")
-    async def goeatpoop(self, ctx, member:discord.Member = None):
-        """
-        Get someone to eat poop
-        """
-        if member is None:
-            return await ctx.send("mention someone lol")
-        memberfilename = f"temp/{random.randint(1, 9999999)}.png"
-        main = Image.open("assets/poop.png")
-        opener = urllib.request.build_opener()
-        opener.addheaders = [('User-agent', 'Mozilla/5.0')]
-        urllib.request.install_opener(opener)
-        urllib.request.urlretrieve(str(ctx.author.display_avatar.url).replace('webp', 'png'), memberfilename)
-        ima = Image.open(memberfilename).convert('RGBA')
-        ima = ima.resize((220,220))
-        backg = main.copy()
-        backg.paste(ima, (107, 218), ima)
-        urllib.request.urlretrieve(str(member.display_avatar.url).replace('webp', 'png'), memberfilename)
-        ima2 = Image.open(memberfilename).convert('RGBA')
-        ima2 = ima2.resize((227,227))
-        backg.paste(ima2, (555,112), ima2)
-        b = BytesIO()
-        backg.save(b, format="png", optimize=True, quality=50)
-        b.seek(0)
-        file = discord.File(fp=b, filename="goeatpoop.jpg")
-        await ctx.send("If you don't understand the reference: <https://www.youtube.com/watch?v=M-PvB0NdO2g>", file=file)
-        os.remove(memberfilename)
