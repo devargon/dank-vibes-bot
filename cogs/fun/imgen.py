@@ -9,7 +9,8 @@ class imgen(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    @checks.dev()
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.command(name="goeatpoop")
     async def goeatpoop(self, ctx, member :discord.Member = None):
         """
@@ -38,7 +39,8 @@ class imgen(commands.Cog):
         await ctx.send("If you don't understand the reference: <https://www.youtube.com/watch?v=M-PvB0NdO2g>",
                        file=file)
 
-    @checks.dev()
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.command(name="goeatpoop")
     async def goeatpoop(self, ctx, member: discord.Member = None):
         """
