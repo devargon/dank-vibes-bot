@@ -51,6 +51,8 @@ class OwO(commands.Cog, name='owo'):
                 return False
             if msg[0].startswith('ls'):
                 return False
+            if msg[0].startswith('!'):
+                return False
             return True
 
     async def get_leaderboard(self, guild, query, top):
