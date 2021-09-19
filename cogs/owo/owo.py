@@ -47,7 +47,9 @@ class OwO(commands.Cog, name='owo'):
             return True
         if msg.startswith('p'):
             msg = msg[1:].split()
-            if len(msg) != 0 and msg[0] in self.owo_commands:
+            if len(msg) == 0:
+                return True
+            if msg[0] in self.owo_commands:
                 return False
             if msg[0].startswith('ls'):
                 return False
