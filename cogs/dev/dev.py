@@ -20,6 +20,7 @@ from discord.ext import commands
 from .cog_manager import CogManager
 from utils.format import pagify, TabularData, plural, text_to_file
 from .maintenance import Maintenance
+from.logging import Logging
 from utils.converters import MemberUserConverter, TrueFalse
 from typing import Optional, Union
 
@@ -30,7 +31,7 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
     """
     pass
 
-class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='dev', command_attrs=dict(hidden=True), metaclass=CompositeMetaClass):
+class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog, name='dev', command_attrs=dict(hidden=True), metaclass=CompositeMetaClass):
     """
     This module contains various development focused commands.
     """
