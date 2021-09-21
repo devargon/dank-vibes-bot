@@ -16,6 +16,9 @@ from PIL import Image, ImageFilter
 import urllib.request
 from io import BytesIO
 import aiohttp
+import contextlib
+import requests
+import json
 
 blacklisted_words = ['N-renoteQ3R', 'n.i.g.g.e.r', 'n i g a', 'nygga', 'niuggers', 'nigger',
                      'https://discordnitro.link/stearncommunity', 'kill yourself', 'figgot', 'ching chong',
@@ -87,6 +90,20 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
             else:
                 doesauthorwin = random.choice([True, False])
         channel = ctx.channel
+        if isinstance(channel, discord.Thread):
+            data = {
+                'user': f"{ctx.author} ({ctx.author.id})",
+                'guild': f"{ctx.guild.name} ({ctx.guild.id})",
+                'channel': f"{ctx.channel.name} ({ctx.channel.id})",
+                'message': ctx.message.content,
+                'url': ctx.message.jump_url,
+                'error': f"This person tried using dumbfight in a thread channel. The parent of the thread is {channel.parent}"
+            }
+            await ctx.send("Dumbfight is not supported in threads yet. Sorry >.<")
+            with contextlib.suppress(Exception):
+                requests.post(url='http://161.35.235.103:5000/webhook', data = json.dumps(data), headers={'Content-Type':'application/json'})
+            return
+
         if doesauthorwin:
             muted = member
             color = 0x00ff00
