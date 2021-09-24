@@ -173,6 +173,7 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
             if not ctx.author.mentioned_in(message):
                 return await ctx.send("You can't check the members in this channel as you do not own this channel. If you think there is an error, please contact a Moderator in <#870880772985344010>.")
         owner = None
+        owner_member = None
         if len(message.mentions) > 0:
             owner_member = message.mentions[0]
             owner = f"**{owner_member}** {owner_member.mention}"
