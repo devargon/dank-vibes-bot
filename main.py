@@ -97,6 +97,8 @@ class dvvt(commands.AutoShardedBot):
                 await self.pool_pg.execute("INSERT INTO prefixes VALUES ($1, $2)", guild_id, 'dv.')
                 data = {}
             prefix = self.prefixes.setdefault(guild_id, data.get("prefix") or '.')
+        if message.content.lower().startswith(prefix):
+            prefix = message.content[:len(prefix)]
         return commands.when_mentioned_or(prefix)(self, message)
 
     async def set_prefix(self, guild, prefix):
