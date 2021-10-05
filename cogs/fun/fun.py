@@ -321,9 +321,11 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
             try:
                 await self.client.wait_for("member_update", check = check, timeout=180)
             except asyncio.TimeoutError:
-                await member.edit(nick=member_name)
-                active = False
-                self.scrambledusers.remove(member)
+                try:
+                    await member.edit(nick=member_name)
+                except:
+                    active = False
+                    self.scrambledusers.remove(member)
             else:
                 await member.edit(nick=new_name)
                 if has_warned == False:
