@@ -56,10 +56,13 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
         """
         Mute people for a random duration between 30 to 120 seconds.
         """
+        kvoterole = ctx.guild.get_role(874931276329656370)  # 874931276329656370
+        investor = ctx.guild.get_role(739199912377319427)
         timenow = round(time.time())
         cooldown = await self.client.pool_pg.fetchrow("SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time > $3", ctx.command.name, ctx.author.id, timenow)
         if cooldown is not None:
-            return await ctx.send(f"You're on cooldown. try again in {humanize_timedelta(seconds=(cooldown.get('time') - timenow))}.", delete_after = 10.0)
+            msg = f"You're on cooldown. try again in {humanize_timedelta(seconds=(cooldown.get('time') - timenow))}.\n**{kvoterole.name}** and **{investor.name}** will have a cooldown of only 30 minutes!"
+            return await ctx.send(msg, delete_after = 10.0)
         cooldown = await self.client.pool_pg.fetchrow("SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time < $3", ctx.command.name, ctx.author.id, timenow)
         if cooldown:
             await self.client.pool_pg.execute("DELETE FROM cooldowns WHERE command_name = $1 and member_id = $2 and time = $3", cooldown.get('command_name'), cooldown.get('member_id'), cooldown.get('time'))
@@ -123,8 +126,6 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
         if member.id in [650647680837484556, 321892489470410763] and muted != ctx.author:
             embed.set_footer(text="why did you dumbfight the developer :c", icon_url="https://cdn.discordapp.com/emojis/796407682764505180.png?v=1")
         await ctx.send(embed=embed)
-        kvoterole = ctx.guild.get_role(874931276329656370) # 874931276329656370
-        investor = ctx.guild.get_role(739199912377319427)
         cooldowntime = 1800 if kvoterole in ctx.author.roles or investor in ctx.author.roles else 3600
         await self.client.pool_pg.execute("INSERT INTO cooldowns VALUES($1, $2, $3)", ctx.command.name, ctx.author.id, timenow + cooldowntime)
         await asyncio.sleep(duration)
