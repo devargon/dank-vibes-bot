@@ -78,3 +78,12 @@ def is_bav_or_mystic() -> Callable:
             return True
         raise ArgumentBaseError(message="You need to be a `mystic` or `bav` or have the required permissions to use this command.")
     return commands.check(predicate)
+
+def not_in_gen():
+    async def predicate(ctx):
+        channel_id = 608498967474601995
+        if ctx.guild:
+            if ctx.channel.id == channel_id:
+                return True
+        raise ArgumentBaseError(message="You can't use this command here! Use it in another channel.")
+    return commands.check(predicate)

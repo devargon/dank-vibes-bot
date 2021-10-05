@@ -3,6 +3,7 @@ import discord
 from datetime import datetime
 from discord.ext import commands
 emojis = ["<:checkmark:841187106654519296>", "<:crossmark:841186660662247444>"]
+from utils import checks
 
 
 class NicknamePersistentView(discord.ui.View):
@@ -122,6 +123,7 @@ class nicknames(commands.Cog):
             self.persistent_views_added = True
 
     @commands.command(name="nick", aliases = ["requestnick", "setnick"])
+    @checks.not_in_gen()
     async def setnick(self, ctx, *, nickname = None):
         """
         Request a nickname here!

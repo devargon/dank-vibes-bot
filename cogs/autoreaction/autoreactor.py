@@ -156,6 +156,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
 
     @commands.guild_only()
     @autoreact.command(name='claim', usage='<response>')
+    @checks.not_in_gen()
     @commands.cooldown(1, 1800, commands.BucketType.user)
     @checks.has_permissions_or_role(manage_messages=True)
     async def autoreact_claim(self, ctx, response: Union[discord.Emoji, str] = None):

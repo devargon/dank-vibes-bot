@@ -5,6 +5,7 @@ from typing import Optional
 from datetime import datetime, timedelta
 from utils.menus import CustomMenu
 from discord.ext import commands, menus, tasks
+from utils import checks
 
 owo50_id = 847877497634553856
 owo100_id = 847881186314289243
@@ -108,6 +109,7 @@ class OwO(commands.Cog, name='owo'):
     "zoo"}
 
     @commands.command(name='owocount', usage='[member]', aliases=['mycount', 'myc', 'owoc', 'stat'])
+    @checks.not_in_gen()
     async def owocount(self, ctx, member: Optional[discord.Member] = None):
         """
         Shows your or a member's daily OwO count for this server.
@@ -122,6 +124,7 @@ class OwO(commands.Cog, name='owo'):
         await ctx.send(embed=embed)
 
     @commands.command(name='owoleaderboard', aliases=['owolb'])
+    @checks.not_in_gen()
     async def owoleaderboard(self, ctx, *, arg: str = None):
         """
         Shows the OwO leaderboard for Dank Vibes.

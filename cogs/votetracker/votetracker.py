@@ -11,6 +11,7 @@ from discord.ext import commands, tasks
 from utils.format import print_exception, ordinal
 from io import BytesIO
 from utils.buttons import *
+from utils import checks
 
 class VoteSetting(discord.ui.Select):
     def __init__(self, client, context, response):
@@ -236,7 +237,8 @@ class VoteTracker(commands.Cog, name='votetracker'):
             pass
 
     @commands.command(name="votereminder", aliases = ["vrm"])
-    async def votereminder(self, ctx, argument=None):
+    @checks.not_in_gen()
+    async def votereminder(self, ctx):
         """
         Manage your vote reminder here!
         """
@@ -415,6 +417,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         await ctx.send(embed=embed, view=Vote())
 
     @commands.command(name="myvotes", aliases=["myv", "myvote", "votes"])
+    @checks.not_in_gen()
     async def myvotes(self, ctx, member = None): # member variable is not used actually
         """
         See how many times you have voted for Dank Vibes.

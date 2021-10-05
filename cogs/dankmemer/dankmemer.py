@@ -481,7 +481,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
         await ctx.send(embed=embed)
 
 
-
+    @checks.not_in_gen()
     @commands.command(name="dankreminders", aliases = ["dankrm", "drm"])
     async def dankreminders(self, ctx):
         """
