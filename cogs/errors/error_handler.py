@@ -56,6 +56,7 @@ class ErrorHandler(commands.Cog):
                 embed.add_field(name="Error", value=f"```prolog\n{error}\n```\n<#871737028105109574>")
                 await send_error(embed=embed)
             else:
+                embed.set_footer(text="The developers have been directly notified about the error; refrain from repeatedly using this command at the moment.")
                 await send_error(embed=embed, delete_after=10)
             traceback_error = print_exception(f'Ignoring exception in command {ctx.command}:', error)
             error_message = f"**Command:** `{ctx.message.content}`\n" \
@@ -66,15 +67,4 @@ class ErrorHandler(commands.Cog):
                             f"**Jump:** [`jump`]({ctx.message.jump_url})```py\n" \
                             f"{traceback_error}\n" \
                             f"```"
-            data = {
-                'user': f"{ctx.author} ({ctx.author.id})",
-                'guild': f"{ctx.guild.name} ({ctx.guild.id})",
-                'channel': f"{ctx.channel.name} ({ctx.channel.id})",
-                'message': ctx.message.content,
-                'url': ctx.message.jump_url,
-                'error': traceback_error
-            }
-
-            with contextlib.suppress(Exception):
-                requests.post(url='http://161.35.235.103:5000/webhook', data = json.dumps(data), headers={'Content-Type':'application/json'})
             await self.client.error_channel.send(content=f"<@&871740422932824095> Check this out",embed=discord.Embed(color=0xffcccb, description=error_message, timestamp=discord.utils.utcnow()).set_footer(text=f"From: {ctx.guild.name}", icon_url=ctx.guild.icon.url), allowed_mentions=discord.AllowedMentions(roles=True))
