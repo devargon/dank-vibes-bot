@@ -263,7 +263,7 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
         else:
             try:
                 await message.add_reaction("🔓")
-            except discord.Forbidden:
+            except:
                 pass
 
     @checks.has_permissions_or_role(administrator=True)
