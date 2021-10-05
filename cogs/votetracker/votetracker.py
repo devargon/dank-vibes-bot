@@ -120,6 +120,13 @@ class VoteTracker(commands.Cog, name='votetracker'):
                     first_time = True
                 member = self.client.get_user(memberid)
                 channel = self.client.get_channel(channelid)
+                class VoteLink(discord.ui.View):
+                    def __init__(self):
+                        super().__init__()
+                        self.add_item(discord.ui.Button(label='Vote for Dank Vibes at Top.gg',
+                                                        url="https://top.gg/servers/595457764935991326/vote",
+                                                        emoji=discord.PartialEmoji.from_str(
+                                                            '<a:dv_iconOwO:837943874973466664>')))
                 if member is None:
                     return
                 if preferences.get('rmtype') == 1:
@@ -127,11 +134,11 @@ class VoteTracker(commands.Cog, name='votetracker'):
                     if first_time:
                         message += "\n\nTip: You can turn off reminders or be pinged for voting by selecting the respective option in `dv.votereminder.\nhttps://cdn.nogra.me/core/votereminder.gif"
                     try:
-                        await member.send(message, embed=discord.Embed(description="[Vote for Dank Vibes at top.gg](https://top.gg/servers/595457764935991326/vote)", color=0x57f0f0)) # tries to DM the user that it is time for him to vote again
+                        await member.send(message, view=VoteLink)
                     except discord.Forbidden:
-                        await channel.send(f"{member.mention} You can now vote for Dank Vibes again!", delete_after=5.0) # uses ping instead if the bot cannot DM this user
+                        await channel.send(f"{member.mention} You can now vote for Dank Vibes again!", view=VoteLink, delete_after=5.0) # uses ping instead if the bot cannot DM this user
                 elif preferences.get('rmtype') == 2:
-                    await channel.send(f"{member.mention} You can now vote for Dank Vibes again!", delete_after=5.0) # self-explainable
+                    await channel.send(f"{member.mention} You can now vote for Dank Vibes again!", view=VoteLink, delete_after=5.0) # self-explainable
                 elif preferences.get('rmtype') not in [0, 1, 2]: # somehow this guy doesn't have "dm" "ping or "none" in his setting so i'll update it to show that
                     await self.client.pool_pg.execute('UPDATE rmpreference set rmtype = $1 where member_id = $2', 0, memberid) # changes his setting to none
                     return
