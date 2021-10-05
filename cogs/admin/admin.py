@@ -5,12 +5,13 @@ from datetime import datetime
 from discord.ext import commands
 from .serverrule import ServerRule
 from .sticky import Sticky
+from .joining import Joining
 from utils import checks
 from utils.buttons import *
 
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
-class Admin(Sticky, ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass):
+class Admin(Joining, Sticky, ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass):
     """
     Server Commands
     """
