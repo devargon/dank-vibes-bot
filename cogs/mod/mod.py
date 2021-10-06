@@ -7,13 +7,23 @@ from utils import checks
 from utils.format import text_to_file
 from.lockdown import lockdown
 from utils.buttons import *
+from .browser_screenshot import BrowserScreenshot
+from selenium import webdriver
 
-class Mod(lockdown, commands.Cog, name='mod'):
+class Mod(BrowserScreenshot, lockdown, commands.Cog, name='mod'):
     """
     Mod commands
     """
     def __init__(self, client):
+        self.op = webdriver.ChromeOptions() # selenium options for chrome
+        self.op.add_argument('--no-sandbox')
+        self.op.add_argument('--disable-gpu')
+        self.op.add_argument('--headless')
+        self.op.add_argument("--window-size=1920,1080")
+        self.op.add_argument('--allow-running-insecure-content')
+        self.op.add_argument('--ignore-certificate-errors')
         self.client = client
+
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="getraw", aliases = ['raw', 'rawmessage'])
     async def getrawmessage(self, ctx, message_id=None, channel:discord.TextChannel=None):
