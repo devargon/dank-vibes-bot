@@ -132,13 +132,13 @@ class VoteTracker(commands.Cog, name='votetracker'):
                 if preferences.get('rmtype') == 1:
                     message = "You can now vote for Dank Vibes again!"
                     if first_time:
-                        message += "\n\nTip: You can turn off reminders or be pinged for voting by selecting the respective option in `dv.votereminder.\nhttps://cdn.nogra.me/core/votereminder.gif"
+                        message += "\n\nTip: You can turn off reminders or be pinged for voting by selecting the respective option in `dv.votereminder`.\nhttps://cdn.nogra.me/core/votereminder.gif"
                     try:
-                        await member.send(message, view=VoteLink)
+                        await member.send(message, view=VoteLink())
                     except discord.Forbidden:
-                        await channel.send(f"{member.mention} You can now vote for Dank Vibes again!", view=VoteLink, delete_after=5.0) # uses ping instead if the bot cannot DM this user
+                        await channel.send(f"{member.mention} You can now vote for Dank Vibes again!", view=VoteLink(), delete_after=5.0) # uses ping instead if the bot cannot DM this user
                 elif preferences.get('rmtype') == 2:
-                    await channel.send(f"{member.mention} You can now vote for Dank Vibes again!", view=VoteLink, delete_after=5.0) # self-explainable
+                    await channel.send(f"{member.mention} You can now vote for Dank Vibes again!", view=VoteLink(), delete_after=5.0) # self-explainable
                 elif preferences.get('rmtype') not in [0, 1, 2]: # somehow this guy doesn't have "dm" "ping or "none" in his setting so i'll update it to show that
                     await self.client.pool_pg.execute('UPDATE rmpreference set rmtype = $1 where member_id = $2', 0, memberid) # changes his setting to none
                     return
