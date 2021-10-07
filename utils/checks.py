@@ -84,6 +84,6 @@ def not_in_gen():
         channel_id = 608498967474601995
         if ctx.guild:
             if ctx.channel.id == channel_id:
-                return True
-        raise ArgumentBaseError(message="You can't use this command here! Use it in another channel.")
+                raise ArgumentBaseError(message="You can't use this command here! Use it in another channel.")
+        return True
     return commands.check(predicate)
