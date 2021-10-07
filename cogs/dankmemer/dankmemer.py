@@ -683,6 +683,28 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                 return "Weekly"
             if num == 9:
                 return "Monthly"
+            if num == 10:
+                return "Hunt"
+            if num == 11:
+                return "Fish"
+            if num == 12:
+                return "Dig"
+            if num == 13:
+                return "Highlow"
+            if num == 14:
+                return "Snakeeyes"
+            if num == 15:
+                return "Search"
+            if num == 16:
+                return "Crime"
+            if num == 17:
+                return "Beg"
+            if num == 18:
+                return "DailyBox"
+            if num == 19:
+                return "Horseshoe"
+            if num == 20:
+                return "Pizza"
             else:
                 return "None"
         """
@@ -717,6 +739,17 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
         redeem = len(await self.client.pool_pg.fetch("SELECT * from stats WHERE remindertype = $1", 7))
         weekly = len(await self.client.pool_pg.fetch("SELECT * from stats WHERE remindertype = $1", 8))
         monthly = len(await self.client.pool_pg.fetch("SELECT * from stats WHERE remindertype = $1", 9))
+        hunt = len(await self.client.pool_pg.fetch("SELECT * from stats WHERE remindertype = $1", 10))
+        fish = len(await self.client.pool_pg.fetch("SELECT * from stats WHERE remindertype = $1", 11))
+        dig = len(await self.client.pool_pg.fetch("SELECT * from stats WHERE remindertype = $1", 12))
+        highlow = len(await self.client.pool_pg.fetch("SELECT * from stats WHERE remindertype = $1", 13))
+        snakeeyes = len(await self.client.pool_pg.fetch("SELECT * from stats WHERE remindertype = $1", 14))
+        search = len(await self.client.pool_pg.fetch("SELECT * from stats WHERE remindertype = $1", 15))
+        crime = len(await self.client.pool_pg.fetch("SELECT * from stats WHERE remindertype = $1", 16))
+        beg = len(await self.client.pool_pg.fetch("SELECT * from stats WHERE remindertype = $1", 17))
+        dailybox = len(await self.client.pool_pg.fetch("SELECT * from stats WHERE remindertype = $1", 18))
+        horseshoe = len(await self.client.pool_pg.fetch("SELECT * from stats WHERE remindertype = $1", 19))
+        pizza = len(await self.client.pool_pg.fetch("SELECT * from stats WHERE remindertype = $1", 20))
 
         onhold = len(await self.client.pool_pg.fetch("SELECT * FROM dankreminders"))
         embed = discord.Embed(title="Dank Memer Reminder Statistics", description=f"Fetched in {round(time.perf_counter() - timecounter, 3)} seconds.", color = 0x57F0F0, timestamp= discord.utils.utcnow())
@@ -724,7 +757,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
         embed.add_field(name="Top 3 reminder users:", value=listofreminders or "None", inline=True)
         embed.add_field(name="Number of activated settings", value=str(len(await self.client.pool_pg.fetch("SELECT * FROM remindersettings"))), inline=False)
         embed.add_field(name="History statistics", value=f"Since dawn of time: `{len(alltime)}`\nPast 24 hours: `{len(twentyfourhour)}`\nPast week: `{len(week)}`\nOn hold:`{onhold}`", inline=True)
-        embed.add_field(name="History statistics",value=f"Daily: `{daily}`\nLottery: `{lottery}`\nWork: `{work}`\nApple:`{apple}`\nPatreon: `{redeem}`\nWeekly: `{weekly}`\nMonthly: `{monthly}`", inline=True)
+        embed.add_field(name="History statistics",value=f"Daily: `{daily}`\nLottery: `{lottery}`\nWork: `{work}`\nApple:`{apple}`\nPatreon: `{redeem}`\nWeekly: `{weekly}`\nMonthly: `{monthly}`\nHunt: `{hunt}`\nFish: `{fish}`\nDig: `{dig}`\nHighlow: `{highlow}`\nSnakeeyes: `{snakeeyes}`\nSearch: `{search}`\nCrime: `{crime}`\nBeg: `{beg}`\nDailybox: `{dailybox}`\nHorseshoe: `{horseshoe}`\nPizza: `{pizza}`", inline=True)
         await ctx.send(embed=embed)
 
 
