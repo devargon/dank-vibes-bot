@@ -44,17 +44,23 @@ class ErrorHandler(commands.Cog):
                 await self.client.pool_pg.execute("INSERT INTO has_cooldown_error VALUES($1)", ctx.author.id)
             await send_error(message)
         elif isinstance(error, commands.MemberNotFound):
+            ctx.command.reset_cooldown(ctx)
             await send_error("I couldn't find a member called {}.".format(error.argument))
         elif isinstance(error, commands.RoleNotFound):
+            ctx.command.reset_cooldown(ctx)
             await send_error("I couldn't find a role called {}.".format(error.argument))
         elif isinstance(error, commands.BadUnionArgument):
+            ctx.command.reset_cooldown(ctx)
             if error.converters == (discord.TextChannel, discord.VoiceChannel):
                 await send_error("I couldn't find that channel.")
         elif isinstance(error, commands.MissingRequiredArgument):
+            ctx.command.reset_cooldown(ctx)
             await send_error("{} is a required argument.".format(error.param))
         elif isinstance(error, ArgumentBaseError):
+            ctx.command.reset_cooldown(ctx)
             await send_error(error)
         elif isinstance(error, commands.BadArgument):
+            ctx.command.reset_cooldown(ctx)
             await send_error(error, delete_after=10)
         else:
             embed = discord.Embed(title="Oh no! something went wrong.", description="It has been sent to the bot developer, it'll be fixed soon.", color=discord.Color.red())
