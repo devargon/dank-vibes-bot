@@ -5,6 +5,7 @@ from io import BytesIO
 from typing import Sequence, Iterator
 from discord.ext import commands
 import inflect
+import math
 
 class plural:
     """
@@ -19,6 +20,27 @@ class plural:
         if abs(v) != 1:
             return f'{v} {plural}'
         return f'{v} {singular}'
+
+def short_time(duration:int):
+    if duration is None or duration < 1:
+        return ''
+    duration_in_mins = duration/60
+    if duration_in_mins < 1:
+        return '< 1m'
+    if duration_in_mins < 60:
+        return f'{math.ceil(duration_in_mins)}m'
+    duration_in_hours = duration_in_mins/60
+    if duration_in_hours < 1.017:
+        return '1h'
+    if duration_in_hours < 24:
+        return f'{math.ceil(duration_in_hours)}h'
+    duration_in_days = duration_in_hours/24
+    if duration_in_days < 1.05:
+        return '1d'
+    else:
+        return f'{math.ceil(duration_in_days)}d'
+
+
 
 def human_join(seq, delim=', ', final='or'):
     """
