@@ -36,7 +36,13 @@ class ErrorHandler(commands.Cog):
         elif isinstance(error, commands.CommandOnCooldown):
             if (ctx.author.id == 321892489470410763) or (ctx.author.id == 650647680837484556):
                 return await ctx.reinvoke()
-            await send_error(f"You're on cooldown. Try again in **{humanize_timedelta(seconds=error.retry_after)}**.")
+            message = f"You're on cooldown. Try again in **{humanize_timedelta(seconds=error.retry_after)}**."
+            #if ctx.command.name == "dumbfight":
+                #message += "\nPeople with **Contributor (24T)** will have a cooldown of only **30 minutes**!"
+            if not await self.client.pool_pg.fetchrow("SELECT * FROM has_cooldown_error WHERE userid = $1", ctx.author.id):
+                message += "\n\nTip: You can now view your active cooldowns with `dv.mycooldowns`."
+                await self.client.pool_pg.execute("INSERT INTO has_cooldown_error VALUES($1)", ctx.author.id)
+            await send_error(message)
         elif isinstance(error, commands.MemberNotFound):
             await send_error("I couldn't find a member called {}.".format(error.argument))
         elif isinstance(error, commands.RoleNotFound):
