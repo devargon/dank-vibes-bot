@@ -11,6 +11,7 @@ from discord.ext import commands
 from .teleport import Teleport
 from .suggestion import Suggestion
 from utils.format import ordinal
+from utils.time import humanize_timedelta
 
 footertext = {
     752403154259148810: 'stinky !! 😤',
@@ -201,13 +202,12 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
             embed.set_footer(icon_url=ctx.guild.icon.url, text=footertext[ctx.author.id]) # you can remove this if you want idk
         await ctx.send(embed=embed)
 
+    @checks.not_in_gen()
     @commands.command(name="mymessages", aliases=["messagecount", "mym"])
     async def messagecount(self, ctx, member:discord.Member = None):
         """
         Shows the number of messages a member has sent in <#608498967474601995>.
         """
-        if ctx.channel.id == 608498967474601995:
-            return await ctx.send("Please use this command in <#698462922682138654> instead!", delete_after=5.0)
         if member is None:
             member = ctx.author
         user = await self.client.pool_pg.fetchrow("SELECT * FROM messagelog WHERE user_id = $1", member.id)
@@ -221,3 +221,21 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
         embed.add_field(name="Message count", value=user.get('messagecount'), inline=True)
         embed.add_field(name="Position", value=f"{position} {'🏆' if all.index(user2) < 10 else ''}", inline=True)
         await ctx.reply(embed=embed)
+
+    @commands.command(name="cooldowns", aliases = ['mycooldowns', 'cds', 'mycds', 'cd'])
+    async def cooldowns(self, ctx):
+        """
+        Shows your active cooldowns in Dank Vibes Bot.
+        """
+        cooldownlst = []
+        for Command in self.client.commands:
+            Command._buckets._verify_cache_integrity() # removes old cooldowns
+            if len(Command._buckets._cache) and ctx.author.id in Command._buckets._cache:
+                command_cache = Command._buckets._cache[ctx.author.id]
+                duration = command_cache.get_retry_after()
+                cooldownlst.append(f"**{Command.name}**: {humanize_timedelta(seconds=duration)}")
+        #db_cds = await self.client.pool_pg.execute("SELECT ")
+        embed = discord.Embed(color=self.client.embed_color, description='\n'.join(cooldownlst) if cooldownlst else "You have no existing cooldowns!", timestamp=discord.utils.utcnow())
+        embed.set_author(name=f"{ctx.author.name}'s Cooldowns", icon_url=str(ctx.author.display_avatar.url))
+        embed.set_footer(text=ctx.guild.name,  icon_url=str(ctx.guild.icon.url))
+        await ctx.send(embed=embed)
