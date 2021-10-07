@@ -51,9 +51,10 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
         self.persistent_views_added = False
 
     def lowered_cooldown(message):
-        if discord.utils.get(message.author.roles, name="Dev"):
-            return commands.Cooldown(1, 30)
-        return commands.Cooldown(1, 60)
+        if discord.utils.get(message.author.roles, name="Contributor (24T)") or discord.utils.get(message.author.roles, name="Vibing Investor"):
+            return commands.Cooldown(1, 1800)
+        else:
+            return commands.Cooldown(1, 3600)
 
     @checks.has_permissions_or_role(administrator=True)
     @commands.dynamic_cooldown(lowered_cooldown, commands.BucketType.user)
