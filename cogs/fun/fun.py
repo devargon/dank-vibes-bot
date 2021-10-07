@@ -46,9 +46,10 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
     def __init__(self, client):
         self.client = client
         self.dmconfig = {}
-        self.mutedusers = []
+        self.mutedusers = {}
         self.scrambledusers = []
         self.persistent_views_added = False
+        self.gen_is_muted = False
 
     def lowered_cooldown(message):
         if discord.utils.get(message.author.roles, name="Contributor (24T)") or discord.utils.get(message.author.roles, name="Vibing Investor"):
@@ -63,13 +64,20 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
         """
         Mute people for a random duration between 30 to 120 seconds.
         """
+        if self.gen_is_muted:
+            ctx.command.reset_cooldown(ctx)
+            return await ctx.send("Wait until the lockdown from `dv.lockgen` is over.")
         if member is None:
+            ctx.command.reset_cooldown(ctx)
             return await ctx.send("You need to tell me who you want to dumbfight.")
-        if member.id in self.mutedusers:
-            return await ctx.send(f"**{member.display_name}** is currently muted in a dumbfight. Wait a few moments before using this command.")
+        if ctx.channel in self.mutedusers and member in self.mutedusers[ctx.channel]:
+            ctx.command.reset_cooldown(ctx)
+            return await ctx.send(f"**{member.name}** is currently muted in a dumbfight. Wait a few moments before using this command.")
         if member.bot:
+            ctx.command.reset_cooldown(ctx)
             return await ctx.send("Back off my kind. Don't dumbfight bots.")
         if member == ctx.me:
+            ctx.command.reset_cooldown(ctx)
             return await ctx.send("How do you expect me to mute myself?")
         duration = random.randint(30, 120)
         won_dumbfights = await self.client.pool_pg.fetch(
@@ -81,16 +89,15 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
         except ZeroDivisionError:
             doesauthorwin = random.choice([True, False])
         else:
-            if wonlossratio == 0:
+            if wonlossratio == 0 or wonlossratio >= 0.7 and wonlossratio <= 1.5:
                 doesauthorwin = random.choice([True, False])
             elif wonlossratio < 0.7:
                 doesauthorwin = True
-            elif wonlossratio > 1.5:
-                doesauthorwin = False
             else:
-                doesauthorwin = random.choice([True, False])
+                doesauthorwin = False
         channel = ctx.channel
         if isinstance(channel, discord.Thread):
+            ctx.command.reset_cooldown(ctx)
             return await ctx.send("Dumbfight is not supported in threads yet. Sorry >.<")
         if doesauthorwin:
             muted = member
@@ -105,7 +112,10 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
         tempoverwrite = channel.overwrites_for(muted) if muted in channel.overwrites else discord.PermissionOverwrite()
         tempoverwrite.send_messages = False
         await channel.set_permissions(muted, overwrite=tempoverwrite)
-        self.mutedusers.append(muted.id)
+        if ctx.channel in self.mutedusers:
+            self.mutedusers[ctx.channel] = self.mutedusers[ctx.channel].append(muted)
+        else:
+            self.mutedusers[ctx.channel] = [muted]
         selfmute = random.choice(['punched themselves in the face', 'kicked themselves in the knee', 'stepped on their own feet', 'punched themselves in the stomach', 'tickled themselves until they couldn\'t take it'])
         embed = discord.Embed(title="Get muted!", description = f"{ctx.author.mention} fought {member.mention} {str} them.\n{muted.mention} is now muted for {duration} seconds." if ctx.author != member else f"{ctx.author.mention} {selfmute}.\n{muted.mention} is now muted for {duration} seconds.", colour=color)
         if member.id in [650647680837484556, 321892489470410763] and muted != ctx.author:
@@ -113,8 +123,11 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
         await ctx.send(embed=embed)
         await asyncio.sleep(duration)
         await channel.set_permissions(muted, overwrite=originaloverwrite)
-        if muted.id in self.mutedusers:
-            self.mutedusers.remove(muted.id)
+        if muted in self.mutedusers[ctx.channel]:
+            if len(self.mutedusers[ctx.channel]) == 1:
+                self.mutedusers.pop(ctx.channel)
+            else:
+                self.mutedusers[ctx.channel] = self.mutedusers[ctx.channel].remove(muted)
 
     @checks.dev()
     @dumbfight.command(name="statistics", aliases = ["stats"])
@@ -233,11 +246,13 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
         authornewoverwrite.send_messages=True # this edits the author's overwrite
         newoverwrite.send_messages = False # this edits the @everyone overwrite
         authororiginaloverwrite = None if ctx.author not in genchat.overwrites else genchat.overwrites_for(ctx.author) # this is the BEFORE overwrite for an individual member, if the author already had an overwrite (such as no react) it will use that to restore, otherwise None since it won't have any overwrites in the first place
+        self.gen_is_muted = True
         try:
             await genchat.set_permissions(ctx.author, overwrite=authornewoverwrite, reason=f"Lockdown invoker gets to talk c:") # allows author to talk
             await genchat.set_permissions(ctx.guild.default_role, overwrite = newoverwrite, reason = f"5 second lockdown initiated by {ctx.author.name}#{ctx.author.discriminator}") # does not allow anyone else to talk
         except discord.Forbidden:
             ctx.command.reset_cooldown(ctx)
+            self.gen_is_muted = False
             return await ctx.send(f"I do not have the required permission to lock down **{genchat.name}**.")
         message = await ctx.send(f"✅ Locked down **{genchat.name}** for 5 seconds.")
         await asyncio.sleep(5)
@@ -245,12 +260,14 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
             await genchat.set_permissions(ctx.guild.default_role, overwrite = originaloverwrite, reason = "Lockdown over uwu") # restores
             await genchat.set_permissions(ctx.author, overwrite = authororiginaloverwrite, reason = "Overwrite no longer required") # restores
         except discord.Forbidden:
+            self.gen_is_muted = False
             return await ctx.send(f"I do not have the required permission to remove the lockdown for **{genchat.name}**.")
         else:
             try:
                 await message.add_reaction("🔓")
             except:
                 pass
+        self.gen_is_muted = False
 
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="scramble", aliases=["shuffle"])
