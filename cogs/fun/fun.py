@@ -50,22 +50,18 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
         self.scrambledusers = []
         self.persistent_views_added = False
 
+    def lowered_cooldown(message):
+        if discord.utils.get(message.author.roles, name="Dev"):
+            return commands.Cooldown(1, 30)
+        return commands.Cooldown(1, 60)
+
     @checks.has_permissions_or_role(administrator=True)
+    @commands.dynamic_cooldown(lowered_cooldown, commands.BucketType.user)
     @commands.group(name="dumbfight", aliases = ["df"], invoke_without_command=True)
     async def dumbfight(self, ctx, member: discord.Member = None):
         """
         Mute people for a random duration between 30 to 120 seconds.
         """
-        kvoterole = ctx.guild.get_role(874931276329656370)  # 874931276329656370
-        investor = ctx.guild.get_role(739199912377319427)
-        timenow = round(time.time())
-        cooldown = await self.client.pool_pg.fetchrow("SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time > $3", ctx.command.name, ctx.author.id, timenow)
-        if cooldown is not None:
-            msg = f"You're on cooldown. try again in {humanize_timedelta(seconds=(cooldown.get('time') - timenow))}.\n**{kvoterole.name}** and **{investor.name}** will have a cooldown of only 30 minutes!"
-            return await ctx.send(msg, delete_after = 10.0)
-        cooldown = await self.client.pool_pg.fetchrow("SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time < $3", ctx.command.name, ctx.author.id, timenow)
-        if cooldown:
-            await self.client.pool_pg.execute("DELETE FROM cooldowns WHERE command_name = $1 and member_id = $2 and time = $3", cooldown.get('command_name'), cooldown.get('member_id'), cooldown.get('time'))
         if member is None:
             return await ctx.send("You need to tell me who you want to dumbfight.")
         if member.id in self.mutedusers:
@@ -94,19 +90,7 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
                 doesauthorwin = random.choice([True, False])
         channel = ctx.channel
         if isinstance(channel, discord.Thread):
-            data = {
-                'user': f"{ctx.author} ({ctx.author.id})",
-                'guild': f"{ctx.guild.name} ({ctx.guild.id})",
-                'channel': f"{ctx.channel.name} ({ctx.channel.id})",
-                'message': ctx.message.content,
-                'url': ctx.message.jump_url,
-                'error': f"This person tried using dumbfight in a thread channel. The parent of the thread is {channel.parent}"
-            }
-            await ctx.send("Dumbfight is not supported in threads yet. Sorry >.<")
-            with contextlib.suppress(Exception):
-                requests.post(url='http://161.35.235.103:5000/webhook', data = json.dumps(data), headers={'Content-Type':'application/json'})
-            return
-
+            return await ctx.send("Dumbfight is not supported in threads yet. Sorry >.<")
         if doesauthorwin:
             muted = member
             color = 0x00ff00
@@ -126,8 +110,6 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
         if member.id in [650647680837484556, 321892489470410763] and muted != ctx.author:
             embed.set_footer(text="why did you dumbfight the developer :c", icon_url="https://cdn.discordapp.com/emojis/796407682764505180.png?v=1")
         await ctx.send(embed=embed)
-        cooldowntime = 1800 if kvoterole in ctx.author.roles or investor in ctx.author.roles else 3600
-        await self.client.pool_pg.execute("INSERT INTO cooldowns VALUES($1, $2, $3)", ctx.command.name, ctx.author.id, timenow + cooldowntime)
         await asyncio.sleep(duration)
         await channel.set_permissions(muted, overwrite=originaloverwrite)
         if muted.id in self.mutedusers:
