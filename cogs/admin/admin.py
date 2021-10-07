@@ -149,3 +149,76 @@ class Admin(Joining, Sticky, ServerRule, commands.Cog, name='admin', metaclass=C
             await self.client.pool_pg.execute("DELETE FROM messagelog")
             embed.color, embed.description = discord.Color.green(), "The message count has been cleared."
             await msg.edit(embed=embed)
+
+    @commands.group(invoke_without_command=True, name="messageroles")
+    @commands.has_guild_permissions(administrator=True)
+    async def messageroles(self, ctx):
+        """
+        Configure the milestones for the roles.
+        """
+        embed = discord.Embed(title=f"Dank Vibes Message Count Autorole configuration", description=f"", timestamp=discord.utils.utcnow(), color=0x57f0f0)
+        embed.add_field(name="How to configure the message count roles?",
+                        value=f"`messageroles list` shows all milestones for message count roles.\n`messageroles add [messagecount] [role]` adds a milestone for message count roles.\n`messageroles remove [messagecount]` will remove the milestone for the specified message count.")
+        embed.set_thumbnail(url=ctx.guild.icon.url)
+        embed.set_footer(text="Roles can be stated via a name, mention or ID.")
+        await ctx.send(embed=embed)
+
+    @messageroles.command(name="list", aliases = ["show"])
+    @commands.has_guild_permissions(administrator=True)
+    async def mrolelist(self, ctx):
+        """
+        Lists milestones for message count roles.
+        """
+        messagemilestones = await self.client.pool_pg.fetch("SELECT * FROM messagemilestones")
+        if len(messagemilestones) == 0:
+            embed = discord.Embed(title = "Message count milestones", description = "There are no milestones set for now. Use `messageroles add [messagecount] [role]` to add one.", color=0x57f0f0) # there are no milestones set
+            return await ctx.send(embed=embed)
+        output = ''
+        for row in messagemilestones:
+            if len(output) >= 3780:
+                embed = discord.Embed(title="Message count milestones", description=output, color=0x57f0f0)
+                await ctx.send(embed=embed)
+            role = ctx.guild.get_role(row.get('roleid'))
+            rolemention = role.mention if role is not None else "unknown-or-deleted-role"
+            output += f"**{row.get('messagecount')} messagess: **{rolemention}\n"
+        embed = discord.Embed(title="Message count milestones", description=output, color=0x57f0f0, timestamp=discord.utils.utcnow())
+        embed.set_footer(text="To edit the milestones, use the subcommands `add` and `remove`.")
+        await ctx.send(embed=embed)
+
+    @messageroles.command(name="add", aliases=["create"])
+    @commands.has_guild_permissions(administrator=True)
+    async def roleadd(self, ctx, messagecount = None, role:discord.Role = None):
+        """
+        Adds milestones for message roles.
+        """
+        if messagecount is None or role is None: # missing arguments
+            return await ctx.send("The correct usage of this command is `messageroles add [messagecount] [role]`.")
+        try:
+            messagecount = int(messagecount)
+        except ValueError:
+            return await ctx.send("`messagecount` is not a valid number.")
+        existing_milestones = await self.client.pool_pg.fetch("SELECT * FROM messagemilestones WHERE messagecount = $1", messagecount)
+        if len(existing_milestones) > 0:
+            await ctx.send(f"You have already set a milestone for **{messagecount} messages**. To set a new role, remove this milestone and add it again.")
+            return
+        await self.client.pool_pg.execute("INSERT INTO messagemilestones VALUES($1, $2)", messagecount, role.id)
+        await ctx.send(f"**Done**\n**{role.name}** will be added to a member when they have sent a message **{messagecount} time(s)**.")
+
+    @messageroles.command(name="remove", aliases=["delete"])
+    @commands.has_guild_permissions(administrator=True)
+    async def roleremove(self, ctx, messagecount=None):
+        """
+        Removes milestones for nessage count roles.
+        """
+        if messagecount is None:
+            return await ctx.send("The correct usage of this command is `messageroles remove [messagecount]`.")
+        try:
+            messagecount = int(messagecount)
+        except ValueError:
+            return await ctx.send(f"`{messagecount}` as the messagecount is not a valid number.")
+        existing_milestones = await self.client.pool_pg.fetch("SELECT * FROM messagemilestones WHERE messagecount = $1", messagecount)
+        if len(existing_milestones) == 0:
+            return await ctx.send(
+                f"You do not have a milestone set for {messagecount} messages. Use `messageroles add [messagecount] [role]` to add one.")
+        await self.client.pool_pg.execute("DELETE FROM messagemilestones WHERE messagecount = $1", messagecount) # Removes the milestone rule
+        await ctx.send(f"**Done**\nThe milestone for having sent a message **{messagecount} time(s)** has been removed.")
