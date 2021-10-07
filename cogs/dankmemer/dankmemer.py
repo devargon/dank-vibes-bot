@@ -166,7 +166,6 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
 
     @tasks.loop(seconds=1.0)
     async def dankmemerreminders(self):
-        print('?')
         try:
             await self.client.wait_until_ready()
             results = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where time < $1", round(time.time())) # all reminders that are due for reminding
