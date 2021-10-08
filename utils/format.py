@@ -21,6 +21,9 @@ class plural:
             return f'{v} {plural}'
         return f'{v} {singular}'
 
+def comma_number(number:int):
+    return "{:,}".format(number)
+
 def short_time(duration:int):
     if duration is None or duration < 1:
         return ''
