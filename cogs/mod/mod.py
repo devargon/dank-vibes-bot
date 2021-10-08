@@ -24,6 +24,52 @@ class Mod(BrowserScreenshot, lockdown, commands.Cog, name='mod'):
         self.op.add_argument('--ignore-certificate-errors')
         self.client = client
 
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name="self", aliases=["selfroles"])
+    async def selfroles(self, ctx, channel:discord.TextChannel = None):
+        """
+        Sends a message showing the 5 self roles which can be gotten via buttons.
+        """
+        roleids = [859493857061503008, 758174135276142593, 758174643814793276, 680131933778346011, 713477937130766396]#[895815546292035625, 895815588289581096, 895815773208051763, 895815799812521994, 895815832465190933]
+        role1 = ctx.guild.get_role(roleids[0])
+        role2 = ctx.guild.get_role(roleids[1])
+        role3 = ctx.guild.get_role(roleids[2])
+        role4 = ctx.guild.get_role(roleids[3])
+        role5 = ctx.guild.get_role(roleids[4])
+        if role1 == None or role2 == None or role3 == None or role4 == None or role5 == None:
+            return await ctx.send("1 or more roles in this command is/are declared as invalid, hence the command cannot proceed.")
+        roles = [role1, role2, role3, role4, role5]
+        if channel is None:
+            channel = ctx.channel
+        class selfroles(discord.ui.View):
+            def __init__(self, ctx: DVVTcontext, client, timeout):
+                self.context = ctx
+                self.response = None
+                self.result = None
+                self.client = client
+                super().__init__(timeout=timeout)
+                emojis = ["<a:dv_wStarOwO:837787067303198750>", "<a:dv_wHeartsOwO:837787079320666138>", "<a:dv_wSparklesOwO:837782054782632006>", "<a:dv_wpinkHeartOwO:837781949337960467>", "<:dv_wFlowerOwO:837700860511256627>"]
+                rolenames = []
+                for role in roles:
+                    rolenames.append(role.name)
+
+                class somebutton(discord.ui.Button):
+                    async def callback(self, interaction: discord.Interaction):
+                        print(str(self.emoji))
+                        print(emojis.index(str(self.emoji)))
+                        target_role = roles[emojis.index(str(self.emoji))]
+                        if target_role in interaction.user.roles:
+                            await interaction.user.remove_roles(target_role, reason="Selfrole")
+                            await interaction.response.send_message(f"The role **{target_role.name}** has been removed from you.", ephemeral=True)
+                        else:
+                            await interaction.user.add_roles(target_role, reason="Selfrole")
+                            await interaction.response.send_message(f"The role **{target_role.name}** has been added to you.", ephemeral=True)
+                        #await update_roles(self.emoji)
+                for emoji in emojis:
+                    self.add_item(somebutton(emoji=discord.PartialEmoji.from_str(emoji), label=rolenames[emojis.index(emoji)], style=discord.ButtonStyle.grey))
+        await channel.send("Press the button to claim your role.", view=selfroles(ctx, self.client, None))
+
+
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="getraw", aliases = ['raw', 'rawmessage'])
     async def getrawmessage(self, ctx, message_id=None, channel:discord.TextChannel=None):
@@ -57,14 +103,14 @@ class Mod(BrowserScreenshot, lockdown, commands.Cog, name='mod'):
             await ctx.send("Wanted to check another member, and not yourself? You need to include a member.\nUsage of command: `memberpvc [channel]`")
             member = ctx.author
         # categoryids = [869943348608270446] this is for my server
-        categoryids = [802467427208265728, 763457841133912074, 789195494664306688, 783299769580781588, 805052824185733120, 834696686923284510, 847897065081274409] # this is for dv (all the category IDs for the VIP channels) 
+        categoryids = [802467427208265728, 763457841133912074, 789195494664306688, 783299769580781588, 805052824185733120, 834696686923284510, 847897065081274409] # this is for dv (all the category IDs for the VIP channels)
         categories = []
         for categoryid in categoryids:
             category = discord.utils.find(lambda m: m.id == categoryid, ctx.guild.categories)
             if category is None:
                 await ctx.send(f"I could not find a category for the ID {category}")
             else:
-                categories.append(category) # gets all the categories for channels 
+                categories.append(category) # gets all the categories for channels
         accessiblechannels = []
         for category in categories:
             for channel in category.channels:
@@ -85,55 +131,3 @@ class Mod(BrowserScreenshot, lockdown, commands.Cog, name='mod'):
         embed = discord.Embed(title=f"Channels that {member.name}#{member.discriminator} can access",
                             description=streeng, color=0x57f0f0)
         await ctx.send(embed=embed)
-
-    @checks.is_bav_or_mystic()
-    @commands.command(name="gcheck", brief = "Reminds DV Grinders that the requirement has been checked.", description = "Reminds DV Grinders that the requirement has been checked.")
-    async def gcheck(self, ctx):
-        """
-        Reminds DV Grinders that the requirement has been checked.
-        """
-        grinderrole = ctx.guild.get_role(859494328422367273)
-        tgrinderrole = ctx.guild.get_role(827270880182009956)
-        if grinderrole is None or tgrinderrole is None:
-            return await ctx.send("One or more roles declared in this command are invalid, hence the command cannot proceed.")
-        grinders = [member for member in ctx.guild.members if grinderrole in member.roles or tgrinderrole in member.roles] # gets all grinders
-        if len(grinders) == 0:
-            return await ctx.send("There are no grinders to be DMed.")
-        hiddengrinders = len(grinders) - 20 #number of grinders that will be hidden in "and ... more"
-        message = ""
-        while len(message) < 3700 and len(grinders) > hiddengrinders and len(grinders) > 0:
-            member = grinders.pop(0)
-            message += f"{member}\n" # add grinders name to embed
-        if len(grinders) != 0:
-            message += f"And **{len(grinders)}** more."
-        confirmview = confirm(ctx, self.client, 15.0)
-        embed = discord.Embed(title="DM Grinders?", description = f"I will be DMing these members with the {grinderrole.mention} and {tgrinderrole.mention} role to update them about the grinder check:\n\n{message}\n\nAre you sure?", color=0x57F0F0)
-        message = await ctx.send(embed=embed, view=confirmview)
-        confirmview.response = message
-        await confirmview.wait()
-        if confirmview.returning_value is None:
-            embed.description = "Action cancelled."
-            embed.color = discord.Color.red()
-            return await message.edit(content="You didn't click on a button on time. Do you know how to click buttons?", embed=embed)
-        if confirmview.returning_value == False:
-            embed.description = "Action cancelled."
-            embed.color = discord.Color.red()
-            return await message.edit(content="Command stopped.", embed=embed)
-        if confirmview.returning_value == True:
-            msg = await ctx.send("<a:typing:839487089304141875> DMing grinders... ")
-            embed = discord.Embed(title="DV Grinders Team", description=f"<a:dv_pointArrowOwO:837656328482062336> The daily grinder requirement has been checked.\n<a:dv_pointArrowOwO:837656328482062336> <#862574856846704661> is now unlocked and you may send the cash to `Dank Vibes Holder#2553`\n<a:dv_pointArrowOwO:837656328482062336> The next requirement check will take place in about <t:{round(time.time())+86400}:R> ( i.e between 1:30 and 3:30 GMT)", color=0x57F0F0)
-            embed.set_thumbnail(url="https://cdn.discordapp.com/icons/595457764935991326/a_58b91a8c9e75742d7b423411b0205b2b.gif")
-            embed.set_footer(text="DM/Ping TheMysticLegacy#0001 or Bav#0507 if you have any queries.",icon_url=ctx.guild.icon.url)
-            success = 0
-            grinders = [member for member in ctx.guild.members if grinderrole in member.roles or tgrinderrole in member.roles] # gets the grinder list again since the earlier one was popped
-            faileddms = []
-            for grinder in grinders:
-                try:
-                    await grinder.send(f"Hello {grinder.name}! I have a message for you:" if grinder.id != 709350868733919314 else f"Hello {grinder.name}! I have a message for you:\n||btw haii wiz uwu <a:dv_nekoWaveOwO:837756827255963718>- argon||", embed=embed) # hehe
-                    success += 1
-                except discord.Forbidden:
-                    faileddms.append(grinder.mention) # gets list of people who will be pinged later
-            if len(faileddms) > 0:
-                channel = self.client.get_channel(862574856846704661)
-                await channel.send(f"{' '.join(faileddms)}\n<a:dv_pointArrowOwO:837656328482062336> The daily grinder requirement has been checked.\n<a:dv_pointArrowOwO:837656328482062336> <#862574856846704661> is now unlocked and you may send the cash to `Dank Vibes Holder#2553`\n<a:dv_pointArrowOwO:837656328482062336> The next requirement check will take place in about <t:{round(time.time())+86400}:R> ( i.e between 1:30 and 3:30 GMT).")
-            await msg.edit(content=f"DMed {success} members successfully, the rest were pinged in <#862574856846704661>.")
