@@ -23,7 +23,7 @@ footertext = {
     650647680837484556: 'wow, the cleanest human has summoned me',
     406748083377012746: 'jitu :)',
     436720581501517824: 'clayde nice pfp',
-    493063931191885825: 'Doryyy :D',
+    493063931191885825: 'the nicest human on earth :3',
     515725341910892555: 'no you are not getting su perms ven',
     642318626044772362: 'sussy amogus impostor',
     752242566493372539: 'ley please tell blu to be less stinky ty',
