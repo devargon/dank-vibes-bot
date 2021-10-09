@@ -97,6 +97,18 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
             if silently:
                 with contextlib.suppress(discord.HTTPException):
                     await ctx.message.delete()
+            votingvibes = self.client.get_channel(754725833540894750)
+            embed = discord.Embed(title=f"{ctx.me.name} is going offline in a short while to apply some updates.", description="", color=self.client.embed_color, timestamp=discord.utils.utcnow())
+            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/837698540217303071.png?size=96")
+            if votingvibes is not None:
+                embed.description = "During the downtime, your votes might not be tracked. If it has been an hour after the downtime and your vote is not recorded, please let a moderator know in <#870880772985344010> when I'm back up again!"
+                embed.footer.text = "Thank you for voting! :)"
+                await votingvibes.send(embed=embed)
+            grindchannel = self.client.get_channel(862574856846704661)
+            if grindchannel is not None:
+                embed.description = "During the downtime, I can't track your grinder donations. Please send your 5,000,000 coins when I'm back online!"
+                embed.footer.text = "Thank you for being a DV Grinder!"
+                await grindchannel.send(embed=embed)
             await self.client.shutdown()
         except Exception as e:
             await ctx.send("Error while disconnecting",delete_after=3)
