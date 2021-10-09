@@ -247,9 +247,23 @@ class Admin(Joining, Sticky, ServerRule, commands.Cog, name='admin', metaclass=C
             return await ctx.send("I can't find any roles to remove.")
         removable = [role for role in staffroles if role in member.roles]
         tupremove = tuple(removable)
-        await member.remove_roles(*tupremove, reason=f"Demoted by {ctx.author}")
-        await ctx.send(f"{member.mention} has been demoted for 30 seconds. Their removed roles are: **{', '.join(role.name for role in tupremove)}**")
-        await member.send(f"Alas! Due to you misbehaving, you have been demoted by **{ctx.author}**. You no longer have the roles: **{', '.join(role.name for role in tupremove)}**. \nYour roles might be readded afterwards. Or will they? <:dv_bShrugOwO:837687264263798814>")
+        msg = await ctx.send(f"**Demoting {member.mention}...**")
+        async with ctx.typing():
+            try:
+                await member.remove_roles(*tupremove, reason=f"Demoted by {ctx.author}")
+            except Exception as e:
+                return await msg.edit(content=f"There was an issue with removing roles. I've temporarily stopped demoting {member}. More details: {e}")
+        try:
+            await msg.edit(content=f"{member.mention} has been demoted for 30 seconds. Their removed roles are: **{', '.join(role.name for role in tupremove)}**")
+        except discord.NotFound:
+            await ctx.send(f"{member.mention} has been demoted for 30 seconds. Their removed roles are: **{', '.join(role.name for role in tupremove)}**")
+        try:
+            await member.send(f"Alas! Due to you misbehaving, you have been demoted by **{ctx.author}**. You no longer have the roles: **{', '.join(role.name for role in tupremove)}**. \nYour roles might be readded afterwards. Or will they? <:dv_bShrugOwO:837687264263798814>")
+        except:
+            pass
         await asyncio.sleep(30.0)
-        await member.add_roles(*tupremove, reason=f"Demotion reversed automatically")
+        try:
+            await member.add_roles(*tupremove, reason=f"Demotion reversed automatically")
+        except Exception as e:
+            return await ctx.send(f"There was an issue with adding roles. I've temporarily stopped promoting {member}. More details: {e}")
         return await ctx.send(f"{member.mention} congratulations on your promotion to:  **{', '.join(role.name for role in tupremove)}**!")
