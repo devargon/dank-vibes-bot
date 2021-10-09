@@ -24,6 +24,7 @@ from.logging import Logging
 from utils.converters import MemberUserConverter, TrueFalse
 from typing import Optional, Union
 from utils.menus import CustomMenu
+import random
 
 
 class Suggestion(menus.ListPageSource):
@@ -474,3 +475,19 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
                 embed.add_field(name="Suggested by", value=f"{member} ({member.id})" if member else result.get('user_id', inline=True))
                 embed.add_field(name="Status", value="Closed" if result.get('finish') else "Open", inline=True)
                 await ctx.send(embed=embed)
+
+    @checks.dev()
+    @commands.command(name="gayrate")
+    async def gayrate(self, ctx, member:discord.Member = None):
+        if member is None:
+            member = ctx.author
+        if member.id == 560251854399733760:
+            return await ctx.send("I'd better not say it out... <a:dv_qbShockedOwO:837773861822136330>")
+        if member.id == 650647680837484556:
+            gayrate = 100
+        else:
+            gayrate = random.randint(0, 100)
+        embed = discord.Embed(title=f"{ctx.me.name} Gayrate Calculator", description=f"{member.mention} is {gayrate}% gay. 🏳️‍🌈", color=self.client.embed_color)
+        if member.id == 650647680837484556:
+            embed.set_footer(text='this is rigged btw')
+        await ctx.send(embed=embed)
