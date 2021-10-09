@@ -1,5 +1,5 @@
 import asyncio
-
+import os
 import aiohttp
 import discord
 import contextlib
@@ -14,16 +14,17 @@ import time
 from utils.format import comma_number
 from utils.buttons import confirm
 
-guildid = 871734809154707467 #595457764935991326
-tgrinderroleID = 896052592797417492 # 827270880182009956
-grinderroleID = 896052612284166204 #859494328422367273
+guildid = 871734809154707467 if os.name == "nt" else 595457764935991326
+tgrinderroleID = 896052592797417492 if os.name == "nt" else 827270880182009956
+grinderroleID = 896052612284166204 if os.name == "nt" else 859494328422367273
 mystic = 719890992723001354
 bav = 542447261658120221
 argon = 650647680837484556
-donochannel = 896068443093229579# 862574856846704661
-mysticchannel = 871737332431216661# 794623273819439134
-holder = 827080569501777942# 798238834340528149
-webhook_url = 'https://canary.discord.com/api/webhooks/896095030970818622/kI5DdgTRxbfkDS-xdoULPpDqan1nDpRexe6g8D4K5c-Dw5Rn-RLKyUBRCkesLhBwgO_p' #???
+donochannel = 896068443093229579 if os.name == "nt" else 862574856846704661
+mysticchannel = 871737332431216661 if os.name == "nt" else 794623273819439134
+holder = 827080569501777942 if os.name == "nt" else 798238834340528149
+grinderlogID = 896068443093229579 if os.name == "nt" else 862433139921911809
+webhook_url = 'https://canary.discord.com/api/webhooks/896095030970818622/kI5DdgTRxbfkDS-xdoULPpDqan1nDpRexe6g8D4K5c-Dw5Rn-RLKyUBRCkesLhBwgO_p' if os.name == 'nt' else 'https://ptb.discord.com/api/webhooks/896106637541142558/mQ6wq5MvdoywSAuGlOrMCZIf068y5Ao73B9kOdyT16UBCp2m9A7vQRQThtHvbmP4a_mT'
 
 class GrinderLeaderboard(menus.ListPageSource):
     def __init__(self, entries, title):
@@ -74,7 +75,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         """
         if member is None or ctx.author.id not in [argon, bav, mystic] or ctx.author.guild_permissions.manage_roles != True:
             member = ctx.author
-        if not (ctx.author.id == argon or ctx.author.guild_permissions.manage_roles==True or discord.utils.get(ctx.author.roles, id=grinderroleID) or discord.utils.get(ctx.author.roles, id=tgrinderroleID)):
+        if not (ctx.author.id == argon or ctx.author.guild_permissions.manage_roles==True or discord.utils.get(ctx.author.roles, id=grinderroleID) or discord.utils.get(ctx.author.roles, id=tgrinderroleID) or ctx.author.id in [argon, bav, mystic] ):
             return await ctx.send("You need to be a **Grinder**/**Trial Grinder** to use this command.")
         result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
         embed = discord.Embed(color=self.client.embed_color, timestamp=discord.utils.utcnow())
@@ -82,22 +83,18 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         embed.add_field(name='Last Logged', value=f"<t:{result.get('last_dono_time')}>\n[Jump to logged message]({result.get('last_dono_msg')})" if result else "[<t:0>](https://www.youtube.com/watch?v=dQw4w9WgXcQ)", inline=True)
         embed.add_field(name='Has fufilled requirement?', value='<:DVB_True:887589686808309791> Yes' if (result and result.get('today') >= 5000000) else f"<:DVB_False:887589731515392000> No\nTo complete your requirement, you have to send `⏣ {comma_number(5000000-result.get('today'))}` with tax to {self.client.get_user(holder)}.", inline=False)
         embed.set_author(name=str(member), icon_url=member.display_avatar.url)
+        embed.set_thumbnail(url=ctx.guild.icon.url)
         embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon.url)
         await ctx.send(embed=embed)
 
     @checks.is_bav_or_mystic()
-    @commands.group(name="grinder", aliases = ['g'], invoke_without_command=True)
-    async def grinder(self, ctx):
-        """
-        Base command for managing grinder data.
-        """
-        return await ctx.help()
-
-    @checks.is_bav_or_mystic()
-    @grinder.command(name="edit")
+    @commands.command(name="gedit")
     async def grinder_add(self, ctx, member: discord.Member = None, number: int = None):
+        """
+        Adds or removes a certain amount of coins from a grinder's data. To change it to a specific amount, use `g set` instead.
+        """
         if member is None or number is None:
-            return await ctx.send("The correct usage of this command is `g add [member] [amount to add]`.")
+            return await ctx.send("The correct usage of this command is `g edit [member] [amount to add]`.")
         confirmview = confirm(ctx, self.client, 10.0)
         embed = discord.Embed(title="Action awaiting confirmation", description=f"Do you want this amount to be added to {member}'s daily, weekly and monthly stats? Otherwise, it will only be added in 'all time'.", color=self.client.embed_color)
         message = await ctx.send(embed=embed, view=confirmview)
@@ -120,6 +117,34 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                 await self.client.pool_pg.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)", member.id, number, number, 0, number, number, round(time.time()), ctx.message.jump_url)
             else:
                 await self.client.pool_pg.execute("UPDATE grinderdata SET today = $1, past_week = $2, last_week = $3, past_month = $4, all_time = $5, last_dono_time = $6, last_dono_msg = $7 WHERE user_id = $8", result.get('today') + number, result.get('past_week') + number, result.get('last_week'), result.get('past_month') + number, result.get('all_time') + number, round(time.time()), ctx.message.jump_url, member.id)
+            await message.edit(embed=embed)
+
+    @checks.is_bav_or_mystic()
+    @commands.command(name="gset")
+    async def grinder_set(self, ctx, member: discord.Member = None, number: int = None):
+        """
+        Sets the coins a grinder has donated to a specific amount. To add or remove coins, use `g edit` instead.
+        """
+        if member is None or number is None:
+            return await ctx.send("The correct usage of this command is `g set [member] [amount to add]`.")
+        confirmview = confirm(ctx, self.client, 10.0)
+        embed = discord.Embed(title="Action awaiting confirmation", description=f"Do you want {member}'s all time coins donated to be `⏣ {comma_number(number)}`? This will not change their daily, weekly and monthly statistics (to ensure consistency accross the data).", color=self.client.embed_color)
+        message = await ctx.send(embed=embed, view=confirmview)
+        confirmview.response = message
+        await confirmview.wait()
+        if confirmview.returning_value is None:
+            embed.color, embed.description = discord.Color.red(), "Action timeout. Nothing has been done."
+            return await message.edit(embed=embed)
+        result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
+        if confirmview.returning_value == False:
+            embed.color, embed.description = discord.Color.red(), f"Action cancelled."
+            return await message.edit(embed=embed)
+        elif confirmview.returning_value == True:
+            embed.color, embed.description = discord.Color.green(), f"All of {member}'s grinder statistics has been updated."
+            if result is None:
+                await self.client.pool_pg.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)", member.id, 0, 0, 0, 0, number, round(time.time()), ctx.message.jump_url)
+            else:
+                await self.client.pool_pg.execute("UPDATE grinderdata SET all_time = $1, last_dono_time = $2, last_dono_msg = $3 WHERE user_id = $4", number, round(time.time()), ctx.message.jump_url, member.id)
             await message.edit(embed=embed)
 
 
@@ -172,12 +197,16 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                 await self.client.pool_pg.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)", userid, amt, amt, 0, amt, amt, round(time.time()), message.jump_url)
             else:
                 await self.client.pool_pg.execute("UPDATE grinderdata SET today = $1, past_week = $2, past_month = $3, all_time = $4, last_dono_time = $5, last_dono_msg = $6 WHERE user_id = $7", result.get('today') + amt, result.get('past_week') + amt, result.get('past_month') + amt, result.get('all_time') + amt, round(time.time()), message.jump_url, userid)
+            total = await self.client.pool_pg.fetchrow("SELECT SUM(all_time) FROM grinderdata")
+            logembed = discord.Embed(description=f"**Grinder**: {member.mention}\n**Amount**: `⏣ {amt}`\nClick [here]({message.jump_url}) to view.\n`⏣ {comma_number(int(total.get('sum')))}` total grinded by grinders!", color=self.client.embed_color, timestamp=discord.utils.utcnow())
+            logembed.set_footer(text=f"{message.guild.name} Grinder Log", icon_url=message.guild.icon.url)
+            await self.client.get_channel(grinderlogID).send(f"A grinder transasction by `{member} ({member.id})` has been logged.", embed=logembed)
             await message.channel.send(f"{member.mention}, I have logged your transfer of **⏣ {amt}** to {dankholder}.")
             if result.get('today') + amt >= 5000000:
                 try:
-                    await member.send("You have completed your Grinder requirement for today! I will notify you when you can submit your next ⏣ 5,000,000 again.")
+                    await member.send("<:DVB_True:887589686808309791> You have completed your Grinder requirement for today! I will notify you when you can submit your next ⏣ 5,000,000 again.")
                 except:
-                    await message.channel.send(f"{member.mention} You have completed your Grinder requirement for today! I will notify you when you can submit your next ⏣ 5,000,000 again.")
+                    await message.channel.send(f"{member.mention} <:DVB_True:887589686808309791> You have completed your Grinder requirement for today! I will notify you when you can submit your next ⏣ 5,000,000 again.")
 
     @checks.is_bav_or_mystic()
     @commands.command(name="gdm", brief="Reminds DV Grinders that the requirement has been checked.",
@@ -234,9 +263,11 @@ class Grinderutils(commands.Cog, name='grinderutils'):
 <:DVB_start_complete:895172800627769447> Checking daily requirement 
 <:DVB_middle_incomplete:895172800430620742> <a:typing:839487089304141875> **Updating statistics** 
 <:DVB_end_incomplete:895172799923109919> Notifying grinders and sending a summary""")
+            if discord.utils.utcnow().day == 1:
+                await self.client.pool_pg.execute("UPDATE grinderdata SET past_month = $1", 0)
             if discord.utils.utcnow().weekday() == 6:
                 week_values = []
-                all = await self.client.pool_pg.execute("SELECT user_id, past_week FROM grinderdata")
+                all = await self.client.pool_pg.fetch("SELECT user_id, past_week FROM grinderdata")
                 if all is not None:
                     for a in all:
                         if ctx.guild.get_member(a.get('user_id')) in grinders:
@@ -269,7 +300,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             async with aiohttp.ClientSession() as session:
                 webhook = Webhook.from_url(webhook_url, session=session)
 #            reportchannel = self.client.get_channel(mysticchannel)
-                await webhook.send("**__DV GRINDERS REQ SUMMARY__**", username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
+                await webhook.send(f"**__DV GRINDERS REQ SUMMARY__** (on <t:{round(time.time())}:F>)", username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
                 for dat in completed_req:
                     if len(content) < 1800:
                         content += f"\n<:DVB_True:887589686808309791> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
@@ -286,7 +317,8 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             await msg.edit(content="""
 <:DVB_start_complete:895172800627769447> Checking daily requirement 
 <:DVB_middle_complete:895172800627769444> Updating statistics
-<:DVB_end_complete:895172800082509846> Notifying grinders and sending a summary""")
+<:DVB_end_complete:895172800082509846> Notifying grinders and sending a summary
+Done! Note: People who **did not** complete the req won't be told they didn't complete it. Otherwise, I would've told them that they had completed the req.""")
 
 
     @commands.command(name='grinderleaderboard', aliases=['glb', 'grinderlb'])
@@ -297,7 +329,10 @@ class Grinderutils(commands.Cog, name='grinderutils'):
 
         `dv.grinderleaderboard daily` for today's Grinder leaderboard.
         `dv.grinderleaderboard weekly` for this week's Grinder leaderboard.
+        `dv.grinderleaderboard last week` for last week's Grinder leaderboard
         `dv.grinderleaderboard monthly` for this month's Grinder leaderboard.
+
+        You can also specify how many grinders you want to show on the leaderboard.
         """
         async with ctx.typing():
             arg = "total 5" if arg is None else arg
@@ -309,6 +344,9 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             elif 'weekly' in arg.lower() or 'week' in arg.lower():
                 title = "This week's Grinder leaderboard"
                 query = "SELECT user_id, past_week FROM grinderdata ORDER BY past_week DESC LIMIT $1"
+            elif 'weekly' in arg.lower() or 'week' in arg.lower():
+                title = "Last week's Grinder leaderboard"
+                query = "SELECT user_id, past_week FROM grinderdata ORDER BY last_week DESC LIMIT $1"
             elif 'monthly' in arg.lower():
                 title = "This Month's Grinder leaderboard"
                 query = "SELECT user_id, past_month FROM grinderdata ORDER BY past_month DESC LIMIT $1"
