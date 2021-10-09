@@ -2,9 +2,7 @@ import asyncio
 import os
 import aiohttp
 import discord
-import contextlib
 from typing import Optional
-from datetime import datetime, timedelta
 from utils.menus import CustomMenu
 from discord import Webhook
 from discord.ext import commands, menus, tasks
