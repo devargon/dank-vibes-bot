@@ -122,7 +122,7 @@ class Admin(Joining, Sticky, ServerRule, commands.Cog, name='admin', metaclass=C
         if len(result) == 0:
             return await ctx.send(f"No configuration for DM and nickname requests have been set yet. ")
         else:
-            await ctx.send(embed=discord.Embed(title=f"Configurations for {ctx.guild.name}", description = f"Nickname requests: {ctx.guild.get_channel(result.get('nicknamechannel_id'))}\nDM requests: {ctx.guild.get_channel(result.get('dmchannel_id'))}", color = 0x57F0F0))
+            await ctx.send(embed=discord.Embed(title=f"Configurations for {ctx.guild.name}", description = f"Nickname requests: {ctx.guild.get_channel(result.get('nicknamechannel_id'))}\nDM requests: {ctx.guild.get_channel(result.get('dmchannel_id'))}", color = self.client.embed_color))
 
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="messagereset", aliases=["mreset"], invoke_without_command=True)
@@ -156,7 +156,7 @@ class Admin(Joining, Sticky, ServerRule, commands.Cog, name='admin', metaclass=C
         """
         Configure the milestones for the roles.
         """
-        embed = discord.Embed(title=f"Dank Vibes Message Count Autorole configuration", description=f"", timestamp=discord.utils.utcnow(), color=0x57f0f0)
+        embed = discord.Embed(title=f"Dank Vibes Message Count Autorole configuration", description=f"", timestamp=discord.utils.utcnow(), color=self.client.embed_color)
         embed.add_field(name="How to configure the message count roles?",
                         value=f"`messageroles list` shows all milestones for message count roles.\n`messageroles add [messagecount] [role]` adds a milestone for message count roles.\n`messageroles remove [messagecount]` will remove the milestone for the specified message count.")
         embed.set_thumbnail(url=ctx.guild.icon.url)
@@ -171,17 +171,17 @@ class Admin(Joining, Sticky, ServerRule, commands.Cog, name='admin', metaclass=C
         """
         messagemilestones = await self.client.pool_pg.fetch("SELECT * FROM messagemilestones")
         if len(messagemilestones) == 0:
-            embed = discord.Embed(title = "Message count milestones", description = "There are no milestones set for now. Use `messageroles add [messagecount] [role]` to add one.", color=0x57f0f0) # there are no milestones set
+            embed = discord.Embed(title = "Message count milestones", description = "There are no milestones set for now. Use `messageroles add [messagecount] [role]` to add one.", color=self.client.embed_color) # there are no milestones set
             return await ctx.send(embed=embed)
         output = ''
         for row in messagemilestones:
             if len(output) >= 3780:
-                embed = discord.Embed(title="Message count milestones", description=output, color=0x57f0f0)
+                embed = discord.Embed(title="Message count milestones", description=output, color=self.client.embed_color)
                 await ctx.send(embed=embed)
             role = ctx.guild.get_role(row.get('roleid'))
             rolemention = role.mention if role is not None else "unknown-or-deleted-role"
             output += f"**{row.get('messagecount')} messagess: **{rolemention}\n"
-        embed = discord.Embed(title="Message count milestones", description=output, color=0x57f0f0, timestamp=discord.utils.utcnow())
+        embed = discord.Embed(title="Message count milestones", description=output, color=self.client.embed_color, timestamp=discord.utils.utcnow())
         embed.set_footer(text="To edit the milestones, use the subcommands `add` and `remove`.")
         await ctx.send(embed=embed)
 
