@@ -19,6 +19,7 @@ import aiohttp
 import contextlib
 import requests
 import json
+from utils.errors import ArgumentBaseError
 
 blacklisted_words = ['N-renoteQ3R', 'n.i.g.g.e.r', 'n i g a', 'nygga', 'niuggers', 'nigger',
                      'https://discordnitro.link/stearncommunity', 'kill yourself', 'figgot', 'ching chong',
@@ -56,6 +57,14 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
             return commands.Cooldown(1, 1800)
         else:
             return commands.Cooldown(1, 3600)
+
+    async def cog_check(self, ctx):
+        if ctx.author.id == 6506476808374845566:
+            return True
+        else:
+            if discord.utils.get(ctx.author.roles, name="No Tags"):
+                raise ArgumentBaseError(message="You have been stunned (or you're restricted from using Carl-bot tags) and can't use any commands at the moment. <:dv_pepeHahaUSuckOwO:837653798313918475>")
+        return True
 
     @checks.has_permissions_or_role(administrator=True)
     @commands.dynamic_cooldown(lowered_cooldown, commands.BucketType.user)
