@@ -16,13 +16,27 @@ from utils import checks
 from .status import Status
 from .botutils import BotUtils
 from contextlib import redirect_stdout
-from discord.ext import commands
+from discord.ext import commands, menus
 from .cog_manager import CogManager
 from utils.format import pagify, TabularData, plural, text_to_file
 from .maintenance import Maintenance
 from.logging import Logging
 from utils.converters import MemberUserConverter, TrueFalse
 from typing import Optional, Union
+from utils.menus import CustomMenu
+
+
+class Suggestion(menus.ListPageSource):
+    def __init__(self, entries, title):
+        self.title = title
+        super().__init__(entries, per_page=10)
+
+    async def format_page(self, menu, entries):
+        embed = discord.Embed(title=self.title, color=menu.ctx.bot.embed_color, timestamp=discord.utils.utcnow())
+        for entry in entries:
+            embed.add_field(name=f"{entry[0]}", value=entry[1], inline=False)
+        embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        return embed
 
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     """
@@ -410,3 +424,41 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
         """
         await ctx.send("Mimicking an error...")
         raise ValueError(message)
+
+    @checks.dev()
+    @commands.command(name="suggestions")
+    async def active_suggestions(self, ctx, query = None):
+        """
+        Lists the active suggestions.
+        the query can be a suggestion ID or `--active`
+        """
+        if query is None:
+            return await ctx.help()
+        try:
+            query = int(query)
+        except ValueError:
+            if ctx.message.content.endswith("--active"):
+                result = await self.client.pool_pg.fetch("SELECT * FROM suggestions WHERE finish = $1", False)
+                suggestions = []
+                for suggestion in result:
+                    member = ctx.guild.get_member(suggestion.get('user_id'))
+                    name = f"{suggestion.get('suggestion_id')}. {member} ({member.id})" if member is not None else suggestion.get('user_id')
+                    suggestions.append((name, suggestion.get('suggestion')))
+                if len(suggestions) <= 10:
+                    embed = discord.Embed(title="Active suggestions", color=self.client.embed_color, timestamp=discord.utils.utcnow())
+                    for suggestion in suggestions:
+                        embed.add_field(name=suggestion[0], value=suggestion[1], inline=False)
+                    return await ctx.send(embed=embed)
+                else:
+                    pages = CustomMenu(source=Suggestion(suggestions, "Active suggestions"), clear_reactions_after=True, timeout=60)
+                    return await pages.start(ctx)
+        else:
+            result = await self.client.pool_pg.fetchrow("SELECT * FROM suggestions WHERE suggestion_id = $1", query)
+            if result is None:
+                return await ctx.send(f"There is no such suggestion with the ID {query}.")
+            else:
+                member = ctx.guild.get_member(result.get('user_id'))
+                embed = discord.Embed(title=f"Suggestion {query}", description = result.get('suggestion'), color=self.client.embed_color)
+                embed.add_field(name="Suggested by", value=f"{member} ({member.id})" if member else result.get('user_id', inline=True))
+                embed.add_field(name="Status", value="Closed" if result.get('finish') else "Open", inline=True)
+                await ctx.send(embed=embed)
