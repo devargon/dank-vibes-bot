@@ -59,7 +59,7 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
             return commands.Cooldown(1, 3600)
 
     async def cog_check(self, ctx):
-        if ctx.author.id == 6506476808374845566:
+        if ctx.author.id == 650647680837484556 or ctx.author.guild_permissions.administrator == True:
             return True
         else:
             if discord.utils.get(ctx.author.roles, name="No Tags"):
