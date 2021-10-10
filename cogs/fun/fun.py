@@ -78,7 +78,7 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
             return await ctx.send("Wait until the lockdown from `dv.lockgen` is over.")
         if member is None:
             ctx.command.reset_cooldown(ctx)
-            return await ctx.send("You need to tell me who you want to dumbfight.")
+            return await ctx.send(f" {ctx.author} would like to show you that he is able to dumbfight you, although they could've just dumbfought you already. <:dv_pepeHahaUSuckOwO:837653798313918475>\nThat being said, {ctx.author.mention} you need to tell me who you want to dumbfight.")
         if ctx.channel in self.mutedusers and member in self.mutedusers[ctx.channel]:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"**{member.name}** is currently muted in a dumbfight. Wait a few moments before using this command.")
