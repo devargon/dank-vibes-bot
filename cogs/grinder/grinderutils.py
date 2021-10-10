@@ -297,20 +297,27 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             content = ''
             async with aiohttp.ClientSession() as session:
                 webhook = Webhook.from_url(webhook_url, session=session)
-#            reportchannel = self.client.get_channel(mysticchannel)
+                reportchannel = self.client.get_channel(896693789312319508)
+                await reportchannel.send(f"**__DV GRINDERS REQ SUMMARY__** (on <t:{round(time.time())}:F>)")
                 await webhook.send(f"**__DV GRINDERS REQ SUMMARY__** (on <t:{round(time.time())}:F>)", username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
                 for dat in completed_req:
                     if len(content) < 1800:
                         content += f"\n<:DVB_True:887589686808309791> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
                     else:
+                        print('1')
+                        await reportchannel.send(content)
+                        print('2')
                         await webhook.send(content, username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
                         content = f"\n<:DVB_True:887589686808309791> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
                 for dat in not_complete:
                     if len(content) < 1800:
                         content += f"\n<:DVB_False:887589731515392000> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
                     else:
+                        await reportchannel.send(content)
                         await webhook.send(content, username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
                         content = f"\n<:DVB_False:887589731515392000> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
+                        await reportchannel.send(content)
+                await reportchannel.send(content)
                 await webhook.send(content, username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
             await msg.edit(content="""
 <:DVB_start_complete:895172800627769447> Checking daily requirement 
