@@ -43,6 +43,8 @@ class OwO(commands.Cog, name='owo'):
             msg = msg.strip('owo').split()
             if len(msg) != 0 and msg[0] in self.owo_commands:
                 return False
+            if msg == "dv.owoc":
+                return False
             return True
         if 'uwu' in msg:
             return True
