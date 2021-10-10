@@ -320,7 +320,6 @@ Done! Note: People who **did not** complete the req won't be told they didn't co
 
 
     @commands.command(name='grinderleaderboard', aliases=['glb', 'grinderlb'])
-    @checks.not_in_gen()
     async def grinderleaderboard(self, ctx, *, arg: str = None):
         """
         Shows the Grinder leaderboard for Dank Vibes.
