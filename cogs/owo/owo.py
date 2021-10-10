@@ -111,7 +111,6 @@ class OwO(commands.Cog, name='owo'):
     "zoo"}
 
     @commands.command(name='owocount', usage='[member]', aliases=['mycount', 'myc', 'owoc', 'stat'])
-    @checks.not_in_gen()
     async def owocount(self, ctx, member: Optional[discord.Member] = None):
         """
         Shows your or a member's daily OwO count for this server.
