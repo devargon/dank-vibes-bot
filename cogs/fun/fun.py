@@ -53,7 +53,7 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
         self.gen_is_muted = False
 
     def lowered_cooldown(message):
-        if discord.utils.get(message.author.roles, name="Contributor (24T)") or discord.utils.get(message.author.roles, name="Vibing Investor"):
+        if discord.utils.get(message.author.roles, name="Contributor (24T)"):#  or discord.utils.get(message.author.roles, name="Vibing Investor"):
             return commands.Cooldown(1, 1800)
         else:
             return commands.Cooldown(1, 3600)
