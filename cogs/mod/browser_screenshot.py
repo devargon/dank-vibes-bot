@@ -50,7 +50,7 @@ class BrowserScreenshot(commands.Cog):
                     if os.name == "nt":
                         browser = webdriver.Chrome(r"C:\Users\laiye\Downloads\chromedriver.exe", options=self.op)
                     else:
-                        browser = webdriver.Chrome('chromedriver', options=self.op)
+                        browser = webdriver.Chrome(options=self.op)
                 except selenium.common.exceptions.SessionNotCreatedException as e:
                     if "This version of ChromeDriver only supports" in str(e):
                         return "The version of Chrome used on this device is not matched with ChromeDriver. Please notify the developer about this."
