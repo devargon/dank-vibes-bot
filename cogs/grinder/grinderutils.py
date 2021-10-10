@@ -80,9 +80,10 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         embed.add_field(name='Grinder contributions', value=f"Today: `⏣ {comma_number(result.get('today')) if result else 0}` \nPast Week: `⏣ {comma_number(result.get('past_week')) if result else 0}`\nLast Week: `⏣ {comma_number(result.get('last_week')) if result else 0}`\nPast Month: `⏣ {comma_number(result.get('past_month')) if result else 0}`\nAll Time: `⏣ {comma_number(result.get('all_time')) if result else 0}`", inline=True)
         embed.add_field(name='Last Logged', value=f"<t:{result.get('last_dono_time')}>\n[Jump to logged message]({result.get('last_dono_msg')})" if result else "[<t:0>](https://www.youtube.com/watch?v=dQw4w9WgXcQ)", inline=True)
         embed.add_field(name='Has fufilled requirement?', value='<:DVB_True:887589686808309791> Yes' if (result and result.get('today') >= 5000000) else f"<:DVB_False:887589731515392000> No\nTo complete your requirement, you have to send `⏣ {comma_number(5000000-result.get('today'))}` with tax to {self.client.get_user(holder)}.", inline=False)
+        total = await self.client.pool_pg.fetchrow("SELECT SUM(all_time) FROM grinderdata")
+        embed.set_footer(text=f"A total ⏣ {comma_number(total.get('sum'))} grinded so far! · {ctx.guild.name}")
         embed.set_author(name=str(member), icon_url=member.display_avatar.url)
         embed.set_thumbnail(url=ctx.guild.icon.url)
-        embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon.url)
         await ctx.send(embed=embed)
 
     @checks.is_bav_or_mystic()
@@ -174,13 +175,12 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             # single digit transfer
             regex2 = re.compile(f'<@([0-9]+)> You gave {dankholder.name} \*\*⏣ ([\d])\*\*')
             result = re.findall(regex2, message.content)
-        print('.')
-        await message.channel.send(result)
         if len(result) != 1:
             return
         if len(result[0]) != 2:
             return
         result = result[0]
+        await message.add_reaction('<a:typing:839487089304141875>')
         try:
             userid = int(result[0])
             amt = int(result[1].replace(',', ''))
@@ -196,10 +196,10 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             else:
                 await self.client.pool_pg.execute("UPDATE grinderdata SET today = $1, past_week = $2, past_month = $3, all_time = $4, last_dono_time = $5, last_dono_msg = $6 WHERE user_id = $7", result.get('today') + amt, result.get('past_week') + amt, result.get('past_month') + amt, result.get('all_time') + amt, round(time.time()), message.jump_url, userid)
             total = await self.client.pool_pg.fetchrow("SELECT SUM(all_time) FROM grinderdata")
-            logembed = discord.Embed(description=f"**Grinder**: {member.mention}\n**Amount**: `⏣ {amt}`\nClick [here]({message.jump_url}) to view.\n`⏣ {comma_number(int(total.get('sum')))}` total grinded by grinders!", color=self.client.embed_color, timestamp=discord.utils.utcnow())
+            logembed = discord.Embed(description=f"**Grinder**: {member.mention}\n**Amount**: `⏣ {comma_number(amt)}`\nClick [here]({message.jump_url}) to view.\n`⏣ {comma_number(int(total.get('sum')))}` total grinded by grinders!", color=self.client.embed_color, timestamp=discord.utils.utcnow())
             logembed.set_footer(text=f"{message.guild.name} Grinder Log", icon_url=message.guild.icon.url)
             await self.client.get_channel(grinderlogID).send(f"A grinder transasction by `{member} ({member.id})` has been logged.", embed=logembed)
-            await message.channel.send(f"{member.mention}, I have logged your transfer of **⏣ {amt}** to {dankholder}.")
+            await message.channel.send(f"{member.mention}, I have logged your transfer of **⏣ {comma_number(amt)}** to {dankholder}.")
             if result.get('today') + amt >= 5000000:
                 try:
                     await member.send("<:DVB_True:887589686808309791> You have completed your Grinder requirement for today! I will notify you when you can submit your next ⏣ 5,000,000 again.")
