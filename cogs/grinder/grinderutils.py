@@ -365,7 +365,7 @@ Done! Note: People who **did not** complete the req won't be told they didn't co
             top = 5 if len(number) == 0 else number[0]
             if 'daily' in arg.lower() or 'today' in arg.lower():
                 title = "Today's Grinder leaderboard"
-                query = "SELECT user_id, today FROM grinderdata ORDER BY user_id DESC LIMIT $1"
+                query = "SELECT user_id, today FROM grinderdata ORDER BY today DESC LIMIT $1"
             elif 'last week' in arg.lower():
                 title = "Last week's Grinder leaderboard"
                 query = "SELECT user_id, last_week FROM grinderdata ORDER BY last_week DESC LIMIT $1"
