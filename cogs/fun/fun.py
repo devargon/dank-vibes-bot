@@ -73,7 +73,7 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
         """
         Mute people for a random duration between 30 to 120 seconds.
         """
-        if self.gen_is_muted:
+        if self.gen_is_muted and ctx.channel.id == 608498967474601995:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("Wait until the lockdown from `dv.lockgen` is over.")
         if member is None:
@@ -134,7 +134,7 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
         await channel.set_permissions(muted, overwrite=originaloverwrite)
         if muted in self.mutedusers[ctx.channel]:
             if len(self.mutedusers[ctx.channel]) == 1:
-                self.mutedusers.pop(ctx.channel)
+                del self.mutedusers[ctx.channel]
             else:
                 self.mutedusers[ctx.channel] = self.mutedusers[ctx.channel].remove(muted)
 
