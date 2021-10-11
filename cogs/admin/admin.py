@@ -247,6 +247,8 @@ class Admin(Joining, Sticky, ServerRule, commands.Cog, name='admin', metaclass=C
             return await ctx.send("I can't find any roles to remove.")
         removable = [role for role in staffroles if role in member.roles]
         tupremove = tuple(removable)
+        if not tupremove:
+            return await ctx.send(f"There are no roles that I can remove from {member} to demote them.")
         msg = await ctx.send(f"**Demoting {member.mention}...**")
         async with ctx.typing():
             try:
