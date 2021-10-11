@@ -19,11 +19,14 @@ class Logging(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        if self.client.maintenance.get(self.qualified_name):
+            return
         if not isinstance(message.channel, discord.DMChannel):
             return
         if message.author == self.client.user:
             return
-
+        if message.author.id in [642318626044772362, 727409176946409543, 663867896195186698]:
+            return
         embed = discord.Embed(title=f"Message sent to {self.client.user.name} via DMs", description=message.content or "No content", color=0x09ffe0, timestamp=discord.utils.utcnow())
         if len(message.attachments) > 0:
             attachments = []
