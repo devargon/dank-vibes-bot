@@ -299,8 +299,11 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
             return await ctx.send(f"**{member.name}**'s nickname is currently scrambled. Use this command when their nickname has returned to normal.")
         member_name = member.display_name
         if len(member_name) == 1:
-            ctx.command.reset_cooldown(ctx)
-            return await ctx.send("Their name only has one character, it's not worth it.")
+            if len(member.name) != 1:
+                member_name = member.name
+            else:
+                ctx.command.reset_cooldown(ctx)
+                return await ctx.send("Their name only has one character, it's not worth it.")
         def scramble_nickname():
             tries = 0
             while True:
@@ -319,12 +322,12 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
             ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"I can't scramble **{member.name}**'s name as their scrambled name will still be the same/the resulting name is blacklisted.")
         try:
-            await member.edit(nick=new_name)
+            await member.edit(nick=new_name, reason=f"Nickname scrambled by {ctx.author}")
             self.scrambledusers.append(member)
         except discord.Forbidden:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("Sorry! I am unable to change that user's name, probably due to role hierachy or missing permissions.")
-        await ctx.send(f"{member}'s name is now {new_name}!\n{member.mention}, your nickname has been scrambled by **{ctx.author.name}**. It will automatically revert to your previous nickname after 3 minutes. If you try to change your nickname, you will have to wait for another 3 minutes until your original nickname will be restored.")
+        await ctx.send(f"{member}'s name is now {new_name}!\n{member.mention}, your nickname/username has been scrambled by **{ctx.author.name}**. It will automatically revert to your previous nickname/username after 3 minutes. If you try to change your nickname, the timer will reset and you'll have to wait 3 minutes again. ")
         def check(payload_before, payload_after):
             return payload_before == member and payload_before.display_name == new_name and payload_after.display_name != new_name
         active = True
@@ -334,14 +337,14 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
                 await self.client.wait_for("member_update", check = check, timeout=180)
             except asyncio.TimeoutError:
                 try:
-                    await member.edit(nick=member_name)
+                    await member.edit(nick=member_name, reason=f"Nickname restored from scramble command invoked by {ctx.author}")
                 except:
                     active = False
                     self.scrambledusers.remove(member)
             else:
-                await member.edit(nick=new_name)
+                await member.edit(nick=new_name, reason=f"User tried to change their nickname despite scramble command invoked by {ctx.author}")
                 if has_warned == False:
-                    await ctx.send(f"{member.mention} how bad! You changed your nickname before the three minutes were up. Your scrambled nickname will still remain on you until 3 minutes are up. I will only tell you this once.")
+                    await ctx.send(f"{member.mention} how bad! You changed your nickname before the three minutes were up. The timer has reset and your scrambled nickname will still remain on you until 3 minutes are up.")
                     has_warned = True
         return await ctx.send(f"{member.mention}, your nickname has been restored... until someone scrambles your nickname again.")
 
