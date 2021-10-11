@@ -176,7 +176,7 @@ class dm(commands.Cog):
         authorembed.add_field(name="Message", value=(message[:1020] + '...') if len(message) > 1024 else message, inline=False)
         authorembed.add_field(name="DM Target", value=f"{member} {member.mention}", inline=True)
         authorembed.add_field(name="Request ID", value=str(ID), inline=True)
-        authorembed.set_footer(text="Your DM request will be denied if it breaks server rules. To hide/delete this message, react to the cross.")
+        authorembed.set_footer(text="Your DM request will be denied if it breaks server rules.")
         await ctx.message.delete()
         try:
             await ctx.author.send(embed=authorembed)
