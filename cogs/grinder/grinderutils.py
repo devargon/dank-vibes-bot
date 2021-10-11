@@ -9,8 +9,9 @@ from discord.ext import commands, menus, tasks
 from utils import checks
 import re
 import time
-from utils.format import comma_number
+from utils.format import comma_number, stringnum_toint
 from utils.buttons import confirm
+from expr import evaluate
 
 guildid = 871734809154707467 if os.name == "nt" else 595457764935991326
 tgrinderroleID = 896052592797417492 if os.name == "nt" else 827270880182009956
@@ -92,12 +93,18 @@ class Grinderutils(commands.Cog, name='grinderutils'):
 
     @checks.is_bav_or_mystic()
     @commands.command(name="gedit")
-    async def grinder_add(self, ctx, member: discord.Member = None, number: int = None):
+    async def grinder_edit(self, ctx, member: discord.Member = None, number: str = None):
         """
         Adds or removes a certain amount of coins from a grinder's data. To change it to a specific amount, use `g set` instead.
         """
         if member is None or number is None:
-            return await ctx.send("The correct usage of this command is `g edit [member] [amount to add]`.")
+            return await ctx.send("The correct usage of this command is `gedit [member] [amount to add]`.")
+        try:
+            number = stringnum_toint(number)
+        except Exception as e:
+            return await ctx.send(e)
+        if number is None:
+            return await ctx.send("There was a problem converting your requested sum to a number. You might have input an incorrect number.")
         confirmview = confirm(ctx, self.client, 10.0)
         embed = discord.Embed(title="Action awaiting confirmation", description=f"Do you want this amount to be added to {member}'s daily, weekly and monthly stats? Otherwise, it will only be added in 'all time'.", color=self.client.embed_color)
         message = await ctx.send(embed=embed, view=confirmview)
@@ -124,12 +131,18 @@ class Grinderutils(commands.Cog, name='grinderutils'):
 
     @checks.is_bav_or_mystic()
     @commands.command(name="gset")
-    async def grinder_set(self, ctx, member: discord.Member = None, number: int = None):
+    async def grinder_set(self, ctx, member: discord.Member = None, number: str = None):
         """
         Sets the coins a grinder has donated to a specific amount. To add or remove coins, use `g edit` instead.
         """
         if member is None or number is None:
-            return await ctx.send("The correct usage of this command is `g set [member] [amount to add]`.")
+            return await ctx.send("The correct usage of this command is `gset [member] [amount to add]`.")
+        try:
+            number = stringnum_toint(number)
+        except Exception as e:
+            return await ctx.send(e)
+        if number is None:
+            return await ctx.send("There was a problem converting your requested sum to a number. You might have input an incorrect number.")
         confirmview = confirm(ctx, self.client, 10.0)
         embed = discord.Embed(title="Action awaiting confirmation", description=f"Do you want {member}'s all time coins donated to be `⏣ {comma_number(number)}`? This will not change their daily, weekly and monthly statistics (to ensure consistency accross the data).", color=self.client.embed_color)
         message = await ctx.send(embed=embed, view=confirmview)
