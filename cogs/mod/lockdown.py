@@ -231,7 +231,7 @@ class lockdown(commands.Cog):
                 msgcontent += f"{profile}\n<:Reply:871808167011549244> `{profiles[profile]}` channels\n"
             embed = discord.Embed(title=f"Lockdown profiles in {ctx.guild.name}", description=msgcontent, color=self.client.embed_color)
             embed.add_field(name="Tips", value="Use `lockdown start <profile_name>` to lock down channels in a lockdown profile.\nUse `lockdown view <profile_name>` to view the channels in a lockdown profile.", inline=False)
-            embed.set_footer(text="help! i'm actually a human imprisoned behind the bot :(", icon_url="https://cdn.discordapp.com/emojis/818151528162263090.gif?v=1")
+            embed.set_footer(text="By using Dank Vibes Bot's lockdown utility, you agree that WICKED should not be bullying members.")
             await ctx.send(embed=embed)
 
     @checks.has_permissions_or_role(administrator=True)
