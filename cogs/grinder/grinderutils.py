@@ -72,17 +72,19 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         return ranks
 
     @commands.command(name='grindercheck', usage='[member]', aliases=['gcheck'])
-    async def grindercheck(self, ctx, member: Optional[discord.Member] = None):
+    async def grindercheck(self, ctx, member: discord.Member = None):
         """
         Shows your or a member's grinder statistics.
         """
-        if member is None or ctx.author.id not in [argon, bav, mystic] or ctx.author.guild_permissions.manage_roles != True:
+        if member is None:
+            member = ctx.author
+        if ctx.author.id not in [argon, bav, mystic] and ctx.author.guild_permissions.manage_roles != True:
             member = ctx.author
         if not (ctx.author.id == argon or ctx.author.guild_permissions.manage_roles==True or discord.utils.get(ctx.author.roles, id=grinderroleID) or discord.utils.get(ctx.author.roles, id=tgrinderroleID) or ctx.author.id in [argon, bav, mystic] ):
             return await ctx.send("You need to be a **Grinder**/**Trial Grinder** to use this command.")
         result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
         embed = discord.Embed(color=self.client.embed_color, timestamp=discord.utils.utcnow())
-        embed.add_field(name='Grinder contributions', value=f"Today: `⏣ {comma_number(result.get('today')) if result else 0}` \nPast Week: `⏣ {comma_number(result.get('past_week')) if result else 0}`\nLast Week: `⏣ {comma_number(result.get('last_week')) if result else 0}`\nPast Month: `⏣ {comma_number(result.get('past_month')) if result else 0}`\nAll Time: `⏣ {comma_number(result.get('all_time')) if result else 0}`", inline=True)
+        embed.add_field(name='Grinder contributions', value=f"Today: `⏣ {comma_number(result.get('today')) if result else 0}` \nThis Week: `⏣ {comma_number(result.get('past_week')) if result else 0}`\nLast Week: `⏣ {comma_number(result.get('last_week')) if result else 0}`\nThis Month: `⏣ {comma_number(result.get('past_month')) if result else 0}`\nAll Time: `⏣ {comma_number(result.get('all_time')) if result else 0}`", inline=True)
         embed.add_field(name='Last Logged', value=f"<t:{result.get('last_dono_time')}>\n[Jump to logged message]({result.get('last_dono_msg')})" if result else "[<t:0>](https://www.youtube.com/watch?v=dQw4w9WgXcQ)", inline=True)
         embed.add_field(name='Has fufilled requirement?', value='<:DVB_True:887589686808309791> Yes' if (result and result.get('today') >= 5000000) else f"<:DVB_False:887589731515392000> No\nTo complete your requirement, you have to send `⏣ {comma_number(5000000-result.get('today'))}` with tax to {self.client.get_user(holder)}.", inline=False)
         total = await self.client.pool_pg.fetchrow("SELECT SUM(all_time) FROM grinderdata")
@@ -171,9 +173,9 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         if message.author.id != 270904126974590976:
             #print('Author is not Dank Memer')
             return
-        if self.client.maintenance.get(self.qualified_name):
+        #if self.client.maintenance.get(self.qualified_name):
             #print('Cog is under maintenance')
-            return
+            #return
         if not message.guild: # or message.guild.id != 595457764935991326:
             #print('Message is not from a guild')
             return
@@ -183,6 +185,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         if message.channel.id != donochannel:
             #print('not donor channel')
             return
+        print("initial checks passed")
         dankholder = message.guild.get_member(holder)
         # multiple digit transfer
         regex = re.compile(f'<@([0-9]+)> You gave {dankholder.name} \*\*⏣ ([\d+]+[,\d]+?)\*\*')
@@ -202,11 +205,11 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             userid = int(result[0])
             amt = int(result[1].replace(',', ''))
         except ValueError:
-            return
+            return await message.channel.send('wrong number or sumn idk')
         else:
             member = message.guild.get_member(userid)
             if not (discord.utils.get(member.roles, id=tgrinderroleID) or discord.utils.get(member.roles, id=grinderroleID)):
-                return
+                return await message.channel.send('user isn\'t a grinder')
             result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", userid)
             if result is None:
                 await self.client.pool_pg.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)", userid, amt, amt, 0, amt, amt, round(time.time()), message.jump_url)
@@ -224,8 +227,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                     await message.channel.send(f"{member.mention} <:DVB_True:887589686808309791> You have completed your Grinder requirement for today! I will notify you when you can submit your next ⏣ 5,000,000 again.")
 
     @checks.is_bav_or_mystic()
-    @commands.command(name="gdm", brief="Reminds DV Grinders that the requirement has been checked.",
-                      description="Reminds DV Grinders that the requirement has been checked.")
+    @commands.command(name="gdm", brief="Reminds DV Grinders that the requirement has been checked.", description="Reminds DV Grinders that the requirement has been checked.")
     async def gdm(self, ctx, *, flags:MessageFlag):
         """
         Reminds DV Grinders that the requirement has been checked.
