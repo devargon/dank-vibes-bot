@@ -88,7 +88,6 @@ class dankreminders(discord.ui.View):
         is_enabled = [daily, weekly, monthly, lottery, work, apple, donor, hunt, fish, di, highlow, se, search, crime, beg, dailybox, horseshoe, pizza]
 
         async def update_message(emoji):
-            print(str(emoji))
             if str(emoji) == "<:DVB_calendar:873107952159059991>":
                 await self.client.pool_pg.execute("UPDATE remindersettings SET daily = $1 WHERE member_id = $2", numberswitcher(self.result.get('daily')), ctx.author.id)  # switches to enabled/disabled reminder
             elif str(emoji) == "<:DVB_lotteryticket:873110581085880321>":
@@ -132,7 +131,6 @@ class dankreminders(discord.ui.View):
 
         class somebutton(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
-                print(str(self.emoji))
                 await update_message(self.emoji)
         for emoji in reminderemojis:
             self.add_item(somebutton(emoji=discord.PartialEmoji.from_str(emoji), label = labels[reminderemojis.index(emoji)] + f"{'' if self.rmtimes[reminderemojis.index(emoji)] is None else f' - {short_time(self.rmtimes[reminderemojis.index(emoji)])}'}", style=discord.ButtonStyle.green if is_enabled[reminderemojis.index(emoji)] else discord.ButtonStyle.red))
@@ -479,13 +477,16 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
             content = message.content.split()
             if len(content) < 3:
                 return await crossmark(message)
-            try:
-                content = int(content[2])
-            except ValueError:
-                return await crossmark(message)
+            if content[2] == 'max':
+                pass
             else:
-                if content < 50:
-                    return await crossmark(message)
+                try:
+                    content = int(content[2])
+                except ValueError:
+                        return await crossmark(message)
+                else:
+                    if content < 50:
+                        return await crossmark(message)
             def check_snakeeyes(payload):
                 return len(payload.embeds) > 0 and payload.author.id == 270904126974590976 and message.author.mentioned_in(payload) and payload.embeds[0].author.name == f"{message.author.name}'s snake eyes game"
             try:
