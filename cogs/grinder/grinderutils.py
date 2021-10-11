@@ -185,7 +185,6 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         if message.channel.id != donochannel:
             #print('not donor channel')
             return
-        print("initial checks passed")
         dankholder = message.guild.get_member(holder)
         # multiple digit transfer
         regex = re.compile(f'<@([0-9]+)> You gave {dankholder.name} \*\*⏣ ([\d+]+[,\d]+?)\*\*')
@@ -205,11 +204,11 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             userid = int(result[0])
             amt = int(result[1].replace(',', ''))
         except ValueError:
-            return await message.channel.send('wrong number or sumn idk')
+            return await message.channel.send('I could not detect the correct number of coins sent.')
         else:
             member = message.guild.get_member(userid)
             if not (discord.utils.get(member.roles, id=tgrinderroleID) or discord.utils.get(member.roles, id=grinderroleID)):
-                return await message.channel.send('user isn\'t a grinder')
+                return
             result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", userid)
             if result is None:
                 await self.client.pool_pg.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)", userid, amt, amt, 0, amt, amt, round(time.time()), message.jump_url)
@@ -328,9 +327,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                     if len(content) < 1800:
                         content += f"\n<:DVB_True:887589686808309791> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
                     else:
-                        print('1')
                         await reportchannel.send(content)
-                        print('2')
                         await webhook.send(content, username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
                         content = f"\n<:DVB_True:887589686808309791> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
                 for dat in not_complete:
@@ -370,7 +367,6 @@ Done! Note: People who **did not** complete the req won't be told they didn't co
                 title = "Today's Grinder leaderboard"
                 query = "SELECT user_id, today FROM grinderdata ORDER BY user_id DESC LIMIT $1"
             elif 'last week' in arg.lower():
-                print('hi')
                 title = "Last week's Grinder leaderboard"
                 query = "SELECT user_id, last_week FROM grinderdata ORDER BY last_week DESC LIMIT $1"
             elif 'weekly' in arg.lower() or 'week' in arg.lower():
