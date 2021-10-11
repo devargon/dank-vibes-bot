@@ -137,7 +137,7 @@ class nicknames(commands.Cog):
         if not (config := self.nickconfig.get(ctx.guild.id)):
             config = await self.client.pool_pg.fetchrow("SELECT nicknamechannel_id FROM channelconfigs where guild_id = $1", ctx.guild.id)
             if config is None or config.get('nicknamechannel_id') is None:
-                return await ctx.send(f"This server has not set a channel for nickname requests to be directed to. Have someone with the `Administrator` Permission to add a nickname request channel with `dv.setrequest <channel>`.")
+                return await ctx.send('This server has not set a channel for nickname requests to be directed to. Have someone with the `Administrator` Permission to add a nickname request channel with `dv.setrequest <channel>`.')
             config = self.nickconfig.setdefault(ctx.guild.id, config.get('nicknamechannel_id'))
         request_channel = ctx.guild.get_channel(config)
         if request_channel is None:
@@ -173,7 +173,7 @@ class nicknames(commands.Cog):
             embed.set_footer(text=f"Request ID: {ID}", icon_url=ctx.guild.icon.url)
             new_message = await request_channel.send(embed=embed, view=approveview)
             await self.client.pool_pg.execute("UPDATE nicknames set messageid = $1 where id = $2", new_message.id, ID)
-        authorembed = discord.Embed(title="Your nickname request has been submitted!", description="I will DM you on the status of your nickname request.", color=0x57F0F0, timestamp=discord.utils.utcnow())
+        authorembed = discord.Embed(title="Your nickname request has been submitted!", description="It will be manually approved/denied by higher-ups. I will DM you on the status of your nickname request.", color=0x57F0F0, timestamp=discord.utils.utcnow())
         authorembed.set_author(icon_url=ctx.guild.icon.url, name=ctx.guild.name)
         authorembed.add_field(name="Nickname", value=nickname, inline=True)
         authorembed.add_field(name="Request ID", value=str(ID), inline=True)
