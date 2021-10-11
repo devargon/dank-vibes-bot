@@ -6,6 +6,7 @@ from typing import Sequence, Iterator
 from discord.ext import commands
 import inflect
 import math
+from expr import evaluate
 
 class plural:
     """
@@ -193,3 +194,25 @@ class TabularData:
 
         to_draw.append(sep)
         return '\n'.join(to_draw)
+
+def stringnum_toint(string:str):
+    allowedsymbols=["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "m", "k", 'e', '.', '-']
+    string = string.lower()
+    for character in list(string):
+        if character not in allowedsymbols:
+            return None
+    if string.isnumeric():
+        return int(string)
+    if "m" in string:
+        string = string.replace("m", "*1000000+")
+    if "k" in string:
+        string = string.replace("d", "*1000+")
+    if 'e' in string:
+        string = string.replace("e", "*10^")
+    if string.endswith('+') or string.endswith('-'):
+        string += "0"
+    if string.endswith('/') or string.endswith('*') or string.endswith('^'):
+        string += "1"
+    intstring = evaluate(string)
+    intstring = int(intstring) if intstring is not None else intstring
+    return intstring
