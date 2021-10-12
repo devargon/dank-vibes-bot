@@ -78,7 +78,7 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
             return await ctx.send("Wait until the lockdown from `dv.lockgen` is over.")
         if member is None:
             ctx.command.reset_cooldown(ctx)
-            return await ctx.send(f"Here we have a human, AKA {ctx.author} who is showing you that he is able to dumbfight you, although they could've just dumbfought you already. <:dv_pepeHahaUSuckOwO:837653798313918475>\nThat being said, {ctx.author.mention} you need to tell me who you want to dumbfight.")
+            return await ctx.send(f"Here we have a human AKA {ctx.author} showing you that they are able to dumbfight you, although they could've just done it already. <:dv_pepeHahaUSuckOwO:837653798313918475>\nThat being said, {ctx.author.mention} you need to tell me who you want to dumbfight.")
         if ctx.channel in self.mutedusers and member in self.mutedusers[ctx.channel]:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"**{member.name}** is currently muted in a dumbfight. Wait a few moments before using this command.")
@@ -121,10 +121,10 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
         tempoverwrite = channel.overwrites_for(muted) if muted in channel.overwrites else discord.PermissionOverwrite()
         tempoverwrite.send_messages = False
         await channel.set_permissions(muted, overwrite=tempoverwrite)
-        if ctx.channel in self.mutedusers:
-            self.mutedusers[ctx.channel] = self.mutedusers[ctx.channel].append(muted)
+        if ctx.channel.id in self.mutedusers:
+            self.mutedusers[ctx.channel.id] = self.mutedusers[ctx.channel.id].append(muted.id)
         else:
-            self.mutedusers[ctx.channel] = [muted]
+            self.mutedusers[ctx.channel.id] = [muted.id]
         selfmute = random.choice(['punched themselves in the face', 'kicked themselves in the knee', 'stepped on their own feet', 'punched themselves in the stomach', 'tickled themselves until they couldn\'t take it'])
         embed = discord.Embed(title="Get muted!", description = f"{ctx.author.mention} fought {member.mention} {str} them.\n{muted.mention} is now muted for {duration} seconds." if ctx.author != member else f"{ctx.author.mention} {selfmute}.\n{muted.mention} is now muted for {duration} seconds.", colour=color)
         if member.id in [650647680837484556, 321892489470410763] and muted != ctx.author:
@@ -132,11 +132,11 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
         await ctx.send(embed=embed)
         await asyncio.sleep(duration)
         await channel.set_permissions(muted, overwrite=originaloverwrite)
-        if muted in self.mutedusers[ctx.channel]:
-            if len(self.mutedusers[ctx.channel]) == 1:
-                del self.mutedusers[ctx.channel]
+        if muted.id in self.mutedusers[ctx.channel.id]:
+            if len(self.mutedusers[ctx.channel.id]) == 1:
+                del self.mutedusers[ctx.channel.id]
             else:
-                self.mutedusers[ctx.channel] = self.mutedusers[ctx.channel].remove(muted)
+                self.mutedusers[ctx.channel.id] = self.mutedusers[ctx.channel.id].remove(muted.id)
 
     @checks.dev()
     @dumbfight.command(name="statistics", aliases = ["stats"])
@@ -338,6 +338,8 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
             except asyncio.TimeoutError:
                 try:
                     await member.edit(nick=member_name, reason=f"Nickname restored from scramble command invoked by {ctx.author}")
+                    active = False
+                    self.scrambledusers.remove(member)
                 except:
                     active = False
                     self.scrambledusers.remove(member)
