@@ -38,7 +38,7 @@ class imgen(commands.Cog):
         file = await loop.run_in_executor(None, generate)
         await ctx.send(file=file)
 
-    @checks.dev()
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="stank")
     async def stank(self, ctx, member: discord.Member = None):
         """
