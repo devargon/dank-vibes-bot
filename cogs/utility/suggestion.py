@@ -2,6 +2,7 @@ import discord
 from utils import checks
 from datetime import datetime
 from discord.ext import commands
+from utils.buttons import confirm
 
 
 class Suggestion(commands.Cog):
@@ -17,35 +18,52 @@ class Suggestion(commands.Cog):
         if message is None:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("Hey! im not sending a blank message, write something meaningful and try again.")
-        if not await ctx.confirmation("Are you sure you wanna send this message to the developers?", cancel_message="Okay, we're not sending that message to the developers", delete_delay=5):
-            return ctx.command.reset_cooldown(ctx)
-        try:
-            embed = discord.Embed(color=0xffcccb,
-                                    title="Suggestion sent to the developers",
-                                    description=f"**You sent:** {message}",
-                                    timestamp=discord.utils.utcnow())
-            embed.set_footer(text=f"Any response from the developers will be through DM.")
-            response = await ctx.author.send(embed=embed)
-        except:
+        confirmview = confirm(ctx, self.client, 15.0)
+        embed = discord.Embed(title="Action awaiting confirmation", description="Are you sure you wanna send this message to the developers?", color=self.client.embed_color)
+        msg = await ctx.send(embed=embed, view=confirmview)
+        confirmview.response = msg
+        await confirmview.wait()
+        if confirmview.returning_value == None:
+            embed.description, embed.color = "Timed out! If you want to suggest, press the green button.", discord.Color.red()
             ctx.command.reset_cooldown(ctx)
-            return await ctx.send("Please enable your DM, any response from the developers will be through DMs.")
-        else:
-            query = "INSERT INTO suggestions VALUES (DEFAULT, $1, False, $2, $3) RETURNING suggestion_id"
-            values = (ctx.author.id, response.id, message)
-            suggestion_id = await self.client.pool_pg.fetchval(query, *values, column='suggestion_id')
-            embed.title += f" (ID: {suggestion_id})"
-            await response.edit(embed=embed)
-            channel = self.client.get_guild(871734809154707467).get_channel(876346196564803614)
-            embed = discord.Embed(color=0xffcccb,
-                                    description=message,
-                                    timestamp=discord.utils.utcnow())
-            embed.set_author(name=f"{ctx.author} made a suggestion", icon_url=ctx.author.display_avatar.url)
-            embed.set_footer(text=f"Suggestion ID: {suggestion_id}")
-            msg = await channel.send(embed=embed)
-            await ctx.checkmark()
-            query = "INSERT INTO suggestion_response VALUES ($1, $2, $3, $4, $5)"
-            values = (suggestion_id, ctx.author.id, response.id, msg.id, message)
-            await self.client.pool_pg.execute(query, *values)
+            return await msg.edit(embed=embed)
+        elif confirmview.returning_value == False:
+            embed.description, embed.color = "Okay, we're not sending that message to the developers.", discord.Color.red()
+            ctx.command.reset_cooldown(ctx)
+            return await msg.edit(embed=embed)
+        elif confirmview.returning_value == True:
+            embed.description, embed.color = None, discord.Color.green()
+            ctx.command.reset_cooldown(ctx)
+            await msg.edit(embed=embed)
+            try:
+                embed = discord.Embed(color=0xffcccb,
+                                        title="Suggestion sent to the developers",
+                                        description=f"**You sent:** {message}",
+                                        timestamp=discord.utils.utcnow())
+                embed.set_footer(text=f"Any response from the developers will be through DM.")
+                response = await ctx.author.send(embed=embed)
+            except:
+                embed.description, embed.color = "Please enable your DM, any response from the developers will be through DMs.", discord.Color.red()
+                ctx.command.reset_cooldown(ctx)
+                return await msg.edit(embed=embed)
+            else:
+                await msg.edit(embed=embed)
+                query = "INSERT INTO suggestions VALUES (DEFAULT, $1, False, $2, $3) RETURNING suggestion_id"
+                values = (ctx.author.id, response.id, message)
+                suggestion_id = await self.client.pool_pg.fetchval(query, *values, column='suggestion_id')
+                embed.title += f" (ID: {suggestion_id})"
+                await response.edit(embed=embed)
+                channel = self.client.get_guild(871734809154707467).get_channel(876346196564803614)
+                embed = discord.Embed(color=0xffcccb,
+                                        description=message,
+                                        timestamp=discord.utils.utcnow())
+                embed.set_author(name=f"{ctx.author} made a suggestion", icon_url=ctx.author.display_avatar.url)
+                embed.set_footer(text=f"Suggestion ID: {suggestion_id}")
+                msg = await channel.send(embed=embed)
+                await ctx.checkmark()
+                query = "INSERT INTO suggestion_response VALUES ($1, $2, $3, $4, $5)"
+                values = (suggestion_id, ctx.author.id, response.id, msg.id, message)
+                await self.client.pool_pg.execute(query, *values)
 
     @checks.dev()
     @suggest.command(name='close', aliases=['end'], usage='<suggestion_id> <message>', hidden=True)
