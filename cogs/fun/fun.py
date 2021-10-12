@@ -79,7 +79,7 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
         if member is None:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"Here we have a human AKA {ctx.author} showing you that they are able to dumbfight you, although they could've just done it already. <:dv_pepeHahaUSuckOwO:837653798313918475>\nThat being said, {ctx.author.mention} you need to tell me who you want to dumbfight.")
-        if ctx.channel in self.mutedusers and member in self.mutedusers[ctx.channel]:
+        if ctx.channel.id in self.mutedusers and member.id in self.mutedusers[ctx.channel.id]:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"**{member.name}** is currently muted in a dumbfight. Wait a few moments before using this command.")
         if member.bot:
@@ -122,7 +122,7 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
         tempoverwrite.send_messages = False
         await channel.set_permissions(muted, overwrite=tempoverwrite)
         if ctx.channel.id in self.mutedusers:
-            self.mutedusers[ctx.channel.id] = self.mutedusers[ctx.channel.id].append(muted.id)
+            self.mutedusers[ctx.channel.id] = self.mutedusers[ctx.channel.id] + [muted.id]
         else:
             self.mutedusers[ctx.channel.id] = [muted.id]
         selfmute = random.choice(['punched themselves in the face', 'kicked themselves in the knee', 'stepped on their own feet', 'punched themselves in the stomach', 'tickled themselves until they couldn\'t take it'])
@@ -136,7 +136,9 @@ class Fun(imgen, dm, commands.Cog, name='fun'):
             if len(self.mutedusers[ctx.channel.id]) == 1:
                 del self.mutedusers[ctx.channel.id]
             else:
-                self.mutedusers[ctx.channel.id] = self.mutedusers[ctx.channel.id].remove(muted.id)
+                lst = self.mutedusers[ctx.channel.id]
+                lst.remove(muted.id)
+                self.mutedusers[ctx.channel.id] = lst
 
     @checks.dev()
     @dumbfight.command(name="statistics", aliases = ["stats"])
