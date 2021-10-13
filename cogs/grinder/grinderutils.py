@@ -71,7 +71,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             ranks.append((f"#{index} {position[0]}", position[1]))
         return ranks
 
-    @commands.command(name='grindercheck', usage='[member]', aliases=['gcheck'])
+    @commands.command(name='grindercheck', usage='[member]', aliases=['gcheck', 'gc'])
     async def grindercheck(self, ctx, member: discord.Member = None):
         """
         Shows your or a member's grinder statistics.
@@ -86,7 +86,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         embed = discord.Embed(color=self.client.embed_color, timestamp=discord.utils.utcnow())
         embed.add_field(name='Grinder contributions', value=f"Today: `⏣ {comma_number(result.get('today')) if result else 0}` \nThis Week: `⏣ {comma_number(result.get('past_week')) if result else 0}`\nLast Week: `⏣ {comma_number(result.get('last_week')) if result else 0}`\nThis Month: `⏣ {comma_number(result.get('past_month')) if result else 0}`\nAll Time: `⏣ {comma_number(result.get('all_time')) if result else 0}`", inline=True)
         embed.add_field(name='Last Logged', value=f"<t:{result.get('last_dono_time')}>\n[Jump to logged message]({result.get('last_dono_msg')})" if result else "[<t:0>](https://www.youtube.com/watch?v=dQw4w9WgXcQ)", inline=True)
-        embed.add_field(name='Has fufilled requirement?', value='<:DVB_True:887589686808309791> Yes' if (result and result.get('today') >= 5000000) else f"<:DVB_False:887589731515392000> No\nTo complete your requirement, you have to send `⏣ {comma_number(5000000-result.get('today') if result else 5000000)}` with tax to {self.client.get_user(holder)}.", inline=False)
+        embed.add_field(name='Has fulfilled requirement?', value='<:DVB_True:887589686808309791> Yes' if (result and result.get('today') >= 5000000) else f"<:DVB_False:887589731515392000> No\nTo complete your requirement, you have to send `⏣ {comma_number(5000000-result.get('today') if result else 5000000)}` with tax to {self.client.get_user(holder)}.", inline=False)
         total = await self.client.pool_pg.fetchrow("SELECT SUM(all_time) FROM grinderdata")
         embed.set_footer(text=f"A total ⏣ {comma_number(int(total.get('sum')))} grinded so far! · {ctx.guild.name}")
         embed.set_author(name=str(member), icon_url=member.display_avatar.url)
@@ -285,7 +285,8 @@ class Grinderutils(commands.Cog, name='grinderutils'):
 <:DVB_end_incomplete:895172799923109919> Notifying grinders and sending a summary""")
             if discord.utils.utcnow().day == 1:
                 await self.client.pool_pg.execute("UPDATE grinderdata SET past_month = $1", 0)
-            if discord.utils.utcnow().weekday() == 6:
+            if discord.utils.utcnow().weekday() == 3:
+                reset_week = True
                 week_values = []
                 all = await self.client.pool_pg.fetch("SELECT user_id, past_week FROM grinderdata")
                 if all is not None:
@@ -294,6 +295,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                             week_values.append((0, 0, a.get('past_week'), a.get('user_id')))
                 await self.client.pool_pg.executemany("UPDATE grinderdata SET today = $1, past_week = $2, last_week = $3 WHERE user_id = $4", week_values)
             else:
+                reset_week = False
                 await self.client.pool_pg.execute("UPDATE grinderdata SET today = $1", 0)
             await msg.edit(content="""
 <:DVB_start_complete:895172800627769447> Checking daily requirement 
@@ -340,11 +342,11 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                         await reportchannel.send(content)
                 await reportchannel.send(content)
                 await webhook.send(content, username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
-            await msg.edit(content="""
+            await msg.edit(content=f"""
 <:DVB_start_complete:895172800627769447> Checking daily requirement 
 <:DVB_middle_complete:895172800627769444> Updating statistics
 <:DVB_end_complete:895172800082509846> Notifying grinders and sending a summary
-Done! Note: People who **did not** complete the req won't be told they didn't complete it. Otherwise, I would've told them that they had completed the req.""")
+Done! Note: People who **did not** complete the req won't be told they didn't complete it. Otherwise, I would've told them that they had completed the req.\n{'Additionally, the weekly statistics has been reset.' if reset_week else ''}""")
 
 
     @commands.command(name='grinderleaderboard', aliases=['glb', 'grinderlb'])
