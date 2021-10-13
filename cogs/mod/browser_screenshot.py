@@ -23,8 +23,8 @@ class BrowserScreenshot(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-
-    @commands.command(name="browser", aliases=["screenshot"])
+    @commands.cooldown(1, 30.0, commands.BucketType.guild)
+    @commands.command(name="browser", aliases=["screenshot", "ss"])
     async def screenshot(self, ctx, link):
         """
         Gets the screenshot of a website. Any website can be specified.
@@ -61,23 +61,26 @@ class BrowserScreenshot(commands.Cog):
                 return await message.edit(embed=discord.Embed(title=message.embeds[0].title, description=browser, color=self.client.embed_color, timestamp=discord.utils.utcnow()))
             await message.edit(embed = discord.Embed(title=f"Website details for {domain}", description=f"__**Status**__\n<:DVB_start_complete:895172800627769447> Start Google Chrome\n<:DVB_middle_complete:895172800627769444> **Connecting to linked website**\n<:DVB_middle_incomplete:895172800430620742> **Getting screenshot of website**\n<:DVB_end_incomplete:895172799923109919> Getting SSL Certificate information of {domain}", timestamp=discord.utils.utcnow(), color=self.client.embed_color).set_footer(icon_url="https://camo.githubusercontent.com/74ed64243ba05754329bc527cd4240ebd1c087a1/68747470733a2f2f73656c656e69756d2e6465762f696d616765732f73656c656e69756d5f6c6f676f5f7371756172655f677265656e2e706e67", text="Powered by Selenium | This process could take up to 30 seconds."))
             def get_to_website():
-                try:
-                    browser.get(link)
-                except Exception as e:
-                    if "ERR_CONNECTION_TIMED_OUT" in str(e):
-                        return f"**This site can't be reached**;\n`{domain}` took too long to respond.\n`ERR_CONNECTION_TIMED_OUT`"
-                    elif "ERR_CERT_DATE_INVALID" in str(e):
-                        return "**Please inform the developer about this.**\n`ERR_CERT_DATE_INVALID`"
-                    elif "ERR_CERT_AUTHORITY_INVALID" in str(e) or "ERR_CERT_COMMON_NAME_INVALID" in str(e) or "ERR_CERT_WEAK_SIGNATURE_ALGORITHM" in str(e) or "ERR_CERTIFICATE_TRANSPARENCY_REQUIRED" in str(e):
-                        return f"**Your connection to this website is not private.**\nClick `Advanced` for more information."
-                    elif "ERR_TOO_MANY_REDIRECTS" in str(e):
-                        return f"**This page isn't working**\n{domain} redirected you too many times. "
-                    elif "ERR_NAME_NOT_RESOLVED" in str(e):
-                        return f"**This site can't be reached**\n{domain}'s server DNS address could not be found. *This may mean that the website does not exist.*"
+                while time.sleep(60.0):
+                    try:
+                        browser.get(link)
+                    except Exception as e:
+                        if "ERR_CONNECTION_TIMED_OUT" in str(e):
+                            return f"**This site can't be reached**;\n`{domain}` took too long to respond.\n`ERR_CONNECTION_TIMED_OUT`"
+                        elif "ERR_CERT_DATE_INVALID" in str(e):
+                            return "**Please inform the developer about this.**\n`ERR_CERT_DATE_INVALID`"
+                        elif "ERR_CERT_AUTHORITY_INVALID" in str(e) or "ERR_CERT_COMMON_NAME_INVALID" in str(e) or "ERR_CERT_WEAK_SIGNATURE_ALGORITHM" in str(e) or "ERR_CERTIFICATE_TRANSPARENCY_REQUIRED" in str(e):
+                            return f"**Your connection to this website is not private.**\nClick `Advanced` for more information."
+                        elif "ERR_TOO_MANY_REDIRECTS" in str(e):
+                            return f"**This page isn't working**\n{domain} redirected you too many times. "
+                        elif "ERR_NAME_NOT_RESOLVED" in str(e):
+                            return f"**This site can't be reached**\n{domain}'s server DNS address could not be found. *This may mean that the website does not exist.*"
+                        else:
+                            return f"**Error encountered!** <@650647680837484556>\m{e}"
                     else:
-                        return f"**Error encountered!** <@650647680837484556>\m{e}"
-                else:
-                    return None
+                        return None
+                browser.quit()
+                return "I was not able to connect to this website in time. To ensure reliable performance, the process of connecting to websites must be done within 60 seconds."
             result = await loop.run_in_executor(None, get_to_website)
             if result is not None:
                 if "CERT" in result:
