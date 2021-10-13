@@ -422,7 +422,6 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                 await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nexthunttime, member.id, 10)
             else:
                 await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 10, message.channel.id, message.guild.id, nexthunttime)
-            await clock(message)
         """
         Fishing Reminder
         """
@@ -436,7 +435,6 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
             else:
                 await self.client.pool_pg.execute(
                     "INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 11, message.channel.id, message.guild.id, nextfishtime)
-            await clock(message)
         """
         Dig Reminder
         """
@@ -448,7 +446,6 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                 await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextdigtime, member.id, 12)
             else:
                 await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 12, message.channel.id, message.guild.id, nextdigtime)
-            await clock(message)
         """
         Highlow Reminder
         """
@@ -475,7 +472,6 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                             await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3",nexthighlowtime, member.id, 13)
                         else:
                             await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 13, message.channel.id, message.guild.id, nexthighlowtime)
-                        return await checkmark(botresponse)
         """
         Snakeeyes Reminder
         """
@@ -507,7 +503,6 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                     await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextsnakeeyestime, member.id, 14)
                 else:
                     await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)",member.id, 14, message.channel.id, message.guild.id, nextsnakeeyestime)
-                    await clock(message)
         """
         Search Reminder
         """
@@ -519,7 +514,6 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                 await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextsearchtime, member.id, 15)
             else:
                 await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 15, message.channel.id, message.guild.id, nextsearchtime)
-            return await clock(message)
         """
         Crime Reminder
         """
@@ -531,7 +525,6 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                 await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextcrimetime, member.id, 16)
             else:
                 await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 16, message.channel.id, message.guild.id, nextcrimetime)
-            return await clock(message)
         """
         Beg Reminder
         """
@@ -554,7 +547,6 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                         await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3",nextbegtime, member.id, 17)
                     else:
                         await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 17, message.channel.id, message.guild.id, nextbegtime)
-                    return await checkmark(botresponse)
         """
         Horseshoe Reminder
         """
@@ -566,7 +558,6 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                 await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nexthorseshoetime, member.id, 19)
             else:
                 await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 19, message.channel.id, message.guild.id, nexthorseshoetime)
-            return await clock(message)
         """
         Pizza Reminder
         """
@@ -578,7 +569,6 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                 await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextpizzatime, member.id, 20)
             else:
                 await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 20, message.channel.id, message.guild.id, nextpizzatime)
-            return await clock(message)
         """
         Daily Box Reminder
         """
@@ -601,7 +591,6 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                                     await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextdailyboxtime, member.id, 18)
                                 else:
                                     await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 18, message.channel.id, message.guild.id, nextdailyboxtime)
-                                return await clock(message)
                 return await crossmark(message)
 
         if message.content.lower() in ["pls work", "pls job"] and not message.author.bot:
