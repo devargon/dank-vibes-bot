@@ -265,7 +265,7 @@ class Admin(Joining, Sticky, ServerRule, commands.Cog, name='admin', metaclass=C
         except discord.NotFound:
             await ctx.send(f"{member.mention} has been demoted for 30 seconds. Their removed roles are: **{', '.join(role.name for role in tupremove)}**")
         try:
-            message = f"Alas! Due to you misbehaving, you have been demoted by **{ctx.author}**" if not selfdemote else "You have just self demoted yourself."
+            message = f"Alas! Due to you misbehaving, you have been demoted by **{ctx.author}**." if not selfdemote else "You have just self demoted yourself."
             await member.send(f"{message} You no longer have the roles: **{', '.join(role.name for role in tupremove)}**. \nYour roles might be readded afterwards. Or will they? <:dv_bShrugOwO:837687264263798814>")
         except:
             pass
