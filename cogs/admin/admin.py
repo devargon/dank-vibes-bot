@@ -224,22 +224,27 @@ class Admin(Joining, Sticky, ServerRule, commands.Cog, name='admin', metaclass=C
         await ctx.send(f"**Done**\nThe milestone for having sent a message **{messagecount} time(s)** has been removed.")
 
     @checks.has_permissions_or_role(administrator=True)
+    @commands.cooldown(1, 15, commands.BucketType.guild)
     @commands.command(name='demote', aliases = ['suggestion49', 'suggest49'])
     async def demote(self, ctx, member: discord.Member=None):
         """
         The infamous suggestion 49.
         """
+        selfdemote = False
         if member is None:
             return await ctx.send("You need to tell me who to demote, otherwise I'm demoting **you**.")
+        if ctx.author.guild_permissions.administrator != True and ctx.guild.get_role(684591962094829569) not in member.roles:
+            await ctx.send("You have not met the requirements to demote someone else, hence you're being self-demoted.")
+            selfdemote = True
+            member = ctx.author
         staffroleids = [758172293133762591, 837595970464120842, 837595945616277504, 837595910661603330, 843756047964831765,
          758172863580209203, 758173099752423435, 758173535029559376, 735417263968223234, 627284965222121482,
          892266027495350333, 756667326623121568, 644711739618885652, 709107981568180327, 697314852162502698,
          758175645393223680, 608495204399448066, 870850266868633640, 674774385894096896, 795914641191600129,
-         722871699325845626, 608503892002603029, 684591962094829569, 663502776952815626, 729736106253484143,
-         735015819771379712, 895341539549659136, 833605144607588352]
+         722871699325845626, 608503892002603029, 684591962094829569, 663502776952815626,
+         735015819771379712, 895341539549659136]
         #staffroleids = [896052612284166204, 896052592797417492, 895815832465190933, 895815799812521994, 895815773208051763, 895815588289581096, 895815546292035625]
         staffroles = [ctx.guild.get_role(id) for id in staffroleids]
-        removed_roles = []
         for i in staffroles:
             if i is None:
                 staffroles.remove(i)
@@ -260,12 +265,13 @@ class Admin(Joining, Sticky, ServerRule, commands.Cog, name='admin', metaclass=C
         except discord.NotFound:
             await ctx.send(f"{member.mention} has been demoted for 30 seconds. Their removed roles are: **{', '.join(role.name for role in tupremove)}**")
         try:
-            await member.send(f"Alas! Due to you misbehaving, you have been demoted by **{ctx.author}**. You no longer have the roles: **{', '.join(role.name for role in tupremove)}**. \nYour roles might be readded afterwards. Or will they? <:dv_bShrugOwO:837687264263798814>")
+            message = f"Alas! Due to you misbehaving, you have been demoted by **{ctx.author}**" if not selfdemote else "You have just self demoted yourself."
+            await member.send(f"{message} You no longer have the roles: **{', '.join(role.name for role in tupremove)}**. \nYour roles might be readded afterwards. Or will they? <:dv_bShrugOwO:837687264263798814>")
         except:
             pass
         await asyncio.sleep(30.0)
         try:
-            await member.add_roles(*tupremove, reason=f"Demotion reversed automatically")
+            await member.add_roles(*tupremove, reason='Demotion reversed automatically')
         except Exception as e:
             return await ctx.send(f"There was an issue with adding roles. I've temporarily stopped promoting {member}. More details: {e}")
         return await ctx.send(f"{member.mention} congratulations on your promotion to:  **{', '.join(role.name for role in tupremove)}**!")
