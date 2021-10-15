@@ -285,6 +285,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
             return
         for trigger in triggers:
             msgcontent = message.content.lower()
+            msgcontent = msgcontent.split(" ")
             if trigger.get('trigger') in msgcontent:
                 responses = await self.client.pool_pg.fetch("SELECT response FROM autoreactions WHERE guild_id=$1 AND trigger=$2", *(message.guild.id, trigger[0]))
                 if len(responses) > 1:
