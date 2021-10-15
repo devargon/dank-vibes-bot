@@ -8,7 +8,7 @@ from .sticky import Sticky
 from .joining import Joining
 from utils import checks
 from utils.buttons import *
-
+from utils.format import grammarformat
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
 class Admin(Joining, Sticky, ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass):
@@ -261,9 +261,9 @@ class Admin(Joining, Sticky, ServerRule, commands.Cog, name='admin', metaclass=C
             except Exception as e:
                 return await msg.edit(content=f"There was an issue with removing roles. I've temporarily stopped demoting {member}. More details: {e}")
         try:
-            await msg.edit(content=f"{member.mention} has been demoted for 30 seconds. Their removed roles are: **{', '.join(role.name for role in tupremove)}**")
+            await msg.edit(content=f"{member.mention} has been demoted for 30 seconds. They are no longer a  **{grammarformat(role.name for role in tupremove)}.**")
         except discord.NotFound:
-            await ctx.send(f"{member.mention} has been demoted for 30 seconds. Their removed roles are: **{', '.join(role.name for role in tupremove)}**")
+            await ctx.send(f"{member.mention} has been demoted for 30 seconds. Their removed roles are: **{grammarformat(role.name for role in tupremove)}**")
         try:
             message = f"Alas! Due to you misbehaving, you have been demoted by **{ctx.author}**." if not selfdemote else "You have just self demoted yourself."
             await member.send(f"{message} You no longer have the roles: **{', '.join(role.name for role in tupremove)}**. \nYour roles might be readded afterwards. Or will they? <:dv_bShrugOwO:837687264263798814>")
