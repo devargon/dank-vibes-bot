@@ -9,6 +9,7 @@ from.lockdown import lockdown
 from utils.buttons import *
 from .browser_screenshot import BrowserScreenshot
 from selenium import webdriver
+import os
 
 class Mod(BrowserScreenshot, lockdown, commands.Cog, name='mod'):
     """
@@ -35,7 +36,7 @@ class Mod(BrowserScreenshot, lockdown, commands.Cog, name='mod'):
         """
         Sends a message showing the 5 self roles which can be gotten via buttons.
         """
-        roleids = [859493857061503008, 758174135276142593, 758174643814793276, 680131933778346011, 713477937130766396]#[895815546292035625, 895815588289581096, 895815773208051763, 895815799812521994, 895815832465190933]
+        roleids = [895815546292035625, 895815588289581096, 895815773208051763, 895815799812521994, 895815832465190933] if os.name == "nt" else [859493857061503008, 758174135276142593, 758174643814793276, 680131933778346011, 713477937130766396]#[895815546292035625, 895815588289581096, 895815773208051763, 895815799812521994, 895815832465190933]
         role1 = ctx.guild.get_role(roleids[0])
         role2 = ctx.guild.get_role(roleids[1])
         role3 = ctx.guild.get_role(roleids[2])
@@ -60,19 +61,23 @@ class Mod(BrowserScreenshot, lockdown, commands.Cog, name='mod'):
 
                 class somebutton(discord.ui.Button):
                     async def callback(self, interaction: discord.Interaction):
-                        print(str(self.emoji))
-                        print(emojis.index(str(self.emoji)))
                         target_role = roles[emojis.index(str(self.emoji))]
                         if target_role in interaction.user.roles:
-                            await interaction.user.remove_roles(target_role, reason="Selfrole")
-                            await interaction.response.send_message(f"The role **{target_role.name}** has been removed from you.", ephemeral=True)
+                            await interaction.response.send_message(f"You already have the role **{target_role.name}**!", ephemeral=True)
                         else:
                             await interaction.user.add_roles(target_role, reason="Selfrole")
                             await interaction.response.send_message(f"The role **{target_role.name}** has been added to you.", ephemeral=True)
                         #await update_roles(self.emoji)
                 for emoji in emojis:
                     self.add_item(somebutton(emoji=discord.PartialEmoji.from_str(emoji), label=rolenames[emojis.index(emoji)], style=discord.ButtonStyle.grey))
-        await channel.send("Press the button to claim your role.", view=selfroles(ctx, self.client, None))
+
+            async def on_timeout(self) -> None:
+                for b in self.children:
+                    b.disabled = True
+                await self.response.edit(content="This message is now inactive.", view=self)
+        view = selfroles(ctx, self.client, 172800.0)
+        message = await channel.send("Press the button to claim your role.", view=view)
+        view.response = message
 
 
     @checks.has_permissions_or_role(administrator=True)
