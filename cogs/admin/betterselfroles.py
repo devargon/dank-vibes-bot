@@ -153,7 +153,7 @@ class dank_pings(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         catroles = [758174643814793276, 757907479190306826, 680131933778346011, 859493857061503008, 758175760909074432, 758174135276142593]
-        labels = ["Heist Ping", "Shop Sale Ping", "Lottery Ping", "Partered Heist Pinig", "Giveaway Ping", "Elite Giveaway Ping"]
+        labels = ["Heist Ping", "Shop Sale Ping", "Lottery Ping", "Partnered Heist Ping", "Giveaway Ping", "Elite Giveaway Ping"]
         emojis = ["<:heistpepe:898493464684142663>", "<:ShopSale:898493500545433650>", "<:pepelotto:898493525031792690>", "<:heistpartner:898493577376710677>", "<:Pepeliftmeme:898493625950949426>", "<:pepepec:898493664920227850>"]
         ids = ["sr:heistping", "sr:shopsaleping", "sr:lotteryping", "sr:partneredheistping", "sr:giveawayping", "sr:elitegiveawayping"]
         class somebutton(discord.ui.Button):
@@ -248,6 +248,13 @@ class colors(discord.ui.View):
             async def callback(self, interaction: discord.Interaction):
                 index = emojis.index(str(self.emoji))
                 role = interaction.guild.get_role(catroles[index])
+                for count, item in enumerate(catroles):
+                    if count == index:
+                        pass
+                    else:
+                        targetremove = interaction.guild.get_role(item)
+                        if targetremove in interaction.user.roles:
+                            await interaction.user.remove_roles(targetremove, reason="Selfrole")
                 if discord.utils.get(interaction.user.roles, id = 645934789160992768) or discord.utils.get(interaction.user.roles, id = 739199912377319427) or discord.utils.get(interaction.user.roles, id = 769491608189927434) or discord.utils.get(interaction.user.roles, id=847461071643607091) or discord.utils.get(interaction.user.roles, id = 758172293133762591) or discord.utils.get(interaction.user.roles, id = 758172863580209203) or discord.utils.get(interaction.user.roles, id = 872685125471727656):
                     if role not in interaction.user.roles:
                         await interaction.user.add_roles(role, reason="Selfrole")
@@ -311,12 +318,19 @@ class specialcolors(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         catroles = [758170964340506675, 767031737673842708, 782945052770697256, 758176346139918396, 758176352901529601, 782945398431023104, 782944967516618762, 758171089095360533, 782945231985311745, 631225364496121866]
-        emojis = ["<:EmoBoiBlacc:792331117831127050>", "<:Mysterious:820202446780629002>", "<:Sunshine:820202387330301963>", "<:caribbean:820202510261551125>", "<:MermaidTaffy:792330459153170444>", "<:Azure:820202528888848404>", "<:DustyRose:820202489046630420>", "<:Lilac:820202470575046656>", "<:Pinklemonade:820202425381945375>", "<:Starburst:820202408939618354>"]
+        emojis = ['<:EmoBoiBlacc:898495383662121041>', ' <:Mysterious:898495420471336961>', ' <:Sunshine:898495451903447091>', ' <:Caribbean:898495483616583710>', ' <:MermaidTaffy:898495521872826388>', ' <:Azure:898495548678631434>', ' <:DustyRose:898495582006554624>', ' <:Lilac:898495608103518208>', ' <:PinkLemonade:898495644178718720>', ' <:Starburst:898495679477973032>']
         ids = ['sr:emoboiblacc', 'sr:mysterious', 'sr:sunshine', 'sr:caribbean', 'sr:mermaidtaffy', 'sr:azure', 'sr:dustyrose', 'sr:lilac', 'sr:pinklemonade', 'sr:starburst']
         class somebutton(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
                 index = emojis.index(str(self.emoji))
                 role = interaction.guild.get_role(catroles[index])
+                for count, item in enumerate(catroles):
+                    if count == index:
+                        pass
+                    else:
+                        targetremove = interaction.guild.get_role(item)
+                        if targetremove in interaction.user.roles:
+                            await interaction.user.remove_roles(targetremove, reason="Selfrole")
                 if discord.utils.get(interaction.user.roles, id = 758173974348824576) or discord.utils.get(interaction.user.roles, id = 739199912377319427) or discord.utils.get(interaction.user.roles, id = 756226612261027961) or discord.utils.get(interaction.user.roles, id=847461249935343626) or discord.utils.get(interaction.user.roles, id = 892266027495350333):
                     if role not in interaction.user.roles:
                         await interaction.user.add_roles(role, reason="Selfrole")
