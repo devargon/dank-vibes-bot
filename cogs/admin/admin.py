@@ -6,18 +6,20 @@ from discord.ext import commands
 from .serverrule import ServerRule
 from .sticky import Sticky
 from .joining import Joining
+from .betterselfroles import BetterSelfroles
 from utils import checks
 from utils.buttons import *
 from utils.format import grammarformat
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
-class Admin(Joining, Sticky, ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass):
+class Admin(BetterSelfroles, Joining, Sticky, ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass):
     """
     Server Commands
     """
     def __init__(self, client):
         self.client = client
         self.queue = []
+        self.selfroleviews_added = False
 
     async def handle_toggle(self, guild, settings) -> bool:
         if (result := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", guild.id, settings)) is not None:
@@ -232,6 +234,7 @@ class Admin(Joining, Sticky, ServerRule, commands.Cog, name='admin', metaclass=C
         """
         selfdemote = False
         if member is None:
+            ctx.command.reset_cooldown(ctx)
             return await ctx.send("You need to tell me who to demote, otherwise I'm demoting **you**.")
         if ctx.author.guild_permissions.administrator != True and ctx.guild.get_role(684591962094829569) not in member.roles:
             await ctx.send("You have not met the requirements to demote someone else, hence you're being self-demoted.")
@@ -260,10 +263,11 @@ class Admin(Joining, Sticky, ServerRule, commands.Cog, name='admin', metaclass=C
                 await member.remove_roles(*tupremove, reason=f"Demoted by {ctx.author}")
             except Exception as e:
                 return await msg.edit(content=f"There was an issue with removing roles. I've temporarily stopped demoting {member}. More details: {e}")
+        lstofrolenames = [role.name for role in tupremove]
         try:
-            await msg.edit(content=f"{member.mention} has been demoted for 30 seconds. They are no longer a  **{grammarformat(role.name for role in tupremove)}.**")
+            await msg.edit(content=f"{member.mention} has been demoted for 30 seconds. They are no longer a  **{grammarformat(lstofrolenames)}.**")
         except discord.NotFound:
-            await ctx.send(f"{member.mention} has been demoted for 30 seconds. Their removed roles are: **{grammarformat(role.name for role in tupremove)}**")
+            await ctx.send(f"{member.mention} has been demoted for 30 seconds. Their removed roles are: **{grammarformat(lstofrolenames)}**")
         try:
             message = f"Alas! Due to you misbehaving, you have been demoted by **{ctx.author}**." if not selfdemote else "You have just self demoted yourself."
             await member.send(f"{message} You no longer have the roles: **{', '.join(role.name for role in tupremove)}**. \nYour roles might be readded afterwards. Or will they? <:dv_bShrugOwO:837687264263798814>")
