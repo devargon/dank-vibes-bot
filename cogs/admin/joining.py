@@ -41,7 +41,7 @@ class Joining(commands.Cog):
         if channel is None:
             return
         try:
-            await channel.send(message_text, embed=discord.Embed.from_dict(json_data), delete_after=join_message.get('delete_after'))
+            await channel.send(message_text, embed=discord.Embed.from_dict(json_data) if json_data is not None else None, delete_after=join_message.get('delete_after'))
         except Exception as e:
             if "Missing Permissions" in str(e):
                 return
