@@ -38,10 +38,6 @@ class snipe(commands.Cog):
         self.edited_messages = {}
 
     @commands.Cog.listener()
-    async def on_message(self, message):
-        print(f"Deleted messages: {self.deleted_messages}", f"Edited messages: {self.edited_messages}")
-
-    @commands.Cog.listener()
     async def on_message_delete(self, message):
         if message.author.bot:
             return
@@ -84,14 +80,17 @@ class snipe(commands.Cog):
         snipedata = self.deleted_messages[channel.id]
         def desc():
             for string in blacklisted:
-                print(string)
-                print(string in snipedata['content'])
                 if string in snipedata['content']:
                     return "This message has a blacklisted word and cannot be shown."
             if 'dv.hp' in snipedata['content'].lower() or 'dv.hideping' in snipedata['content'].lower() or 'uwu hideping' in snipedata['content'].lower() or 'uwu hp' in snipedata['content'].lower():
                 return "😃"
             else:
-                return snipedata['content']
+                content = snipedata['content']
+                splitlines = content.split('\n')
+                if len(splitlines) <= 1:
+                    return content if len(content) < 2000 else content[:2000] + "..."
+                else:
+                    return '\n'.join(splitlines[:len(splitlines)]) if len(splitlines) < 20 else '\n'.join(splitlines[:20]) + "\n" + f"**... and another {len(splitlines) - 20} lines**"
         desc = desc()
         embed = discord.Embed(title=f"Sniped message from {snipedata['author'].name} 🔫", description=desc, color=self.client.embed_color)
         if 'dv.hp' in snipedata['content'].lower() or 'dv.hideping' in snipedata['content'].lower() or 'uwu hideping' in snipedata['content'].lower() or 'uwu hp' in snipedata['content'].lower():
@@ -101,8 +100,11 @@ class snipe(commands.Cog):
             embed.set_author(name=f"{snipedata['author']}", icon_url=snipedata['author'].display_avatar.url)
         embed.set_footer(text=f"Sniped in {humanize_timedelta(seconds=round(time())-snipedata['time'])}")
         if snipedata['image'] is not None:
-            embed.set_image(url=snipedata['image'])
-        await ctx.send(embed=embed)
+            if ctx.guild.get_role(608495204399448066) in ctx.author.roles or ctx.guild.get_role(684591962094829569) in ctx.author.roles or ctx.author.guild_permissions.administrator==True:
+                embed.set_image(url=snipedata['image'])
+            else:
+                embed.description += "\n\n[Image sent with message](https://www.youtube.com/watch?v=dQw4w9WgXcQ)"
+        await ctx.send("Tip: To quickly snipe a message before they counter the snipe, use `dv.s` instead!" if 'snipe' in ctx.message.content else None, embed=embed)
 
 
     @checks.has_permissions_or_role(administrator=True)
