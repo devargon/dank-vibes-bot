@@ -8,18 +8,13 @@ from utils.time import humanize_timedelta
 from .dm import dm
 from .imgen import imgen
 from .snipe import snipe
+from .karuta import karuta
 from utils import checks
 import operator
 from typing import Union
 import matplotlib.pyplot as plt
 import os
-from PIL import Image, ImageFilter
-import urllib.request
-from io import BytesIO
 import aiohttp
-import contextlib
-import requests
-import json
 from utils.errors import ArgumentBaseError
 
 blacklisted_words = ['N-renoteQ3R', 'n.i.g.g.e.r', 'n i g a', 'nygga', 'niuggers', 'nigger',
@@ -44,7 +39,7 @@ blacklisted_words = ['N-renoteQ3R', 'n.i.g.g.e.r', 'n i g a', 'nygga', 'niuggers
 def check_blacklist(string:str):
     return any(text in string for text in blacklisted_words)
 
-class Fun(snipe, imgen, dm, commands.Cog, name='fun'):
+class Fun(karuta, snipe, imgen, dm, commands.Cog, name='fun'):
     """
     Fun commands
     """
@@ -58,9 +53,11 @@ class Fun(snipe, imgen, dm, commands.Cog, name='fun'):
         self.chatchart_is_running = False
         self.deleted_messages = {}
         self.edited_messages = {}
+        self.karutaconfig = ''
+        self.karutaevent_isrunning = False
 
     def lowered_cooldown(message):
-        if discord.utils.get(message.author.roles, name="Contributor (24T)"):#  or discord.utils.get(message.author.roles, name="Vibing Investor"):
+        if discord.utils.get(message.author.roles, name="Contributor (24T)") or discord.utils.get(message.author.roles, name="Vibing Investor"):
             return commands.Cooldown(1, 1800)
         else:
             return commands.Cooldown(1, 3600)
