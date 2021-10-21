@@ -216,3 +216,12 @@ def stringnum_toint(string:str):
     intstring = evaluate(string)
     intstring = int(intstring) if intstring is not None else intstring
     return intstring
+
+def grammarformat(iterable):
+    if len(iterable) == 0:
+        return ''
+    if len(iterable) == 1:
+        return iterable[0]
+    if len(iterable) == 2:
+        return iterable[0] + ' and ' + iterable[1]
+    return ', '.join(iterable[:-1]) + ', and ' + iterable[-1]
