@@ -46,6 +46,9 @@ class karutaevent(discord.ui.View):
                   ]
 
         async def update_stat(user):
+            if random.choice([False, False, False, False, True]):
+                random.shuffle(self.children)
+                await self.response.edit(view=self)
             if self.zombieno <= 0:
                 return
             response = self.response
@@ -77,19 +80,16 @@ class karutaevent(discord.ui.View):
                 embed.description = embed_desc + "\n\n**The zombies have been defeated!**"
                 await self.response.edit(embed=embed, view=self)
                 self.stop()
-
         class somebutton(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
                 await interaction.response.defer()
                 if interaction.user in karutaevent.wrong_buttons:
-                    await interaction.response.send_message(
-                        "You were killed by the zombies and can't futher interact with them.", ephemeral=True)
+                    await interaction.followup.send("You were killed by the zombies and can't futher interact with them.", ephemeral=True)
                 elif str(self.emoji) == correct_emoji:
                     await update_stat(interaction.user)
                 else:
                     karutaevent.wrong_buttons.append(interaction.user)
-                    await interaction.response.send_message(
-                        "Oh no! You selected the wrong button and were killed by the zombies. :(", ephemeral=True)
+                    await interaction.followup.send("Oh no! You selected the wrong button and were killed by the zombies. :(", ephemeral=True)
 
         for emoji in emoji_array:
             self.add_item(somebutton(emoji=emoji, style=discord.ButtonStyle.grey))
@@ -199,7 +199,7 @@ class karuta(commands.Cog):
                 else:
                     summary += f"🪦{i.mention} **died**, rest in peace.\n"
             try:
-                await msg.reply(embed=discord.Embed(title="Summary", description=summary if summary != '' else "There is no summary to show.", color=self.client.embed_color, timestamp=discord.utils.utcnow()).set_footer(text="To see how many skulls you have, send dv.inv"))
+                await msg.reply(embed=discord.Embed(title="Summary", description=summary if summary != '' else "**What a disgrace!**\nNo one fought the zombies and they will haunt the children tonight 😈", color=self.client.embed_color, timestamp=discord.utils.utcnow()).set_footer(text="You can see how many skulls you have with dv.inv"))
             except discord.HTTPException:
                 await message.channel.send(embed=discord.Embed(title="Summary", description=summary if summary != '' else "There is no summary to show.", color=self.client.embed_color, timestamp=discord.utils.utcnow()))
             self.karutaevent_isrunning = False
