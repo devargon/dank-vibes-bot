@@ -19,8 +19,8 @@ class imgen(commands.Cog):
         if member is None:
             return await ctx.send("mention someone lol")
         loop = asyncio.get_event_loop()
-        ctxavatar = await ctx.author.display_avatar.read()
-        member_avatar = await member.display_avatar.read()
+        ctxavatar = await ctx.author.display_avatar.with_format('png').read()
+        member_avatar = await member.display_avatar.with_format('png').read()
         def generate():
             main = Image.open("assets/poop.png")
             ima = Image.open(BytesIO(ctxavatar), formats=['png']).convert('RGBA')
@@ -47,7 +47,7 @@ class imgen(commands.Cog):
         if member is None:
             return await ctx.send("mention someone lol")
         loop = asyncio.get_event_loop()
-        member_avatar = await member.display_avatar.read()
+        member_avatar = await member.display_avatar.with_format('png').read()
         def generate():
             main = Image.open("assets/stankbase.png")
             backg = main.copy()
