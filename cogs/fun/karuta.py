@@ -162,7 +162,7 @@ class karuta(commands.Cog):
             chosen_emoji = selected_pattern[random.randint(0, 2)]
             doubledrop = random.choice([False, False, False, False, False, False, False, False, False, False, True])
             if doubledrop:
-                msg = "This horde of zombies will award you with **twice** the number of skulls! 💀"
+                msg = "Killing this horde of zombies will award you with **twice** the number of skulls! 💀"
             else:
                 msg = None
             embed = discord.Embed(title="A new horde of zombies are incoming!",
@@ -206,7 +206,7 @@ class karuta(commands.Cog):
             try:
                 await msg.reply(embed=discord.Embed(title="Summary", description=summary if summary != '' else "**What a disgrace!**\nNo one fought the zombies and they will haunt the children tonight 😈", color=self.client.embed_color, timestamp=discord.utils.utcnow()).set_footer(text="You can see how many skulls you have with dv.inv"))
             except discord.HTTPException:
-                await message.channel.send(embed=discord.Embed(title="Summary", description=summary if summary != '' else "There is no summary to show.", color=self.client.embed_color, timestamp=discord.utils.utcnow()))
+                await message.channel.send(embed=discord.Embed(title="Summary", description=summary if summary != '' else "**What a disgrace!**\nNo one fought the zombies and they will haunt the children tonight 😈", color=self.client.embed_color, timestamp=discord.utils.utcnow()))
             self.karutaevent_isrunning = False
         except Exception as e:
             full_error = print_exception(f'Ignoring exception in Karuta message events', e)
