@@ -95,34 +95,34 @@ class lockdown(commands.Cog):
         Lockdown Guide for Dank Vibes Bot
         """
         message = """
-        This lockdown feature allows you to create separate groups of channels (or lockdown profiles) to be able to lock and unlock many channels at once. It also allows you to set a separate message for each profile. When quoting profile names, add quotations `""` for names with spaces, unless you're using `view`, `delete`, `start` and `end`.
-        
-        **__Using lockdown profiles__**
-        `lockdown start [profile_name]`
-        Locks down all channels in a lockdown profile. If a message is specified, it will send that message when locking down the channels.
-        
-        `lockdown end [profile_name]`
-        Unlocks down all channels in a lockdown profile. If a message is specified, it will send that message when unlocking down the channels.
-        
-        
-        **__Editing lockdown profiles__**
-        `lockdown create [profile_name] [channel]`
-        Creates a lockdown profile with the name specified in `profile_name`.
-        
-        `lockdown add [profile_name] [channel1] <channel2> <channel3> ...`
-        Adds channels to the specified lockdown profile.
-        
-        `lockdown remove [profile_name] [channel1] <channel2> <channel3> ...`
-        Removes channels from the specified lockdown profile.
-        
-        `lockdown delete [profile_name]`
-        Deletes all channels in a lockdown profile, hence removing a lockdown profile.
-        
-        `lockdown view <profile_name>`
-        Using this command without any arguments will show the existing lockdown profiles. Viewing a lockdown profile will show you the channels in it + whether they're locked.
-        
-        `lockdown msg [profile_name] [message_or_json_embed]`
-        This will set a message for the lockdown profile when it is used to lock channels. To see the existing message for the profile, don't include a message.
+This lockdown feature allows you to create separate groups of channels (or lockdown profiles) to be able to lock and unlock many channels at once. It also allows you to set a separate message for each profile. When quoting profile names, add quotations `""` for names with spaces, unless you're using `view`, `delete`, `start` and `end`.
+
+**__Using lockdown profiles__**
+`lockdown start [profile_name]`
+Locks down channels in a profile. If a message is specified, it will send that message when locking down the channels.
+
+`lockdown end [profile_name]`
+Unlocks down all channels in a profile. If a message is specified, it will send that message when unlocking down the channels.
+
+
+**__Editing lockdown profiles__**
+`lockdown create [profile_name] [channel]`
+Creates a lockdown profile with the specified name.
+
+`lockdown add [profile_name] [channel1] <channel2> <channel3> ...`
+Adds channels to the specified lockdown profile.
+
+`lockdown remove [profile_name] [channel1] <channel2> <channel3> ...`
+Removes channels from the specified lockdown profile.
+
+`lockdown delete [profile_name]`
+Deletes a lockdown profile.
+
+`lockdown view <profile_name>`
+Using this command without any arguments will show the existing lockdown profiles. Viewing a lockdown profile will show you the channels in it + whether they're locked.
+
+`lockdown msg [profile_name] [message_or_json_embed]`
+This will set a message for the lockdown profile when it is used to lock channels. To see the existing message for the profile, don't include a message.
         """
         await ctx.send(embed=discord.Embed(title=f"{self.client.user.name}'s Lockdown Guide", description=message, color=self.client.embed_color, timestamp=discord.utils.utcnow()))
 
