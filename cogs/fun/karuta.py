@@ -6,7 +6,7 @@ from discord.ext import commands
 from utils.context import DVVTcontext
 import random
 from discord.ext import menus
-
+from utils import checks
 from utils.menus import CustomMenu
 
 
@@ -48,7 +48,6 @@ class karutaevent(discord.ui.View):
         async def update_stat(user):
             if self.zombieno <= 0:
                 return
-            print(f"{user} killed a zombie, there are now {self.zombieno} zombies.")
             response = self.response
             embed = response.embeds[0]
             embed_desc = embed.description or ''
@@ -81,12 +80,12 @@ class karutaevent(discord.ui.View):
 
         class somebutton(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
+                await interaction.response.defer()
                 if interaction.user in karutaevent.wrong_buttons:
                     await interaction.response.send_message(
                         "You were killed by the zombies and can't futher interact with them.", ephemeral=True)
                 elif str(self.emoji) == correct_emoji:
                     await update_stat(interaction.user)
-                    print('test')
                 else:
                     karutaevent.wrong_buttons.append(interaction.user)
                     await interaction.response.send_message(
@@ -135,23 +134,18 @@ class karuta(commands.Cog):
             if self.karutaconfig == '':
                 self.karutaconfig = await self.client.pool_pg.fetchrow("SELECT * FROM karutaeventconfig")
             if self.karutaconfig is None:
-                print('there is no karuta config')
                 return
             if message.channel.id != self.karutaconfig.get('channel_id'):
-                print('the channel is not karuta event channel')
                 return
             if self.karutaconfig.get('percentage_chance') is None:
-                print('there is no percentage chance')
                 return
             if message.author.bot:
-                print('message was sent by a bot')
                 return
             context = await self.client.get_context(message)
             if context.valid == True:
                 return
             randomdec = random.random()
             if randomdec >= self.karutaconfig.get('percentage_chance'):
-                print(f"{randomdec}")
                 return
             emojis = [("🔨", "⛏️", "🪓",),
                       ("🙈", "🙉", "🙊",),
@@ -178,7 +172,6 @@ class karuta(commands.Cog):
             karutaview.response = msg
             await karutaview.wait()
             summary = ''
-            print(karutaview.returning_value)
             if karutaview.returning_value == None:
                 await asyncio.sleep(1.0)
             buttons_clicked = karutaview.returning_value[0]
@@ -205,16 +198,19 @@ class karuta(commands.Cog):
                     pass
                 else:
                     summary += f"🪦{i.mention} **died**, rest in peace.\n"
-            await message.channel.send(embed=discord.Embed(title="Summary", description=summary if summary != '' else "There is no summary to show.", color=self.client.embed_color, timestamp=discord.utils.utcnow()))
+            try:
+                await msg.reply(embed=discord.Embed(title="Summary", description=summary if summary != '' else "There is no summary to show.", color=self.client.embed_color, timestamp=discord.utils.utcnow()).set_footer(text="To see how many skulls you have, send dv.inv"))
+            except discord.HTTPException:
+                await message.channel.send(embed=discord.Embed(title="Summary", description=summary if summary != '' else "There is no summary to show.", color=self.client.embed_color, timestamp=discord.utils.utcnow()))
             self.karutaevent_isrunning = False
         except Exception as e:
             full_error = print_exception(f'Ignoring exception in Karuta message events', e)
             await self.client.get_channel(871737028105109574).send(embed=discord.Embed(description=f"```py\n{full_error}\n```"))
 
-    @commands.has_guild_permissions(administrator=True)
+    @checks.has_permissions_or_role(administrator=True)
     @commands.group(name="karutaconfig", aliases=['kconfig'], invoke_without_command=True)
     async def karutaconfig(self, ctx):
-        if self.karutaconfig is None:
+        if self.karutaconfig is None or self.karutaconfig == '':
             channel = "Not set"
             rate = "Not set"
         else:
@@ -223,13 +219,13 @@ class karuta(commands.Cog):
                 channel = channel.mention
             rate = self.karutaconfig.get('percentage_chance')
         embed = discord.Embed(title="Karuta Event Configuration",
-                              description=f"**Channel** to send Karuta events: {channel}\n**Rate** of events spawning: {round(rate, 4)*100}%",
+                              description=f"**Channel** to send Karuta events: {channel}\n**Rate** of events spawning: {round(rate, 4)*100 if type(rate) != str else 'Not set'}%",
                               color=self.client.embed_color)
         embed.add_field(name="To change/update the configuratin:",
                         value="Use `kconfig channel [channel]` to change the channel where Karuta events are spawned.\nUse `kconfig rate [rate_in_decimals]` to change the rate of events spawning.")
         await ctx.send(embed=embed)
 
-    @commands.has_guild_permissions(administrator=True)
+    @checks.has_permissions_or_role(administrator=True)
     @karutaconfig.command(name="channel", aliases=['chan'])
     async def config_channel(self, ctx, channel: discord.TextChannel = None):
         """
@@ -267,7 +263,7 @@ class karuta(commands.Cog):
         await ctx.send(f"Karuta events now have a chance of {rate}/1 spawning.")
         self.karutaconfig = await self.client.pool_pg.fetchrow("SELECT * FROM karutaeventconfig")
 
-
+    @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="inventory", aliases=['inv'])
     async def inventory(self, ctx, member: discord.Member = None):
         if member is None:
@@ -288,6 +284,7 @@ class karuta(commands.Cog):
         embed.set_footer(text=random.choice(footerresponse))
         await ctx.send(embed=embed)
 
+    @checks.has_permissions_or_role(administrator=True)
     @commands.command(name='skullleaderboard', aliases=['slb', 'skulllb'])
     async def skullleaderboard(self, ctx, *, arg: str = None):
         """
