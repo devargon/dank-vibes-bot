@@ -217,7 +217,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             total = await self.client.pool_pg.fetchrow("SELECT SUM(all_time) FROM grinderdata")
             logembed = discord.Embed(description=f"**Grinder**: {member.mention}\n**Amount**: `⏣ {comma_number(amt)}`\nClick [here]({message.jump_url}) to view.\n`⏣ {comma_number(int(total.get('sum')))}` total grinded by grinders!", color=self.client.embed_color, timestamp=discord.utils.utcnow())
             logembed.set_footer(text=f"{message.guild.name} Grinder Log", icon_url=message.guild.icon.url)
-            await self.client.get_channel(grinderlogID).send(f"A grinder transasction by `{member} ({member.id})` has been logged.", embed=logembed)
+            await self.client.get_channel(grinderlogID).send(f"A grinder transaction by `{member} ({member.id})` has been logged.", embed=logembed)
             await message.channel.send(f"{member.mention}, I have logged your transfer of **⏣ {comma_number(amt)}** to {dankholder}.")
             if result.get('today') + amt >= 5000000:
                 try:
