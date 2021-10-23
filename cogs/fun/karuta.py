@@ -160,12 +160,17 @@ class karuta(commands.Cog):
                       ]
             selected_pattern = emojis[random.randint(0, 9)]
             chosen_emoji = selected_pattern[random.randint(0, 2)]
+            doubledrop = random.choice([False, False, False, False, False, False, False, False, False, False, True])
+            if doubledrop:
+                msg = "This horde of zombies will award you with **twice** the number of skulls! 💀"
+            else:
+                msg = None
             embed = discord.Embed(title="A new horde of zombies are incoming!",
                                   description=f"Click {chosen_emoji} to fight the incoming zombies!\n\n🧟🧟🧟🧟🧟🧟🧟🧟🧟🧟",
                                   color=self.client.embed_color).set_thumbnail(
                 url="https://cdn.nogra.me/core/zombie.gif")
             self.karutaevent_isrunning = True
-            msg = await message.channel.send(embed=embed)
+            msg = await message.channel.send(msg, embed=embed)
             karutaview = karutaevent(self.client, selected_pattern, chosen_emoji)
             await asyncio.sleep(2.0)
             await msg.edit(view=karutaview)
@@ -179,11 +184,11 @@ class karuta(commands.Cog):
             buttons_clicked = sorted(buttons_clicked.items(), key=operator.itemgetter(1), reverse=True)
             for count, i in enumerate(buttons_clicked):
                 if count == 0:
-                    skull = 3
+                    skull = 3 if doubledrop != True else 6
                 elif count == 1:
-                    skull = 2
+                    skull = 2  if doubledrop != True else 4
                 else:
-                    skull = 1
+                    skull = 1 if doubledrop != True else 2
                 inv = await self.client.pool_pg.fetchrow("SELECT * FROM inventories WHERE user_id = $1", i[0].id)
                 if i[0] in failed_users:
                     pass
