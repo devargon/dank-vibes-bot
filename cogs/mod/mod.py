@@ -30,11 +30,15 @@ class Mod(BrowserScreenshot, lockdown, commands.Cog, name='mod'):
         prefs = {"download_restrictions": 3}
         self.op.add_experimental_option("prefs", prefs)
 
+    class RoleFlags(commands.FlagConverter, case_insensitive=True, delimiter=' ', prefix='--'):
+        roles: Optional[str]
+
     @checks.has_permissions_or_role(manage_roles=True)
-    @commands.command(name="self", aliases=["selfroles"])
-    async def selfroles(self, ctx, channel:discord.TextChannel = None):
+    @commands.command(name="self", aliases=["selfroles"], usage="--roles (role names separated by commas) (optional)")
+    async def selfroles(self, ctx, channel:Optional[discord.TextChannel] = None, *, flags:RoleFlags):
         """
         Sends a message showing the 5 self roles which can be gotten via buttons.
+        To highlight a role in green, use `--roles the **full names** of the roles` separated in commas. They are not case sensitive.
         """
         roleids = [895815546292035625, 895815588289581096, 895815773208051763, 895815799812521994, 895815832465190933] if os.name == "nt" else [859493857061503008, 758174135276142593, 758174643814793276, 680131933778346011, 713477937130766396]#[895815546292035625, 895815588289581096, 895815773208051763, 895815799812521994, 895815832465190933]
         role1 = ctx.guild.get_role(roleids[0])
@@ -47,6 +51,10 @@ class Mod(BrowserScreenshot, lockdown, commands.Cog, name='mod'):
         roles = [role1, role2, role3, role4, role5]
         if channel is None:
             channel = ctx.channel
+            if flags is not None and flags.roles is not None and len(flags.roles) is not None:
+                hlroles = flags.roles.split(',')
+                for index, role_name in enumerate(hlroles):
+                    hlroles[index] = role_name.lower().strip()
         class selfroles(discord.ui.View):
             def __init__(self, ctx: DVVTcontext, client, timeout):
                 self.context = ctx
@@ -69,7 +77,12 @@ class Mod(BrowserScreenshot, lockdown, commands.Cog, name='mod'):
                             await interaction.response.send_message(f"The role **{target_role.name}** has been added to you.", ephemeral=True)
                         #await update_roles(self.emoji)
                 for emoji in emojis:
-                    self.add_item(somebutton(emoji=discord.PartialEmoji.from_str(emoji), label=rolenames[emojis.index(emoji)], style=discord.ButtonStyle.grey))
+                    style = discord.ButtonStyle.grey
+                    if hlroles is not None:
+                        if rolenames[emojis.index(emoji)].lower() in hlroles:
+
+                            style = discord.ButtonStyle.green
+                    self.add_item(somebutton(emoji=discord.PartialEmoji.from_str(emoji), label=rolenames[emojis.index(emoji)], style=style))
 
             async def on_timeout(self) -> None:
                 for b in self.children:
