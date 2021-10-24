@@ -57,7 +57,9 @@ class Fun(karuta, snipe, imgen, dm, commands.Cog, name='fun'):
         self.karutaevent_isrunning = False
 
     def lowered_cooldown(message):
-        if discord.utils.get(message.author.roles, name="Contributor (24T)") or discord.utils.get(message.author.roles, name="Vibing Investor"):
+        if discord.utils.get(message.author.roles, id=874931276329656370):
+            return commands.Cooldown(1, 900)
+        elif discord.utils.get(message.author.roles, name="Vibing Investor"):
             return commands.Cooldown(1, 1800)
         else:
             return commands.Cooldown(1, 3600)
