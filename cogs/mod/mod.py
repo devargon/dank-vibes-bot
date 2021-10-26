@@ -116,6 +116,27 @@ class Mod(BrowserScreenshot, lockdown, commands.Cog, name='mod'):
             else:
                 await ctx.send(embed=discord.Embed(title=f"Raw content of message with ID {message_id} in {channel}", description=f"```\n{content}\n```", color = self.client.embed_color))
 
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.command(name='karutaeventinfo', aliases=['kei'])
+    async def karutaeventinfo(self, ctx):
+        embed = discord.Embed(title="Dank Vibes Bot's Karuta Halloween Event!", description="From **__24/10, 0.00 EST to 31/10, 0.00 EST__**, zombies will be spawned by me in these channels:\n> <#823597687940841482>\n> <#881149732628623390>\n> <#847375281399791616>\nYour **goal** is to collect as many skulls 💀 as possible by **defeating the zombie hordes**. \n\nThe top 3 players with the **most skulls collected 💀** will win certain prizes!\n\nMore information is in <#901402571862843392>.", color=self.client.embed_color)
+        embed.set_author(name=f"{ctx.guild.name}'s Karuta Zombie Halloween Event", url=ctx.guild.icon.url)
+        embed.add_field(name="How do I kill the zombies?", value="I'll tell you which button/emoji to click'. The button that **matches** <:DVB_True:887589686808309791> the emoji shown on the message is the correct button.\n\n**Every time** you press the button, you'll kill a zombie! The buttons wll shuffle once in a while, so be careful not to press the wrong button.", inline=False)
+        embed.add_field(name="How can I die?", value="If you press the wrong button, the zombies will kill you instead.", inline=True)
+        embed.add_field(name="What happens if I die?", value="If you die, you **can't** fight the zombies. You will **not receive** any skulls as you aren't alive to collect them, even had killed some zombies.", inline=True)
+        embed.set_thumbnail(url="https://cdn.nogra.me/core/zombie.gif")
+        embed.set_image(url="https://cdn.nogra.me/dankvibes/karuta_win.gif")
+        if ctx.message.reference:
+            partial = ctx.channel.get_partial_message(ctx.message.reference.message_id)
+            try:
+                await partial.reply(embed=embed)
+            except:
+                pass
+            else:
+                return
+        await ctx.send(embed=embed)
+
+
     @commands.command(name="memberpvc", brief = "Checks the private channels that a member has access to", description = "Checks the private channels that a member has access to", aliases = ["pvcmember"])
     @commands.has_guild_permissions(manage_roles=True)
     async def memberpvc(self, ctx, member:discord.Member = None):
