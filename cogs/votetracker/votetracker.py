@@ -132,7 +132,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
                 if preferences.get('rmtype') == 1:
                     message = "You can now vote for Dank Vibes again!"
                     if first_time:
-                        message += "\n\nTip: You can turn off reminders or be pinged for voting by selecting the respective option in `dv.votereminder`.\nhttps://cdn.nogra.me/core/votereminder.gif"
+                        message += " By voting for Dank Vibes multiple times, you can get special perks!\n\nTip: You can turn off reminders or be pinged for voting by selecting the respective option in `dv.votereminder`. Use this in a server channel though.\nhttps://cdn.nogra.me/core/votereminder.gif"
                     try:
                         await member.send(message, view=VoteLink())
                     except discord.Forbidden:
