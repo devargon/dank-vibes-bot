@@ -234,7 +234,12 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
                 command_cache = Command._buckets._cache[ctx.author.id]
                 duration = command_cache.get_retry_after()
                 cooldownlst.append(f"**{Command.name}**: {humanize_timedelta(seconds=duration)}")
-        #db_cds = await self.client.pool_pg.execute("SELECT ")
+        db_cds = await self.client.pool_pg.fetch("SELECT * FROM cooldowns WHERE member_id = $1", ctx.author.id)
+        if len(db_cds) > 0:
+            for cd in db_cds:
+                command_name = cd.get('command_name')
+                duration_of_cd = cd.get('time') - round(time.time())
+                cooldownlst.append(f"**{command_name}**: {humanize_timedelta(seconds=duration_of_cd)}")
         embed = discord.Embed(color=self.client.embed_color, description='\n'.join(cooldownlst) if cooldownlst else "You have no existing cooldowns!", timestamp=discord.utils.utcnow())
         embed.set_author(name=f"{ctx.author.name}'s Cooldowns", icon_url=str(ctx.author.display_avatar.url))
         embed.set_footer(text=ctx.guild.name,  icon_url=str(ctx.guild.icon.url))
