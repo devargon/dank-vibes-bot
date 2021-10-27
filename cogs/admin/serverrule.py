@@ -134,7 +134,7 @@ class ServerRule(commands.Cog):
         """
         if cmd is None:
             return await ctx.send("Command is a required argument.")
-        if not (command := get_command_name(cmd)):
+        if not (command := self.client.get_command(cmd)):
             return await ctx.send(f"Oops, looks like command \"{cmd}\" doesn't exist!")
         roles = await self.get_command_rule(ctx.guild, get_command_name(command))
         if not roles:
