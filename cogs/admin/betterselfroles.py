@@ -318,7 +318,7 @@ class specialcolors(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         catroles = [758170964340506675, 767031737673842708, 782945052770697256, 758176346139918396, 758176352901529601, 782945398431023104, 782944967516618762, 758171089095360533, 782945231985311745, 631225364496121866]
-        emojis = ['<:EmoBoiBlacc:898495383662121041>', ' <:Mysterious:898495420471336961>', ' <:Sunshine:898495451903447091>', ' <:Caribbean:898495483616583710>', ' <:MermaidTaffy:898495521872826388>', ' <:Azure:898495548678631434>', ' <:DustyRose:898495582006554624>', ' <:Lilac:898495608103518208>', ' <:PinkLemonade:898495644178718720>', ' <:Starburst:898495679477973032>']
+        emojis = ['<:EmoBoiBlacc:898495383662121041>', '<:Mysterious:898495420471336961>', '<:Sunshine:898495451903447091>', '<:Caribbean:898495483616583710>', '<:MermaidTaffy:898495521872826388>', '<:Azure:898495548678631434>', '<:DustyRose:898495582006554624>', '<:Lilac:898495608103518208>', '<:PinkLemonade:898495644178718720>', '<:Starburst:898495679477973032>']
         ids = ['sr:emoboiblacc', 'sr:mysterious', 'sr:sunshine', 'sr:caribbean', 'sr:mermaidtaffy', 'sr:azure', 'sr:dustyrose', 'sr:lilac', 'sr:pinklemonade', 'sr:starburst']
         class somebutton(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
