@@ -46,17 +46,7 @@ class OwO(commands.Cog, name='owo'):
             return True
         if 'uwu' in msg:
             return True
-        if msg.startswith('p'):
-            msg = msg[1:].split()
-            if len(msg) == 0:
-                return True
-            if msg[0] in self.owo_commands:
-                return False
-            if msg[0].startswith('ls'):
-                return False
-            if msg[0].startswith('!'):
-                return False
-            return True
+        return False
 
     async def get_leaderboard(self, guild, query, top):
         leaderboard = []
