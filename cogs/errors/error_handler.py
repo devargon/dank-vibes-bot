@@ -8,6 +8,7 @@ from utils.format import print_exception
 from utils.errors import ArgumentBaseError
 import requests
 import json
+import asyncio
 
 class ErrorHandler(commands.Cog):
     """
@@ -37,11 +38,10 @@ class ErrorHandler(commands.Cog):
             if (ctx.author.id == 321892489470410763) or (ctx.author.id == 650647680837484556):
                 return await ctx.reinvoke()
             message = f"You're on cooldown. Try again in **{humanize_timedelta(seconds=error.retry_after)}**."
-            #if ctx.command.name == "dumbfight":
-                #message += "\nPeople with **Contributor (24T)** will have a cooldown of only **30 minutes**!"
-            if not await self.client.pool_pg.fetchrow("SELECT * FROM has_cooldown_error WHERE userid = $1", ctx.author.id):
-                message += "\n\nTip: You can now view your active cooldowns with `dv.mycooldowns`."
-                await self.client.pool_pg.execute("INSERT INTO has_cooldown_error VALUES($1)", ctx.author.id)
+            if ctx.command.name == "dumbfight":
+                message += "\nPeople with **Vibing Investor** will have a cooldown of only **30 minutes**!"
+            if ctx.command.name == "lockgen":
+                message = f"This command is currently under a global cooldown of **{humanize_timedelta(seconds=error.retry_after)}** to prevent abuse.\n"
             await send_error(message)
         elif isinstance(error, commands.MemberNotFound):
             ctx.command.reset_cooldown(ctx)
@@ -62,6 +62,19 @@ class ErrorHandler(commands.Cog):
         elif isinstance(error, commands.BadArgument):
             ctx.command.reset_cooldown(ctx)
             await send_error(error, delete_after=10)
+        elif isinstance(error, discord.errors.DiscordServerError):
+            sent = False
+            times = 0
+            while sent == False and times <= 5:
+                try:
+                    await asyncio.sleep(5.0)
+                    await ctx.send(
+                        "⚠️ While processing your command, I was unable to connect to Discord. This is an issue with Discord's servers. Try to run the command again.")
+                    sent = True
+                except:
+                    times += 1
+            await self.client.get_channel(871737028105109574).send(
+                f"I encountered a Discord Server Error at {ctx.channel.mention}: {ctx.message.jump_url}")
         else:
             embed = discord.Embed(title="Oh no! something went wrong.", description="It has been sent to the bot developer, it'll be fixed soon.", color=discord.Color.red())
             if ctx.author.id in [650647680837484556, 321892489470410763]:
