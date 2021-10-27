@@ -164,11 +164,13 @@ class karuta(commands.Cog):
                       ]
             selected_pattern = emojis[random.randint(0, 9)]
             chosen_emoji = selected_pattern[random.randint(0, 2)]
-            doubledrop = random.choice([False, False, False, False, False, False, False, False, True])
+            doubledrop = random.choice([False, False, False, False, False, False, False, True])
+            maxdrop = random.choice([False, False, False, False, False, False, False, False, False, False, False, False, True])
+            msg = ''
             if doubledrop:
-                msg = "Killing this horde of zombies will award you with **twice** the number of skulls! 💀"
-            else:
-                msg = None
+                msg += "Killing this horde of zombies will award you with **twice** the number of skulls! 💀\n"
+            if maxdrop:
+                msg += "Killing this horde of zombies will award **everyone** with the maximum number of skulls! 💀"
             embed = discord.Embed(title="A new horde of zombies are incoming!",
                                   description=f"Click {chosen_emoji} to fight the incoming zombies!\n\n🧟🧟🧟🧟🧟🧟🧟🧟🧟🧟🧟🧟🧟🧟🧟🧟🧟🧟🧟🧟\n",
                                   color=self.client.embed_color).set_thumbnail(
@@ -198,19 +200,20 @@ class karuta(commands.Cog):
             for count, i in enumerate(buttons_clicked):
                 if count <= first_place:
                     skull = 3 if doubledrop != True else 6
-                elif count == second_place:
-                    skull = 2  if doubledrop != True else 4
+                elif count <= second_place:
+                    skull = 2 if doubledrop != True else 4
                 else:
                     skull = 1 if doubledrop != True else 2
+                if maxdrop:
+                    skull = 6 if doubledrop else 3
                 inv = await self.client.pool_pg.fetchrow("SELECT * FROM inventories WHERE user_id = $1", i[0].id)
                 if i[0] in failed_users:
                     pass
+                elif inv is None:
+                    await self.client.pool_pg.execute("INSERT INTO inventories VALUES($1, $2, $3)", i[0].id, skull, 0)
                 else:
-                    if inv is None:
-                        await self.client.pool_pg.execute("INSERT INTO inventories VALUES($1, $2, $3)", i[0].id, skull, 0)
-                    else:
-                        current = inv.get('skull') or 0
-                        await self.client.pool_pg.execute("UPDATE inventories SET skull = $1 WHERE user_id = $2", current+skull, i[0].id)
+                    current = inv.get('skull') or 0
+                    await self.client.pool_pg.execute("UPDATE inventories SET skull = $1 WHERE user_id = $2", current+skull, i[0].id)
                 summary += f"⚔️ {i[0].mention} killed **{i[1]}** zombie{'s' if i[1] != 1 else ''} {f'and got **{skull}** skulls! 💀' if i[0] not in failed_users else 'but **died** afterwards, rest in peace.'}\n"
             for i in failed_users:
                 if i in [j[0] for j in buttons_clicked]:
