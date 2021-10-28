@@ -39,6 +39,8 @@ class snipe(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
+        if message.channel.id == 837627114659905566:
+            return
         if message.author.bot:
             return
         if message.webhook_id:
@@ -54,6 +56,8 @@ class snipe(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
+        if before.channel.id == 837627114659905566:
+            return
         if before.author.bot:
             return
         if before.webhook_id:
