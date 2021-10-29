@@ -35,7 +35,8 @@ class ErrorHandler(commands.Cog):
         elif isinstance(error, commands.CheckFailure):
             await send_error("Oops!, looks like you don't have enough permission to use this command.", delete_after=5)
         elif isinstance(error, commands.CommandOnCooldown):
-            if (ctx.author.id == 321892489470410763) or (ctx.author.id == 650647680837484556):
+            enabled = await ctx.bot.pool_pg.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
+            if enabled == True:
                 return await ctx.reinvoke()
             message = f"You're on cooldown. Try again in **{humanize_timedelta(seconds=error.retry_after)}**."
             if ctx.command.name == "dumbfight":

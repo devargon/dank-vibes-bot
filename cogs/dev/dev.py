@@ -25,6 +25,7 @@ from utils.converters import MemberUserConverter, TrueFalse
 from typing import Optional, Union
 from utils.menus import CustomMenu
 import random
+from utils.context import DVVTcontext
 
 
 class Suggestion(menus.ListPageSource):
@@ -38,6 +39,41 @@ class Suggestion(menus.ListPageSource):
             embed.add_field(name=f"{entry[0]}", value=entry[1], inline=False)
         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return embed
+
+class toggledevmode(discord.ui.View):
+    def __init__(self, ctx: DVVTcontext, client, enabled):
+        self.context = ctx
+        self.response = None
+        self.result = None
+        self.client = client
+        self.enabled = enabled
+        super().__init__(timeout=5.0)
+        init_enabled = self.enabled
+
+        async def update_message():
+            self.enabled = False if self.enabled else True
+            await self.client.pool_pg.execute("UPDATE devmode SET enabled = $1 WHERE user_id = $2", self.enabled, ctx.author.id)
+            self.children[0].style = discord.ButtonStyle.green if self.enabled else discord.ButtonStyle.red
+            self.children[0].label = "Dev Mode is enabled" if self.enabled else "Dev mode is disabled"
+            await self.response.edit(view=self)
+
+        class somebutton(discord.ui.Button):
+            async def callback(self, interaction: discord.Interaction):
+                await update_message()
+        self.add_item(somebutton(emoji="🛠️", label = "Dev Mode is enabled" if init_enabled else "Dev mode is disabled", style=discord.ButtonStyle.green if init_enabled else discord.ButtonStyle.red))
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        ctx = self.context
+        author = ctx.author
+        if interaction.user != author:
+            await interaction.response.send_message("Only the author can interact with this message.", ephemeral=True)
+            return False
+        return True
+
+    async def on_timeout(self) -> None:
+        for b in self.children:
+            b.disabled = True
+        await self.response.edit(view=self)
 
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     """
@@ -476,18 +512,17 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
                 embed.add_field(name="Status", value="Closed" if result.get('finish') else "Open", inline=True)
                 await ctx.send(embed=embed)
 
-    @checks.dev()
-    @commands.command(name="gayrate")
-    async def gayrate(self, ctx, member:discord.Member = None):
-        if member is None:
-            member = ctx.author
-        if member.id == 560251854399733760:
-            return await ctx.send("I'd better not say it out... <a:dv_qbShockedOwO:837773861822136330>")
-        if member.id == 650647680837484556:
-            gayrate = 100
-        else:
-            gayrate = random.randint(0, 100)
-        embed = discord.Embed(title=f"{ctx.me.name} Gayrate Calculator", description=f"{member.mention} is {gayrate}% gay. 🏳️‍🌈", color=self.client.embed_color)
-        if member.id == 650647680837484556:
-            embed.set_footer(text='this is rigged btw')
-        await ctx.send(embed=embed)
+
+    @checks.base_dev()
+    @commands.command(name="devmode")
+    async def devmode(self, ctx):
+        result = await self.client.pool_pg.fetchrow("SELECT * FROM devmode WHERE user_id = $1", ctx.author.id)
+        if result is None:
+            await self.client.pool_pg.execute("INSERT INTO devmode VALUES($1, $2)", ctx.author.id, False)
+            result = await self.client.pool_pg.fetchrow("SELECT * FROM devmode WHERE user_id = $1", ctx.author.id)
+        is_enabled = result.get('enabled')
+        view = toggledevmode(ctx, self.client, is_enabled)
+        msg = await ctx.send("__**Toogle Developer mode**__", view=view)
+        view.response = msg
+        await view.wait()
+
