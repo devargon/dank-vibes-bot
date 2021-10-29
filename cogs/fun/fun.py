@@ -583,7 +583,7 @@ class Fun(karuta, snipe, imgen, dm, commands.Cog, name='fun'):
                             chosen = intval
             summary = f"**Summary**\nThe correct number is **{chosen}**, and I will tell people that the number is **between {small} and {big} (both inclusive)**.\n\nI will now start the game in {ctx.channel.mention}!"
             await ctx.author.send(summary)
-            embed = discord.Embed(title="Guess the Number event!", description=f"**{ctx.author}** is starting a Guess the Number event!\nYou have to guess a number that is **between {small} and {big}** (both inclusive).\n\n{ctx.author.display_name}'s say `start` to start this event or `cancel` to cancel the game.", color=self.client.embed_color)
+            embed = discord.Embed(title="Guess the Number event!", description=f"**{ctx.author}** is starting a Guess the Number event!\nYou have to guess a number that is **between {small} and {big}** (both inclusive).\n\n{ctx.author.display_name}, say `start` to start this event or `cancel` to cancel the game.", color=self.client.embed_color)
             await ctx.send(embed=embed)
             try:
                 def check(message):
