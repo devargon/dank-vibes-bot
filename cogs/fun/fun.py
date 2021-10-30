@@ -62,6 +62,8 @@ class Fun(karuta, snipe, imgen, dm, commands.Cog, name='fun'):
         self.edited_messages = {}
         self.karutaconfig = ''
         self.karutaevent_isrunning = False
+        self.planning_numberevent = []
+        self.numberevent_channels = []
 
     def lowered_cooldown(message):
         if discord.utils.get(message.author.roles, id=874931276329656370):
@@ -485,6 +487,10 @@ class Fun(karuta, snipe, imgen, dm, commands.Cog, name='fun'):
         if channel is None:
             channel = ctx.channel
         confirmview = confirm(ctx, self.client, 30.0)
+        if ctx.author.id in self.planning_numberevent:
+            return await ctx.send("You're already planning a Guess the Number game. Please check your DMs.")
+        if channel.id in self.numberevent_channels:
+            return await ctx.send("A Guess the Number game is already taking place in the specified channel. Tell the host to `cancel` the game.")
         embed = discord.Embed(title="Action awaiting confirmation", description=f"Are you ready to start a Guess the Number game in {channel.mention}?", color=self.client.embed_color, timestamp=discord.utils.utcnow())
         confirmmsg = await ctx.send(embed=embed, view=confirmview)
         confirmview.response = confirmmsg
@@ -501,16 +507,17 @@ class Fun(karuta, snipe, imgen, dm, commands.Cog, name='fun'):
             chosen = None
             error = None
             try:
-                await ctx.author.send("Setting up a number event...")
+                await ctx.author.send(embed=discord.Embed(title="Setting up a Guess the Number game...", description="You can say `cancel` anytime during the setup to cancel the Guess the Number game.", color=self.client.embed_color))
             except discord.Forbidden:
                 return await ctx.send("To set up the game, I need your DMs open for me. Please open your DMs and run the command again!")
+            self.planning_numberevent.append(ctx.author.id)
             embed.description, embed.color = "Please check your DMs!", discord.Color.green()
             await confirmmsg.edit(embed=embed)
             while small == None or big == None:
                 sending = "State the range of numbers that the number you chose is within, with two numbers separated by a dash (`-`).\nFor example, if the number you have in mind is `5`, you should input a range of `0-10`.\nNegative numbers aren't allowed."
                 if error is not None:
                     sending = error + '\n' + sending
-                await ctx.author.send(sending)
+                await ctx.author.send(embed=discord.Embed(title="Guess the Number game setup: Step 1 of 2", description=sending, color=self.client.embed_color))
                 def check(payload):
                     return payload.author == ctx.author and isinstance(payload.channel, discord.DMChannel)
                 try:
@@ -519,11 +526,14 @@ class Fun(karuta, snipe, imgen, dm, commands.Cog, name='fun'):
                     try:
                         await ctx.author.send("I didn't get a response from you, hence the game is cancelled.")
                     except:
+                        self.planning_numberevent.remove(ctx.author.id)
                         return await ctx.send(f"The game was cancelled as I can't DM {ctx.author}.")
                     else:
+                        self.planning_numberevent.remove(ctx.author.id)
                         return await ctx.send(f"I didn't get a response from {ctx.author.mention}, hence the game is cancelled.")
                 else:
                     if inputmessage.content.lower() == 'cancel':
+                        self.planning_numberevent.remove(ctx.author.id)
                         await ctx.author.send("I have cancelled your Guess the Number game.")
                         return await ctx.send(f"{ctx.author} has cancelled the Guess the Number game.")
                     content = inputmessage.content.replace(' ', '')
@@ -553,7 +563,7 @@ class Fun(karuta, snipe, imgen, dm, commands.Cog, name='fun'):
                 sending = f"What is the correct number that should be guessed? The number should be between {small} and {big} (both inclusive)."
                 if error is not None:
                     sending = error + '\n' + sending
-                await ctx.author.send(sending)
+                await ctx.author.send(embed=discord.Embed(title="Guess the Number game setup: Step 1 of 2", description=sending, color=self.client.embed_color))
                 def check(payload):
                     return payload.author == ctx.author and isinstance(payload.channel, discord.DMChannel)
                 try:
@@ -562,12 +572,14 @@ class Fun(karuta, snipe, imgen, dm, commands.Cog, name='fun'):
                     try:
                         await ctx.author.send("I didn't get a response from you, hence the game is cancelled.")
                     except:
+                        self.planning_numberevent.remove(ctx.author.id)
                         return await ctx.send(f"The game was cancelled as I can't DM {ctx.author}.")
                     else:
-                        return await ctx.send(
-                            f"I didn't get a response from {ctx.author.mention}, hence the game is cancelled.")
+                        self.planning_numberevent.remove(ctx.author.id)
+                        return await ctx.send(f"I didn't get a response from {ctx.author.mention}, hence the game is cancelled.")
                 else:
                     if inputmessage.content.lower() == 'cancel':
+                        self.planning_numberevent.remove(ctx.author.id)
                         await ctx.author.send("I have cancelled your Guess the Number game.")
                         return await ctx.send(f"{ctx.author} has cancelled the Guess the Number game.")
                     content = inputmessage.content
@@ -581,32 +593,40 @@ class Fun(karuta, snipe, imgen, dm, commands.Cog, name='fun'):
                             error = f"The number you choose should be between {small} and {big} (both inclusive)."
                         else:
                             chosen = intval
-            summary = f"**Summary**\nThe correct number is **{chosen}**, and I will tell people that the number is **between {small} and {big} (both inclusive)**.\n\nI will now start the game in {ctx.channel.mention}!"
+            summary = f"**Summary**\nThe correct number is **{chosen}**, and I will tell people that the number is **between {small} and {big} (both inclusive)**.\n\nI will now start the game in {channel.mention}!"
             await ctx.author.send(summary)
-            embed = discord.Embed(title="Guess the Number event!", description=f"**{ctx.author}** is starting a Guess the Number event!\nYou have to guess a number that is **between {small} and {big}** (both inclusive).\n\n{ctx.author.display_name}, say `start` to start this event or `cancel` to cancel the game.", color=self.client.embed_color)
-            await ctx.send(embed=embed)
+            self.planning_numberevent.remove(ctx.author.id)
+            embed = discord.Embed(title="Guess the Number game!", description=f"**{ctx.author}** is starting a Guess the Number game!\nYou have to guess a number that is **between {small} and {big}** (both inclusive).\n\n{ctx.author.display_name}, say `start` to start this game or `cancel` to cancel it.", color=self.client.embed_color)
+            self.numberevent_channels.append(channel.id)
+            await channel.send(embed=embed)
             try:
                 def check(message):
-                    return message.content.lower() in ['start', 'cancel']
-                msg = await self.client.wait_for('message', check=check, timeout=30.0)
+                    return message.content.lower() in ['start', 'cancel'] and message.author.id == ctx.author.id and message.channel.id == channel.id
+                msg = await self.client.wait_for('message', check=check, timeout=60.0)
             except asyncio.TimeoutError:
-                return await ctx.send(f"{ctx.author.mention} did not tell me to start or cancel the Guess the Number game. I've automatically cancelled the game.")
+                self.numberevent_channels.remove(channel.id)
+                return await channel.send(f"{ctx.author.mention} did not tell me to start or cancel the Guess the Number game. I've automatically cancelled the game.")
             else:
                 if msg.content.lower() == 'cancel':
-                    return await ctx.send("The Guess the Number game has been cancelled.")
-                pinmsg = await ctx.send(f"The game has started! Remember, **{ctx.author.display_name}**'s chosen number is between {small} and {big}.\nHave fun guessing the number!")
-                await pinmsg.pin()
+                    self.numberevent_channels.remove(channel.id)
+                    return await channel.send("The Guess the Number game has been cancelled.")
+                pinmsg = await channel.send(f"The game has started! Remember, **{ctx.author.display_name}**'s chosen number is between {small} and {big}.\nHave fun guessing the number!")
+                await pinmsg.pin(reason="Guess the Number game information")
                 times_guessed = 0
                 has_guessed = False
                 while not has_guessed:
+                    def check(payload):
+                        return payload.channel.id == channel.id
                     try:
-                        guessingmsg = await self.client.wait_for('message', timeout = 600.0)
+                        guessingmsg = await self.client.wait_for('message', check=check, timeout = 600.0)
                     except asyncio.TimeoutError:
+                        self.numberevent_channels.remove(channel.id)
                         return await ctx.send("No one guessed within the last 10 minutes. Therefore, the Guess the Number game has been cancelled.")
                     else:
                         if guessingmsg.author.id == ctx.author.id:
                             if guessingmsg.content.lower() == 'cancel':
-                                return await ctx.send(f"After `{times_guessed}` times of guessing, {ctx.author.mention} has cancelled the Guess the Number event. The correct number was `{chosen}`.")
+                                self.numberevent_channels.remove(channel.id)
+                                return await channel.send(f"After `{times_guessed}` times of guessing, {ctx.author.mention} has cancelled the Guess the Number game. The correct number was `{chosen}`.")
                         else:
                             try:
                                 guessednum = int(guessingmsg.content)
@@ -616,7 +636,8 @@ class Fun(karuta, snipe, imgen, dm, commands.Cog, name='fun'):
                                 if guessednum != chosen:
                                     times_guessed += 1
                                 else:
+                                    self.numberevent_channels.remove(channel.id)
                                     has_guessed = True
                                     embed = discord.Embed(title="<a:dv_aConfettiOwO:837712162079244318> CONGRATULATIONS!", description=f"You got the correct number: `{chosen}`!\nThank you for playing **{ctx.author.display_name}**'s Guess the Number Game!", color=self.client.embed_color).set_footer(text=f'Guessing attempts: `{times_guessed}`')
+                                    await pinmsg.unpin(reason="Guess the Number game information")
                                     return await guessingmsg.reply(f"{guessingmsg.author.mention}", embed=embed)
-                return
