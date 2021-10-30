@@ -11,7 +11,7 @@ from utils import checks
 from utils.menus import CustomMenu
 import math
 
-items = ['skull', 'argonphallicobject']
+items = ['skull', 'argonphallicobject', 'llamaspit']
 
 def get_item_name(name):
     lst = difflib.get_close_matches(name, items, n=1, cutoff=0.4)
@@ -43,7 +43,7 @@ class karutaevent(discord.ui.View):
         super().__init__(timeout=10.0)
 
         async def update_stat(user):
-            if random.choice([False, False, False, False, False, True]):
+            if random.choice([False, False, False, False, False, False, False, True]):
                 random.shuffle(self.children)
                 await self.response.edit(view=self)
             if self.zombieno <= 0:
@@ -315,9 +315,12 @@ class karuta(commands.Cog):
         result = await self.client.pool_pg.fetchrow("SELECT * FROM inventories WHERE user_id = $1", member.id)
         skulls = comma_number(0 if result is None else result.get('skull') or 0)
         invpage = f"💀 Skulls • {skulls}"
-        if ctx.author.id == 650647680837484556:
-            argon = comma_number(0 if result is None else result.get('argonphallicobject') or 0)
-            invpage += f"\n<:DVB_argonphallicobject:902134179863605258> Argon-based Phallic Object • {argon}"
+        argon = 0 if result is None else result.get('argonphallicobject') or 0
+        if argon != 0:
+            invpage += f"\n<:DVB_argonphallicobject:902134179863605258> Argon-based Phallic Object • {comma_number(argon)}"
+        spit = 0 if result is None else result.get('llamaspit') or 0
+        if spit != 0:
+            invpage += f"\n🦙 Llama's Spit • {comma_number(spit)}"
         embed = discord.Embed(description=invpage, color=self.client.embed_color)
         embed.set_author(name=f"{member}'s Halloween Stash", icon_url=member.display_avatar.url)
         embed.set_footer(text="Use dv.inv info [item] to know more about an item.")
