@@ -70,7 +70,7 @@ class VoteSetting(discord.ui.Select):
             await interaction.response.send_message("Got it. You will **not be reminded** for your Dank Memer actions.", ephemeral=True)
 
 class dankreminders(discord.ui.View):
-    def __init__(self, ctx: DVVTcontext, client, rmtimes, timeout, daily, weekly, monthly, lottery, work, apple, donor, hunt, fish, di, highlow, se, search, crime, beg, dailybox, horseshoe, pizza):
+    def __init__(self, ctx: DVVTcontext, client, rmtimes, timeout, daily, weekly, monthly, lottery, work, apple, donor, hunt, fish, di, highlow, se, search, crime, beg, dailybox, horseshoe, pizza, drop):
         self.value = None
         self.timeout = timeout
         self.context = ctx
@@ -87,11 +87,11 @@ class dankreminders(discord.ui.View):
                           "🔢", "<a:DVB_snakeeyes:888404298608812112>", "<:DVB_search:888405048260976660>",
                           "<:DVB_Crime:888404653711192067>", "<:DVB_beg:888404456356610099>",
                           "<a:DVB_DailyBox:888404475470024785>", "<:DVB_Horseshoe:888404491647463454>",
-                          "<:DVB_pizza:888404502280024145>"]
+                          "<:DVB_pizza:888404502280024145>", "<:DVB_sugarskull:904936096436215828>"]
         labels = ["Claim daily", "Claim weekly", "Claim monthly", "Enter the Lottery", "Work", "Use an apple",
                   "Redeem donor rewards", "Hunt", "Fish", "Dig", "Highlow", "Snakeeyes", "Search", "Crime", "Beg",
-                  "Use a dailybox", "Use a horseshoe", "Use a pizza"]
-        is_enabled = [daily, weekly, monthly, lottery, work, apple, donor, hunt, fish, di, highlow, se, search, crime, beg, dailybox, horseshoe, pizza]
+                  "Use a dailybox", "Use a horseshoe", "Use a pizza", "Get drop items"]
+        is_enabled = [daily, weekly, monthly, lottery, work, apple, donor, hunt, fish, di, highlow, se, search, crime, beg, dailybox, horseshoe, pizza, drop]
 
         async def update_message(emoji):
             if str(emoji) == "<:DVB_calendar:873107952159059991>":
@@ -130,6 +130,8 @@ class dankreminders(discord.ui.View):
                 await self.client.pool_pg.execute("UPDATE remindersettings SET horseshoe = $1 WHERE member_id = $2", numberswitcher(self.result.get('horseshoe')), ctx.author.id)
             elif str(emoji) == "<:DVB_pizza:888404502280024145>":
                 await self.client.pool_pg.execute("UPDATE remindersettings SET pizza = $1 WHERE member_id = $2", numberswitcher(self.result.get('pizza')), ctx.author.id)
+            elif str(emoji) == "<:DVB_sugarskull:904936096436215828>":
+                await self.client.pool_pg.execute("UPDATE remindersettings SET drop = $1 WHERE member_id = $2", numberswitcher(self.result.get('drop')), ctx.author.id)
             self.result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
             self.children[reminderemojis.index(str(emoji))].style = discord.ButtonStyle.red if is_enabled[reminderemojis.index(str(emoji))] == True else discord.ButtonStyle.green
             is_enabled[reminderemojis.index(str(emoji))] = False if is_enabled[reminderemojis.index(str(emoji))] == True else True
@@ -225,6 +227,8 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                             return "**use a horseshoe** <:DVB_Horseshoe:888404491647463454>"
                         elif reminderaction == 20:
                             return "**use a pizza** <:DVB_pizza:888404502280024145>"
+                        elif reminderaction == 21:
+                            return "**A special item is dropping**!\nYou can now buy **1 Sugar Skull** for **⏣ 500,000**."
                     try:
                         member = self.client.get_guild(result.get('guild_id')).get_member(result.get('member_id'))
                         channel = self.client.get_channel(result.get('channel_id'))
@@ -766,10 +770,10 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
         """
         result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id) # gets the configuration for user to check if they have used dank reminder before
         if result is None:
-            await self.client.pool_pg.execute("INSERT into remindersettings VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)", ctx.author.id, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) # creates new entry for settings
+            await self.client.pool_pg.execute("INSERT into remindersettings VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)", ctx.author.id, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) # creates new entry for settings
             result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
         reminders = await self.client.pool_pg.fetch("SELECT * FROM dankreminders WHERE member_id = $1 and guild_id = $2", ctx.author.id, ctx.guild.id) # gets user's reminders
-        dailytime, lotterytime, worktime, appletime, redeemtime, weeklytime, monthlytime, hunttime, fishtime, digtime, highlowtime, snakeeyestime, searchtime, crimetime, begtime, dailyboxtime, horseshoetime, pizzatime = None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
+        dailytime, lotterytime, worktime, appletime, redeemtime, weeklytime, monthlytime, hunttime, fishtime, digtime, highlowtime, snakeeyestime, searchtime, crimetime, begtime, dailyboxtime, horseshoetime, pizzatime, droptime = None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
         for reminder in reminders:
             if reminder.get('remindertype') == 2:
                 dailytime = round(reminder.get('time')-time.time()) # time in discord time format
@@ -807,12 +811,52 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                 horseshoetime = round(reminder.get('time')-time.time())
             if reminder.get('remindertype') == 20:
                 pizzatime = round(reminder.get('time')-time.time())
-        remindertimes = [dailytime or None, weeklytime or None, monthlytime or None, lotterytime or None, worktime or None, appletime or None, redeemtime or None, hunttime or None, fishtime or None, digtime or None, highlowtime or None, snakeeyestime or None, searchtime or None, crimetime or None, begtime or None, dailyboxtime or None, horseshoetime or None, pizzatime or None]
-        newview = dankreminders(ctx, self.client, remindertimes, 15.0, truefalse(truefalse(result.get('daily'))), truefalse(result.get('weekly')), truefalse(result.get('monthly')), truefalse(result.get('lottery')), truefalse(result.get('work')), truefalse(result.get('apple')), truefalse(result.get('redeem')), truefalse(result.get('hunt')), truefalse(result.get('fish')), truefalse(result.get('dig')), truefalse(result.get('highlow')), truefalse(result.get('snakeeyes')), truefalse(result.get('search')), truefalse(result.get('crime')), truefalse(result.get('beg')), truefalse(result.get('dailybox')), truefalse(result.get('horseshoe')), truefalse(result.get('pizza')))
+        remindertimes = [dailytime or None, weeklytime or None, monthlytime or None, lotterytime or None, worktime or None, appletime or None, redeemtime or None, hunttime or None, fishtime or None, digtime or None, highlowtime or None, snakeeyestime or None, searchtime or None, crimetime or None, begtime or None, dailyboxtime or None, horseshoetime or None, pizzatime or None, droptime or None]
+        newview = dankreminders(ctx, self.client, remindertimes, 15.0, truefalse(truefalse(result.get('daily'))), truefalse(result.get('weekly')), truefalse(result.get('monthly')), truefalse(result.get('lottery')), truefalse(result.get('work')), truefalse(result.get('apple')), truefalse(result.get('redeem')), truefalse(result.get('hunt')), truefalse(result.get('fish')), truefalse(result.get('dig')), truefalse(result.get('highlow')), truefalse(result.get('snakeeyes')), truefalse(result.get('search')), truefalse(result.get('crime')), truefalse(result.get('beg')), truefalse(result.get('dailybox')), truefalse(result.get('horseshoe')), truefalse(result.get('pizza')), truefalse(result.get('drop')))
         message = await ctx.send(f"**{ctx.author}'s Dank Memer Reminders**\nSelect the button that corresponds to the reminder to enable/disable it.\n\nYou're currently {'reminded via **DMs**' if result.get('method') == 1 else 'reminded via **ping**' if result.get('method') == 2 else 'not reminded'} for your reminders.\nTo see the duration of your reminders in timestamp format, use `dv.dankcooldown` or `dv.dcd`.", view=newview)
         newview.response = message
         newview.result = result
         newview.rmtimes = remindertimes
+
+    @checks.admoon()
+    @commands.command(name="reminddrop", aliases=["rd"])
+    async def reminddrop(self, ctx, timetodrop:int, *, msg: str):
+        """
+        Sets a Drop reminder.
+        """
+        if time is None:
+            return await ctx.send("Epoch time when drop happens needs to be specified.")
+        if msg is None:
+            return await ctx.send("A message needs to be accompanied.")
+        duration = timetodrop - round(time.time())
+        if duration < 0:
+            return await ctx.send("Invalid time.")
+        await ctx.checkmark()
+        await asyncio.sleep(duration)
+        enabled = await self.client.pool_pg.fetch("SELECT * FROM remindersettings WHERE drop = $1", 1)
+        #crafting messages
+        messages = []
+        ids = [i.get('member_id') for i in enabled]
+        tempmsg = ''
+        for i in ids:
+            member = ctx.guild.get_member(i)
+            if member is None:
+                pass
+            else:
+                if len(tempmsg) + len(msg) < 1800:
+                    tempmsg += f"{member.mention}"
+                else:
+                    tempmsg += f" {msg}"
+                    messages.append(tempmsg)
+                    tempmsg = f"{member.mention}"
+        tempmsg += f" {msg}"
+        messages.append(tempmsg)
+        channel_id = 873616122388299837 if ctx.guild.id == 871734809154707467 else 614945340617130004
+        channel = self.client.get_channel(channel_id)
+        for message in messages:
+            await channel.send(message)
+
+
 
     @checks.not_in_gen()
     @commands.command(name="dankcooldowns", aliases=["dankcd", "dcd"])
