@@ -239,7 +239,8 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
             for cd in db_cds:
                 command_name = cd.get('command_name')
                 duration_of_cd = cd.get('time') - round(time.time())
-                cooldownlst.append(f"**{command_name}**: {humanize_timedelta(seconds=duration_of_cd)}")
+                if duration_of_cd > 0:
+                    cooldownlst.append(f"**{command_name}**: {humanize_timedelta(seconds=duration_of_cd)}")
         embed = discord.Embed(color=self.client.embed_color, description='\n'.join(cooldownlst) if cooldownlst else "You have no existing cooldowns!", timestamp=discord.utils.utcnow())
         embed.set_author(name=f"{ctx.author.name}'s Cooldowns", icon_url=str(ctx.author.display_avatar.url))
         embed.set_footer(text=ctx.guild.name,  icon_url=str(ctx.guild.icon.url))
