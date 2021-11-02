@@ -81,6 +81,8 @@ class snipe(commands.Cog):
             channel = ctx.channel
         if channel.id not in self.deleted_messages:
             return await ctx.send("There's nothing to snipe here!")
+        if not channel.permissions_for(ctx.author).view_channel:
+            return await ctx.send("You can't view this channel.")
         snipedata = self.deleted_messages[channel.id]
         def desc():
             for string in blacklisted:
