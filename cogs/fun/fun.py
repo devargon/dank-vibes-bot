@@ -478,7 +478,7 @@ class Fun(karuta, snipe, imgen, dm, commands.Cog, name='fun'):
         if ctx.author.id in [650647680837484556, 321892489470410763]:
             ctx.command.reset_cooldown(ctx)
 
-    @checks.in_beta()
+    @checks.has_permissions_or_role(administrator=True)
     @commands.command(name='guessthenumber', aliases=['gtn', 'numberevent'])
     async def guessthenumber(self, ctx, channel:discord.TextChannel = None):
         """
@@ -563,7 +563,7 @@ class Fun(karuta, snipe, imgen, dm, commands.Cog, name='fun'):
                 sending = f"What is the correct number that should be guessed? The number should be between {small} and {big} (both inclusive)."
                 if error is not None:
                     sending = error + '\n' + sending
-                await ctx.author.send(embed=discord.Embed(title="Guess the Number game setup: Step 1 of 2", description=sending, color=self.client.embed_color))
+                await ctx.author.send(embed=discord.Embed(title="Guess the Number game setup: Step 2 of 2", description=sending, color=self.client.embed_color))
                 def check(payload):
                     return payload.author == ctx.author and isinstance(payload.channel, discord.DMChannel)
                 try:
@@ -593,7 +593,7 @@ class Fun(karuta, snipe, imgen, dm, commands.Cog, name='fun'):
                             error = f"The number you choose should be between {small} and {big} (both inclusive)."
                         else:
                             chosen = intval
-            summary = f"**Summary**\nThe correct number is **{chosen}**, and I will tell people that the number is **between {small} and {big} (both inclusive)**.\n\nI will now start the game in {channel.mention}!"
+            summary = f"**Summary**\nThe correct number is **{chosen}**, and I will tell people that the number is **between {small} and {big} (both inclusive)**.\n\nNow head to {channel.mention}, and say `start` to initialize the game!"
             await ctx.author.send(summary)
             self.planning_numberevent.remove(ctx.author.id)
             embed = discord.Embed(title="Guess the Number game!", description=f"**{ctx.author}** is starting a Guess the Number game!\nYou have to guess a number that is **between {small} and {big}** (both inclusive).\n\n{ctx.author.display_name}, say `start` to start this game or `cancel` to cancel it.", color=self.client.embed_color)
