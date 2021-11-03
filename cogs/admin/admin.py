@@ -236,7 +236,7 @@ class Admin(BetterSelfroles, Joining, Sticky, ServerRule, commands.Cog, name='ad
         if member is None:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("You need to tell me who to demote, otherwise I'm demoting **you**.")
-        if ctx.author.guild_permissions.administrator != True and ctx.guild.get_role(684591962094829569) not in member.roles:
+        if ctx.author.guild_permissions.administrator != True and ctx.guild.get_role(684591962094829569) not in ctx.author.roles:
             await ctx.send("You have not met the requirements to demote someone else, hence you're being self-demoted.")
             selfdemote = True
             member = ctx.author
