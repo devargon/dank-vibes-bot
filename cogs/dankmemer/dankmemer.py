@@ -840,10 +840,19 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
         tempmsg = ''
         for i in ids:
             member = ctx.guild.get_member(i)
-            if member is None:
-                pass
-            else:
-                if len(tempmsg) + len(msg) < 1800:
+            if member is not None:
+                remindersettings = await self.client.pool_pg.fetchval("SELECT method FROM remindersettings WHERE member_id = $1", i)
+                if remindersettings == True:
+                    try:
+                        await member.send(f"{msg}")
+                    except:
+                        if len(tempmsg) + len(msg) < 1800:
+                            tempmsg += f"{member.mention}"
+                        else:
+                            tempmsg += f" {msg}"
+                            messages.append(tempmsg)
+                            tempmsg = f"{member.mention}"
+                elif len(tempmsg) + len(msg) < 1800:
                     tempmsg += f"{member.mention}"
                 else:
                     tempmsg += f" {msg}"
