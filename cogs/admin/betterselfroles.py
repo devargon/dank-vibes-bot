@@ -351,8 +351,8 @@ class BetterSelfroles(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        selfrolemessages = await self.client.pool_pg.fetchrow("SELECT age, gender, location, minigames, event_pings, dank_pings, server_pings, bot_roles, random_color FROM selfrolemessages WHERE guild_id = $1", 595457764935991326)
-        categories = ['age', 'gender', 'location', 'minigames', 'event_pings', 'dank_pings', 'server_pings', 'bot_roles', 'random_color']
+        selfrolemessages = await self.client.pool_pg.fetchrow("SELECT age, gender, location, minigames, event_pings, dank_pings, server_pings, bot_roles, random_color, colors, specialcolors, boostping, vipheist FROM selfrolemessages WHERE guild_id = $1", 595457764935991326)
+        categories = ['age', 'gender', 'location', 'minigames', 'event_pings', 'dank_pings', 'server_pings', 'bot_roles', 'random_color', 'colors', 'specialcolors', 'boostping', 'vipheist']
         if not self.selfroleviews_added:
             if len(selfrolemessages) == 0:
                 self.selfroleviews_added = True
@@ -374,8 +374,14 @@ class BetterSelfroles(commands.Cog):
                 self.client.add_view(server_pings(), message_id=selfrolemessages.get('server_pings'))
             if selfrolemessages.get('bot_roles'):
                 self.client.add_view(bot_roles(), message_id=selfrolemessages.get('bot_roles'))
-            if selfrolemessages.get('random_color'):
-                self.client.add_view(random_color(), message_id=selfrolemessages.get('random_color'))
+            if selfrolemessages.get('colors'):
+                self.client.add_view(colors(), message_id=selfrolemessages.get('colors'))
+            if selfrolemessages.get('specialcolors'):
+                self.client.add_view(specialcolors(), message_id=selfrolemessages.get('specialcolors'))
+            if selfrolemessages.get('boostping'):
+                self.client.add_view(BoostPing(), message_id=selfrolemessages.get('boostping'))
+            if selfrolemessages.get('vipheist'):
+                self.client.add_view(VIPHeist(), message_id=selfrolemessages.get('vipheist'))
             self.selfroleviews_added = True
 
     @checks.has_permissions_or_role(administrator=True)
@@ -492,8 +498,8 @@ class BetterSelfroles(commands.Cog):
         if selfrolemessages is not None:
             msgids.append(ctx.guild.id)
             await self.client.pool_pg.execute(
-                "UPDATE viprolemessages SET guild_id = $1, colors = $2, vipcolors = $3, boostgaw = $4, vipheistping = $5 WHERE guild_id = $6", *msgids)
+                "UPDATE selfrolemessages SET guild_id = $1, colors = $2, specialcolors = $3, boostping = $4, vipheist = $5 WHERE guild_id = $6", *msgids)
         else:
             await self.client.pool_pg.execute(
-                "INSERT INTO viprolemessages VALUES($1, $2, $3, $4, $5)", *msgids)
+                "INSERT INTO selfrolemessages(guild_id, colors, specialcolors, boostping, vipheist) VALUES($1, $2, $3, $4, $5)", *msgids)
         await ctx.send("Done!")
