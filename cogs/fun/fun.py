@@ -8,7 +8,7 @@ from utils.time import humanize_timedelta
 from .dm import dm
 from .imgen import imgen
 from .snipe import snipe
-from .karuta import karuta
+from .itemgames import ItemGames
 from utils import checks
 import operator
 from typing import Union
@@ -46,7 +46,7 @@ blacklisted_words = ['N-renoteQ3R', 'n.i.g.g.e.r', 'n i g a', 'nygga', 'niuggers
 def check_blacklist(string:str):
     return any(text in string for text in blacklisted_words)
 
-class Fun(karuta, snipe, imgen, dm, commands.Cog, name='fun'):
+class Fun(ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
     """
     Fun commands
     """
@@ -420,7 +420,7 @@ class Fun(karuta, snipe, imgen, dm, commands.Cog, name='fun'):
                 try:
                     await statusmessage.edit(embed=embed)
                 except:
-                    await ctx.send(embed=embed)
+                    statusmessage = await ctx.send(embed=embed)
         counted = sorted(data.items(), key=operator.itemgetter(1), reverse=True)
         """
         This removes the extra authors from the earlier dictionary so it's only 19 authors and 1 others
