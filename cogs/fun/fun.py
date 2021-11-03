@@ -14,15 +14,9 @@ import operator
 from typing import Union
 import matplotlib.pyplot as plt
 import os
-from PIL import Image, ImageFilter
-import urllib.request
-from io import BytesIO
 import aiohttp
-import contextlib
-import requests
-import json
 from utils.errors import ArgumentBaseError
-from utils.buttons import confirm
+from .games import games
 
 blacklisted_words = ['N-renoteQ3R', 'n.i.g.g.e.r', 'n i g a', 'nygga', 'niuggers', 'nigger',
                      'https://discordnitro.link/stearncommunity', 'kill yourself', 'figgot', 'ching chong',
@@ -43,10 +37,8 @@ blacklisted_words = ['N-renoteQ3R', 'n.i.g.g.e.r', 'n i g a', 'nygga', 'niuggers
                      'faggot', 'niceca||r', 'nig gas', 'n!gg@', 'hey, free discord gifted nitro for 1 month:',
                      'neeger', 'nighha', 'n1gg@', 'n!g3r', 'nig', 'nigg', 'anigame']
 
-def check_blacklist(string:str):
-    return any(text in string for text in blacklisted_words)
 
-class Fun(ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
+class Fun(games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
     """
     Fun commands
     """
@@ -64,6 +56,13 @@ class Fun(ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
         self.karutaevent_isrunning = False
         self.planning_numberevent = []
         self.numberevent_channels = []
+
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx, error):
+        if ctx.command.name == 'chatchart':
+            self.chatchart_is_running = False
+        elif ctx.command.name == 'gen':
+            self.gen_is_muted = False
 
     def lowered_cooldown(message):
         if discord.utils.get(message.author.roles, id=874931276329656370):
@@ -232,7 +231,10 @@ class Fun(ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
             return
         if message is None:
             message = ''
-        if check_blacklist(message):
+        async def check_blacklisted_content():
+            blacklisted_words = await self.client.pool_pg.fetch("SELECT * FROM blacklisted_words")
+            return any(text.get('string') in message for text in blacklisted_words)
+        if await check_blacklisted_content():
             message = ''
         content = f"{message or ''} ‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍ <@{member.id}>" # ik this looks sketchy, but you can paste it in discord and send it to see how this looks like :MochaLaugh:
         webhooks = await ctx.channel.webhooks()
@@ -477,167 +479,3 @@ class Fun(ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
 
         if ctx.author.id in [650647680837484556, 321892489470410763]:
             ctx.command.reset_cooldown(ctx)
-
-    @checks.has_permissions_or_role(administrator=True)
-    @commands.command(name='guessthenumber', aliases=['gtn', 'numberevent'])
-    async def guessthenumber(self, ctx, channel:discord.TextChannel = None):
-        """
-        Sets up an interactiive guess the number game. If no channel is specified, the game will take place in the channel where the command was invoked.
-        """
-        if channel is None:
-            channel = ctx.channel
-        confirmview = confirm(ctx, self.client, 30.0)
-        if ctx.author.id in self.planning_numberevent:
-            return await ctx.send("You're already planning a Guess the Number game. Please check your DMs.")
-        if channel.id in self.numberevent_channels:
-            return await ctx.send("A Guess the Number game is already taking place in the specified channel. Tell the host to `cancel` the game.")
-        embed = discord.Embed(title="Action awaiting confirmation", description=f"Are you ready to start a Guess the Number game in {channel.mention}?", color=self.client.embed_color, timestamp=discord.utils.utcnow())
-        confirmmsg = await ctx.send(embed=embed, view=confirmview)
-        confirmview.response = confirmmsg
-        await confirmview.wait()
-        if confirmview.returning_value == None:
-            embed.description, embed.color = "I did not get a repsonse, so I cancelled the game. To proceed with setting up the game, press the green button 'Yes'.", discord.Color.red()
-            return await confirmmsg.edit(embed=embed)
-        elif confirmview.returning_value == False:
-            embed.description, embed.color = "I cancelled the game. To proceed with setting up the game, press the green button 'Yes'.", discord.Color.red()
-            return await confirmmsg.edit(embed=embed)
-        elif confirmview.returning_value == True:
-            small = None
-            big = None
-            chosen = None
-            error = None
-            try:
-                await ctx.author.send(embed=discord.Embed(title="Setting up a Guess the Number game...", description="You can say `cancel` anytime during the setup to cancel the Guess the Number game.", color=self.client.embed_color))
-            except discord.Forbidden:
-                return await ctx.send("To set up the game, I need your DMs open for me. Please open your DMs and run the command again!")
-            self.planning_numberevent.append(ctx.author.id)
-            embed.description, embed.color = "Please check your DMs!", discord.Color.green()
-            await confirmmsg.edit(embed=embed)
-            while small == None or big == None:
-                sending = "State the range of numbers that the number you chose is within, with two numbers separated by a dash (`-`).\nFor example, if the number you have in mind is `5`, you should input a range of `0-10`.\nNegative numbers aren't allowed."
-                if error is not None:
-                    sending = error + '\n' + sending
-                await ctx.author.send(embed=discord.Embed(title="Guess the Number game setup: Step 1 of 2", description=sending, color=self.client.embed_color))
-                def check(payload):
-                    return payload.author == ctx.author and isinstance(payload.channel, discord.DMChannel)
-                try:
-                    inputmessage = await self.client.wait_for('message', check=check, timeout=30.0)
-                except asyncio.TimeoutError:
-                    try:
-                        await ctx.author.send("I didn't get a response from you, hence the game is cancelled.")
-                    except:
-                        self.planning_numberevent.remove(ctx.author.id)
-                        return await ctx.send(f"The game was cancelled as I can't DM {ctx.author}.")
-                    else:
-                        self.planning_numberevent.remove(ctx.author.id)
-                        return await ctx.send(f"I didn't get a response from {ctx.author.mention}, hence the game is cancelled.")
-                else:
-                    if inputmessage.content.lower() == 'cancel':
-                        self.planning_numberevent.remove(ctx.author.id)
-                        await ctx.author.send("I have cancelled your Guess the Number game.")
-                        return await ctx.send(f"{ctx.author} has cancelled the Guess the Number game.")
-                    content = inputmessage.content.replace(' ', '')
-                    content = content.replace(',', '')
-                    content = content.split('-')
-                    if len(content) != 2:
-                        error = "You didn't provide a valid range."
-                    else:
-                        nums = []
-                        for i in content:
-                            try:
-                                intval = int(i)
-                            except:
-                                error = "You didn't provide a proper number."
-                            else:
-                                nums.append(intval)
-                        nums = sorted(nums)
-                        if nums[1] - nums[0] > 10000000:
-                            error = "The range should not be bigger than 10,000,000."
-                        elif nums[1] == nums[0]:
-                            error = "You didn't provide a valid range."
-                        else:
-                            small = nums[0]
-                            big = nums[1]
-            error = None
-            while chosen == None:
-                sending = f"What is the correct number that should be guessed? The number should be between {small} and {big} (both inclusive)."
-                if error is not None:
-                    sending = error + '\n' + sending
-                await ctx.author.send(embed=discord.Embed(title="Guess the Number game setup: Step 2 of 2", description=sending, color=self.client.embed_color))
-                def check(payload):
-                    return payload.author == ctx.author and isinstance(payload.channel, discord.DMChannel)
-                try:
-                    inputmessage = await self.client.wait_for('message', check=check, timeout=30.0)
-                except asyncio.TimeoutError:
-                    try:
-                        await ctx.author.send("I didn't get a response from you, hence the game is cancelled.")
-                    except:
-                        self.planning_numberevent.remove(ctx.author.id)
-                        return await ctx.send(f"The game was cancelled as I can't DM {ctx.author}.")
-                    else:
-                        self.planning_numberevent.remove(ctx.author.id)
-                        return await ctx.send(f"I didn't get a response from {ctx.author.mention}, hence the game is cancelled.")
-                else:
-                    if inputmessage.content.lower() == 'cancel':
-                        self.planning_numberevent.remove(ctx.author.id)
-                        await ctx.author.send("I have cancelled your Guess the Number game.")
-                        return await ctx.send(f"{ctx.author} has cancelled the Guess the Number game.")
-                    content = inputmessage.content
-                    content = content.replace(',', '')
-                    try:
-                        intval = int(content)
-                    except:
-                        error = "You didn't provide a proper number."
-                    else:
-                        if intval > big or intval < small:
-                            error = f"The number you choose should be between {small} and {big} (both inclusive)."
-                        else:
-                            chosen = intval
-            summary = f"**Summary**\nThe correct number is **{chosen}**, and I will tell people that the number is **between {small} and {big} (both inclusive)**.\n\nNow head to {channel.mention}, and say `start` to initialize the game!"
-            await ctx.author.send(summary)
-            self.planning_numberevent.remove(ctx.author.id)
-            embed = discord.Embed(title="Guess the Number game!", description=f"**{ctx.author}** is starting a Guess the Number game!\nYou have to guess a number that is **between {small} and {big}** (both inclusive).\n\n{ctx.author.display_name}, say `start` to start this game or `cancel` to cancel it.", color=self.client.embed_color)
-            self.numberevent_channels.append(channel.id)
-            await channel.send(embed=embed)
-            try:
-                def check(message):
-                    return message.content.lower() in ['start', 'cancel'] and message.author.id == ctx.author.id and message.channel.id == channel.id
-                msg = await self.client.wait_for('message', check=check, timeout=60.0)
-            except asyncio.TimeoutError:
-                self.numberevent_channels.remove(channel.id)
-                return await channel.send(f"{ctx.author.mention} did not tell me to start or cancel the Guess the Number game. I've automatically cancelled the game.")
-            else:
-                if msg.content.lower() == 'cancel':
-                    self.numberevent_channels.remove(channel.id)
-                    return await channel.send("The Guess the Number game has been cancelled.")
-                pinmsg = await channel.send(f"The game has started! Remember, **{ctx.author.display_name}**'s chosen number is between {small} and {big}.\nHave fun guessing the number!")
-                await pinmsg.pin(reason="Guess the Number game information")
-                times_guessed = 0
-                has_guessed = False
-                while not has_guessed:
-                    def check(payload):
-                        return payload.channel.id == channel.id
-                    try:
-                        guessingmsg = await self.client.wait_for('message', check=check, timeout = 600.0)
-                    except asyncio.TimeoutError:
-                        self.numberevent_channels.remove(channel.id)
-                        return await ctx.send("No one guessed within the last 10 minutes. Therefore, the Guess the Number game has been cancelled.")
-                    else:
-                        if guessingmsg.author.id == ctx.author.id:
-                            if guessingmsg.content.lower() == 'cancel':
-                                self.numberevent_channels.remove(channel.id)
-                                return await channel.send(f"After `{times_guessed}` times of guessing, {ctx.author.mention} has cancelled the Guess the Number game. The correct number was `{chosen}`.")
-                        else:
-                            try:
-                                guessednum = int(guessingmsg.content)
-                            except ValueError:
-                                pass
-                            else:
-                                if guessednum != chosen:
-                                    times_guessed += 1
-                                else:
-                                    self.numberevent_channels.remove(channel.id)
-                                    has_guessed = True
-                                    embed = discord.Embed(title="<a:dv_aConfettiOwO:837712162079244318> CONGRATULATIONS!", description=f"You got the correct number: `{chosen}`!\nThank you for playing **{ctx.author.display_name}**'s Guess the Number Game!", color=self.client.embed_color).set_footer(text=f'Guessing attempts: `{times_guessed}`')
-                                    await pinmsg.unpin(reason="Guess the Number game information")
-                                    return await guessingmsg.reply(f"{guessingmsg.author.mention}", embed=embed)
