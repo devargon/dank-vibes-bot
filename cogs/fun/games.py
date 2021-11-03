@@ -12,6 +12,7 @@ class games(commands.Cog):
         self.client = client
 
     @checks.has_permissions_or_role(administrator=True)
+    @commands.cooldown(1, 30, commands.BucketType.user)
     @commands.command(name='guessthenumber', aliases=['gtn', 'numberevent'])
     async def guessthenumber(self, ctx, channel:discord.TextChannel = None):
         """
@@ -177,7 +178,8 @@ class games(commands.Cog):
                                     await pinmsg.unpin(reason="Guess the Number game information")
                                     return await guessingmsg.reply(f"{guessingmsg.author.mention}", embed=embed)
 
-    @checks.in_beta()
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.cooldown(1, 300, commands.BucketType.user)
     @commands.command(name="nickbet")
     async def nickbet(self, ctx, member: discord.Member = None):
         if member is None:
