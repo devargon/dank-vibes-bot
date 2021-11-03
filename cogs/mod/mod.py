@@ -5,13 +5,14 @@ import asyncio
 from discord.ext import commands
 from utils import checks
 from utils.format import text_to_file
-from.lockdown import lockdown
+from .lockdown import lockdown
+from .censor import censor
 from utils.buttons import *
 from .browser_screenshot import BrowserScreenshot
 from selenium import webdriver
 import os
 
-class Mod(BrowserScreenshot, lockdown, commands.Cog, name='mod'):
+class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
     """
     Mod commands
     """
