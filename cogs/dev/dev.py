@@ -311,8 +311,6 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
             return await ctx.send('Member is a required argument.')
         if command is None:
             return await ctx.send('Command is a required argument.')
-        if ctx.author.id == 515725341910892555:
-            return await ctx.send('no')
         message = copy.copy(ctx.message)
         message.channel = ctx.channel
         message.author = member
