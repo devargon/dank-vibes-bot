@@ -152,7 +152,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
             await ctx.author.send(f"An unexpected error has occured.\n```py\n{type(e).__name__} - {e}```")
             await ctx.message.delete(delay=3)
 
-    @checks.admoon()
+    @checks.dev()
     @commands.command(pass_context=True, hidden=True, name='eval', usage="<content>")
     async def _eval(self, ctx, *, body: str=None):
         """
@@ -301,7 +301,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
             except discord.HTTPException as e:
                 await ctx.send(f'Unexpected error: `{e}`')
 
-    @checks.admoon()
+    @checks.dev()
     @commands.command(name='sudo', aliases=['su'], hidden=True, usage='<user> <command>')
     async def sudo(self, ctx, member: MemberUserConverter = None, *, command: str = None):
         """
