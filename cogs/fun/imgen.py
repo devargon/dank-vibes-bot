@@ -52,7 +52,7 @@ class imgen(commands.Cog):
             main = Image.open("assets/stankbase.png")
             backg = main.copy()
             ima2 = Image.open(BytesIO(member_avatar)).convert('RGBA')
-            ima2 = ima2.resize((400,400))
+            ima2 = ima2.resize((450,450))
             backg.paste(ima2, (545,586), ima2)
             main2 = Image.open("assets/stankbase_finger.png").convert('RGBA')
             backg.paste(main2, (556,281), main2)
