@@ -12,7 +12,7 @@ from utils.menus import CustomMenu
 import math
 from utils.format import plural
 
-items = ['skull', 'argonphallicobject', 'llamaspit']
+items = ['skull', 'argonphallicobject', 'llamaspit', 'slicefrenzycake']
 
 def get_item_name(name):
     lst = difflib.get_close_matches(name, items, n=1, cutoff=0.4)
@@ -131,16 +131,24 @@ class ItemGames(commands.Cog):
         if member is None:
             member = ctx.author
         result = await self.client.pool_pg.fetchrow("SELECT * FROM inventories WHERE user_id = $1", member.id)
-        skulls = comma_number(0 if result is None else result.get('skull') or 0)
-        invpage = f"💀 Skulls • {skulls}"
-        argon = 0 if result is None else result.get('argonphallicobject') or 0
-        if argon != 0:
-            invpage += f"\n<:DVB_argonphallicobject:902134179863605258> Argon-based Phallic Object • {comma_number(argon)}"
-        spit = 0 if result is None else result.get('llamaspit') or 0
-        if spit != 0:
-            invpage += f"\n🦙 Llama's Spit • {comma_number(spit)}"
+        if result is None:
+            invpage = "There is nothing in your inventory."
+        else:
+            invpage = ""
+            itemdetails = await self.client.pool_pg.fetch("SELECT * FROM iteminfo")
+            indexes = {}
+            for i, item in enumerate(itemdetails):
+                indexes[i] = [item.get('fullname'), item.get('emoji')]
+            for index, i in enumerate(result[1:]):
+                itemcount = 0 if i is None else i or 0
+                if itemcount > 0:
+                    stritemcount = comma_number(0 if i is None else i or 0)
+                    try:
+                        invpage += f"`{stritemcount}` {indexes[index][0]}{'s' if itemcount != 1 else ''} {indexes[index][1]}\n"
+                    except KeyError:
+                        invpage += f"`{stritemcount}` **This item is missing important details, hence it cannot be shown.**"
         embed = discord.Embed(description=invpage, color=self.client.embed_color)
-        embed.set_author(name=f"{member}'s Halloween Stash", icon_url=member.display_avatar.url)
+        embed.set_author(name=f"{member}'s Inventory", icon_url=member.display_avatar.url)
         embed.set_footer(text="Use dv.inv info [item] to know more about an item.")
         await ctx.send(embed=embed)
 
