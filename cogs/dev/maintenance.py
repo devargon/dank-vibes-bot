@@ -14,7 +14,7 @@ class Maintenance(commands.Cog):
         return "<:DVB_disabled:872003709096321024>"
 
     def get_maintenance_embed(self):
-        embed = discord.Embed(color=self.client.embed_color, title="Maintenance List", timestamp=datetime.utcnow())
+        embed = discord.Embed(color=self.client.embed_color, title="Maintenance List", timestamp=discord.utils.utcnow())
         for name in sorted(list(self.client.cogs.keys())):
             enabled = self.client.maintenance.get(name)
             embed.add_field(name=f"{self.get_emoji(enabled)} {name.capitalize()}", value='Under maintenance' if enabled else 'Active', inline=True)
@@ -97,7 +97,7 @@ class Maintenance(commands.Cog):
             return await ctx.send("Specify an extension")
         if cog_name.lower() in ['all', '*']:
             if message is None:
-                embed = discord.Embed(title="Maintenance Messages", color=self.client.embed_color, timestamp=datetime.utcnow())
+                embed = discord.Embed(title="Maintenance Messages", color=self.client.embed_color, timestamp=discord.utils.utcnow())
                 for name in sorted(list(self.client.cogs.keys())):
                     enabled = self.client.maintenance.get(name)
                     embed.add_field(name=f"{self.get_emoji(enabled)} {name.capitalize()}", value=self.client.maintenance_message.get(name), inline=True)
@@ -111,7 +111,7 @@ class Maintenance(commands.Cog):
             if not (cog := self.client.get_cog(cog_name)):
                 return await ctx.send(f"{cog_name} is not a valid extension.")
             if message is None:
-                embed = discord.Embed(title="Maintenance Message", color=self.client.embed_color, timestamp=datetime.utcnow())
+                embed = discord.Embed(title="Maintenance Message", color=self.client.embed_color, timestamp=discord.utils.utcnow())
                 enabled = self.client.get(cog.qualified_name)
                 embed.add_field(name=f"{self.get_emoji(enabled)} {cog.qualified_name.capitalize()}", value=self.client.maintenance_message.get(cog.qualified_name), inline=True)
                 return await ctx.send(embed=embed)

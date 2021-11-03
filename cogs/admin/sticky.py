@@ -46,29 +46,32 @@ class Sticky(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.channel in self.queue:
-            return
-        if message.author == self.client.user:
-            return
-        if not message.guild:
-            return
-        result = await self.client.pool_pg.fetchrow("SELECT * FROM stickymessages WHERE guild_id = $1 and channel_id = $2", message.guild.id, message.channel.id)
-        if result is None:
-            return
-        self.queue.append(message.channel)
         try:
-            old_bot_message = await message.channel.fetch_message(result.get('message_id'))
-        except discord.NotFound:
-            pass
-        else:
-            await old_bot_message.delete()
-        if result.get('type') == 0:
-            embedjson = json.loads(result.get('message'))
-            newmessage = await message.channel.send(embed=discord.Embed.from_dict(embedjson))
-        else:
-            newmessage = await message.channel.send(result.get('message'))
-        await self.client.pool_pg.execute("UPDATE stickymessages SET message_id = $1 WHERE guild_id = $2 and channel_id = $3", newmessage.id, message.guild.id, message.channel.id)
-        self.queue.remove(message.channel)
+            if message.channel in self.queue:
+                return
+            if message.author == self.client.user:
+                return
+            if not message.guild:
+                return
+            result = await self.client.pool_pg.fetchrow("SELECT * FROM stickymessages WHERE guild_id = $1 and channel_id = $2", message.guild.id, message.channel.id)
+            if result is None:
+                return
+            try:
+                old_bot_message = await message.channel.fetch_message(result.get('message_id'))
+            except discord.NotFound:
+                self.queue.append(message.channel)
+            else:
+                self.queue.append(message.channel)
+                await old_bot_message.delete()
+            if result.get('type') == 0:
+                embedjson = json.loads(result.get('message'))
+                newmessage = await message.channel.send(embed=discord.Embed.from_dict(embedjson))
+            else:
+                newmessage = await message.channel.send(result.get('message'))
+            await self.client.pool_pg.execute("UPDATE stickymessages SET message_id = $1 WHERE guild_id = $2 and channel_id = $3", newmessage.id, message.guild.id, message.channel.id)
+            self.queue.remove(message.channel)
+        except Exception as e:
+            self.queue.remove(message.channel)
 
     @checks.has_permissions_or_role(administrator=True)
     @commands.group(name="sticky", invoke_without_command=True, aliases = ["stickymessage"])
@@ -78,11 +81,22 @@ class Sticky(commands.Cog):
         """
         return await ctx.help()
 
+    @checks.admoon()
+    @sticky.command(name="resetlist")
+    async def sticky_reset(self, ctx):
+        """
+        Resets the queue that contains channels for sticky messages.
+        """
+        await ctx.send(f"```py\n{self.queue}\n```")
+        self.queue = []
+        await ctx.send(f"The queue has been reset.")
+
     @checks.has_permissions_or_role(administrator=True)
     @sticky.command(name="create", alises=["add"])
     async def sticky_create(self, ctx, channel:discord.TextChannel=None, *, content=None):
         """
-        Creates a sticky message for the specified channel. Only one sticky message can be created for one channel. The available message types are `embed` and `text`.
+        Creates a sticky message for the specified channel. Only one sticky message can be created for one channel.
+        To add an embed as a message, add it in the form of a JSON code which you can get from https://carl.gg/dashboard/595457764935991326/embeds.
         """
         if channel is None:
             return await ctx.send("`channel` is a required argument. `sticky create [channel] [content]`")
@@ -127,7 +141,7 @@ class Sticky(commands.Cog):
     @sticky.command(name="remove", aliases=["delete"])
     async def sticky_remove(self, ctx, channel:discord.TextChannel=None):
         """
-        Creates a sticky message for the specified channel. Only one sticky message can be created for one channel. The available message types are `embed` and `text`.
+        Removes a sticky message that was set for the specified channel.
         """
         if channel is None:
             return await ctx.send(f"`channel` is a required argument. `sticky create [channel] [message_type] [content]`")

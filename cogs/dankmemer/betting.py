@@ -84,7 +84,7 @@ class betting(commands.Cog):
             string = ""
             for item in self.fighters:
                 string += f"{item}: `{len(self.fighters[item])}`\n"
-            await ctx.send(embed=discord.Embed(title="Bet statistics", description=string or "It appears there is no betting statistics at all. Perhaps you have not started a betting session with `dv.bet start`.", color=self.client.embed_color, timestamp=datetime.utcnow()))
+            await ctx.send(embed=discord.Embed(title="Bet statistics", description=string or "It appears there is no betting statistics at all. Perhaps you have not started a betting session with `dv.bet start`.", color=self.client.embed_color, timestamp=discord.utils.utcnow()))
         else:
             memberlist = []
             for item in self.fighters[member]:
@@ -123,6 +123,6 @@ class betting(commands.Cog):
                 self.fighters[member] = []
                 joined_members.append(f"**{member}**")
 
-        await ctx.send(embed=discord.Embed(title="A new fighting match has started!", description=f"The fighting list has been cleared. You can now vote for these people: {', '.join(joined_members)}", color = self.client.embed_color, timestamp=datetime.utcnow()))
+        await ctx.send(embed=discord.Embed(title="A new fighting match has started!", description=f"The fighting list has been cleared. You can now vote for these people: {', '.join(joined_members)}", color = self.client.embed_color, timestamp=discord.utils.utcnow()))
 
 

@@ -21,7 +21,7 @@ class CogManager(commands.Cog):
         unloaded = all_cogs - loaded
         loaded = sorted(list(loaded), key=str.lower)
         unloaded = sorted(list(unloaded), key=str.lower)
-        embed = discord.Embed(color=self.client.embed_color).set_author(name=ctx.me, icon_url=ctx.me.avatar_url)
+        embed = discord.Embed(color=self.client.embed_color).set_author(name=ctx.me, icon_url=ctx.me.display_avatar.url)
         embed.set_author(name="{} extensions loaded".format(len(loaded)))
         loaded_extensions = "\n".join(loaded)
         embed.add_field(name='**Loaded extensions**', value=f"```css\n{loaded_extensions}\n```")

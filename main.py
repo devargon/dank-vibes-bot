@@ -21,14 +21,16 @@ AVAILABLE_EXTENSIONS = ['cogs.dev',
 'cogs.owo',
 'cogs.utility',
 'cogs.votetracker',
+'cogs.messagetracking',
+'cogs.grinder'
 ]
 
 load_dotenv('credentials.env')
 token = os.getenv('TOKEN')
-host = os.getenv('HOST')
+host = os.getenv('HOST') if os.name == "nt" else '127.0.0.1'
 database = os.getenv('DATABASE')
-user = os.getenv('USER')
-password = os.getenv('PASSWORD')
+user = os.getenv('USER') if os.name == 'nt' else 'dankvibes'
+password = os.getenv('PASSWORD') if os.name == 'nt' else 'Qwerty12345'
 
 
 intents = discord.Intents(guilds = True, members = True, presences = True, messages = True, reactions = True, emojis = True, invites = True, voice_states = True)
@@ -96,6 +98,8 @@ class dvvt(commands.AutoShardedBot):
                 await self.pool_pg.execute("INSERT INTO prefixes VALUES ($1, $2)", guild_id, 'dv.')
                 data = {}
             prefix = self.prefixes.setdefault(guild_id, data.get("prefix") or '.')
+        if message.content.lower().startswith(prefix):
+            prefix = message.content[:len(prefix)]
         return commands.when_mentioned_or(prefix)(self, message)
 
     async def set_prefix(self, guild, prefix):
@@ -124,7 +128,7 @@ class dvvt(commands.AutoShardedBot):
         except Exception as e:
             print_exception("Could not connect to databases:", e)
         else:
-            self.uptime = datetime.datetime.utcnow()
+            self.uptime = discord.utils.utcnow()
             self.pool_pg = pool_pg
             print(f"Connected to the database ({round(time.time() - start, 2)})s")
             self.loop.create_task(self.after_ready())

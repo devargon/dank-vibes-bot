@@ -4,7 +4,7 @@ import ast
 import copy
 import time
 import discord
-from discord import Webhook, AsyncWebhookAdapter
+from discord import Webhook
 import asyncio
 import inspect
 import aiohttp
@@ -16,12 +16,64 @@ from utils import checks
 from .status import Status
 from .botutils import BotUtils
 from contextlib import redirect_stdout
-from discord.ext import commands
+from discord.ext import commands, menus
 from .cog_manager import CogManager
 from utils.format import pagify, TabularData, plural, text_to_file
 from .maintenance import Maintenance
+from.logging import Logging
 from utils.converters import MemberUserConverter, TrueFalse
 from typing import Optional, Union
+from utils.menus import CustomMenu
+import random
+from utils.context import DVVTcontext
+
+
+class Suggestion(menus.ListPageSource):
+    def __init__(self, entries, title):
+        self.title = title
+        super().__init__(entries, per_page=10)
+
+    async def format_page(self, menu, entries):
+        embed = discord.Embed(title=self.title, color=menu.ctx.bot.embed_color, timestamp=discord.utils.utcnow())
+        for entry in entries:
+            embed.add_field(name=f"{entry[0]}", value=entry[1], inline=False)
+        embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        return embed
+
+class toggledevmode(discord.ui.View):
+    def __init__(self, ctx: DVVTcontext, client, enabled):
+        self.context = ctx
+        self.response = None
+        self.result = None
+        self.client = client
+        self.enabled = enabled
+        super().__init__(timeout=5.0)
+        init_enabled = self.enabled
+
+        async def update_message():
+            self.enabled = False if self.enabled else True
+            await self.client.pool_pg.execute("UPDATE devmode SET enabled = $1 WHERE user_id = $2", self.enabled, ctx.author.id)
+            self.children[0].style = discord.ButtonStyle.green if self.enabled else discord.ButtonStyle.red
+            self.children[0].label = "Dev Mode is enabled" if self.enabled else "Dev mode is disabled"
+            await self.response.edit(view=self)
+
+        class somebutton(discord.ui.Button):
+            async def callback(self, interaction: discord.Interaction):
+                await update_message()
+        self.add_item(somebutton(emoji="🛠️", label = "Dev Mode is enabled" if init_enabled else "Dev mode is disabled", style=discord.ButtonStyle.green if init_enabled else discord.ButtonStyle.red))
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        ctx = self.context
+        author = ctx.author
+        if interaction.user != author:
+            await interaction.response.send_message("Only the author can interact with this message.", ephemeral=True)
+            return False
+        return True
+
+    async def on_timeout(self) -> None:
+        for b in self.children:
+            b.disabled = True
+        await self.response.edit(view=self)
 
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     """
@@ -30,7 +82,7 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
     """
     pass
 
-class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='dev', command_attrs=dict(hidden=True), metaclass=CompositeMetaClass):
+class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog, name='dev', command_attrs=dict(hidden=True), metaclass=CompositeMetaClass):
     """
     This module contains various development focused commands.
     """
@@ -82,6 +134,18 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
             if silently:
                 with contextlib.suppress(discord.HTTPException):
                     await ctx.message.delete()
+            votingvibes = self.client.get_channel(754725833540894750)
+            embed = discord.Embed(title=f"{ctx.me.name} is going offline in a short while to apply some updates.", description="", color=self.client.embed_color, timestamp=discord.utils.utcnow())
+            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/837698540217303071.png?size=96")
+            if votingvibes is not None:
+                embed.description = "During the downtime, your votes might not be tracked. If it has been an hour after the downtime and your vote is not recorded, please let a moderator know in <#870880772985344010> when I'm back up again!"
+                embed.footer.text = "Thank you for voting! :)"
+                await votingvibes.send(embed=embed)
+            grindchannel = self.client.get_channel(862574856846704661)
+            if grindchannel is not None:
+                embed.description = "During the downtime, I can't track your grinder donations. Please send your 5,000,000 coins when I'm back online!"
+                embed.footer.text = "Thank you for being a DV Grinder!"
+                await grindchannel.send(embed=embed)
             await self.client.shutdown()
         except Exception as e:
             await ctx.send("Error while disconnecting",delete_after=3)
@@ -342,7 +406,7 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
             await ctx.crossmark()
             status = (0, e)
         async with aiohttp.ClientSession() as session:
-            webhook = Webhook.from_url('https://canary.discord.com/api/webhooks/883198776406339624/mkno5cQXKLHtQH4bxbbx8kxis3qnvTbvJVxpvCM0JNLZC_kG5F8sicwSBwsxa-Gq8f90', adapter=AsyncWebhookAdapter(session))
+            webhook = Webhook.from_url('https://canary.discord.com/api/webhooks/883198776406339624/mkno5cQXKLHtQH4bxbbx8kxis3qnvTbvJVxpvCM0JNLZC_kG5F8sicwSBwsxa-Gq8f90', session=session)
             embed=discord.Embed(title=f"Echo action executed with {ctx.me}", description=message, color=discord.Color.green() if status[0] == 1 else discord.Color.red())
             embed.add_field(name="Author", value=f"**{ctx.author}** ({ctx.author.id})", inline=True)
             embed.add_field(name="Status", value=f"**{status[1]}**", inline=True)
@@ -352,7 +416,8 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
     @d_base.command(name="reply")
     async def d_reply(self, ctx, messageID_or_messageLink:Union[int, str] = None, channel:Optional[discord.TextChannel] = None, *, message_content=None):
         """
-        Replies to message as the bot.
+        Replies to a specified message as the bot.
+        Add --noping to disable pinging when replying.
         """
         #Getting message by message ID
         if type(messageID_or_messageLink) == int:
@@ -369,7 +434,6 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
             try:
                 guild = self.client.get_guild(int(split[4]))
                 channel = guild.get_channel(int(split[5]))
-                print(guild.name, channel.name)
                 message = await channel.fetch_message(int(split[6]))
             except discord.NotFound:
                 return await ctx.send(f"A message with that link was not found. ")
@@ -383,7 +447,6 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
         if len(message_content) > 2000:
             return await ctx.send(f"Your message is {len(message_content)} characters long. It can only be 2000 characters long.")
         try:
-            print(ping)
             await message.reply(
                 message_content,
                 allowed_mentions=discord.AllowedMentions(everyone=False, users=True, roles=False, replied_user=ping),
@@ -395,7 +458,7 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
             await ctx.crossmark()
             status = (0, e)
         async with aiohttp.ClientSession() as session:
-            webhook = Webhook.from_url('https://canary.discord.com/api/webhooks/883198776406339624/mkno5cQXKLHtQH4bxbbx8kxis3qnvTbvJVxpvCM0JNLZC_kG5F8sicwSBwsxa-Gq8f90', adapter=AsyncWebhookAdapter(session))
+            webhook = Webhook.from_url('https://canary.discord.com/api/webhooks/883198776406339624/mkno5cQXKLHtQH4bxbbx8kxis3qnvTbvJVxpvCM0JNLZC_kG5F8sicwSBwsxa-Gq8f90', session=session)
             embed=discord.Embed(title=f"Message replied {ctx.me}", description=message_content, color=discord.Color.green() if status[0] == 1 else discord.Color.red())
             embed.add_field(name="Author", value=f"**{ctx.author}** ({ctx.author.id})", inline=True)
             embed.add_field(name="Status", value=f"**{status[1]}**", inline=True)
@@ -410,3 +473,56 @@ class Developer(BotUtils, CogManager, Maintenance, Status, commands.Cog, name='d
         """
         await ctx.send("Mimicking an error...")
         raise ValueError(message)
+
+    @checks.dev()
+    @commands.command(name="suggestions")
+    async def active_suggestions(self, ctx, query = None):
+        """
+        Lists the active suggestions.
+        the query can be a suggestion ID or `--active`
+        """
+        if query is None:
+            return await ctx.help()
+        try:
+            query = int(query)
+        except ValueError:
+            if ctx.message.content.endswith("--active"):
+                result = await self.client.pool_pg.fetch("SELECT * FROM suggestions WHERE finish = $1", False)
+                suggestions = []
+                for suggestion in result:
+                    member = ctx.guild.get_member(suggestion.get('user_id'))
+                    name = f"{suggestion.get('suggestion_id')}. {member} ({member.id})" if member is not None else suggestion.get('user_id')
+                    suggestions.append((name, suggestion.get('suggestion')))
+                if len(suggestions) <= 10:
+                    embed = discord.Embed(title="Active suggestions", color=self.client.embed_color, timestamp=discord.utils.utcnow())
+                    for suggestion in suggestions:
+                        embed.add_field(name=suggestion[0], value=suggestion[1], inline=False)
+                    return await ctx.send(embed=embed)
+                else:
+                    pages = CustomMenu(source=Suggestion(suggestions, "Active suggestions"), clear_reactions_after=True, timeout=60)
+                    return await pages.start(ctx)
+        else:
+            result = await self.client.pool_pg.fetchrow("SELECT * FROM suggestions WHERE suggestion_id = $1", query)
+            if result is None:
+                return await ctx.send(f"There is no such suggestion with the ID {query}.")
+            else:
+                member = ctx.guild.get_member(result.get('user_id'))
+                embed = discord.Embed(title=f"Suggestion {query}", description = result.get('suggestion'), color=self.client.embed_color)
+                embed.add_field(name="Suggested by", value=f"{member} ({member.id})" if member else result.get('user_id', inline=True))
+                embed.add_field(name="Status", value="Closed" if result.get('finish') else "Open", inline=True)
+                await ctx.send(embed=embed)
+
+
+    @checks.base_dev()
+    @commands.command(name="devmode")
+    async def devmode(self, ctx):
+        result = await self.client.pool_pg.fetchrow("SELECT * FROM devmode WHERE user_id = $1", ctx.author.id)
+        if result is None:
+            await self.client.pool_pg.execute("INSERT INTO devmode VALUES($1, $2)", ctx.author.id, False)
+            result = await self.client.pool_pg.fetchrow("SELECT * FROM devmode WHERE user_id = $1", ctx.author.id)
+        is_enabled = result.get('enabled')
+        view = toggledevmode(ctx, self.client, is_enabled)
+        msg = await ctx.send("__**Toogle Developer mode**__", view=view)
+        view.response = msg
+        await view.wait()
+

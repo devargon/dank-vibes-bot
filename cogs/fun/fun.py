@@ -1,11 +1,14 @@
 import discord
-from discord import Webhook, AsyncWebhookAdapter
+from discord import Webhook
 import time
 import asyncio
 from discord.ext import commands
 import random
 from utils.time import humanize_timedelta
 from .dm import dm
+from .imgen import imgen
+from .snipe import snipe
+from .karuta import karuta
 from utils import checks
 import operator
 from typing import Union
@@ -15,6 +18,11 @@ from PIL import Image, ImageFilter
 import urllib.request
 from io import BytesIO
 import aiohttp
+import contextlib
+import requests
+import json
+from utils.errors import ArgumentBaseError
+from utils.buttons import confirm
 
 blacklisted_words = ['N-renoteQ3R', 'n.i.g.g.e.r', 'n i g a', 'nygga', 'niuggers', 'nigger',
                      'https://discordnitro.link/stearncommunity', 'kill yourself', 'figgot', 'ching chong',
@@ -35,36 +43,65 @@ blacklisted_words = ['N-renoteQ3R', 'n.i.g.g.e.r', 'n i g a', 'nygga', 'niuggers
                      'faggot', 'niceca||r', 'nig gas', 'n!gg@', 'hey, free discord gifted nitro for 1 month:',
                      'neeger', 'nighha', 'n1gg@', 'n!g3r', 'nig', 'nigg', 'anigame']
 
-class Fun(dm, commands.Cog, name='fun'):
+def check_blacklist(string:str):
+    return any(text in string for text in blacklisted_words)
+
+class Fun(karuta, snipe, imgen, dm, commands.Cog, name='fun'):
     """
     Fun commands
     """
     def __init__(self, client):
         self.client = client
         self.dmconfig = {}
-        self.mutedusers = []
+        self.mutedusers = {}
         self.scrambledusers = []
+        self.persistent_views_added = False
+        self.gen_is_muted = False
+        self.chatchart_is_running = False
+        self.deleted_messages = {}
+        self.edited_messages = {}
+        self.karutaconfig = ''
+        self.karutaevent_isrunning = False
+        self.planning_numberevent = []
+        self.numberevent_channels = []
+
+    def lowered_cooldown(message):
+        if discord.utils.get(message.author.roles, id=874931276329656370):
+            return commands.Cooldown(1, 900)
+        elif discord.utils.get(message.author.roles, name="Vibing Investor"):
+            return commands.Cooldown(1, 1800)
+        else:
+            return commands.Cooldown(1, 3600)
+
+    async def cog_check(self, ctx):
+        if ctx.author.id == 650647680837484556 or ctx.author.guild_permissions.administrator == True:
+            return True
+        else:
+            if discord.utils.get(ctx.author.roles, name="No Tags"):
+                raise ArgumentBaseError(message="You have been stunned (or you're restricted from using Carl-bot tags) and can't use any commands at the moment. <:dv_pepeHahaUSuckOwO:837653798313918475>")
+        return True
 
     @checks.has_permissions_or_role(administrator=True)
+    @commands.dynamic_cooldown(lowered_cooldown, commands.BucketType.user)
     @commands.group(name="dumbfight", aliases = ["df"], invoke_without_command=True)
     async def dumbfight(self, ctx, member: discord.Member = None):
         """
         Mute people for a random duration between 30 to 120 seconds.
         """
-        timenow = round(time.time())
-        cooldown = await self.client.pool_pg.fetchrow("SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time > $3", ctx.command.name, ctx.author.id, timenow)
-        if cooldown is not None:
-            return await ctx.send(f"You're on cooldown. try again in {humanize_timedelta(seconds=(cooldown.get('time') - timenow))}.", delete_after = 10.0)
-        cooldown = await self.client.pool_pg.fetchrow("SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time < $3", ctx.command.name, ctx.author.id, timenow)
-        if cooldown:
-            await self.client.pool_pg.execute("DELETE FROM cooldowns WHERE command_name = $1 and member_id = $2 and time = $3", cooldown.get('command_name'), cooldown.get('member_id'), cooldown.get('time'))
+        if self.gen_is_muted and ctx.channel.id == 608498967474601995:
+            ctx.command.reset_cooldown(ctx)
+            return await ctx.send("Wait until the lockdown from `dv.lockgen` is over.")
         if member is None:
-            return await ctx.send("You need to tell me who you want to dumbfight.")
-        if member.id in self.mutedusers:
-            return await ctx.send(f"**{member.display_name}** is currently muted in a dumbfight. Wait a few moments before using this command.")
+            ctx.command.reset_cooldown(ctx)
+            return await ctx.send(f"Here we have a human AKA {ctx.author} showing you that they are able to dumbfight you, although they could've just done it already. <:dv_pepeHahaUSuckOwO:837653798313918475>\nThat being said, {ctx.author.mention} you need to tell me who you want to dumbfight.")
+        if ctx.channel.id in self.mutedusers and member.id in self.mutedusers[ctx.channel.id]:
+            ctx.command.reset_cooldown(ctx)
+            return await ctx.send(f"**{member.name}** is currently muted in a dumbfight. Wait a few moments before using this command.")
         if member.bot:
+            ctx.command.reset_cooldown(ctx)
             return await ctx.send("Back off my kind. Don't dumbfight bots.")
         if member == ctx.me:
+            ctx.command.reset_cooldown(ctx)
             return await ctx.send("How do you expect me to mute myself?")
         duration = random.randint(30, 120)
         won_dumbfights = await self.client.pool_pg.fetch(
@@ -76,15 +113,16 @@ class Fun(dm, commands.Cog, name='fun'):
         except ZeroDivisionError:
             doesauthorwin = random.choice([True, False])
         else:
-            if wonlossratio == 0:
+            if wonlossratio == 0 or wonlossratio >= 0.7 and wonlossratio <= 1.5:
                 doesauthorwin = random.choice([True, False])
             elif wonlossratio < 0.7:
                 doesauthorwin = True
-            elif wonlossratio > 1.5:
-                doesauthorwin = False
             else:
-                doesauthorwin = random.choice([True, False])
+                doesauthorwin = False
         channel = ctx.channel
+        if isinstance(channel, discord.Thread):
+            ctx.command.reset_cooldown(ctx)
+            return await ctx.send("Dumbfight is not supported in threads yet. Sorry >.<")
         if doesauthorwin:
             muted = member
             color = 0x00ff00
@@ -98,20 +136,24 @@ class Fun(dm, commands.Cog, name='fun'):
         tempoverwrite = channel.overwrites_for(muted) if muted in channel.overwrites else discord.PermissionOverwrite()
         tempoverwrite.send_messages = False
         await channel.set_permissions(muted, overwrite=tempoverwrite)
-        self.mutedusers.append(muted.id)
+        if ctx.channel.id in self.mutedusers:
+            self.mutedusers[ctx.channel.id] = self.mutedusers[ctx.channel.id] + [muted.id]
+        else:
+            self.mutedusers[ctx.channel.id] = [muted.id]
         selfmute = random.choice(['punched themselves in the face', 'kicked themselves in the knee', 'stepped on their own feet', 'punched themselves in the stomach', 'tickled themselves until they couldn\'t take it'])
         embed = discord.Embed(title="Get muted!", description = f"{ctx.author.mention} fought {member.mention} {str} them.\n{muted.mention} is now muted for {duration} seconds." if ctx.author != member else f"{ctx.author.mention} {selfmute}.\n{muted.mention} is now muted for {duration} seconds.", colour=color)
         if member.id in [650647680837484556, 321892489470410763] and muted != ctx.author:
             embed.set_footer(text="why did you dumbfight the developer :c", icon_url="https://cdn.discordapp.com/emojis/796407682764505180.png?v=1")
         await ctx.send(embed=embed)
-        kvoterole = ctx.guild.get_role(874931276329656370) # 874931276329656370
-        investor = ctx.guild.get_role(739199912377319427)
-        cooldowntime = 1800 if kvoterole in ctx.author.roles or investor in ctx.author.roles else 3600
-        await self.client.pool_pg.execute("INSERT INTO cooldowns VALUES($1, $2, $3)", ctx.command.name, ctx.author.id, timenow + cooldowntime)
         await asyncio.sleep(duration)
         await channel.set_permissions(muted, overwrite=originaloverwrite)
-        if muted.id in self.mutedusers:
-            self.mutedusers.remove(muted.id)
+        if muted.id in self.mutedusers[ctx.channel.id]:
+            if len(self.mutedusers[ctx.channel.id]) == 1:
+                del self.mutedusers[ctx.channel.id]
+            else:
+                lst = self.mutedusers[ctx.channel.id]
+                lst.remove(muted.id)
+                self.mutedusers[ctx.channel.id] = lst
 
     @checks.dev()
     @dumbfight.command(name="statistics", aliases = ["stats"])
@@ -181,29 +223,41 @@ class Fun(dm, commands.Cog, name='fun'):
         if member is None:
             await ctx.send("You missed out `member` for this command.\n**Usage**: `hideping [member] [message]`")
             return
-        message = "" if message is None else message
-        if len(message) > 1900:
-            return await ctx.send("Your accompanying message can only be at most 1900 characters.")
+        if message is not None and len(message) > 180:
+            return await ctx.send("Your accompanying message can only be at most 180 characters.")
         try:
             await ctx.message.delete() # hides the ping so it has to delete the message that was sent to ping user
         except discord.Forbidden:
-            embed = discord.Embed(title="Command failed", description = "I could not complete this command as I am missing the permissions to delete your message.", color = 0xB00B13)
-            embed.set_footer(text=self.client.user.name, icon_url=self.client.user.avatar_url)
             await ctx.send("I could not complete this command as I am missing the permissions to delete your message.")
             return
-        content = f"‍{message}||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍ <@{member.id}>" # ik this looks sketchy, but you can paste it in discord and send it to see how this looks like :MochaLaugh:
-        await ctx.send(content)
+        if message is None:
+            message = ''
+        if check_blacklist(message):
+            message = ''
+        content = f"{message or ''} ‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍ <@{member.id}>" # ik this looks sketchy, but you can paste it in discord and send it to see how this looks like :MochaLaugh:
+        webhooks = await ctx.channel.webhooks()
+        webhook = discord.utils.get(webhooks, name=self.client.user.name)
+        if webhook is None:
+            try:
+                webhook = await ctx.channel.create_webhook(name=self.client.user.name)
+            except discord.Forbidden:
+                try:
+                    await ctx.send("I am unable to create a webhook to send the hideping message.")
+                except (discord.HTTPException, discord.Forbidden):
+                    return
+                return
+        await webhook.send(content, username="You were hidepinged", avatar_url="https://cdn.discordapp.com/attachments/871737314831908974/895639630429433906/incognito.png")
         async with aiohttp.ClientSession() as session:
-            webhook = Webhook.from_url('https://canary.discord.com/api/webhooks/883563427455438858/GsF8ZPIemw6D-x6TIp7wO88ySQizKePKCS5zRA-EBtNfHRC15e9koti7-02GKBuoZ_Yi', adapter=AsyncWebhookAdapter(session))
+            webhook = Webhook.from_url('https://canary.discord.com/api/webhooks/883563427455438858/GsF8ZPIemw6D-x6TIp7wO88ySQizKePKCS5zRA-EBtNfHRC15e9koti7-02GKBuoZ_Yi', session=session)
             embed=discord.Embed(title=f"Hideping command invoked with {ctx.me}", color=discord.Color.green())
             embed.add_field(name="Author", value=f"**{ctx.author}** ({ctx.author.id})", inline=True)
             embed.add_field(name="Target", value=f"**{member}** ({member.id})", inline=True)
-            embed.add_field(name="Message", value=message if len(message) > 0 else "No message", inline=True)
+            embed.add_field(name="Message", value=message or "No message", inline=True)
             await webhook.send(embed=embed, username=f"{self.client.user.name} Logs")
 
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="lockgen", brief = "Locks specified channel for 5 seconds", description = "Locks specified channel for 5 seconds", aliases = ["lg"])
-    @commands.cooldown(1, 10800, commands.BucketType.user)
+    @commands.cooldown(1, 120, commands.BucketType.guild)
     async def lockgen(self, ctx):
         """
         Locks specified channel for 5 seconds
@@ -216,17 +270,28 @@ class Fun(dm, commands.Cog, name='fun'):
         if ctx.channel != genchat:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"This command can only be used in {genchat.mention}!")
+        timenow = round(time.time())
+        cooldown = await self.client.pool_pg.fetchrow("SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time > $3", ctx.command.name, ctx.author.id, timenow)
+        if cooldown is not None:
+            return await ctx.send(f"You're on cooldown. try again in {humanize_timedelta(seconds=(cooldown.get('time') - timenow))}.", delete_after=10.0)
+        cooldown = await self.client.pool_pg.fetchrow(
+            "SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time < $3", ctx.command.name, ctx.author.id, timenow)
+        if cooldown:
+            await self.client.pool_pg.execute("DELETE FROM cooldowns WHERE command_name = $1 and member_id = $2 and time = $3", cooldown.get('command_name'), cooldown.get('member_id'), cooldown.get('time'))
         originaloverwrite = genchat.overwrites_for(ctx.guild.default_role) # this is the overwrite that will be restored to gen chat when the lockdown is over
         newoverwrite = genchat.overwrites_for(ctx.guild.default_role) # this is the overwrite that i will edit to lockdown the channel
         authornewoverwrite = genchat.overwrites_for(ctx.author) # this is the overwrite that I will edit to allow the invoker to continue talking
         authornewoverwrite.send_messages=True # this edits the author's overwrite
         newoverwrite.send_messages = False # this edits the @everyone overwrite
         authororiginaloverwrite = None if ctx.author not in genchat.overwrites else genchat.overwrites_for(ctx.author) # this is the BEFORE overwrite for an individual member, if the author already had an overwrite (such as no react) it will use that to restore, otherwise None since it won't have any overwrites in the first place
+        self.gen_is_muted = True
+        await self.client.pool_pg.execute("INSERT INTO cooldowns VALUES($1, $2, $3)", ctx.command.name, ctx.author.id, timenow + 10800)
         try:
-            await genchat.set_permissions(ctx.author, overwrite=authornewoverwrite, reason=f"Lockdown invoker gets to talk c:") # allows author to talk
+            await genchat.set_permissions(ctx.author, overwrite=authornewoverwrite, reason=f"{ctx.author} invoked a lockdown with the lockgen command") # allows author to talk
             await genchat.set_permissions(ctx.guild.default_role, overwrite = newoverwrite, reason = f"5 second lockdown initiated by {ctx.author.name}#{ctx.author.discriminator}") # does not allow anyone else to talk
         except discord.Forbidden:
             ctx.command.reset_cooldown(ctx)
+            self.gen_is_muted = False
             return await ctx.send(f"I do not have the required permission to lock down **{genchat.name}**.")
         message = await ctx.send(f"✅ Locked down **{genchat.name}** for 5 seconds.")
         await asyncio.sleep(5)
@@ -234,12 +299,14 @@ class Fun(dm, commands.Cog, name='fun'):
             await genchat.set_permissions(ctx.guild.default_role, overwrite = originaloverwrite, reason = "Lockdown over uwu") # restores
             await genchat.set_permissions(ctx.author, overwrite = authororiginaloverwrite, reason = "Overwrite no longer required") # restores
         except discord.Forbidden:
+            self.gen_is_muted = False
             return await ctx.send(f"I do not have the required permission to remove the lockdown for **{genchat.name}**.")
         else:
             try:
                 await message.add_reaction("🔓")
-            except discord.Forbidden:
+            except:
                 pass
+        self.gen_is_muted = False
 
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="scramble", aliases=["shuffle"])
@@ -247,7 +314,6 @@ class Fun(dm, commands.Cog, name='fun'):
     async def scramble(self, ctx, member: discord.Member=None):
         """
         Scrambles your target's nickname for 3 minutes, effectively freezing it until the 3 minutes are up.
-        In this testing server, the duration is just 20 seconds.
         """
         if member is None:
             ctx.command.reset_cooldown(ctx)
@@ -263,11 +329,13 @@ class Fun(dm, commands.Cog, name='fun'):
             return await ctx.send(f"**{member.name}**'s nickname is currently scrambled. Use this command when their nickname has returned to normal.")
         member_name = member.display_name
         if len(member_name) == 1:
-            ctx.command.reset_cooldown(ctx)
-            return await ctx.send("Their name only has one character, it's not worth it.")
+            if len(member.name) != 1:
+                member_name = member.name
+            else:
+                ctx.command.reset_cooldown(ctx)
+                return await ctx.send("Their name only has one character, it's not worth it.")
         def scramble_nickname():
             tries = 0
-
             while True:
                 if tries < 10:
                     lst_member_name = list(member_name)
@@ -284,11 +352,12 @@ class Fun(dm, commands.Cog, name='fun'):
             ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"I can't scramble **{member.name}**'s name as their scrambled name will still be the same/the resulting name is blacklisted.")
         try:
-            await member.edit(nick=new_name)
+            await member.edit(nick=new_name, reason=f"Nickname scrambled by {ctx.author}")
             self.scrambledusers.append(member)
         except discord.Forbidden:
+            ctx.command.reset_cooldown(ctx)
             return await ctx.send("Sorry! I am unable to change that user's name, probably due to role hierachy or missing permissions.")
-        await ctx.send(f"{member}'s name is now {new_name}!\n{member.mention}, your nickname has been scrambled by **{ctx.author.name}**. It will automatically revert to your previous nickname after 3 minutes. If you try to change your nickname, you will have to wait for another 3 minutes until your original nickname will be restored.")
+        await ctx.send(f"{member}'s name is now {new_name}!\n{member.mention}, your nickname/username has been scrambled by **{ctx.author.name}**. It will automatically revert to your previous nickname/username after 3 minutes. If you try to change your nickname, the timer will reset and you'll have to wait 3 minutes again. ")
         def check(payload_before, payload_after):
             return payload_before == member and payload_before.display_name == new_name and payload_after.display_name != new_name
         active = True
@@ -297,24 +366,31 @@ class Fun(dm, commands.Cog, name='fun'):
             try:
                 await self.client.wait_for("member_update", check = check, timeout=180)
             except asyncio.TimeoutError:
-                await member.edit(nick=member_name)
-                active = False
-                self.scrambledusers.remove(member)
+                try:
+                    await member.edit(nick=member_name, reason=f"Nickname restored from scramble command invoked by {ctx.author}")
+                    active = False
+                    self.scrambledusers.remove(member)
+                except:
+                    active = False
+                    self.scrambledusers.remove(member)
             else:
-                await member.edit(nick=new_name)
+                await member.edit(nick=new_name, reason=f"User tried to change their nickname despite scramble command invoked by {ctx.author}")
                 if has_warned == False:
-                    await ctx.send(f"{member.mention} how bad! You changed your nickname before the three minutes were up. Your scrambled nickname will still remain on you until 3 minutes are up. I will only tell you this once.")
+                    await ctx.send(f"{member.mention} how bad! You changed your nickname before the three minutes were up. The timer has reset and your scrambled nickname will still remain on you until 3 minutes are up.")
                     has_warned = True
         return await ctx.send(f"{member.mention}, your nickname has been restored... until someone scrambles your nickname again.")
 
     @checks.has_permissions_or_role(manage_roles=True)
-    @commands.cooldown(600, 1, commands.BucketType.user)
+    @commands.cooldown(1200, 1, commands.BucketType.user)
     @commands.command(name="chatchart")
     async def chatchart(self, ctx, channel: Union[discord.TextChannel, str] = None):
         """
         Shows the percentage of messages sent by various members.
         Add the --bots flag to include bots in the chatchart.
         """
+        if self.chatchart_is_running == True:
+            ctx.command.reset_cooldown(ctx)
+            return await ctx.send("This command is being run by another user at the moment. To prevent API spam, please try again later.")
         data = {}
         if channel is None or type(channel) is str:
             channel = ctx.channel
@@ -322,6 +398,7 @@ class Fun(dm, commands.Cog, name='fun'):
         embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/871737314831908974/880374020267212830/discord_loading.gif")
         statusmessage = await ctx.send(embed=embed)
         messagecount = 0
+        self.chatchart_is_running = True
         async for message in channel.history(limit=5000):
             if message.webhook_id is None:
                 authorid = message.author.id
@@ -340,7 +417,10 @@ class Fun(dm, commands.Cog, name='fun'):
             if messagecount %250 == 0:
                 embed=discord.Embed(title=f"Shuffling through #{channel}'s message history...", description=f"Scanned {messagecount} of the last **5000** messages sent here.\n\n{'■'*int(messagecount/250)}{'□'*int((20-(messagecount/250)))}", color=self.client.embed_color)
                 embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/871737314831908974/880374020267212830/discord_loading.gif")
-                await statusmessage.edit(embed=embed)
+                try:
+                    await statusmessage.edit(embed=embed)
+                except:
+                    await ctx.send(embed=embed)
         counted = sorted(data.items(), key=operator.itemgetter(1), reverse=True)
         """
         This removes the extra authors from the earlier dictionary so it's only 19 authors and 1 others
@@ -391,36 +471,173 @@ class Fun(dm, commands.Cog, name='fun'):
         await statusmessage.edit(embed=embed)
         file = discord.File(filename)
         await ctx.send(file=file)
+        self.chatchart_is_running = False
         await statusmessage.delete()
         os.remove(filename)
+
         if ctx.author.id in [650647680837484556, 321892489470410763]:
             ctx.command.reset_cooldown(ctx)
 
-    @checks.dev()
-    @commands.command(name="goeatpoop")
-    async def goeatpoop(self, ctx, member:discord.Member = None):
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.command(name='guessthenumber', aliases=['gtn', 'numberevent'])
+    async def guessthenumber(self, ctx, channel:discord.TextChannel = None):
         """
-        Get someone to eat poop
+        Sets up an interactiive guess the number game. If no channel is specified, the game will take place in the channel where the command was invoked.
         """
-        if member is None:
-            return await ctx.send("mention someone lol")
-        memberfilename = f"temp/{random.randint(1, 9999999)}.png"
-        main = Image.open("assets/poop.png")
-        opener = urllib.request.build_opener()
-        opener.addheaders = [('User-agent', 'Mozilla/5.0')]
-        urllib.request.install_opener(opener)
-        urllib.request.urlretrieve(str(ctx.author.avatar_url).replace('webp', 'png'), memberfilename)
-        ima = Image.open(memberfilename).convert('RGBA')
-        ima = ima.resize((220,220))
-        backg = main.copy()
-        backg.paste(ima, (107, 218), ima)
-        urllib.request.urlretrieve(str(member.avatar_url).replace('webp', 'png'), memberfilename)
-        ima2 = Image.open(memberfilename).convert('RGBA')
-        ima2 = ima2.resize((227,227))
-        backg.paste(ima2, (555,112), ima2)
-        b = BytesIO()
-        backg.save(b, format="png", optimize=True, quality=50)
-        b.seek(0)
-        file = discord.File(fp=b, filename="goeatpoop.jpg")
-        await ctx.send("If you don't understand the reference: <https://www.youtube.com/watch?v=M-PvB0NdO2g>", file=file)
-        os.remove(memberfilename)
+        if channel is None:
+            channel = ctx.channel
+        confirmview = confirm(ctx, self.client, 30.0)
+        if ctx.author.id in self.planning_numberevent:
+            return await ctx.send("You're already planning a Guess the Number game. Please check your DMs.")
+        if channel.id in self.numberevent_channels:
+            return await ctx.send("A Guess the Number game is already taking place in the specified channel. Tell the host to `cancel` the game.")
+        embed = discord.Embed(title="Action awaiting confirmation", description=f"Are you ready to start a Guess the Number game in {channel.mention}?", color=self.client.embed_color, timestamp=discord.utils.utcnow())
+        confirmmsg = await ctx.send(embed=embed, view=confirmview)
+        confirmview.response = confirmmsg
+        await confirmview.wait()
+        if confirmview.returning_value == None:
+            embed.description, embed.color = "I did not get a repsonse, so I cancelled the game. To proceed with setting up the game, press the green button 'Yes'.", discord.Color.red()
+            return await confirmmsg.edit(embed=embed)
+        elif confirmview.returning_value == False:
+            embed.description, embed.color = "I cancelled the game. To proceed with setting up the game, press the green button 'Yes'.", discord.Color.red()
+            return await confirmmsg.edit(embed=embed)
+        elif confirmview.returning_value == True:
+            small = None
+            big = None
+            chosen = None
+            error = None
+            try:
+                await ctx.author.send(embed=discord.Embed(title="Setting up a Guess the Number game...", description="You can say `cancel` anytime during the setup to cancel the Guess the Number game.", color=self.client.embed_color))
+            except discord.Forbidden:
+                return await ctx.send("To set up the game, I need your DMs open for me. Please open your DMs and run the command again!")
+            self.planning_numberevent.append(ctx.author.id)
+            embed.description, embed.color = "Please check your DMs!", discord.Color.green()
+            await confirmmsg.edit(embed=embed)
+            while small == None or big == None:
+                sending = "State the range of numbers that the number you chose is within, with two numbers separated by a dash (`-`).\nFor example, if the number you have in mind is `5`, you should input a range of `0-10`.\nNegative numbers aren't allowed."
+                if error is not None:
+                    sending = error + '\n' + sending
+                await ctx.author.send(embed=discord.Embed(title="Guess the Number game setup: Step 1 of 2", description=sending, color=self.client.embed_color))
+                def check(payload):
+                    return payload.author == ctx.author and isinstance(payload.channel, discord.DMChannel)
+                try:
+                    inputmessage = await self.client.wait_for('message', check=check, timeout=30.0)
+                except asyncio.TimeoutError:
+                    try:
+                        await ctx.author.send("I didn't get a response from you, hence the game is cancelled.")
+                    except:
+                        self.planning_numberevent.remove(ctx.author.id)
+                        return await ctx.send(f"The game was cancelled as I can't DM {ctx.author}.")
+                    else:
+                        self.planning_numberevent.remove(ctx.author.id)
+                        return await ctx.send(f"I didn't get a response from {ctx.author.mention}, hence the game is cancelled.")
+                else:
+                    if inputmessage.content.lower() == 'cancel':
+                        self.planning_numberevent.remove(ctx.author.id)
+                        await ctx.author.send("I have cancelled your Guess the Number game.")
+                        return await ctx.send(f"{ctx.author} has cancelled the Guess the Number game.")
+                    content = inputmessage.content.replace(' ', '')
+                    content = content.replace(',', '')
+                    content = content.split('-')
+                    if len(content) != 2:
+                        error = "You didn't provide a valid range."
+                    else:
+                        nums = []
+                        for i in content:
+                            try:
+                                intval = int(i)
+                            except:
+                                error = "You didn't provide a proper number."
+                            else:
+                                nums.append(intval)
+                        nums = sorted(nums)
+                        if nums[1] - nums[0] > 10000000:
+                            error = "The range should not be bigger than 10,000,000."
+                        elif nums[1] == nums[0]:
+                            error = "You didn't provide a valid range."
+                        else:
+                            small = nums[0]
+                            big = nums[1]
+            error = None
+            while chosen == None:
+                sending = f"What is the correct number that should be guessed? The number should be between {small} and {big} (both inclusive)."
+                if error is not None:
+                    sending = error + '\n' + sending
+                await ctx.author.send(embed=discord.Embed(title="Guess the Number game setup: Step 2 of 2", description=sending, color=self.client.embed_color))
+                def check(payload):
+                    return payload.author == ctx.author and isinstance(payload.channel, discord.DMChannel)
+                try:
+                    inputmessage = await self.client.wait_for('message', check=check, timeout=30.0)
+                except asyncio.TimeoutError:
+                    try:
+                        await ctx.author.send("I didn't get a response from you, hence the game is cancelled.")
+                    except:
+                        self.planning_numberevent.remove(ctx.author.id)
+                        return await ctx.send(f"The game was cancelled as I can't DM {ctx.author}.")
+                    else:
+                        self.planning_numberevent.remove(ctx.author.id)
+                        return await ctx.send(f"I didn't get a response from {ctx.author.mention}, hence the game is cancelled.")
+                else:
+                    if inputmessage.content.lower() == 'cancel':
+                        self.planning_numberevent.remove(ctx.author.id)
+                        await ctx.author.send("I have cancelled your Guess the Number game.")
+                        return await ctx.send(f"{ctx.author} has cancelled the Guess the Number game.")
+                    content = inputmessage.content
+                    content = content.replace(',', '')
+                    try:
+                        intval = int(content)
+                    except:
+                        error = "You didn't provide a proper number."
+                    else:
+                        if intval > big or intval < small:
+                            error = f"The number you choose should be between {small} and {big} (both inclusive)."
+                        else:
+                            chosen = intval
+            summary = f"**Summary**\nThe correct number is **{chosen}**, and I will tell people that the number is **between {small} and {big} (both inclusive)**.\n\nNow head to {channel.mention}, and say `start` to initialize the game!"
+            await ctx.author.send(summary)
+            self.planning_numberevent.remove(ctx.author.id)
+            embed = discord.Embed(title="Guess the Number game!", description=f"**{ctx.author}** is starting a Guess the Number game!\nYou have to guess a number that is **between {small} and {big}** (both inclusive).\n\n{ctx.author.display_name}, say `start` to start this game or `cancel` to cancel it.", color=self.client.embed_color)
+            self.numberevent_channels.append(channel.id)
+            await channel.send(embed=embed)
+            try:
+                def check(message):
+                    return message.content.lower() in ['start', 'cancel'] and message.author.id == ctx.author.id and message.channel.id == channel.id
+                msg = await self.client.wait_for('message', check=check, timeout=60.0)
+            except asyncio.TimeoutError:
+                self.numberevent_channels.remove(channel.id)
+                return await channel.send(f"{ctx.author.mention} did not tell me to start or cancel the Guess the Number game. I've automatically cancelled the game.")
+            else:
+                if msg.content.lower() == 'cancel':
+                    self.numberevent_channels.remove(channel.id)
+                    return await channel.send("The Guess the Number game has been cancelled.")
+                pinmsg = await channel.send(f"The game has started! Remember, **{ctx.author.display_name}**'s chosen number is between {small} and {big}.\nHave fun guessing the number!")
+                await pinmsg.pin(reason="Guess the Number game information")
+                times_guessed = 0
+                has_guessed = False
+                while not has_guessed:
+                    def check(payload):
+                        return payload.channel.id == channel.id
+                    try:
+                        guessingmsg = await self.client.wait_for('message', check=check, timeout = 600.0)
+                    except asyncio.TimeoutError:
+                        self.numberevent_channels.remove(channel.id)
+                        return await ctx.send("No one guessed within the last 10 minutes. Therefore, the Guess the Number game has been cancelled.")
+                    else:
+                        if guessingmsg.author.id == ctx.author.id:
+                            if guessingmsg.content.lower() == 'cancel':
+                                self.numberevent_channels.remove(channel.id)
+                                return await channel.send(f"After `{times_guessed}` times of guessing, {ctx.author.mention} has cancelled the Guess the Number game. The correct number was `{chosen}`.")
+                        else:
+                            try:
+                                guessednum = int(guessingmsg.content)
+                            except ValueError:
+                                pass
+                            else:
+                                if guessednum != chosen:
+                                    times_guessed += 1
+                                else:
+                                    self.numberevent_channels.remove(channel.id)
+                                    has_guessed = True
+                                    embed = discord.Embed(title="<a:dv_aConfettiOwO:837712162079244318> CONGRATULATIONS!", description=f"You got the correct number: `{chosen}`!\nThank you for playing **{ctx.author.display_name}**'s Guess the Number Game!", color=self.client.embed_color).set_footer(text=f'Guessing attempts: `{times_guessed}`')
+                                    await pinmsg.unpin(reason="Guess the Number game information")
+                                    return await guessingmsg.reply(f"{guessingmsg.author.mention}", embed=embed)

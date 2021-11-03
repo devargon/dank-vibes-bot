@@ -9,7 +9,8 @@ def has_permissions_or_role(**perms):
         async def predicate(ctx):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
-            if ctx.author.id == 321892489470410763 or ctx.author.id == 650647680837484556:
+            enabled = await ctx.bot.pool_pg.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
+            if enabled == True:
                 return True
             roles = await ctx.bot.pool_pg.fetch("SELECT role_id, whitelist FROM rules WHERE guild_id=$1 AND command=$2", ctx.guild.id, get_command_name(ctx.command))
             if not roles:
@@ -29,7 +30,8 @@ def is_owner_or_perms(**perms):
     async def predicate(ctx):
         if ctx.guild is None and ctx.author.id != 321892489470410763 or ctx.guild is None and ctx.author.id != 650647680837484556:
             raise commands.NoPrivateMessage()
-        if ctx.author.id == 321892489470410763 or ctx.author.id == 650647680837484556:
+        enabled = await ctx.bot.pool_pg.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
+        if enabled == True:
             return True
         return await base_check(ctx)
     return commands.check(predicate=predicate)
@@ -43,12 +45,20 @@ def in_beta() -> Callable:
             raise ArgumentBaseError(message="This feature is still in development and is not available to the public at the moment. Be sure to check it again soon!")
     return commands.check(predicate)
 
-def dev() -> callable:
+def base_dev() -> callable:
     async def predicate(ctx):
-        if ctx.message.author.id in [321892489470410763, 650647680837484556]:
+        if ctx.message.author.id in [321892489470410763, 650647680837484556, 515725341910892555]:
             return True
         else:
             raise ArgumentBaseError(message="Only developers can use this command.")
+    return commands.check(predicate)
+
+def dev() -> callable:
+    async def predicate(ctx):
+        enabled = await ctx.bot.pool_pg.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
+        if enabled != True:
+            raise ArgumentBaseError(message="Only developers can use this command. If you are a developer, turn on Developer mode.")
+        return True
     return commands.check(predicate)
 
 def admoon() -> Callable:
@@ -77,4 +87,13 @@ def is_bav_or_mystic() -> Callable:
         if ctx.author.guild_permissions.manage_roles == True:
             return True
         raise ArgumentBaseError(message="You need to be a `mystic` or `bav` or have the required permissions to use this command.")
+    return commands.check(predicate)
+
+def not_in_gen():
+    async def predicate(ctx):
+        channel_id = 608498967474601995
+        if ctx.guild:
+            if ctx.channel.id == channel_id:
+                raise ArgumentBaseError(message="You can't use this command here! Use it in another channel.")
+        return True
     return commands.check(predicate)

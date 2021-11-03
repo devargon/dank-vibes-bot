@@ -1,7 +1,7 @@
 import discord
 import contextlib
 import asyncio
-from typing import Iterable, List
+from typing import Iterable, List, Optional
 from discord.ext import commands
 from utils.format import box
 
@@ -106,6 +106,10 @@ class DVVTcontext(commands.Context):
                 await self.crossmark()
                 await msg.delete(delay=delete_delay)
         return confirm
+
+    async def confirm(self, content: str, delete_after: Optional[bool] = False, **kwargs) -> Optional[bool]:
+        from utils.buttons import ConfirmView
+        return await ConfirmView(self, delete_after).send(content, **kwargs)
 
     async def send_error(self, error = None):
         """

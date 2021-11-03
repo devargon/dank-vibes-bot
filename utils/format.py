@@ -5,6 +5,8 @@ from io import BytesIO
 from typing import Sequence, Iterator
 from discord.ext import commands
 import inflect
+import math
+from expr import evaluate
 
 class plural:
     """
@@ -19,6 +21,30 @@ class plural:
         if abs(v) != 1:
             return f'{v} {plural}'
         return f'{v} {singular}'
+
+def comma_number(number:int):
+    return "{:,}".format(number)
+
+def short_time(duration:int):
+    if duration is None or duration < 1:
+        return ''
+    duration_in_mins = duration/60
+    if duration_in_mins < 1:
+        return '< 1m'
+    if duration_in_mins < 60:
+        return f'{math.ceil(duration_in_mins)}m'
+    duration_in_hours = duration_in_mins/60
+    if duration_in_hours < 1.017:
+        return '1h'
+    if duration_in_hours < 24:
+        return f'{math.ceil(duration_in_hours)}h'
+    duration_in_days = duration_in_hours/24
+    if duration_in_days < 1.05:
+        return '1d'
+    else:
+        return f'{math.ceil(duration_in_days)}d'
+
+
 
 def human_join(seq, delim=', ', final='or'):
     """
@@ -168,3 +194,34 @@ class TabularData:
 
         to_draw.append(sep)
         return '\n'.join(to_draw)
+
+def stringnum_toint(string:str):
+    allowedsymbols=["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "m", "k", 'e', '.', '-']
+    string = string.lower()
+    for character in list(string):
+        if character not in allowedsymbols:
+            return None
+    if string.isnumeric():
+        return int(string)
+    if "m" in string:
+        string = string.replace("m", "*1000000+")
+    if "k" in string:
+        string = string.replace("d", "*1000+")
+    if 'e' in string:
+        string = string.replace("e", "*10^")
+    if string.endswith('+') or string.endswith('-'):
+        string += "0"
+    if string.endswith('/') or string.endswith('*') or string.endswith('^'):
+        string += "1"
+    intstring = evaluate(string)
+    intstring = int(intstring) if intstring is not None else intstring
+    return intstring
+
+def grammarformat(iterable):
+    if len(iterable) == 0:
+        return ''
+    if len(iterable) == 1:
+        return iterable[0]
+    if len(iterable) == 2:
+        return iterable[0] + ' and ' + iterable[1]
+    return ', '.join(iterable[:-1]) + ', and ' + iterable[-1]

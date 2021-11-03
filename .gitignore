@@ -8,8 +8,10 @@ cogs/votetracker/__pycache__
 cogs/banbattle/__pycache__
 cogs/owo/__pycache__
 cogs/dankmemer/__pycache__
+cogs/autoreaction/__pycache__
 cogs/mod/__pycache__
 cogs/fun/__pycache__
+cogs/messagetracking/__pycache__
 utils/__pycache__
 databases/autoreactor.db 
 databases/database.db 

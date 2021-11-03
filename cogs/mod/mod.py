@@ -6,14 +6,93 @@ from discord.ext import commands
 from utils import checks
 from utils.format import text_to_file
 from.lockdown import lockdown
+from utils.buttons import *
+from .browser_screenshot import BrowserScreenshot
+from selenium import webdriver
+import os
 
-
-class Mod(lockdown, commands.Cog, name='mod'):
+class Mod(BrowserScreenshot, lockdown, commands.Cog, name='mod'):
     """
     Mod commands
     """
     def __init__(self, client):
+        PROXY = "161.35.235.103:8889"
+        self.op = webdriver.ChromeOptions() # selenium options for chrome
+        self.op.add_argument('--no-sandbox')
+        self.op.add_argument('--disable-gpu')
+        self.op.add_argument('--headless')
+        self.op.add_argument("--window-size=1920,1080")
+        self.op.add_argument('--allow-running-insecure-content')
+        self.op.add_argument('--ignore-certificate-errors')
+        #self.op.add_argument(' --user-agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36"')
+        self.op.add_argument('--proxy-server=%s' % PROXY)
         self.client = client
+        prefs = {"download_restrictions": 3}
+        self.op.add_experimental_option("prefs", prefs)
+
+    class RoleFlags(commands.FlagConverter, case_insensitive=True, delimiter=' ', prefix='--'):
+        roles: Optional[str]
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name="self", aliases=["selfroles"], usage="--roles (role names separated by commas) (optional)")
+    async def selfroles(self, ctx, channel:Optional[discord.TextChannel] = None, *, flags:RoleFlags):
+        """
+        Sends a message showing the 5 self roles which can be gotten via buttons.
+        To highlight a role in green, use `--roles the **full names** of the roles` separated in commas. They are not case sensitive.
+        """
+        roleids = [895815546292035625, 895815588289581096, 895815773208051763, 895815799812521994, 895815832465190933] if os.name == "nt" else [859493857061503008, 758174135276142593, 758174643814793276, 680131933778346011, 713477937130766396]#[895815546292035625, 895815588289581096, 895815773208051763, 895815799812521994, 895815832465190933]
+        role1 = ctx.guild.get_role(roleids[0])
+        role2 = ctx.guild.get_role(roleids[1])
+        role3 = ctx.guild.get_role(roleids[2])
+        role4 = ctx.guild.get_role(roleids[3])
+        role5 = ctx.guild.get_role(roleids[4])
+        if role1 == None or role2 == None or role3 == None or role4 == None or role5 == None:
+            return await ctx.send("1 or more roles in this command is/are declared as invalid, hence the command cannot proceed.")
+        roles = [role1, role2, role3, role4, role5]
+        if channel is None:
+            channel = ctx.channel
+            if flags is not None and flags.roles is not None and len(flags.roles) is not None:
+                hlroles = flags.roles.split(',')
+                for index, role_name in enumerate(hlroles):
+                    hlroles[index] = role_name.lower().strip()
+        class selfroles(discord.ui.View):
+            def __init__(self, ctx: DVVTcontext, client, timeout):
+                self.context = ctx
+                self.response = None
+                self.result = None
+                self.client = client
+                super().__init__(timeout=timeout)
+                emojis = ["<a:dv_wStarOwO:837787067303198750>", "<a:dv_wHeartsOwO:837787079320666138>", "<a:dv_wSparklesOwO:837782054782632006>", "<a:dv_wpinkHeartOwO:837781949337960467>", "<:dv_wFlowerOwO:837700860511256627>"]
+                rolenames = []
+                for role in roles:
+                    rolenames.append(role.name)
+
+                class somebutton(discord.ui.Button):
+                    async def callback(self, interaction: discord.Interaction):
+                        target_role = roles[emojis.index(str(self.emoji))]
+                        if target_role in interaction.user.roles:
+                            await interaction.response.send_message(f"You already have the role **{target_role.name}**!", ephemeral=True)
+                        else:
+                            await interaction.user.add_roles(target_role, reason="Selfrole")
+                            await interaction.response.send_message(f"The role **{target_role.name}** has been added to you.", ephemeral=True)
+                        #await update_roles(self.emoji)
+                for emoji in emojis:
+                    style = discord.ButtonStyle.grey
+                    if hlroles is not None:
+                        if rolenames[emojis.index(emoji)].lower() in hlroles:
+
+                            style = discord.ButtonStyle.green
+                    self.add_item(somebutton(emoji=discord.PartialEmoji.from_str(emoji), label=rolenames[emojis.index(emoji)], style=style))
+
+            async def on_timeout(self) -> None:
+                for b in self.children:
+                    b.disabled = True
+                await self.response.edit(content="This message is now inactive.", view=self)
+        view = selfroles(ctx, self.client, 172800.0)
+        message = await channel.send("Press the button to claim your role.", view=view)
+        view.response = message
+
+
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="getraw", aliases = ['raw', 'rawmessage'])
     async def getrawmessage(self, ctx, message_id=None, channel:discord.TextChannel=None):
@@ -37,6 +116,27 @@ class Mod(lockdown, commands.Cog, name='mod'):
             else:
                 await ctx.send(embed=discord.Embed(title=f"Raw content of message with ID {message_id} in {channel}", description=f"```\n{content}\n```", color = self.client.embed_color))
 
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.command(name='karutaeventinfo', aliases=['kei'])
+    async def karutaeventinfo(self, ctx):
+        embed = discord.Embed(title="Dank Vibes Bot's Karuta Halloween Event!", description="From **__24/10, 0.00 EST to 31/10, 0.00 EST__**, zombies will be spawned by me in these channels:\n> <#823597687940841482>\n> <#881149732628623390>\n> <#847375281399791616>\nYour **goal** is to collect as many skulls 💀 as possible by **defeating the zombie hordes**. \n\nThe top 3 players with the **most skulls collected 💀** will win certain prizes!\n\nMore information is in <#901402571862843392>.", color=self.client.embed_color)
+        embed.set_author(name=f"{ctx.guild.name}'s Karuta Zombie Halloween Event", url=ctx.guild.icon.url)
+        embed.add_field(name="How do I kill the zombies?", value="I'll tell you which button/emoji to click'. The button that **matches** <:DVB_True:887589686808309791> the emoji shown on the message is the correct button.\n\n**Every time** you press the button, you'll kill a zombie! The buttons wll shuffle once in a while, so be careful not to press the wrong button.", inline=False)
+        embed.add_field(name="How can I die?", value="If you press the wrong button, the zombies will kill you instead.", inline=True)
+        embed.add_field(name="What happens if I die?", value="If you die, you **can't** fight the zombies. You will **not receive** any skulls as you aren't alive to collect them, even had killed some zombies.", inline=True)
+        embed.set_thumbnail(url="https://cdn.nogra.me/core/zombie.gif")
+        embed.set_image(url="https://cdn.nogra.me/dankvibes/karuta_win.gif")
+        if ctx.message.reference:
+            partial = ctx.channel.get_partial_message(ctx.message.reference.message_id)
+            try:
+                await partial.reply(embed=embed)
+            except:
+                pass
+            else:
+                return
+        await ctx.send(embed=embed)
+
+
     @commands.command(name="memberpvc", brief = "Checks the private channels that a member has access to", description = "Checks the private channels that a member has access to", aliases = ["pvcmember"])
     @commands.has_guild_permissions(manage_roles=True)
     async def memberpvc(self, ctx, member:discord.Member = None):
@@ -47,14 +147,14 @@ class Mod(lockdown, commands.Cog, name='mod'):
             await ctx.send("Wanted to check another member, and not yourself? You need to include a member.\nUsage of command: `memberpvc [channel]`")
             member = ctx.author
         # categoryids = [869943348608270446] this is for my server
-        categoryids = [802467427208265728, 763457841133912074, 789195494664306688, 783299769580781588, 805052824185733120, 834696686923284510, 847897065081274409] # this is for dv (all the category IDs for the VIP channels) 
+        categoryids = [802467427208265728, 763457841133912074, 789195494664306688, 783299769580781588, 805052824185733120, 834696686923284510, 847897065081274409] # this is for dv (all the category IDs for the VIP channels)
         categories = []
         for categoryid in categoryids:
             category = discord.utils.find(lambda m: m.id == categoryid, ctx.guild.categories)
             if category is None:
                 await ctx.send(f"I could not find a category for the ID {category}")
             else:
-                categories.append(category) # gets all the categories for channels 
+                categories.append(category) # gets all the categories for channels
         accessiblechannels = []
         for category in categories:
             for channel in category.channels:
@@ -75,57 +175,3 @@ class Mod(lockdown, commands.Cog, name='mod'):
         embed = discord.Embed(title=f"Channels that {member.name}#{member.discriminator} can access",
                             description=streeng, color=0x57f0f0)
         await ctx.send(embed=embed)
-
-    @checks.is_bav_or_mystic()
-    @commands.command(name="gcheck", brief = "Reminds DV Grinders that the requirement has been checked.", description = "Reminds DV Grinders that the requirement has been checked.")
-    async def gcheck(self, ctx):
-        """
-        Reminds DV Grinders that the requirement has been checked.
-        """
-        grinderrole = ctx.guild.get_role(859494328422367273)
-        tgrinderrole = ctx.guild.get_role(827270880182009956)
-        if grinderrole is None or tgrinderrole is None:
-            return await ctx.send("One or more roles declared in this command are invalid, hence the command cannot proceed.")
-        grinders = [member for member in ctx.guild.members if grinderrole in member.roles or tgrinderrole in member.roles] # gets all grinders
-        if len(grinders) == 0:
-            return await ctx.send("There are no grinders to be DMed.")
-        hiddengrinders = len(grinders) - 20 #number of grinders that will be hidden in "and ... more"
-        message = ""
-        while len(message) < 3700 and len(grinders) > hiddengrinders and len(grinders) > 0:
-            member = grinders.pop(0)
-            message += f"{member}\n" # add grinders name to embed
-        if len(grinders) != 0:
-            message += f"And **{len(grinders)}** more."
-        embed = discord.Embed(title="DM Grinders?", description = f"I will be DMing these members with the {grinderrole.mention} and {tgrinderrole.mention} role to update them about the grinder check:\n\n{message}\n\nAre you sure?", color=0x57F0F0)
-        message = await ctx.send(embed=embed)
-        reactions = ["<:checkmark:841187106654519296>", "<:crossmark:841186660662247444>"]
-        for reaction in reactions:
-            await message.add_reaction(reaction)
-        def check(payload):
-            return payload.user_id == ctx.message.author.id and payload.channel_id == ctx.channel.id and payload.message_id == message.id and str(payload.emoji) in reactions
-        try:
-            response = await self.client.wait_for('raw_reaction_add', timeout=15, check=check)
-            if not str(response.emoji) == '<:checkmark:841187106654519296>':
-                return await message.edit(content="Command stopped.")
-        except asyncio.TimeoutError:
-            ctx.command.reset_cooldown(ctx)
-            return await message.edit(content="You didn't react on time.")
-        else:
-            await message.clear_reactions()
-            msg = await ctx.send("<a:typing:839487089304141875> DMing grinders... ")
-            embed = discord.Embed(title="DV Grinders Team", description=f"<a:dv_pointArrowOwO:837656328482062336> The daily grinder requirement has been checked.\n<a:dv_pointArrowOwO:837656328482062336> <#862574856846704661> is now unlocked and you may send the cash to `Dank Vibes Holder#2553`\n<a:dv_pointArrowOwO:837656328482062336> The next requirement check will take place in about <t:{round(time.time())+86400}:R> ( i.e between 1:30 and 3:30 GMT)", color=0x57F0F0)
-            embed.set_thumbnail(url="https://cdn.discordapp.com/icons/595457764935991326/a_58b91a8c9e75742d7b423411b0205b2b.gif")
-            embed.set_footer(text="DM/Ping TheMysticLegacy#0001 or Bav#0507 if you have any queries.",icon_url=ctx.guild.icon_url)
-            success = 0
-            grinders = [member for member in ctx.guild.members if grinderrole in member.roles or tgrinderrole in member.roles] # gets the grinder list again since the earlier one was popped
-            faileddms = []
-            for grinder in grinders:
-                try:
-                    await grinder.send(f"Hello {grinder.name}! I have a message for you:" if grinder.id != 709350868733919314 else f"Hello {grinder.name}! I have a message for you:\n||btw haii wiz uwu <a:dv_nekoWaveOwO:837756827255963718>- argon||", embed=embed) # hehe
-                    success += 1
-                except discord.Forbidden:
-                    faileddms.append(grinder.mention) # gets list of people who will be pinged later
-            if len(faileddms) > 0:
-                channel = self.client.get_channel(862574856846704661)
-                await channel.send(f"{' '.join(faileddms)}\n<a:dv_pointArrowOwO:837656328482062336> The daily grinder requirement has been checked.\n<a:dv_pointArrowOwO:837656328482062336> <#862574856846704661> is now unlocked and you may send the cash to `Dank Vibes Holder#2553`\n<a:dv_pointArrowOwO:837656328482062336> The next requirement check will take place in about <t:{round(time.time())+86400}:R> ( i.e between 1:30 and 3:30 GMT).")
-            await msg.edit(content=f"DMed {success} members successfully, the rest were pinged in <#862574856846704661>.")

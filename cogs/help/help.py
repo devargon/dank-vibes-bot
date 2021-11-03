@@ -1,48 +1,132 @@
+import copy
 import re
+from utils.context import DVVTcontext
 from utils.errors import ArgumentBaseError
 import discord
+import itertools
 import contextlib
 import more_itertools
 from datetime import datetime
 from discord.ext import commands
-from utils.menus import pages, CogMenu, GroupMenu
+from utils.menus import CogMenu, GroupMenu, ListPageInteractionBase, HelpMenu, HelpMenuBase, MenuViewInteractionBase
+from utils.buttons import BaseButton, ViewButtonIteration, MenuViewBase
+from utils.helper import unpack, empty_page_format
+from collections import namedtuple
+from utils.format import get_command_name
+from typing import Optional, Any, List, Union, Tuple
+
+CommandGroup = Union[commands.Command, commands.Group]
+CogHelp = namedtuple("CogAmount", 'name commands description')
+GroupHelp = namedtuple("GroupHelp", 'name brief usage group_obj')
+CommandHelp = namedtuple("CommandHelp", 'command brief command_obj')
+SubcommandHelp = namedtuple("SubcommandHelp", 'name brief command_obj')
+
+class HelpMenuView(MenuViewBase):
+    """This class is responsible for starting the view + menus activity for the help command.
+       This accepts embed, help_command, context, page_source, dataset and optionally Menu.
+       """
+    def __init__(self, *data: Any, embed: discord.Embed, help_object, context: DVVTcontext, **kwargs: Any):
+        super().__init__(context, HelpSource, *data,
+                         button=HelpButton,
+                         menu=HelpMenu,
+                         style=discord.ButtonStyle.primary,
+                         **kwargs)
+        self.original_embed = embed
+        self.help_command = help_object
+
+class HomeButton(BaseButton):
+    async def callback(self, interaction: discord.Interaction):
+        self.view.clear_items()
+        for b in self.view.old_items:
+            self.view.add_item(b)
+        await interaction.message.edit(view=self.view, embed=self.view.original_embed)
+
+class HelpButton(BaseButton):
+    """This Button update the menu, and shows a list of commands for the cog.
+       This saves the category buttons as old_items and adds relevant buttons that
+       consist of HomeButton, and HelpSearchButton."""
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        bot = view.help_command.context.bot
+        select = self.selected or "No Category"
+        cog = bot.get_cog(select.lower())
+        data = [(cog, commands_list) for commands_list in view.mapper.get(cog)]
+        self.view.old_items = copy.copy(self.view.children)
+        await view.update(self, interaction, data)
+
+class HelpSearchButton(BaseButton):
+    """This class is used inside a help command that shows a help for a specific command.
+       This is also used inside help search command."""
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        help_obj = self.view.help_command
+        bot = help_obj.context.bot
+        command = bot.get_command(self.selected)
+        embed = help_obj.get_command_help(command)
+        await interaction.response.send_message(content=f"Help for **{self.selected}**", embed=embed, ephemeral=True)
+
+class Information(HelpMenuBase):
+    async def on_information_show(self, payload: discord.RawReactionActionEvent) -> None:
+        ctx = self.ctx
+        embed = discord.Embed(title="Information", description=self.description, color=0x5464B4)
+        curr = self.current_page + 1 if (p := self.current_page > -1) else "cover page"
+        pa = ("page", "the")[not p]
+        embed.set_author(icon_url=ctx.bot.user.avatar, name=f"You were on {pa} {curr}")
+        nav = '\n'.join(f"{e} {b.action.__doc__}" for e, b in super().buttons.items())
+        embed.add_field(name="Navigation:", value=nav)
+        await self.message.edit(embed=embed, allowed_mentions=discord.AllowedMentions(replied_user=False))
 
 
-@pages()
-async def group_help_source_format(self, menu: GroupMenu, entry):
-    """
-    This is for the group help command ListPageSource
-    """
-    group, list_commands = entry
-    embed = discord.Embed(title=DVBotHelp.get_command_name(self, group))
-    embed.color = 0x57F0F0
-    embed.description = f"{DVBotHelp.get_help(self, group, False)}\nUsage: {DVBotHelp.get_command_usage(self, group, ctx=menu.ctx)}"
-    embed.set_footer(text=f"Requested by {menu.ctx.author}", icon_url=menu.ctx.author.avatar_url)
-    for command in list_commands:
-        value = f"{DVBotHelp.get_help(self, command)}\nUsage: {DVBotHelp.get_command_usage(self, command, ctx=menu.ctx)}"
-        embed.add_field(name=f"{DVBotHelp.get_command_name(self, command)}", value=value, inline=False)
-    return embed
+class HelpMenu(MenuViewInteractionBase, Information):
+    """MenuPages class that is specifically for the help command."""
+    def __init__(self, *args: Any, description: Optional[str] = None, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.description = description or """This shows each commands in this bot. Each page is a category that shows 
+                                             what commands that the category have."""
 
-@pages()
-async def cog_help_source_format(self, menu: CogMenu, entry):
-    """
-    This is for the cog help command ListPageSource
-    """
-    cog, list_commands = entry
-    embed = discord.Embed(title=f"{getattr(cog, 'qualified_name', 'No').capitalize()} Category")
-    embed.color = 0x57F0F0
-    embed.set_footer(text=f"Requested by {menu.ctx.author}", icon_url=menu.ctx.author.avatar_url)
-    for command in list_commands:
-        value = f"{DVBotHelp.get_help(self, command)}\nUsage: {DVBotHelp.get_command_usage(self, command, ctx=menu.ctx)}"
-        if isinstance(command, commands.Group):
-            value += f"\n`{menu.ctx.clean_prefix}help {DVBotHelp.get_command_name(self, command)}` for subcommands."
-        embed.add_field(name=f"{DVBotHelp.get_command_name(self, command)}", value=value, inline=False)
-    return embed
+class CogMenu(Information):
+    def __init__(self, *args: Any, description: Optional[str] = None, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.description = description
 
-@pages()
-def empty_page_format(_, __, entry):
-    """This is for Code Block ListPageSource and for help Cog ListPageSource"""
-    return entry
+class GroupMenu(Information):
+    def __init__(self, *args: Any, description: Optional[str] = None, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.description = description
+
+class HelpSearchView(ViewButtonIteration):
+    """This view class is specifically for command_callback method"""
+
+    def __init__(self, help_object, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.help_command = help_object
+        self.ctx = help_object.context
+        self.bot = help_object.context.bot
+
+class HelpSource(ListPageInteractionBase):
+    """This ListPageSource is meant to be used with view, format_page method is called first
+       after that would be the format_view method which must return a View, or None to remove."""
+
+    async def format_page(self, menu: HelpMenu, entry: Tuple[commands.Cog, List[CommandHelp]]) -> discord.Embed:
+        """This is for the help command ListPageSource"""
+        cog, list_commands = entry
+        embed = discord.Embed(title=f"{getattr(cog, 'qualified_name', 'No').capitalize()} Category", color=0x5464B4)
+        for command in list_commands:
+            embed.add_field(name=command.command, value=command.brief, inline=False)
+        author = menu.ctx.author
+        return embed.set_footer(text=f"Requested by {author}", icon_url=author.display_avatar.url)
+
+    async def format_view(self, menu: HelpMenu, entry: Tuple[Optional[commands.Cog], List[CommandHelp]]) -> HelpMenuView:
+        if not menu._running:
+            return
+        _, list_commands = entry
+        commands = [c.command_obj.name for c in list_commands]
+        menu.view.clear_items()
+        menu.view.add_item(HomeButton(style=discord.ButtonStyle.success, selected="Home", row=None))
+        for c in commands:
+            menu.view.add_item(HelpSearchButton(style=discord.ButtonStyle.secondary, selected=c, row=None))
+        return menu.view
 
 class DVBotHelp(commands.DefaultHelpCommand):
     def __init__(self, **options):
@@ -53,16 +137,16 @@ class DVBotHelp(commands.DefaultHelpCommand):
         Method to return a command's name and signature.
         """
         if not ctx:
+            prefix = self.context.clean_prefix
             if not command.parent:
-                return f"{command.name}"
+                return f"{prefix}{command.name}"
             else:
-                return f"{command.parent} {command.name}"
+                return f"{prefix}{command.parent} {command.name}"
         else:
             def get_invoke_with():
                 msg = ctx.message.content
                 prefixmax = re.match(f'{re.escape(ctx.prefix)}', ctx.message.content).regs[0][1]
                 return msg[prefixmax:msg.rindex(ctx.invoked_with)]
-
             if not command.signature and not command.parent:
                 return f'{ctx.prefix}{ctx.invoked_with}'
             if command.signature and not command.parent:
@@ -106,33 +190,54 @@ class DVBotHelp(commands.DefaultHelpCommand):
 
     def get_aliases(self, command):
         """
-        LMFAO it isn't even needed
+        LMFAO it isn't even needed, but for some reasons it exists
         """
         return command.aliases
 
     async def send_bot_help(self, mapping):
         """
-        Gets called when `.help` is invoked.
+        Gets called when `uwu help` is invoked.
         """
-        if not self.context.guild:
-            raise commands.NoPrivateMessage
-        embed = discord.Embed(color=0x57F0F0)
-        embed.timestamp = datetime.utcnow()
-        embed.set_author(name=f"{self.context.me.name}'s Command List", icon_url=self.context.me.avatar_url)
-        embed.set_footer(text=f"Requested by {self.context.author}", icon_url=self.context.author.avatar_url)
-        cogs = []
-        for cog, unfiltered_commands in mapping.items():
-            filtered = await self.filter_commands(unfiltered_commands, sort=True)
-            if not cog:
-                continue
-            if filtered:
-                cogs.append(cog)
-        for cog in sorted(cogs, key=lambda x: x.qualified_name):
-            name = cog.qualified_name.capitalize() if cog.qualified_name != 'owo' else 'OwO'
-            description = cog.description if cog.description else "Not documented."
-            value = f"{description}\n `{self.context.clean_prefix}help {cog.qualified_name}` for more info"
-            embed.add_field(name=name, value=value)
-        await self.context.reply(embed=embed, mention_author=False)
+        def get_command_help(com: CommandGroup) -> CommandHelp:
+            signature = self.get_command_name(com)
+            desc = self.get_help(com)
+            return CommandHelp(signature, desc, com)
+        
+        def get_cog_help(cog, cog_commands) -> CogHelp:
+            cog_name_none = getattr(cog, "qualified_name", "No Category")
+            cog_name = cog_name_none.capitalize() if cog_name_none != 'owo' else 'OwO'
+            cog_description = getattr(cog, 'description', "Not documented")
+            cog_amount = len([*unpack(cog_commands)])
+            return CogHelp(cog_name, cog_amount, cog_description)
+        
+        ctx = self.context
+        bot = ctx.bot
+        EACH_PAGE = 5
+        command_data = {}
+        for cog, unfiltered in mapping.items():
+            if list_commands := await self.filter_commands(unfiltered, sort=True):
+                lists = command_data.setdefault(cog, [])
+                for chunks in discord.utils.as_chunks(list_commands, EACH_PAGE):
+                    lists.append([*map(get_command_help, chunks)])
+        mapped = itertools.starmap(get_cog_help, command_data.items())
+        sort_cog = [*sorted(mapped, key=lambda c: c.commands, reverse=True)]
+        embed = discord.Embed(description=f"{bot.description}\n\n**Select a Category**", color=0x5464B4)
+        embed.set_author(name=f"{self.context.me.name}'s Help Command", icon_url=self.context.me.display_avatar.url)
+        embed.timestamp = discord.utils.utcnow()
+        sort_cog = sorted(sort_cog, key=lambda x: x.name)
+        for abc in sort_cog:
+            embed.add_field(name=abc.name, value=abc.description)
+        embed.set_footer(text=f"Requested by {self.context.author}", icon_url=self.context.author.display_avatar.url)
+        loads = {
+            "embed": embed,
+            "help_object": self,
+            "context": ctx,
+            "mapper": command_data
+        }
+        cog_names = [{"selected": ch.name} for ch in sort_cog]
+        buttons = discord.utils.as_chunks(cog_names, 5)
+        menu_view = HelpMenuView(*buttons, **loads)
+        await ctx.reply(embed=embed, view=menu_view)
 
     def get_command_help(self, command):
         """
@@ -143,12 +248,50 @@ class DVBotHelp(commands.DefaultHelpCommand):
         embed = discord.Embed(title=self.get_command_name(command))
         embed.description = self.get_help(command, brief=False)
         embed.color = 0x57F0F0
-        embed.timestamp = datetime.utcnow()
+        embed.timestamp = discord.utils.utcnow()
         if alias := self.get_aliases(command):
             embed.add_field(name="Aliases", value=f'[{" | ".join(f"`{x}`" for x in alias)}]', inline=True)
         embed.add_field(name='Usage', value=self.get_command_usage(command), inline=True)
-        embed.set_footer(text=f"Requested by {self.context.author}", icon_url=self.context.author.avatar_url)
+        embed.set_footer(text=f"Requested by {self.context.author}", icon_url=self.context.author.display_avatar.url)
+        if isinstance(command, commands.Group):
+            subcommand = command.commands
+            value = "\n".join(self.get_command_signature(c) for c in subcommand)
+            embed.add_field(name="Subcommands", value=value)
         return embed
+
+    async def get_cog_help(self, cog):
+        if not self.context.guild:
+            raise commands.NoPrivateMessage
+        self.show_hidden = True
+        unfiltered_commands = cog.get_commands()
+        list_commands = await self.filter_commands(unfiltered_commands, sort=True)
+        if not list_commands:
+            raise ArgumentBaseError(message="You don't have enough permission to see this help.") from None
+        embeds = []
+        for chunks in more_itertools.chunked(list_commands, 5):
+            embed = discord.Embed(title=f"{getattr(cog, 'qualified_name', 'No').capitalize()} Category", color=0x57F0F0)
+            embed.set_footer(text=f"Requested by {self.context.author}", icon_url=self.context.author.display_avatar.url)
+            for command in chunks:
+                embed.add_field(name=self.get_command_name(command), value=self.get_help(command, brief=True), inline=False)
+            embeds.append(embed)
+        return embeds
+
+    async def get_group_help(self, group):
+        if not self.context.guild:
+            raise commands.NoPrivateMessage
+        self.show_hidden = True
+        list_commands = await self.filter_commands(group.commands, sort=True)
+        if not list_commands:
+            return await self.handle_help(group)
+        embeds = []
+        for chunks in more_itertools.chunked(list_commands, 4):
+            embed = discord.Embed(title=self.get_command_name(group), color=0x57F0F0)
+            embed.description = f"{self.get_help(group, brief=False)}\nUsage: {self.get_command_usage(group)}"
+            embed.set_footer(text=f"Requested by {self.context.author}", icon_url=self.context.author.display_avatar.url)
+            for command in chunks:
+                embed.add_field(name=self.get_command_name(command), value=self.get_help(command, brief=True), inline=False)
+            embeds.append(embed)
+        return embeds
 
     async def handle_help(self, command):
         with contextlib.suppress(commands.CommandError):
@@ -158,43 +301,41 @@ class DVBotHelp(commands.DefaultHelpCommand):
 
     async def send_command_help(self, command):
         """
-        Gets called when `.help <command>` is invoked.
+        Gets called when `uwu help <command>` is invoked.
         """
         await self.handle_help(command)
 
     async def send_group_help(self, group):
         """
-        Gets called when `.help <group>` is invoked.
+        Gets called when `uwu help <group>` is invoked.
         """
+        # await self.handle_help(group)
+        from discord import ui
         if not self.context.guild:
             raise commands.NoPrivateMessage
-        data = []
         self.show_hidden = True
         list_commands = await self.filter_commands(group.commands, sort=True)
         if not list_commands:
             return await self.handle_help(group)
-        for chunks in more_itertools.chunked(list_commands, 4):
-            data.append((group, [sub for sub in chunks]))
-        pages = GroupMenu(source=group_help_source_format(data), timeout=60)
-        with contextlib.suppress(discord.NotFound, discord.Forbidden):
-            await pages.start(self.context, wait=True)
-            return await self.context.checkmark()
+        command_data = {}
+        lists = command_data.setdefault(group, list_commands)
+        embed = self.get_command_help(group)
+        # view = MenuViewBase(self.context, HelpSource)
+        view = HelpMenuView(embed=embed, help_object=self, context=self.context)
+        # view.help_command = self
+        for subcommand in list_commands:
+            name = get_command_name(subcommand)
+            view.add_item(HelpSearchButton(style=discord.ButtonStyle.secondary, label=subcommand.name, selected=name, row=None))
+        await self.context.reply(embed=embed, view=view)
 
     async def send_cog_help(self, cog):
         """
-        Gets called when `.help <cog>` is invoked.
+        Gets called when `uwu help <cog>` is invoked.
         """
-        if not self.context.guild:
-            raise commands.NoPrivateMessage
-        command_data = []
-        self.show_hidden = True
-        unfiltered_commands = cog.get_commands()
-        list_commands = await self.filter_commands(unfiltered_commands, sort=True)
-        if not list_commands:
-            raise ArgumentBaseError(message="You don't have enough permission to see this help.") from None
-        for chunks in more_itertools.chunked(list_commands, 5):
-            command_data.append((cog, [command for command in chunks]))
-        pages = CogMenu(source=cog_help_source_format(command_data), timeout=60)
+        cog_commands = await self.get_cog_help(cog)
+        description = """This shows available commands in this category 
+                         Each line shows what the command is about."""
+        pages = CogMenu(source=empty_page_format(cog_commands), description=description)
         with contextlib.suppress(discord.NotFound, discord.Forbidden):
             await pages.start(self.context, wait=True)
             await self.context.checkmark()

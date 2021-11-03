@@ -5,17 +5,21 @@ from datetime import datetime
 from discord.ext import commands
 from .serverrule import ServerRule
 from .sticky import Sticky
+from .joining import Joining
+from .betterselfroles import BetterSelfroles
 from utils import checks
-
+from utils.buttons import *
+from utils.format import grammarformat
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
-class Admin(Sticky, ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass):
+class Admin(BetterSelfroles, Joining, Sticky, ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass):
     """
     Server Commands
     """
     def __init__(self, client):
         self.client = client
         self.queue = []
+        self.selfroleviews_added = False
 
     async def handle_toggle(self, guild, settings) -> bool:
         if (result := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", guild.id, settings)) is not None:
@@ -40,7 +44,7 @@ class Admin(Sticky, ServerRule, commands.Cog, name='admin', metaclass=CompositeM
             if enabled:
                 return "<:DVB_enabled:872003679895560193>"
             return "<:DVB_disabled:872003709096321024>"
-        embed = discord.Embed(title=f"Leaderboard Settings For {ctx.guild.name}", color=self.client.embed_color, timestamp=datetime.utcnow())
+        embed = discord.Embed(title=f"Leaderboard Settings For {ctx.guild.name}", color=self.client.embed_color, timestamp=discord.utils.utcnow())
         if (owodaily := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "owodailylb")) is not None:
             owodaily = owodaily.get('enabled')
         if (owoweekly := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "owoweeklylb")) is not None:
@@ -50,7 +54,7 @@ class Admin(Sticky, ServerRule, commands.Cog, name='admin', metaclass=CompositeM
         embed.add_field(name=f"{get_emoji(owodaily)} OwO Daily Leaderboard", value=f"{'Enabled' if owodaily else 'Disabled'}", inline=False)
         embed.add_field(name=f"{get_emoji(owoweekly)} OwO Weekly Leaderboard", value=f"{'Enabled' if owoweekly else 'Disabled'}", inline=False)
         embed.add_field(name=f"{get_emoji(votelb)} Vote Leaderboard", value=f"{'Enabled' if votelb else 'Disabled'}", inline=False)
-        embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon_url)
+        embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon.url)
         message = await ctx.send(embed=embed)
         emojis = ['1⃣', '2⃣', '3⃣', 'ℹ']
         for emoji in emojis:
@@ -120,7 +124,7 @@ class Admin(Sticky, ServerRule, commands.Cog, name='admin', metaclass=CompositeM
         if len(result) == 0:
             return await ctx.send(f"No configuration for DM and nickname requests have been set yet. ")
         else:
-            await ctx.send(embed=discord.Embed(title=f"Configurations for {ctx.guild.name}", description = f"Nickname requests: {ctx.guild.get_channel(result.get('nicknamechannel_id'))}\nDM requests: {ctx.guild.get_channel(result.get('dmchannel_id'))}", color = 0x57F0F0))
+            await ctx.send(embed=discord.Embed(title=f"Configurations for {ctx.guild.name}", description = f"Nickname requests: {ctx.guild.get_channel(result.get('nicknamechannel_id'))}\nDM requests: {ctx.guild.get_channel(result.get('dmchannel_id'))}", color = self.client.embed_color))
 
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="messagereset", aliases=["mreset"], invoke_without_command=True)
@@ -128,12 +132,150 @@ class Admin(Sticky, ServerRule, commands.Cog, name='admin', metaclass=CompositeM
         """
         Resets the database for counting messages sent.
         """
+        confirm_view = confirm(ctx, self.client, 30.0)
         messagecount = await self.client.pool_pg.fetch("SELECT * FROM messagelog")
         if len(messagecount) == 0:  # if there's nothing to be deleted
             return await ctx.send("There's no message count to be removed.")
         totalvote = sum(userentry.get('messagecount') for userentry in messagecount)
-        embed = discord.Embed(title="Action awaiting confirmation", description=f"There are {len(messagecount)} who have chatted, amounting to a total of {totalvote} messages. Are you sure you want to reset the message count?", color=self.client.embed_color, timestamp=datetime.utcnow())
-        msg = await ctx.reply(embed=embed)
-        await self.client.pool_pg.execute("DELETE FROM messagelog")
-        embed.color, embed.description = discord.Color.green(), "The message count has been cleared."
-        await msg.edit(embed=embed)
+        embed = discord.Embed(title="Action awaiting confirmation", description=f"There are {len(messagecount)} people who have chatted, amounting to a total of {totalvote} messages. Are you sure you want to reset the message count?", color=self.client.embed_color, timestamp=discord.utils.utcnow())
+        msg = await ctx.reply(embed=embed, view=confirm_view)
+        confirm_view.response = msg
+        await confirm_view.wait()
+        if confirm_view.returning_value is None:
+            embed.color, embed.description = discord.Color.red(), "You didn't respond."
+            return await msg.edit(embed=embed)
+        if confirm_view.returning_value == False:
+            embed.color, embed.description = discord.Color.red(), "Action cancelled."
+            return await msg.edit(embed=embed)
+        if confirm_view.returning_value == True:
+            await self.client.pool_pg.execute("DELETE FROM messagelog")
+            embed.color, embed.description = discord.Color.green(), "The message count has been cleared."
+            await msg.edit(embed=embed)
+
+    @commands.group(invoke_without_command=True, name="messageroles")
+    @commands.has_guild_permissions(administrator=True)
+    async def messageroles(self, ctx):
+        """
+        Configure the milestones for the roles.
+        """
+        embed = discord.Embed(title=f"Dank Vibes Message Count Autorole configuration", description=f"", timestamp=discord.utils.utcnow(), color=self.client.embed_color)
+        embed.add_field(name="How to configure the message count roles?",
+                        value=f"`messageroles list` shows all milestones for message count roles.\n`messageroles add [messagecount] [role]` adds a milestone for message count roles.\n`messageroles remove [messagecount]` will remove the milestone for the specified message count.")
+        embed.set_thumbnail(url=ctx.guild.icon.url)
+        embed.set_footer(text="Roles can be stated via a name, mention or ID.")
+        await ctx.send(embed=embed)
+
+    @messageroles.command(name="list", aliases = ["show"])
+    @commands.has_guild_permissions(administrator=True)
+    async def mrolelist(self, ctx):
+        """
+        Lists milestones for message count roles.
+        """
+        messagemilestones = await self.client.pool_pg.fetch("SELECT * FROM messagemilestones")
+        if len(messagemilestones) == 0:
+            embed = discord.Embed(title = "Message count milestones", description = "There are no milestones set for now. Use `messageroles add [messagecount] [role]` to add one.", color=self.client.embed_color) # there are no milestones set
+            return await ctx.send(embed=embed)
+        output = ''
+        for row in messagemilestones:
+            if len(output) >= 3780:
+                embed = discord.Embed(title="Message count milestones", description=output, color=self.client.embed_color)
+                await ctx.send(embed=embed)
+            role = ctx.guild.get_role(row.get('roleid'))
+            rolemention = role.mention if role is not None else "unknown-or-deleted-role"
+            output += f"**{row.get('messagecount')} messagess: **{rolemention}\n"
+        embed = discord.Embed(title="Message count milestones", description=output, color=self.client.embed_color, timestamp=discord.utils.utcnow())
+        embed.set_footer(text="To edit the milestones, use the subcommands `add` and `remove`.")
+        await ctx.send(embed=embed)
+
+    @messageroles.command(name="add", aliases=["create"])
+    @commands.has_guild_permissions(administrator=True)
+    async def roleadd(self, ctx, messagecount = None, role:discord.Role = None):
+        """
+        Adds milestones for message roles.
+        """
+        if messagecount is None or role is None: # missing arguments
+            return await ctx.send("The correct usage of this command is `messageroles add [messagecount] [role]`.")
+        try:
+            messagecount = int(messagecount)
+        except ValueError:
+            return await ctx.send("`messagecount` is not a valid number.")
+        existing_milestones = await self.client.pool_pg.fetch("SELECT * FROM messagemilestones WHERE messagecount = $1", messagecount)
+        if len(existing_milestones) > 0:
+            await ctx.send(f"You have already set a milestone for **{messagecount} messages**. To set a new role, remove this milestone and add it again.")
+            return
+        await self.client.pool_pg.execute("INSERT INTO messagemilestones VALUES($1, $2)", messagecount, role.id)
+        await ctx.send(f"**Done**\n**{role.name}** will be added to a member when they have sent a message **{messagecount} time(s)**.")
+
+    @messageroles.command(name="remove", aliases=["delete"])
+    @commands.has_guild_permissions(administrator=True)
+    async def roleremove(self, ctx, messagecount=None):
+        """
+        Removes milestones for nessage count roles.
+        """
+        if messagecount is None:
+            return await ctx.send("The correct usage of this command is `messageroles remove [messagecount]`.")
+        try:
+            messagecount = int(messagecount)
+        except ValueError:
+            return await ctx.send(f"`{messagecount}` as the messagecount is not a valid number.")
+        existing_milestones = await self.client.pool_pg.fetch("SELECT * FROM messagemilestones WHERE messagecount = $1", messagecount)
+        if len(existing_milestones) == 0:
+            return await ctx.send(
+                f"You do not have a milestone set for {messagecount} messages. Use `messageroles add [messagecount] [role]` to add one.")
+        await self.client.pool_pg.execute("DELETE FROM messagemilestones WHERE messagecount = $1", messagecount) # Removes the milestone rule
+        await ctx.send(f"**Done**\nThe milestone for having sent a message **{messagecount} time(s)** has been removed.")
+
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.cooldown(1, 15, commands.BucketType.guild)
+    @commands.command(name='demote', aliases = ['suggestion49', 'suggest49'])
+    async def demote(self, ctx, member: discord.Member=None):
+        """
+        The infamous suggestion 49.
+        """
+        selfdemote = False
+        if member is None:
+            ctx.command.reset_cooldown(ctx)
+            return await ctx.send("You need to tell me who to demote, otherwise I'm demoting **you**.")
+        if ctx.author.guild_permissions.administrator != True and ctx.guild.get_role(684591962094829569) not in ctx.author.roles:
+            await ctx.send("You have not met the requirements to demote someone else, hence you're being self-demoted.")
+            selfdemote = True
+            member = ctx.author
+        staffroleids = [758172293133762591, 837595970464120842, 837595945616277504, 837595910661603330, 843756047964831765,
+         758172863580209203, 758173099752423435, 758173535029559376, 735417263968223234, 627284965222121482,
+         892266027495350333, 756667326623121568, 644711739618885652, 709107981568180327, 697314852162502698,
+         758175645393223680, 608495204399448066, 870850266868633640, 674774385894096896, 795914641191600129,
+         722871699325845626, 608503892002603029, 684591962094829569, 663502776952815626,
+         735015819771379712, 895341539549659136]
+        #staffroleids = [896052612284166204, 896052592797417492, 895815832465190933, 895815799812521994, 895815773208051763, 895815588289581096, 895815546292035625]
+        staffroles = [ctx.guild.get_role(id) for id in staffroleids]
+        for i in staffroles:
+            if i is None:
+                staffroles.remove(i)
+        if not staffroles:
+            return await ctx.send("I can't find any roles to remove.")
+        removable = [role for role in staffroles if role in member.roles]
+        tupremove = tuple(removable)
+        if not tupremove:
+            return await ctx.send(f"There are no roles that I can remove from {member} to demote them.")
+        msg = await ctx.send(f"**Demoting {member.mention}...**")
+        async with ctx.typing():
+            try:
+                await member.remove_roles(*tupremove, reason=f"Demoted by {ctx.author}")
+            except Exception as e:
+                return await msg.edit(content=f"There was an issue with removing roles. I've temporarily stopped demoting {member}. More details: {e}")
+        lstofrolenames = [role.name for role in tupremove]
+        try:
+            await msg.edit(content=f"{member.mention} has been demoted for 30 seconds. They are no longer a  **{grammarformat(lstofrolenames)}.**")
+        except discord.NotFound:
+            await ctx.send(f"{member.mention} has been demoted for 30 seconds. Their removed roles are: **{grammarformat(lstofrolenames)}**")
+        try:
+            message = f"Alas! Due to you misbehaving, you have been demoted by **{ctx.author}**." if not selfdemote else "You have just self demoted yourself."
+            await member.send(f"{message} You no longer have the roles: **{', '.join(role.name for role in tupremove)}**. \nYour roles might be readded afterwards. Or will they? <:dv_bShrugOwO:837687264263798814>")
+        except:
+            pass
+        await asyncio.sleep(30.0)
+        try:
+            await member.add_roles(*tupremove, reason='Demotion reversed automatically')
+        except Exception as e:
+            return await ctx.send(f"There was an issue with adding roles. I've temporarily stopped promoting {member}. More details: {e}")
+        return await ctx.send(f"{member.mention} congratulations on your promotion to:  **{', '.join(role.name for role in tupremove)}**!")
