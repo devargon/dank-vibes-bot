@@ -144,7 +144,7 @@ class ItemGames(commands.Cog):
                 if itemcount > 0:
                     stritemcount = comma_number(0 if i is None else i or 0)
                     try:
-                        invpage += f"`{stritemcount}` {indexes[index][0]}{'s' if itemcount != 1 else ''} {indexes[index][1]}\n"
+                        invpage += f"{indexes[index][1]} **{indexes[index][0]}** • {stritemcount}\n"
                     except KeyError:
                         invpage += f"`{stritemcount}` **This item is missing important details, hence it cannot be shown.**"
         embed = discord.Embed(description=invpage, color=self.client.embed_color)
