@@ -148,13 +148,19 @@ class dm(commands.Cog):
         if not message:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("I'm not sending a blank message, write something meaningful and try again.")
-        if len(message) > 4096:
+        if len(message) > 4000:
             ctx.command.reset_cooldown(ctx)
-            return await ctx.send(f"Your message has {len(message)} characters. It can only have a maximum of 4096 characters.")
+            return await ctx.send(f"Your message has {len(message)} characters. It can only have a maximum of 4000 characters.")
+        async def check_blacklisted_content(string:str):
+            blacklisted_words = await self.client.pool_pg.fetch("SELECT * FROM blacklisted_words")
+            return any([i.get('string') in string for i in blacklisted_words])
+        if check_blacklisted_content(message):
+            return await ctx.send("You cannot send content with blacklisted words via the bot.")
         if not (config := self.dmconfig.get(ctx.guild.id)):
             config = await self.client.pool_pg.fetchrow("SELECT dmchannel_id FROM channelconfigs where guild_id = $1", ctx.guild.id)
             if config is None or config.get('dmchannel_id') is None:
-                return await ctx.send(f"This server has not set a channel for DM requests to be directed to. Have someone with the `Administrator` Permission to add a DM request channel with `dv.setdmchannel <channel>`.")
+                return await ctx.send('This server has not set a channel for DM requests to be directed to. Have someone with the `Administrator` Permission to add a DM request channel with `dv.setdmchannel <channel>`.')
+
             config = self.dmconfig.setdefault(ctx.guild.id, config.get('dmchannel_id'))
         request_channel = ctx.guild.get_channel(config)
         if request_channel is None:
