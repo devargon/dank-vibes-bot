@@ -474,41 +474,64 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
 
     @checks.dev()
     @commands.command(name="suggestions")
-    async def active_suggestions(self, ctx, query = None):
+    async def active_suggestions(self, ctx, *, inquery: Union[int, discord.Member, str] = None):
         """
         Lists the active suggestions.
         the query can be a suggestion ID or `--active`
         """
-        if query is None:
-            return await ctx.help()
-        try:
-            query = int(query)
-        except ValueError:
-            if ctx.message.content.endswith("--active"):
-                result = await self.client.pool_pg.fetch("SELECT * FROM suggestions WHERE finish = $1", False)
-                suggestions = []
-                for suggestion in result:
-                    member = ctx.guild.get_member(suggestion.get('user_id'))
-                    name = f"{suggestion.get('suggestion_id')}. {member} ({member.id})" if member is not None else suggestion.get('user_id')
-                    suggestions.append((name, suggestion.get('suggestion')))
-                if len(suggestions) <= 10:
-                    embed = discord.Embed(title="Active suggestions", color=self.client.embed_color, timestamp=discord.utils.utcnow())
-                    for suggestion in suggestions:
-                        embed.add_field(name=suggestion[0], value=suggestion[1], inline=False)
-                    return await ctx.send(embed=embed)
-                else:
-                    pages = CustomMenu(source=Suggestion(suggestions, "Active suggestions"), clear_reactions_after=True, timeout=60)
-                    return await pages.start(ctx)
-        else:
-            result = await self.client.pool_pg.fetchrow("SELECT * FROM suggestions WHERE suggestion_id = $1", query)
-            if result is None:
-                return await ctx.send(f"There is no such suggestion with the ID {query}.")
-            else:
+        if inquery is None:
+            embed = discord.Embed(title="Developer Suggestion Utilities", description="`--active` - list active suggestions.\n`--open` - list active suggestions.\n`--inactive` - list closed suggestions.\n`--closed` - list closed suggestions.\n`<num>` - show a specific suggestion.\n`<member>` - list suggestions from a member.", color=discord.Color.green())
+            return await ctx.send(embed=embed)
+        if type(inquery) == int:
+            result = await self.client.pool_pg.fetchrow("SELECT * FROM suggestions WHERE suggestion_id = $1", inquery)
+            if result is not None:
                 member = ctx.guild.get_member(result.get('user_id'))
-                embed = discord.Embed(title=f"Suggestion {query}", description = result.get('suggestion'), color=self.client.embed_color)
+                embed = discord.Embed(title=f"Suggestion {inquery}", description = result.get('suggestion'), color=self.client.embed_color)
                 embed.add_field(name="Suggested by", value=f"{member} ({member.id})" if member else result.get('user_id', inline=True))
                 embed.add_field(name="Status", value="Closed" if result.get('finish') else "Open", inline=True)
-                await ctx.send(embed=embed)
+                if result.get('finish'):
+                    response = await self.client.pool_pg.fetchrow("SELECT * FROM suggestion_response WHERE suggestion_id = $1", inquery)
+                    if response is not None:
+                        responder = self.client.get_user(response.get('user_id'))
+                        embed.add_field(name=f"Closed by {responder} with the remarks:", value=response.get('message'), inline=False)
+                return await ctx.send(embed=embed)
+            else:
+                return await ctx.send(f"There is no such suggestion with the ID {inquery}.")
+        if type(inquery) == discord.Member:
+            query = f"SELECT * FROM suggestions WHERE user_id = $1", inquery.id
+            title = f"{inquery}'s suggestions"
+        elif type(inquery) == str:
+            if ctx.message.content.endswith("--active") or ctx.message.content.endswith("--open"):
+                query = "SELECT * FROM suggestions WHERE finish = False"
+                title = "Active suggestions"
+            elif ctx.message.content.endswith("--inactive") or ctx.message.content.endswith("--closed"):
+                query = "SELECT * FROM suggestions WHERE finish = True"
+                title = "Closed suggestions"
+            elif ctx.message.content.endswith("--all"):
+                query = "SELECT * FROM suggestions"
+                title = "All suggestions"
+            else:
+                return await ctx.send("You did not provide a proper flag.")
+        else:
+            embed = discord.Embed(title="Developer Suggestion Utilities", description="`--active` - list active suggestions.\n`--open` - list active suggestions.\n`--inactive` - list closed suggestions.\n`--closed` - list closed suggestions.\n`<num>` - show a specific suggestion.\n`<member>` - list suggestions from a member.", color=discord.Color.green())
+            return await ctx.send(embed=embed)
+        if len(query) == 2:
+            result = await self.client.pool_pg.fetch(query[0], query[1])
+        else:
+            result = await self.client.pool_pg.fetch(query)
+        suggestions = []
+        for suggestion in result:
+            member = self.client.get_user(suggestion.get('user_id'))
+            name = f"{suggestion.get('suggestion_id')}. {member} ({member.id})" if member is not None else f"{suggestion.get('suggestion_id')}. {suggestion.get('user_id')}"
+            suggestions.append((name, suggestion.get('suggestion')))
+        if len(suggestions) <= 10:
+            embed = discord.Embed(title="Active suggestions", color=self.client.embed_color, timestamp=discord.utils.utcnow())
+            for suggestion in suggestions:
+                embed.add_field(name=suggestion[0], value=suggestion[1], inline=False)
+            return await ctx.send(embed=embed)
+        else:
+            pages = CustomMenu(source=Suggestion(suggestions, title), clear_reactions_after=True, timeout=60)
+            return await pages.start(ctx)
 
 
     @checks.base_dev()
