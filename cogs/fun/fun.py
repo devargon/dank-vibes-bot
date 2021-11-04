@@ -53,6 +53,7 @@ class Fun(games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
         self.chatchart_is_running = False
         self.deleted_messages = {}
         self.edited_messages = {}
+        self.removed_reactions = {}
         self.karutaconfig = ''
         self.karutaevent_isrunning = False
         self.planning_numberevent = []
