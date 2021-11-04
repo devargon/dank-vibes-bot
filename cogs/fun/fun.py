@@ -17,6 +17,7 @@ import os
 import aiohttp
 from utils.errors import ArgumentBaseError
 from .games import games
+from typing import Optional
 
 blacklisted_words = ['N-renoteQ3R', 'n.i.g.g.e.r', 'n i g a', 'nygga', 'niuggers', 'nigger',
                      'https://discordnitro.link/stearncommunity', 'kill yourself', 'figgot', 'ching chong',
@@ -215,13 +216,22 @@ class Fun(games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="hideping", brief="hides ping", description= "hides ping", aliases = ["hp", "secretping", "sp"], hidden=True)
     @commands.cooldown(1,5, commands.BucketType.user)
-    async def hideping(self, ctx, member: discord.Member=None, *, message=None):
+    async def hideping(self, ctx, member_or_messageLink: Union[discord.Member, str]=None, *, message=None):
         """
         hides ping
         """
-        if member is None:
-            await ctx.send("You missed out `member` for this command.\n**Usage**: `hideping [member] [message]`")
+        if member_or_messageLink is None:
+            await ctx.send("You need to provide a member or message link.\n**Usage**: `hideping [member_or_messageLink] [message]`")
             return
+        if type(member_or_messageLink) is discord.Member:
+            member = member_or_messageLink
+        else:
+            try:
+                membermsg = await commands.MessageConverter.convert(self.client, ctx, member_or_messageLink)
+            except discord.NotFound:
+                await ctx.send("I could not find a message with the message link you provided.")
+            else:
+                member = membermsg.author
         if message is not None and len(message) > 180:
             return await ctx.send("Your accompanying message can only be at most 180 characters.")
         try:
