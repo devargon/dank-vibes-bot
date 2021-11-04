@@ -36,6 +36,7 @@ class snipe(commands.Cog):
         self.client = client
         self.deleted_messages = {}
         self.edited_messages = {}
+        self.removed_reactions = {}
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
@@ -71,6 +72,17 @@ class snipe(commands.Cog):
         }
         self.edited_messages[before.channel.id] = data
 
+    @commands.Cog.listener()
+    async def on_raw_reaction_remove(self, payload):
+        data = {
+            'author': self.client.get_user(payload.user_id),
+            'time': round(time()),
+            'emoji': payload.emoji,
+            'url': payload.emoji.url,
+            'message': f"https://discord.com/channels/{payload.guild_id}/{payload.channel_id}/{payload.message_id}"
+        }
+        self.removed_reactions[payload.channel_id] = data
+
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name='snipe', aliases=['s'])
     async def snipe(self, ctx, channel: Optional[discord.TextChannel]):
@@ -84,12 +96,12 @@ class snipe(commands.Cog):
         if not channel.permissions_for(ctx.author).view_channel:
             return await ctx.send("You can't view this channel.")
         snipedata = self.deleted_messages[channel.id]
-        def desc():
-            for string in blacklisted:
-                if string in snipedata['content']:
-                    return "This message has a blacklisted word and cannot be shown."
+        async def desc():
+            blacklisted_words = await self.client.pool_pg.fetch("SELECT * FROM blacklisted_words")
+            if any([i.get('string') in snipedata['content'] for i in blacklisted_words]):
+                return "This message has a blacklisted word and cannot be shown."
             if 'dv.hp' in snipedata['content'].lower() or 'dv.hideping' in snipedata['content'].lower() or 'uwu hideping' in snipedata['content'].lower() or 'uwu hp' in snipedata['content'].lower():
-                return "😃"
+                return "Ha, you got hidepinged!"
             else:
                 content = snipedata['content']
                 splitlines = content.split('\n')
@@ -97,7 +109,7 @@ class snipe(commands.Cog):
                     return content if len(content) < 2000 else content[:2000] + "..."
                 else:
                     return '\n'.join(splitlines[:len(splitlines)]) if len(splitlines) < 20 else '\n'.join(splitlines[:20]) + "\n" + f"**... and another {len(splitlines) - 20} lines**"
-        desc = desc()
+        desc = await desc()
         embed = discord.Embed(title=f"Sniped message from {snipedata['author'].name} 🔫", description=desc, color=self.client.embed_color)
         if 'dv.hp' in snipedata['content'].lower() or 'dv.hideping' in snipedata['content'].lower() or 'uwu hideping' in snipedata['content'].lower() or 'uwu hp' in snipedata['content'].lower():
             embed.title = "Sniped message from someone..."
@@ -125,13 +137,45 @@ class snipe(commands.Cog):
             return await ctx.send("There's nothing to snipe here!")
         snipedata = self.edited_messages[channel.id]
 
-        def desc():
-            for string in blacklisted:
-                if string in snipedata['content']:
-                    return "This message has a blacklisted word and cannot be shown."
-            return snipedata['content']
-        desc = desc()
+        async def desc():
+            blacklisted_words = await self.client.pool_pg.fetch("SELECT * FROM blacklisted_words")
+            if any([i.get('string') in snipedata['content'] for i in blacklisted_words]):
+                return "This message has a blacklisted word and cannot be shown."
+            if 'dv.hp' in snipedata['content'].lower() or 'dv.hideping' in snipedata['content'].lower() or 'uwu hideping' in snipedata['content'].lower() or 'uwu hp' in snipedata['content'].lower():
+                return "Ha, you got hidepinged!"
+            else:
+                content = snipedata['content']
+                splitlines = content.split('\n')
+                if len(splitlines) <= 1:
+                    return content if len(content) < 2000 else content[:2000] + "..."
+                else:
+                    return '\n'.join(splitlines[:len(splitlines)]) if len(splitlines) < 20 else '\n'.join(splitlines[:20]) + "\n" + f"**... and another {len(splitlines) - 20} lines**"
+        desc = await desc()
         embed = discord.Embed(title=f"Message edited by {snipedata['author'].name}", description=desc, color=self.client.embed_color)
         embed.set_author(name=f"{snipedata['author']}", icon_url=snipedata['author'].display_avatar.url)
         embed.set_footer(text=f"Edited {humanize_timedelta(seconds=round(time()) - snipedata['time'])} ago")
+        await ctx.send(embed=embed)
+
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.command(name='reactionsnipe', aliases=['rsnipe', 'rs'])
+    async def reactionsnipe(self, ctx, channel: Optional[discord.TextChannel]):
+        """
+        "snipes" a removed reaction. Does not support `snipe <num>`.
+        """
+        if channel is None:
+            channel = ctx.channel
+        if channel.id not in self.removed_reactions:
+            return await ctx.send("No one has removed a reaction here.")
+        snipedata = self.removed_reactions[channel.id]
+        def emoji():
+            for string in blacklisted:
+                if string in str(snipedata['emoji']):
+                    return "This emoji has a blacklisted name and cannot be shown.", "https://cdn.discordapp.com/attachments/616007729718231161/905702687566336013/DVB_False.png"
+            return f"{snipedata['emoji'].name} (Emoji ID: {snipedata['emoji'].id})", snipedata['url']
+
+        emoji = emoji()
+        embed = discord.Embed(title=f"Sniped {snipedata['author'].name}'s reaction:", description=f"Emoji: {emoji[0]}\n\nThe message they reacted to: [Jump to message!]({snipedata['message']})", color=self.client.embed_color)
+        embed.set_author(name=f"{snipedata['author']}", icon_url=snipedata['author'].display_avatar.url)
+        embed.set_thumbnail(url=emoji[1])
+        embed.set_footer(text=f"Reaction removed {humanize_timedelta(seconds=round(time()) - snipedata['time'])} ago")
         await ctx.send(embed=embed)
