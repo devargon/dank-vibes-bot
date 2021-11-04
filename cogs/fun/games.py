@@ -339,7 +339,7 @@ class games(commands.Cog):
                 else:
                     await ctx.send(f"{ctx.author.name}'s name has been changed to **{authornick}**.")
             else:
-                coinflipembed.color, coinflipembed.description = discord.Color.red(), coinflipembed.description + f"\n\n{ctx.author.name} won the bet, and {member.name} lost �"
+                coinflipembed.color, coinflipembed.description = discord.Color.red(), coinflipembed.description + f"\n\n{ctx.author.name} won the bet, and {member.name} lost 🪦"
                 await coinflipmsg.edit(embed=coinflipembed)
                 try:
                     await member.edit(nick=membernick)
@@ -351,7 +351,7 @@ class games(commands.Cog):
             coinflipembed.description = " The coin landed on Tails!! <:DVB_CoinTail:905400213676638279>"
             coinflipembed.set_image(url="https://cdn.nogra.me/core/coinflip_tails.gif")
             if coinpickview.returning_value == True:
-                coinflipembed.color, coinflipembed.description = discord.Color.red(), coinflipembed.description + f"\n\n{ctx.author.name} won the bet, and {member.name} lost �"
+                coinflipembed.color, coinflipembed.description = discord.Color.red(), coinflipembed.description + f"\n\n{ctx.author.name} won the bet, and {member.name} lost 🪦"
                 await coinflipmsg.edit(embed=coinflipembed)
                 try:
                     await member.edit(nick=membernick)
