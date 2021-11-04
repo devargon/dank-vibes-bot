@@ -525,7 +525,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
             name = f"{suggestion.get('suggestion_id')}. {member} ({member.id})" if member is not None else f"{suggestion.get('suggestion_id')}. {suggestion.get('user_id')}"
             suggestions.append((name, suggestion.get('suggestion')))
         if len(suggestions) <= 10:
-            embed = discord.Embed(title="Active suggestions", color=self.client.embed_color, timestamp=discord.utils.utcnow())
+            embed = discord.Embed(title=title, color=self.client.embed_color, timestamp=discord.utils.utcnow())
             for suggestion in suggestions:
                 embed.add_field(name=suggestion[0], value=suggestion[1], inline=False)
             return await ctx.send(embed=embed)
