@@ -596,39 +596,19 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                                 else:
                                     await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 18, message.channel.id, message.guild.id, nextdailyboxtime)
                 return await crossmark(message)
-
-        if message.content.lower() in ["pls work", "pls job"] and not message.author.bot:
-            argument = message.content.split()
-            if len(argument) > 2:
-                if argument[2].lower() in ["info", "resign", "list", "view"]:
-                    return
-            def check_work(payload):
-                if len(payload.embeds) == 0 or payload.author.id == message.author.id or not payload.author.bot or message.channel != payload.channel:
-                    return False
-                else:
-                    if len(payload.mentions) != 0 and payload.mentions[0] == message.author and payload.author.id == 270904126974590976:
-                        return True if payload.embeds[0].description.startswith("**TERRIBLE work!**") or payload.embeds[0].description.startswith("**Great work!**") else False
-            try:
-                botresponse = await self.client.wait_for("message", check=check_work, timeout=60)
-                if botresponse.content.startswith("You never fail to amaze me"):
-                    return await crossmark(message)
-            except asyncio.TimeoutError:
-                return await checkmark(message)
-            else:
-                member = botresponse.mentions[0]
-                nextdailytime = round(time.time()) + 3600
-                existing = await self.client.pool_pg.fetch(
-                    "SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 4)
+        """
+        Work Reminder
+        """
+        if len(message.embeds) > 0 and message.author.id == 270904126974590976 and len(message.mentions) > 0 and (message.embeds[0].description.startswith("**TERRIBLE work!**") or message.embeds[0].description.startswith("**Great work!**")):
+                member = message.mentions[0]
+                nextworktime = round(time.time()) + 3600
+                existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 4)
                 if len(existing) > 0:
-                    await self.client.pool_pg.execute(
-                        "UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextdailytime,
-                        member.id, 4)
+                    await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextworktime, member.id, 4)
                 else:
-                    await self.client.pool_pg.execute(
-                        "INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)",
-                        member.id, 4, message.channel.id, message.guild.id, nextdailytime)
+                    await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 4, message.channel.id, message.guild.id, nextworktime)
                 with contextlib.suppress(discord.HTTPException):
-                    await botresponse.add_reaction("⏰")
+                    await message.add_reaction("⏰")
 
         if len(message.mentions) > 0 and "You've eaten an apple!" in message.content and message.author.bot:
             member = message.mentions[0]
