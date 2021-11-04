@@ -14,9 +14,9 @@ class games(commands.Cog):
     @checks.has_permissions_or_role(administrator=True)
     @commands.cooldown(1, 30, commands.BucketType.user)
     @commands.command(name='guessthenumber', aliases=['gtn', 'numberevent'])
-    async def guessthenumber(self, ctx, channel:discord.TextChannel = None):
+    async def guessthenumber(self, ctx):
         """
-        Sets up an interactiive guess the number game. If no channel is specified, the game will take place in the channel where the command was invoked.
+        Sets up an interactiive guess the number game. This command can only be run in <#735477033949462578>, by the event host or sponsor.
         """
         if ctx.channel.id != 735477033949462578:
             return await ctx.send("This command can only be run in <#735477033949462578>, by the event host or sponsor.")
@@ -183,6 +183,10 @@ class games(commands.Cog):
     @commands.cooldown(1, 300, commands.BucketType.user)
     @commands.command(name="nickbet")
     async def nickbet(self, ctx, member: discord.Member = None):
+        """
+        Challenge your friend to a nick bet! Both of you will choose a nickname for one another, and one of you will choose a side of the coin.
+        If the coin flips onto the side that you choose, you will win! The loser will have their nickname changed.
+        """
         if member is None:
             return await ctx.send("You need to specify who you want to nick bet with.")
         class consent(discord.ui.View):
@@ -260,6 +264,7 @@ class games(commands.Cog):
                     error = "a nickname can only be 32 characters long."
                 else:
                     membernick = membernickmsg.content
+        error = None
         while authornick == None:
             msg = f"{member.mention}, what nickname do you want to give to {ctx.author.name}?"
             if error is not None:
