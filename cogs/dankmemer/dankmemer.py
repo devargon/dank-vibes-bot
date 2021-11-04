@@ -242,10 +242,10 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                                 try:
                                     await channel.send(f"{member.mention} You can now {message(result.get('remindertype'))}")  # DM
                                 except:
-                                    await member.send(f"{member.mention} You can now {message(result.get('remindertype'))}")  # DM
+                                    await member.send(f"{member.mention} You can now {message(result.get('remindertype'))} ({channel.mention})")  # DM
                             else:
                                 try:
-                                    await member.send(f"{member.mention} You can now {message(result.get('remindertype'))}") # DM
+                                    await member.send(f"{member.mention} You can now {message(result.get('remindertype'))} ({channel.mention})") # DM
                                 except discord.Forbidden:
                                     try:
                                         await channel.send(f"{member.mention} {self.client.user.name} is unable to DM you.\nTo receive Dank Memer reminders properly, open your DMs or switch to ping reminders via `dv.drm ping`. Your reminders have been disabled for now.")
