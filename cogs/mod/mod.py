@@ -25,6 +25,7 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
         self.op.add_argument("--window-size=1920,1080")
         self.op.add_argument('--allow-running-insecure-content')
         self.op.add_argument('--ignore-certificate-errors')
+        self.op.add_argument('--disable-dev-shm-usage')
         #self.op.add_argument(' --user-agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36"')
         self.op.add_argument('--proxy-server=%s' % PROXY)
         self.client = client
