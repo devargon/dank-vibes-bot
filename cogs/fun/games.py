@@ -18,8 +18,9 @@ class games(commands.Cog):
         """
         Sets up an interactiive guess the number game. If no channel is specified, the game will take place in the channel where the command was invoked.
         """
-        if channel is None:
-            channel = ctx.channel
+        if ctx.channel.id != 735477033949462578:
+            return await ctx.send("This command can only be run in <#735477033949462578>, by the event host or sponsor.")
+        channel = ctx.channel
         confirmview = confirm(ctx, self.client, 30.0)
         if ctx.author.id in self.planning_numberevent:
             return await ctx.send("You're already planning a Guess the Number game. Please check your DMs.")
