@@ -98,7 +98,6 @@ class BrowserScreenshot(commands.Cog):
                     req_height = browser.execute_script('return document.body.parentNode.scrollHeight')
                     browser.set_window_size(1920, req_height if req_height < 10000 else 10000)
                     el = browser.find_element_by_tag_name('body')
-
                     try:
                         el.screenshot(f'temp/{filename}')
                     except:
