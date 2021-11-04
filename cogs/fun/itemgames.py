@@ -12,7 +12,7 @@ from utils.menus import CustomMenu
 import math
 from utils.format import plural
 
-items = ['skull', 'argonphallicobject', 'llamaspit', 'slicefrenzycake']
+items = ['skull', 'argonphallicobject', 'llamaspit', 'slicefrenzycake', 'wickedrusteze']
 
 def get_item_name(name):
     lst = difflib.get_close_matches(name, items, n=1, cutoff=0.4)
@@ -190,7 +190,6 @@ class ItemGames(commands.Cog):
         embed.set_thumbnail(url=itemdata.get('image'))
         query = ["SELECT", itemname, "FROM", "inventories", "WHERE", "user_id", "=", "$1"]
         query = " ".join(query)
-        print(query)
         num = await self.client.pool_pg.fetchrow(query, ctx.author.id)
         quantity = 0 if num is None else num.get(itemname) or 0
         embed.set_footer(text=f"You own {quantity} of this item.")
