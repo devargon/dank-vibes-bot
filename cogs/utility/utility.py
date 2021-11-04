@@ -233,7 +233,8 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
             if len(Command._buckets._cache) and ctx.author.id in Command._buckets._cache:
                 command_cache = Command._buckets._cache[ctx.author.id]
                 duration = command_cache.get_retry_after()
-                cooldownlst.append(f"**{Command.name}**: {humanize_timedelta(seconds=duration)}")
+                if duration > 0:
+                    cooldownlst.append(f"**{Command.name}**: {humanize_timedelta(seconds=duration)}")
         db_cds = await self.client.pool_pg.fetch("SELECT * FROM cooldowns WHERE member_id = $1", ctx.author.id)
         if len(db_cds) > 0:
             for cd in db_cds:
