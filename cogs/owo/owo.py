@@ -237,9 +237,11 @@ class OwO(commands.Cog, name='owo'):
                 if owo50 is not None and owo50 not in message.author.roles:
                     with contextlib.suppress(discord.Forbidden):
                         await message.author.add_roles(owo50, reason="50 OwO count reached.")
+                        await message.reply(f"You've gotten the role **{owo50.name}**!")
                 if dailycount >= 100 and owo100 is not None and owo100 not in message.author.roles:
                     with contextlib.suppress(discord.Forbidden):
                         await message.author.add_roles(owo100, reason="100 OwO count reached.")
+                        await message.reply(f"You've gotten the role **{owo100.name}**!")
         self.waitlist.append(message.author.id)
         await asyncio.sleep(10.0)
         self.waitlist.remove(message.author.id)
