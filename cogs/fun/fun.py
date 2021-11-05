@@ -61,6 +61,8 @@ class Fun(games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
+        if ctx.command is None:
+            return
         if ctx.command.name == 'chatchart':
             self.chatchart_is_running = False
         elif ctx.command.name == 'gen':
