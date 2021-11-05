@@ -12,6 +12,7 @@ from .teleport import Teleport
 from .suggestion import Suggestion
 from utils.format import ordinal
 from utils.time import humanize_timedelta
+from .verification import Verification
 
 footertext = {
     752403154259148810: 'stinky !! 😤',
@@ -56,7 +57,7 @@ from utils import checks
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
 
-class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name='utility', metaclass=CompositeMetaClass):
+class Utility(Verification, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name='utility', metaclass=CompositeMetaClass):
     """
     Utility commands
     """
