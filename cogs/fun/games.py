@@ -5,6 +5,9 @@ from discord.ext import commands
 from utils import checks
 import asyncio
 from utils.buttons import confirm
+from utils.format import stringtime_duration
+from utils.time import humanize_timedelta
+from time import time
 
 
 class games(commands.Cog):
@@ -182,13 +185,23 @@ class games(commands.Cog):
     @checks.requires_roles()
     @commands.cooldown(1, 300, commands.BucketType.user)
     @commands.command(name="nickbet")
-    async def nickbet(self, ctx, member: discord.Member = None):
+    async def nickbet(self, ctx, member: discord.Member = None, duration: str = None):
         """
         Challenge your friend to a nick bet! Both of you will choose a nickname for one another, and one of you will choose a side of the coin.
         If the coin flips onto the side that you choose, you will win! The loser will have their nickname changed.
         """
         if member is None:
             return await ctx.send("You need to specify who you want to nick bet with.")
+        if member == ctx.author:
+            return await ctx.send("Don't be shy, go nick bet with other people instead!")
+        if member.bot:
+            return await ctx.send(f"🤖 **{member}**: `I'll rather have a nick bet with {random.choice([botacc for botacc in ctx.guild.members if botacc.bot])}.`")
+        if duration is not None:
+            duration = stringtime_duration(duration)
+            if duration is None:
+                return await ctx.send("You need to specify a valid duration. I can only read timings with `y`, `d`, `h`, `m` or `s`.")
+            if duration > 86400:
+                return await ctx.send("You can't have a nick bet for longer than 24 hours.")
         class consent(discord.ui.View):
             def __init__(self, target):
                 self.response = None
@@ -229,8 +242,7 @@ class games(commands.Cog):
             blacklisted_words = await self.client.pool_pg.fetch("SELECT * FROM blacklisted_words")
             return any([i.get('string') in string.lower() for i in blacklisted_words])
         view = consent(member)
-        embed = discord.Embed(title=f"Hey {member.name}! Would you like to have a nick bet with {ctx.author.name}?",
-                              color=self.client.embed_color)
+        embed = discord.Embed(title=f"Hey {member.name}!", description=f"Would you like to have a nick bet with {ctx.author.name}? {f'The loser will have their nickname frozen for **{humanize_timedelta(seconds=duration)} **.' if duration is not None else ''}", color=self.client.embed_color)
         msg = await ctx.send(member.mention, embed=embed, view=view)
         view.response = msg
         await view.wait()
@@ -331,6 +343,8 @@ class games(commands.Cog):
         coinflipembed = discord.Embed(title=f"{member.name} chose {'Heads! <:DVB_CoinHead:905400213785690172>' if coinpickview.returning_value == True else 'Tails! <:DVB_CoinTail:905400213676638279>'}", description="I'm flipping the coin...", color=self.client.embed_color).set_image(url="https://cdn.nogra.me/core/coinflip.gif")
         coinflipmsg = await ctx.send(embed=coinflipembed)
         heads_or_tails = random.choice([True, False])
+        loser = None
+        nick = None
         await asyncio.sleep(5.0)
         if heads_or_tails == True:
             coinflipembed.description = "The coin landed on Heads!! <:DVB_CoinHead:905400213785690172>"
@@ -338,39 +352,37 @@ class games(commands.Cog):
             if coinpickview.returning_value == True:
                 coinflipembed.color, coinflipembed.description = discord.Color.green(), coinflipembed.description + f"\n\n{member.name} won the bet! 🎊"
                 await coinflipmsg.edit(embed=coinflipembed)
-                try:
-                    await ctx.author.edit(nick=authornick)
-                except discord.HTTPException:
-                    await ctx.send(f"I couldn't change the loser's nickname, probably due to role hierachy or missing permissions. Sorry :c\nAsk them to change their nickname to {authornick}`.")
-                else:
-                    await ctx.send(f"{ctx.author.name}'s name has been changed to **{authornick}**.")
+                loser = ctx.author
+                nick = authornick
+                old_nick = ctx.author.display_name
             else:
                 coinflipembed.color, coinflipembed.description = discord.Color.red(), coinflipembed.description + f"\n\n{ctx.author.name} won the bet, and {member.name} lost 🪦"
                 await coinflipmsg.edit(embed=coinflipembed)
-                try:
-                    await member.edit(nick=membernick)
-                except discord.HTTPException:
-                    await ctx.send(f"I couldn't change the loser's nickname, probably due to role hierachy or missing permissions. Sorry :c\nAsk them to change their nickname to `{membernick}`.")
-                else:
-                    await ctx.send(f"{member.name}'s name has been changed to **{membernick}**.")
+                loser = member
+                nick = membernick
+                old_nick = member.display_name
         else:
             coinflipembed.description = " The coin landed on Tails!! <:DVB_CoinTail:905400213676638279>"
             coinflipembed.set_image(url="https://cdn.nogra.me/core/coinflip_tails.gif")
             if coinpickview.returning_value == True:
                 coinflipembed.color, coinflipembed.description = discord.Color.red(), coinflipembed.description + f"\n\n{ctx.author.name} won the bet, and {member.name} lost 🪦"
                 await coinflipmsg.edit(embed=coinflipembed)
-                try:
-                    await member.edit(nick=membernick)
-                except discord.HTTPException:
-                    await ctx.send(f"I couldn't change the loser's nickname, probably due to role hierachy or missing permissions. Sorry :c\nAsk them to change their nickname to `{membernick}`.")
-                else:
-                    await ctx.send(f"{member.name}'s name has been changed to **{membernick}**.")
+                loser = member
+                nick = membernick
+                old_nick = member.display_name
             else:
                 coinflipembed.color, coinflipembed.description = discord.Color.green(), coinflipembed.description + f"\n\n{member.name} won the bet! 🎊"
                 await coinflipmsg.edit(embed=coinflipembed)
-                try:
-                    await ctx.author.edit(nick=authornick)
-                except discord.HTTPException:
-                    await ctx.send(f"I couldn't change the loser's nickname, probably due to role hierachy or missing permissions. Sorry :c\nAsk them to change their nickname to `{authornick}`.")
-                else:
-                    await ctx.send(f"{ctx.author.name}'s name has been changed to **{authornick}**.")
+                loser = ctx.author
+                nick = authornick
+                old_nick = ctx.author.display_name
+        try:
+            await loser.edit(nick=nick)
+        except discord.HTTPException:
+            await ctx.send(f"I couldn't change the loser's nickname, probably due to role hierachy or missing permissions. Sorry :c\nAsk them to change their nickname to `{authornick}`.")
+        else:
+            if duration and duration > 0:
+                await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason) VALUES($1, $2, $3, $4, $5, $6)", loser.id, ctx.guild.id, nick, old_nick, round(time()) + duration, f"[Nick bet]({ctx.message.jump_url})")
+                await ctx.send(f"{loser.name}'s name has been changed to **{nick}** for **{humanize_timedelta(seconds=duration)}**. Their nickname will be unfrozen <t:{round(time())+duration}:R>")
+            else:
+                await ctx.send(f"{loser.name}'s name has been changed to **{nick}**.")
