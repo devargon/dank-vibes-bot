@@ -52,8 +52,8 @@ class imgen(commands.Cog):
             main = Image.open("assets/stankbase.png")
             backg = main.copy()
             ima2 = Image.open(BytesIO(member_avatar)).convert('RGBA')
-            ima2 = ima2.resize((450,450))
-            backg.paste(ima2, (545,586), ima2)
+            ima2 = ima2.resize((500,500))
+            backg.paste(ima2, (535,575), ima2)
             main2 = Image.open("assets/stankbase_finger.png").convert('RGBA')
             backg.paste(main2, (556,281), main2)
             backg = backg.resize((500,500))
@@ -64,7 +64,8 @@ class imgen(commands.Cog):
             return file
 
         file = await loop.run_in_executor(None, generate)
-        await ctx.send(file=file)
+        msg = await ctx.send(file=file)
+        await msg.edit(f"To steal this emoji, go to your server and paste this in: `!steal {member.display_name}stank {msg.attachments[0].proxy_url}`")
 
     @checks.requires_roles()
     @commands.command(name="audacity")
