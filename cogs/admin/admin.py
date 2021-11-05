@@ -34,29 +34,32 @@ class Admin(BetterSelfroles, Joining, Sticky, ServerRule, commands.Cog, name='ad
         await self.client.pool_pg.execute("UPDATE serverconfig SET enabled=$1 WHERE guild_id=$2 AND settings=$3", result, guild.id, settings)
         return result
 
-    @commands.command(name='leaderboards')
+    @commands.command(name='serverconfig')
     @commands.has_guild_permissions(administrator=True)
-    async def leaderboards(self, ctx):
+    async def serverconfig(self, ctx):
         """
-        Shows guild's leaderboard settings and also allows you to allow/disable them.
+        Shows guild's server configuration settings and also allows you to allow/disable them.
         """
         def get_emoji(enabled):
             if enabled:
                 return "<:DVB_enabled:872003679895560193>"
             return "<:DVB_disabled:872003709096321024>"
-        embed = discord.Embed(title=f"Leaderboard Settings For {ctx.guild.name}", color=self.client.embed_color, timestamp=discord.utils.utcnow())
+        embed = discord.Embed(title=f"Server Configuration Settings For {ctx.guild.name}", color=self.client.embed_color, timestamp=discord.utils.utcnow())
         if (owodaily := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "owodailylb")) is not None:
             owodaily = owodaily.get('enabled')
         if (owoweekly := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "owoweeklylb")) is not None:
             owoweekly = owoweekly.get('enabled')
         if (votelb := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "votelb")) is not None:
             votelb = votelb.get('enabled')
+        if (verification := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "verification")) is not None:
+            verification = verification.get('enabled')
         embed.add_field(name=f"{get_emoji(owodaily)} OwO Daily Leaderboard", value=f"{'Enabled' if owodaily else 'Disabled'}", inline=False)
         embed.add_field(name=f"{get_emoji(owoweekly)} OwO Weekly Leaderboard", value=f"{'Enabled' if owoweekly else 'Disabled'}", inline=False)
         embed.add_field(name=f"{get_emoji(votelb)} Vote Leaderboard", value=f"{'Enabled' if votelb else 'Disabled'}", inline=False)
+        embed.add_field(name=f"{get_emoji(verification)} Verify after Membership Screening", value=f"{'Enabled' if votelb else 'Disabled'}", inline=False)
         embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon.url)
         message = await ctx.send(embed=embed)
-        emojis = ['1⃣', '2⃣', '3⃣', 'ℹ']
+        emojis = ['1⃣', '2⃣', '3⃣', '4️⃣', 'ℹ']
         for emoji in emojis:
             await message.add_reaction(emoji)
         def check(payload):
@@ -79,8 +82,12 @@ class Admin(BetterSelfroles, Joining, Sticky, ServerRule, commands.Cog, name='ad
                 embed.set_field_at(index=2, name=f"{get_emoji(votelb)} Vote Leaderboard", value=f"{'Enabled' if votelb else 'Disabled'}", inline=False)
                 await message.edit(embed=embed)
             elif str(response.emoji) == emojis[3]:
+                votelb = await self.handle_toggle(ctx.guild, 'verification')
+                embed.set_field_at(index=3, name=f"{get_emoji(votelb)} Verify after Membership Screening", value=f"{'Enabled' if votelb else 'Disabled'}", inline=False)
+                await message.edit(embed=embed)
+            elif str(response.emoji) == emojis[4]:
                 tempembed = discord.Embed(title='Information', color=self.client.embed_color, description="React with the emojis to toggle leaderboards")
-                tempembed.add_field(name='Reactions' ,value=f"{emojis[0]} Toggles OwO daily leaderboard\n{emojis[1]} Toggles OwO weekly leaderboard\n{emojis[2]} Toggles vote leaderboard\n{emojis[3]} Shows this infomation message.")
+                tempembed.add_field(name='Reactions' ,value=f"{emojis[0]} Toggles OwO daily leaderboard\n{emojis[1]} Toggles OwO weekly leaderboard\n{emojis[2]} Toggles vote leaderboard\n{emojis[3]} Toggles Verification success on completing Membership Screening.\n{emojis[4]} Shows this infomation message.")
                 await message.edit(embed=tempembed)
             await message.remove_reaction(response.emoji, ctx.author)
         
