@@ -21,7 +21,6 @@ class Verification(commands.Cog):
                 roles = [guild.get_role(roleid) for roleid in roleids]
             else:
                 return
-            print([role.name for role in roles])
             await member_before.add_roles(*roles, reason="Member finished Membership Screening")
         else:
-            print("Member wasn't pending before/Member is still pending, or member is a bot")
+            return
