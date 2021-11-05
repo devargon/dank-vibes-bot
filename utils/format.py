@@ -217,6 +217,32 @@ def stringnum_toint(string:str):
     intstring = int(intstring) if intstring is not None else intstring
     return intstring
 
+def stringtime_duration(string:str):
+    allowedsymbols=["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "m", "s", 'h', 'y', 'd']
+    string = string.lower()
+    for character in list(string):
+        if character not in allowedsymbols:
+            return None
+    if string.isnumeric():
+        return int(string)
+    if 'm' in string:
+        string = string.replace('m', '*60+')
+    if 's' in string:
+        string = string.replace('s', '+')
+    if 'h' in string:
+        string = string.replace('h', '*3600+')
+    if 'y' in string:
+        string = string.replace('y', '*31536000+')
+    if 'd' in string:
+        string = string.replace('d', '*86400+')
+    if string.endswith('+') or string.endswith('-'):
+        string += "0"
+    if string.endswith('/') or string.endswith('*') or string.endswith('^'):
+        string += "1"
+    intstring = evaluate(string)
+    intstring = int(intstring) if intstring is not None else intstring
+    return intstring
+
 def grammarformat(iterable):
     if len(iterable) == 0:
         return ''
