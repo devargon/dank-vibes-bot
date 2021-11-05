@@ -10,6 +10,7 @@ from .censor import censor
 from utils.buttons import *
 from .browser_screenshot import BrowserScreenshot
 from selenium import webdriver
+from collections import Counter
 import os
 
 class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
@@ -177,3 +178,33 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
         embed = discord.Embed(title=f"Channels that {member.name}#{member.discriminator} can access",
                             description=streeng, color=0x57f0f0)
         await ctx.send(embed=embed)
+
+    async def _complex_cleanup_strategy(self, ctx, search):
+        prefixes = tuple(await self.client.get_prefix(ctx.message))
+
+        def check(m):
+            return m.author == ctx.me or m.content.startswith(prefixes)
+
+        deleted = await ctx.channel.purge(limit=search, check=check, before=ctx.message)
+        return Counter(m.author.display_name for m in deleted)
+
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.command(name='cleanup', aliases=['cu'])
+    async def cleanup(self, ctx, search=100):
+        """
+        Cleans up the bot's messages and bot's commands.
+        Maximum allowed is 100 messages.
+        """
+
+        strategy = self._complex_cleanup_strategy
+        search = min(max(2, search), 1000)
+
+        spammers = await strategy(ctx, search)
+        deleted = sum(spammers.values())
+        messages = [f'{deleted} message{" was" if deleted == 1 else "s were"} removed.']
+        if deleted:
+            messages.append('')
+            spammers = sorted(spammers.items(), key=lambda t: t[1], reverse=True)
+            messages.extend(f'- **{author}**: {count}' for author, count in spammers)
+
+        await ctx.send('\n'.join(messages), delete_after=10)
