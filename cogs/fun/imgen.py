@@ -2,14 +2,14 @@ import discord
 from discord.ext import commands
 from utils import checks
 import asyncio
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ImageFont, ImageDraw
 from io import BytesIO
 
 class imgen(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.requires_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.command(name="goeatpoop")
     async def goeatpoop(self, ctx, member :discord.Member = None):
@@ -38,7 +38,7 @@ class imgen(commands.Cog):
         file = await loop.run_in_executor(None, generate)
         await ctx.send(file=file)
 
-    @checks.has_permissions_or_role(manage_roles=True)
+    @checks.requires_roles()
     @commands.command(name="stank")
     async def stank(self, ctx, member: discord.Member = None):
         """
@@ -61,6 +61,35 @@ class imgen(commands.Cog):
             backg.save(b, format="png", optimize=True, quality=25)
             b.seek(0)
             file = discord.File(fp=b, filename="stank.png")
+            return file
+
+        file = await loop.run_in_executor(None, generate)
+        await ctx.send(file=file)
+
+    @checks.requires_roles()
+    @commands.command(name="audacity")
+    async def audacity(self, ctx, member: discord.Member = None):
+        """
+        The Lion, The Witch, and the Audacity of-
+        """
+        if member is None:
+            return await ctx.send("mention someone lol")
+        loop = asyncio.get_event_loop()
+        member_avatar = await member.display_avatar.with_format('png').read()
+        def generate():
+            main = Image.open("assets/audacity_cover.jpg")
+            backg = main.copy()
+            ima2 = Image.open(BytesIO(member_avatar)).convert('RGBA')
+            ima2 = ima2.resize((184, 184))
+            backg.paste(ima2, (1015, 117), ima2)
+            font = ImageFont.truetype("assets/whitneysemibold.otf", size=60)
+            image_editable = ImageDraw.Draw(backg)
+            image_editable.text((657,573), member.display_name, (0,0,0), font=font)
+
+            b = BytesIO()
+            backg.save(b, format="png", optimize=True, quality=25)
+            b.seek(0)
+            file = discord.File(fp=b, filename="audacity.png")
             return file
 
         file = await loop.run_in_executor(None, generate)

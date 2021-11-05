@@ -84,7 +84,7 @@ class Fun(games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
                 raise ArgumentBaseError(message="You have been stunned (or you're restricted from using Carl-bot tags) and can't use any commands at the moment. <:dv_pepeHahaUSuckOwO:837653798313918475>")
         return True
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.requires_roles()
     @commands.dynamic_cooldown(lowered_cooldown, commands.BucketType.user)
     @commands.group(name="dumbfight", aliases = ["df"], invoke_without_command=True)
     async def dumbfight(self, ctx, member: discord.Member = None):
@@ -216,7 +216,7 @@ class Fun(games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
                 embed.add_field(name=f"Last few wins and losses for {member}", value=text)
                 await message.edit(content="🥺", embed=embed)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.requires_roles()
     @commands.command(name="hideping", brief="hides ping", description= "hides ping", aliases = ["hp", "secretping", "sp"], hidden=True)
     @commands.cooldown(1,5, commands.BucketType.user)
     async def hideping(self, ctx, member_or_messageLink: Union[discord.Member, str]=None, *, message=None):
@@ -246,7 +246,7 @@ class Fun(games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
             message = ''
         async def check_blacklisted_content():
             blacklisted_words = await self.client.pool_pg.fetch("SELECT * FROM blacklisted_words")
-            return any(text.get('string') in message for text in blacklisted_words)
+            return any([i.get('string') in message.lower() for i in blacklisted_words])
         if await check_blacklisted_content():
             message = ''
         content = f"{message or ''} ‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍ <@{member.id}>" # ik this looks sketchy, but you can paste it in discord and send it to see how this looks like :MochaLaugh:
@@ -270,7 +270,7 @@ class Fun(games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
             embed.add_field(name="Message", value=message or "No message", inline=True)
             await webhook.send(embed=embed, username=f"{self.client.user.name} Logs")
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.requires_roles()
     @commands.command(name="lockgen", brief = "Locks specified channel for 5 seconds", description = "Locks specified channel for 5 seconds", aliases = ["lg"])
     @commands.cooldown(1, 120, commands.BucketType.guild)
     async def lockgen(self, ctx):
@@ -323,7 +323,7 @@ class Fun(games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
                 pass
         self.gen_is_muted = False
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.requires_roles()
     @commands.command(name="scramble", aliases=["shuffle"])
     @commands.cooldown(1, 1800, commands.BucketType.user)
     async def scramble(self, ctx, member: discord.Member=None):
@@ -395,7 +395,7 @@ class Fun(games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
                     has_warned = True
         return await ctx.send(f"{member.mention}, your nickname has been restored... until someone scrambles your nickname again.")
 
-    @checks.has_permissions_or_role(manage_roles=True)
+    @checks.requires_roles()
     @commands.cooldown(1200, 1, commands.BucketType.user)
     @commands.command(name="chatchart")
     async def chatchart(self, ctx, channel: Union[discord.TextChannel, str] = None):

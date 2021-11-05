@@ -83,7 +83,7 @@ class snipe(commands.Cog):
         }
         self.removed_reactions[payload.channel_id] = data
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.requires_roles()
     @commands.command(name='snipe', aliases=['s'])
     async def snipe(self, ctx, channel: Optional[discord.TextChannel]):
         """
@@ -125,7 +125,7 @@ class snipe(commands.Cog):
         await ctx.send("Tip: To quickly snipe a message before they counter the snipe, use `dv.s` instead!" if 'snipe' in ctx.message.content else None, embed=embed)
 
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.requires_roles()
     @commands.command(name='editsnipe', aliases=['esnipe', 'es'])
     async def editsnipe(self, ctx, channel: Optional[discord.TextChannel]):
         """
@@ -156,7 +156,7 @@ class snipe(commands.Cog):
         embed.set_footer(text=f"Edited {humanize_timedelta(seconds=round(time()) - snipedata['time'])} ago")
         await ctx.send(embed=embed)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.requires_roles()
     @commands.command(name='reactionsnipe', aliases=['rsnipe', 'rs'])
     async def reactionsnipe(self, ctx, channel: Optional[discord.TextChannel]):
         """

@@ -132,7 +132,7 @@ class dm(commands.Cog):
             self.persistent_views_added = True
 
     @commands.command(name="dm")
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.requires_roles()
     @commands.cooldown(1, 600, commands.BucketType.user)
     async def dmrequest(self, ctx, member: discord.Member = None, *, message: str = None):
         """
@@ -153,7 +153,7 @@ class dm(commands.Cog):
             return await ctx.send(f"Your message has {len(message)} characters. It can only have a maximum of 4000 characters.")
         async def check_blacklisted_content(string:str):
             blacklisted_words = await self.client.pool_pg.fetch("SELECT * FROM blacklisted_words")
-            return any([i.get('string') in string for i in blacklisted_words])
+            return any([i.get('string') in string.lower() for i in blacklisted_words])
         if check_blacklisted_content(message):
             return await ctx.send("You cannot send content with blacklisted words via the bot.")
         if not (config := self.dmconfig.get(ctx.guild.id)):

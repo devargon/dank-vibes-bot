@@ -11,7 +11,7 @@ class games(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.requires_roles()
     @commands.cooldown(1, 30, commands.BucketType.user)
     @commands.command(name='guessthenumber', aliases=['gtn', 'numberevent'])
     async def guessthenumber(self, ctx):
@@ -179,7 +179,7 @@ class games(commands.Cog):
                                     await pinmsg.unpin(reason="Guess the Number game information")
                                     return await guessingmsg.reply(f"{guessingmsg.author.mention}", embed=embed)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.requires_roles()
     @commands.cooldown(1, 300, commands.BucketType.user)
     @commands.command(name="nickbet")
     async def nickbet(self, ctx, member: discord.Member = None):
@@ -227,7 +227,7 @@ class games(commands.Cog):
 
         async def check_blacklisted_content(string:str):
             blacklisted_words = await self.client.pool_pg.fetch("SELECT * FROM blacklisted_words")
-            return any([i.get('string') in string for i in blacklisted_words])
+            return any([i.get('string') in string.lower() for i in blacklisted_words])
         view = consent(member)
         embed = discord.Embed(title=f"Hey {member.name}! Would you like to have a nick bet with {ctx.author.name}?",
                               color=self.client.embed_color)

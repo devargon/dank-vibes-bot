@@ -25,6 +25,34 @@ def has_permissions_or_role(**perms):
             return await perms(ctx)
         return commands.check(predicate=predicate)
 
+
+def requires_roles() -> callable:
+    async def predicate(ctx):
+        if ctx.guild is None:
+            raise commands.NoPrivateMessage()
+        enabled = await ctx.bot.pool_pg.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
+        if enabled == True:
+            return True
+        roles = await ctx.bot.pool_pg.fetch("SELECT role_id, whitelist FROM rules WHERE guild_id=$1 AND command=$2", ctx.guild.id, get_command_name(ctx.command))
+        print(roles)
+        if ctx.author.guild_permissions.administrator:
+            return True
+        if not roles:
+            raise ArgumentBaseError(message="This command needs to have at least one whitelisted role for it to work.")
+        rolenames = []
+        for role in roles:
+            roleobj = ctx.guild.get_role(role.get('role_id'))
+            if roleobj is not None:
+                rolenames.append(roleobj.name)
+            if not role.get('whitelist'):
+                if discord.utils.get(ctx.author.roles, id=role.get('role_id')):
+                    return False
+            else:
+                if discord.utils.get(ctx.author.roles, id=role.get('role_id')):
+                    return True
+        raise ArgumentBaseError(message="You need to have one of the following roles to use this command: **{}**".format(", ".join(rolenames)))
+    return commands.check(predicate=predicate)
+
 def is_owner_or_perms(**perms):
     base_check = commands.has_guild_permissions(**perms).predicate
     async def predicate(ctx):
