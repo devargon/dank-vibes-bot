@@ -13,6 +13,10 @@ from .suggestion import Suggestion
 from utils.format import ordinal
 from utils.time import humanize_timedelta
 from .verification import Verification
+import psutil
+import gc
+import os
+import asyncio
 
 footertext = {
     752403154259148810: 'stinky !! 😤',
@@ -152,6 +156,19 @@ class Utility(Verification, L2LVC, nicknames, Suggestion, Teleport, commands.Cog
         embed.add_field(name='Versions', value=f"<:python:868806455317393428> Python: `{py_version}`\n<:discordpy:868806486241992724> Discord.py: `{dpy_version}`", inline=True)
         embed.add_field(name='Developers', value=f"{str(self.client.get_user(650647680837484556))}\n{str(self.client.get_user(321892489470410763))}", inline=True)
         embed.add_field(name="Credits", value=f"{str(await self.client.fetch_user(727498137232736306))}", inline=True)
+        if ctx.author.id in [650647680837484556, 515725341910892555, 321892489470410763]:
+            loop = asyncio.get_event_loop()
+            def get_advanced_details():
+                nano_process = psutil.Process(os.getpid())
+                memory = round(nano_process.memory_info()[0] / float(2 ** 20), 1)  # Converts to MB
+                cpu = psutil.cpu_percent(interval=0.5)
+                delta = discord.utils.utcnow() - self.client.uptime
+                uptime_str = humanize.precisedelta(delta, format="%0.0f")
+                return memory, cpu, uptime_str
+            details = await loop.run_in_executor(None, get_advanced_details)
+            embed.add_field(name="RAM Usage", value=f"{details[0]}MB", inline=True)
+            embed.add_field(name="CPU Usage", value=f"{details[1]}%", inline=True)
+            embed.add_field(name="Uptime", value=f"{details[2]}", inline=True)
         embed.set_author(name=str(ctx.guild.me), icon_url=ctx.guild.me.display_avatar.url)
         embed.set_thumbnail(url=ctx.guild.me.display_avatar.url)
         embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.display_avatar.url)
