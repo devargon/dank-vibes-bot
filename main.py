@@ -64,10 +64,20 @@ class dvvt(commands.AutoShardedBot):
     async def process_commands(self, message: discord.Message):
         ctx = await self.get_context(message)
         if ctx.cog:
-            if self.maintenance.get(ctx.cog.qualified_name):
-                if message.author.id not in [321892489470410763, 650647680837484556]:
-                    maintenance_message = self.maintenance_message.get(ctx.cog.qualified_name)
-                    return await message.channel.send(maintenance_message)
+            if ctx.author.id not in [650647680837484556, 515725341910892555, 321892489470410763]:
+                blacklist = await self.pool_pg.fetchrow("SELECT * FROM blacklist WHERE user_id = $1 and blacklist_active = $2", message.author.id, True)
+                if blacklist:
+                    if time.time() <= blacklist.get('time_until'):
+                        return
+                    await self.pool_pg.execute("UPDATE blacklist SET blacklist_active = $1 WHERE user_id = $2 and incident_id = $3", False, message.author.id, blacklist.get('incident_id'))
+                    embed = discord.Embed(title=f"Bot Unblacklist | Case {blacklist.get('incident_id')}", description=f"**Reason**: Blacklist over, automatically rescinded\n**Responsible Moderator**: {ctx.me} ({ctx.me.id})", color=discord.Color.green())
+                    embed.set_author(name=f"{message.author} ({message.author.id})", icon_url=message.author.display_avatar.url)
+                    await self.get_channel(906433823594668052).send(embed=embed)
+                    await message.reply("You are no longer blacklisted from using the bot.")
+                    return await self.invoke(ctx)
+            if self.maintenance.get(ctx.cog.qualified_name) and message.author.id not in [321892489470410763, 650647680837484556]:
+                maintenance_message = self.maintenance_message.get(ctx.cog.qualified_name)
+                return await message.channel.send(maintenance_message)
         await self.invoke(ctx)
 
     async def on_message(self, message):
@@ -106,6 +116,14 @@ class dvvt(commands.AutoShardedBot):
     async def set_prefix(self, guild, prefix):
         await self.pool_pg.execute('UPDATE prefixes SET prefix=$1 WHERE guild_id=$2', prefix, guild.id)
         self.prefixes[guild.id] = prefix
+
+    async def check_blacklisted_content(self, string):
+        blacklisted_words = await self.pool_pg.fetch("SELECT * FROM blacklisted_words")
+        string = string.lower()
+        for word in blacklisted_words:
+            if word.get('string') in string.lower():
+                return True
+        return False
 
     def get_guild_prefix(self, guild):
         if guild is None:
