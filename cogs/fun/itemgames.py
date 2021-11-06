@@ -12,13 +12,6 @@ from utils.menus import CustomMenu
 import math
 from utils.format import plural
 
-items = ['skull', 'argonphallicobject', 'llamaspit', 'slicefrenzycake', 'wickedrusteze']
-
-def get_item_name(name):
-    lst = difflib.get_close_matches(name, items, n=1, cutoff=0.4)
-    if len(lst) == 0:
-        return None
-    return lst[0]
 
 class ItemLeaderboard(menus.ListPageSource):
     def __init__(self, entries, title):
@@ -108,6 +101,45 @@ class ItemGames(commands.Cog):
         self.karutaconfig = ''
         self.karutaevent_isrunning = False
 
+    async def get_item_name(self, name):
+        item_names = await self.client.pool_pg.fetch("SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = $1", 'inventories')
+        items = [i.get('column_name') for i in item_names if i.get('column_name') != 'user_id']
+        lst = difflib.get_close_matches(name, items, n=1, cutoff=0.4)
+        if len(lst) == 0:
+            return None
+        return lst[0]
+
+    async def get_item_count(self, item, user):
+        useritem_query = "SELECT {} FROM inventories WHERE user_id = $1".format(item)
+        useritem = await self.client.pool_pg.fetchval(useritem_query, user.id)
+        if useritem is None:
+            return 0
+        return useritem
+
+    async def add_item_count(self, item, user, amount):
+        useritem_query = "SELECT {} FROM inventories WHERE user_id = $1".format(item)
+        print(useritem_query)
+        useritem = await self.client.pool_pg.fetchval(useritem_query, user.id)
+        print(useritem)
+        if useritem is None:
+            useritem_query = "INSERT INTO inventories (user_id, {}) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET {} = $2 RETURNING {}".format(item, item, item)
+            return await self.client.pool_pg.fetchval(useritem_query, user.id, amount, column=item)
+
+        else:
+            useritem_query = "UPDATE inventories SET {} = {} + $1 WHERE user_id = $2 RETURNING {}".format(item, item, item)
+            return await self.client.pool_pg.fetchval(useritem_query, amount, user.id, column=item)
+
+    async def remove_item_count(self, item, user, amount):
+        useritem_query = "SELECT {} FROM inventories WHERE user_id = $1".format(item)
+        useritem = await self.client.pool_pg.fetchval(useritem_query, user.id)
+        if useritem is None:
+            useritem_query = "INSERT INTO inventories (user_id, {}) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET {} = $2 RETURNING {}".format(item, item, item)
+            return await self.client.pool_pg.fetchval(useritem_query, user.id, abs(amount), column=item)
+        else:
+            useritem_query = "UPDATE inventories SET {} = {} - $1 WHERE user_id = $2 RETURNING {}".format(item, item, item)
+            return await self.client.pool_pg.fetchval(useritem_query, amount, user.id, column=item)
+
+
     async def get_leaderboard(self, guild, query, top):
         leaderboard = []
         counts = await self.client.pool_pg.fetch(query, top)
@@ -134,34 +166,73 @@ class ItemGames(commands.Cog):
         if result is None:
             invpage = "There is nothing in your inventory."
         else:
+            item_names = await self.client.pool_pg.fetch("SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = $1", 'inventories')
+            items = [i.get('column_name') for i in item_names if i.get('column_name') != 'user_id']
             invpage = ""
             itemdetails = await self.client.pool_pg.fetch("SELECT * FROM iteminfo")
-            indexes = {}
-            for i, item in enumerate(itemdetails):
-                indexes[i] = [item.get('fullname'), item.get('emoji')]
-            for index, i in enumerate(result[1:]):
-                itemcount = 0 if i is None else i or 0
-                if itemcount > 0:
-                    stritemcount = comma_number(0 if i is None else i or 0)
-                    try:
-                        invpage += f"{indexes[index][1]} **{indexes[index][0]}** • {stritemcount}\n"
-                    except KeyError:
-                        invpage += f"`{stritemcount}` **This item is missing important details, hence it cannot be shown.**"
+            for item in items:
+                item_count = result.get(item) or 0
+                if item_count > 0:
+                    item_name = None
+                    item_emoji = None
+                    for i in itemdetails:
+                        if i.get('name') == item:
+                            item_name = i.get('fullname')
+                            item_emoji = i.get('emoji')
+                    if item_name is None or item_emoji is None:
+                        invpage += f"`{comma_number(item_count)}` - **This item is missing important details, hence it cannot be displayed.**\n"
+                    else:
+                        invpage += f"{item_emoji} **{item_name}** • {comma_number(item_count)}\n"
         embed = discord.Embed(description=invpage, color=self.client.embed_color)
         embed.set_author(name=f"{member}'s Inventory", icon_url=member.display_avatar.url)
         embed.set_footer(text="Use dv.inv info [item] to know more about an item.")
         await ctx.send(embed=embed)
 
-    @checks.dev()
-    @inventory.command(name="give", aliases=["devgive", "dg"])
-    async def item_give(self, ctx, member: discord.Member = None, item: str = None, num:int = None):
+    @checks.has_permissions_or_role(administrator=True)
+    @inventory.command(name="give", aliases=["g", 'share'])
+    async def item_give(self, ctx, member: discord.Member = None, item: str = None, num: int = None):
         if member is None:
             return await ctx.send("Specify a member to give items.")
         if item is None:
             return await ctx.send(f"Specify a item to give {member}.")
-        itemname = get_item_name(item)
+        itemname = await self.get_item_name(item)
         if itemname is None:
             return await ctx.send(f"There is no item names `{item}`.")
+        if num is None:
+            num = 1
+        if num < 1:
+            return await ctx.send(f"You can't give less than 1 {itemname}.")
+        user_itemcount = await self.get_item_count(itemname, ctx.author)
+        if user_itemcount < num:
+            return await ctx.send(f"You don't have enough `{itemname}` to share to {member}.")
+        member_itemcount = await self.get_item_count(itemname, member)
+        if member_itemcount + num > 9223372036854775807:
+            return await ctx.send(f"{member} can only hold a maximum of 9,223,372,036,854,775,807 {itemname}.")
+        membernewcount = await self.add_item_count(itemname, member, num)
+        usernewcount = await self.remove_item_count(itemname, ctx.author, num)
+        details = await self.client.pool_pg.fetchrow("SELECT image, fullname FROM iteminfo WHERE name=$1", itemname)
+        if details is None:
+            item_url = None
+            name = None
+        else:
+            item_url = details.get('image')
+            name = details.get('fullname')
+        embed = discord.Embed(title=f"You gave {member} {num} of your {name or itemname}!", description=f"You now have `{usernewcount}` {name or itemname}.\n{member} now has `{membernewcount}` {name or itemname}.", color=discord.Color.green(), timestamp=discord.utils.utcnow())
+        if item_url:
+            embed.set_thumbnail(url=item_url)
+        await ctx.message.reply(embed=embed)
+
+
+    @checks.dev()
+    @inventory.command(name="edit", aliases=["devgive", "dg"])
+    async def item_edit(self, ctx, member: discord.Member = None, item: str = None, num:int = None):
+        if member is None:
+            return await ctx.send("Specify a member to give items.")
+        if item is None:
+            return await ctx.send(f"Specify a item to give {member}.")
+        itemname = await self.get_item_name(item)
+        if itemname is None:
+            return await ctx.send(f"There is no item named `{item}`.")
         if num is None:
             num = 1
         existing_inv = await self.client.pool_pg.fetchrow("SELECT * FROM inventories WHERE user_id = $1", member.id)
@@ -179,9 +250,9 @@ class ItemGames(commands.Cog):
     async def item_info(self, ctx, item: str = None):
         if item is None:
             return await ctx.send("You need to specify the item you want to know about.")
-        itemname = get_item_name(item)
+        itemname = await self.get_item_name(item)
         if itemname is None:
-            return await ctx.send(f"There is no item names `{item}`.")
+            return await ctx.send(f"There is no item named `{item}`.")
         itemdata = await self.client.pool_pg.fetchrow("SELECT * FROM iteminfo WHERE name = $1", itemname)
         if itemdata is None:
             return await ctx.send("An error occured while trying to get the data for this item.")
@@ -226,7 +297,7 @@ class ItemGames(commands.Cog):
         """
         if item is None:
             return await ctx.send("You need to specify the item you want to know about.")
-        itemname = get_item_name(item)
+        itemname = await self.get_item_name(item)
         if itemname is None:
             return await ctx.send(f"There is no item named `{item}`.")
         async with ctx.typing():
