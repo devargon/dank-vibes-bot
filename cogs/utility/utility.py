@@ -2,19 +2,14 @@ import sys
 import time
 import discord
 import humanize
-import datetime
 from abc import ABC
-from .whois import Whois
 from .l2lvc import L2LVC
 from .nicknames import nicknames
 from discord.ext import commands
 from .teleport import Teleport
 from .suggestion import Suggestion
-from utils.format import ordinal
 from utils.time import humanize_timedelta
-from .verification import Verification
 import psutil
-import gc
 import os
 import asyncio
 
@@ -61,7 +56,7 @@ from utils import checks
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
 
-class Utility(Verification, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name='utility', metaclass=CompositeMetaClass):
+class Utility(L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name='utility', metaclass=CompositeMetaClass):
     """
     Utility commands
     """
