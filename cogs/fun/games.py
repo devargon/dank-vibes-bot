@@ -238,9 +238,6 @@ class games(commands.Cog):
                 await self.response.edit(view=self)
                 self.stop()
 
-        async def check_blacklisted_content(string:str):
-            blacklisted_words = await self.client.pool_pg.fetch("SELECT * FROM blacklisted_words")
-            return any([i.get('string') in string.lower() for i in blacklisted_words])
         view = consent(member)
         embed = discord.Embed(title=f"Hey {member.name}!", description=f"Would you like to have a nick bet with {ctx.author.name}? {f'The loser will have their nickname frozen for **{humanize_timedelta(seconds=duration)} **.' if duration is not None else ''}", color=self.client.embed_color)
         msg = await ctx.send(member.mention, embed=embed, view=view)
@@ -270,7 +267,7 @@ class games(commands.Cog):
             else:
                 if membernickmsg.content.lower() == 'cancel':
                     return await ctx.send("This nick bet is cancelled.")
-                if await check_blacklisted_content(membernickmsg.content):
+                if await self.client.check_blacklisted_content(membernickmsg.content):
                     error = "you can't use blacklisted words."
                 elif len(membernickmsg.content) > 32:
                     error = "a nickname can only be 32 characters long."

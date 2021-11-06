@@ -151,10 +151,7 @@ class dm(commands.Cog):
         if len(message) > 4000:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"Your message has {len(message)} characters. It can only have a maximum of 4000 characters.")
-        async def check_blacklisted_content(string:str):
-            blacklisted_words = await self.client.pool_pg.fetch("SELECT * FROM blacklisted_words")
-            return any([i.get('string') in string.lower() for i in blacklisted_words])
-        if check_blacklisted_content(message):
+        if await self.client.check_blacklisted_content(message):
             return await ctx.send("You cannot send content with blacklisted words via the bot.")
         if not (config := self.dmconfig.get(ctx.guild.id)):
             config = await self.client.pool_pg.fetchrow("SELECT dmchannel_id FROM channelconfigs where guild_id = $1", ctx.guild.id)
