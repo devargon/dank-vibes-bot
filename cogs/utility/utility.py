@@ -8,6 +8,7 @@ from .nicknames import nicknames
 from discord.ext import commands
 from .teleport import Teleport
 from .suggestion import Suggestion
+from .whois import Whois
 from utils.time import humanize_timedelta
 import psutil
 import os
@@ -56,7 +57,7 @@ from utils import checks
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
 
-class Utility(L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name='utility', metaclass=CompositeMetaClass):
+class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name='utility', metaclass=CompositeMetaClass):
     """
     Utility commands
     """
