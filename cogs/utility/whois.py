@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands
 from utils.converters import MemberUserConverter
+from utils.time import humanize_timedelta
+from time import time
 
 class Whois(commands.Cog):
     def __init__(self, client):
@@ -23,7 +25,7 @@ class Whois(commands.Cog):
             joined_at = joined_at.strftime("%a, %b %d, %Y") if joined_at is not None else 'Unknown'
             description.append(f"• Joined server on: **{joined_at}**")
         if ctx.author.guild_permissions.kick_members:
-            description.append(f"• User has completed Membership Screening: **{'<:DVB_False:887589731515392000>' if user.pending else '<:DVB_True:887589686808309791>'}**")
+            description.append(f"• User is verified: {f'<:DVB_False:887589731515392000> They have **{humanize_timedelta(seconds=user.joined_at.timestamp()+86400-round(time()))}** to complete the Membership Screening.' if user.pending else '<:DVB_True:887589686808309791>'}")
         embed = discord.Embed(color=self.client.embed_color)
         embed.set_author(name="{}'s Information".format(user.name), icon_url=user.display_avatar.url)
         embed.set_thumbnail(url=user.display_avatar.url)
