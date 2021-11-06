@@ -333,6 +333,8 @@ class Fun(games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
         if member.bot:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("I ain't bullying bots.")
+        if await self.client.pool_pg.fetchval("SELECT user_id FROM freezenick WHERE user_id = $1", member.id):
+            return await ctx.send(f"{member}'s nickname is currently frozen (either by a moderator or due to a nick bet), hence you cannot scramble their nickname.")
         if member == ctx.author:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("Why change your own nickname when you can scramble others' nicknames?")
@@ -346,7 +348,7 @@ class Fun(games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
             else:
                 ctx.command.reset_cooldown(ctx)
                 return await ctx.send("Their name only has one character, it's not worth it.")
-        def scramble_nickname():
+        async def scramble_nickname():
             tries = 0
             while True:
                 if tries < 10:
@@ -359,7 +361,7 @@ class Fun(games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
                         return new_name
                 else:
                     return None
-        new_name = scramble_nickname()
+        new_name = await scramble_nickname()
         if new_name is None:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"I can't scramble **{member.name}**'s name as their scrambled name will still be the same/the resulting name is blacklisted.")

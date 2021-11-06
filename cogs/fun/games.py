@@ -194,6 +194,8 @@ class games(commands.Cog):
             return await ctx.send("You need to specify who you want to nick bet with.")
         if member == ctx.author:
             return await ctx.send("Don't be shy, go nick bet with other people instead!")
+        if member in self.client.get_cog('fun').scrambledusers:
+            return await ctx.send(f"{member}'s nickname is currently scrambled. Wait until their nickname is unscrambled before placing a nick bet with them.")
         if member.bot:
             return await ctx.send(f"🤖 **{member}**: `I'll rather have a nick bet with {random.choice([botacc for botacc in ctx.guild.members if botacc.bot])}.`")
         if duration is not None:
@@ -287,7 +289,7 @@ class games(commands.Cog):
             else:
                 if authornickmsg.content.lower() == 'cancel':
                     return await ctx.send("This nick bet is cancelled.")
-                if await check_blacklisted_content(authornickmsg.content):
+                if await self.client.check_blacklisted_content(authornickmsg.content):
                     error = "you can't use blacklisted words."
                 elif len(authornickmsg.content) > 32:
                     error = "a nickname can only be 32 characters long."
