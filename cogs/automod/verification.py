@@ -13,37 +13,20 @@ class Verification(commands.Cog):
             if is_enabled:
                 has_not_verified = [member for member in guild.members if (not member.bot) and (member.pending == True)]
                 is_bannable = []
-                str = ""
                 for member in has_not_verified:
-                    if len(str) < 1800:
-                        if time() - member.joined_at.timestamp() > 86400:
-                            str += f"{member.mention} has not verified **and is eligible to be kicked.**."
-                            is_bannable.append(member)
-                        else:
-                            str += f"{member.mention} has not verified but joined less than 24 hours ago."
+                    if time() - member.joined_at.timestamp() > 86400:
+                        is_bannable.append(member)
                     else:
-                        await self.client.get_channel(616007729718231161).send(str)
-                await self.client.get_channel(616007729718231161).send(str)
-                await self.client.get_channel(616007729718231161).send(
-                    ''.join(
-                        f"{member} not verified, **can be kicked.**."
-                        for member in is_bannable
-                    )
-                )
-
-                """try:
-                    await member.send("You were automatically kicked from Dank Vibes as you have not agreed to the rules yet. To participate in the many giveaways/heists that Dank Vibes offers, come back and **agree to the rules** by pressing `Complete` at the bottom of your Discord client! https://cdn.discordapp.com/attachments/616007729718231161/906394155343818832/Screenshot_2021-11-06_at_9.36.42_AM.png\nhttps://discord.gg/dankmemer")
-                except:
-                    await member.kick(reason="Auto kick - Incomplete Verification")
-                    await self.client.get_channel(616007729718231161).send(f"{member} was kicked for not completing the verification. I was unable to DM them to tell them they were kicked for not completing the verification.")
-                else:
-                    await member.kick(reason="Auto kick - Incomplete Verification")
-                    await self.client.get_channel(616007729718231161).send(f"{member} was kicked for not completing the verification.")"""
-
-
-
-
-
+                        pass
+                for member in is_bannable:
+                    try:
+                        await member.send("You were automatically kicked from Dank Vibes as you have not agreed to the rules yet. To participate in the many giveaways/heists that Dank Vibes offers, come back and **agree to the rules** by pressing `Complete` at the bottom of your Discord client! https://cdn.discordapp.com/attachments/616007729718231161/906394155343818832/Screenshot_2021-11-06_at_9.36.42_AM.png\nhttps://discord.gg/dankmemer")
+                    except:
+                        await member.kick(reason="Auto kick - Incomplete Verification")
+                        await self.client.get_channel(616007729718231161).send(f"{member} was kicked for not completing the verification. I was unable to DM them to tell them they were kicked for not completing the verification.")
+                    else:
+                        await member.kick(reason="Auto kick - Incomplete Verification")
+                        await self.client.get_channel(616007729718231161).send(f"{member} was kicked for not completing the verification.")
 
     @commands.Cog.listener()
     async def on_member_update(self, member_before, member_after):
