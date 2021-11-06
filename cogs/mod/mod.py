@@ -56,6 +56,7 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
         if role1 == None or role2 == None or role3 == None or role4 == None or role5 == None:
             return await ctx.send("1 or more roles in this command is/are declared as invalid, hence the command cannot proceed.")
         roles = [role1, role2, role3, role4, role5]
+        hlroles = None
         if channel is None:
             channel = ctx.channel
             if flags is not None and flags.roles is not None and len(flags.roles) is not None:
@@ -213,9 +214,6 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
 
         await ctx.send('\n'.join(messages), delete_after=3.0)
 
-    class Duration(commands.FlagConverter, case_insensitive=True, delimiter=' ', prefix='--'):
-        duration: Optional[str]
-
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name='freezenick', aliases=['fn'])
     async def freezenick(self, ctx, member:discord.Member = None, *, nickname:str = None):
@@ -223,7 +221,6 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
         Freezes a user's nickname, causing their nickname to always display the nickname that you state in the command.
         To specify a duration, add --duration [duration] at the end.
         """
-        intduration = None
         if member is None:
             return await ctx.send("You need to tell me who you want to freezenick.")
         if nickname is None:
