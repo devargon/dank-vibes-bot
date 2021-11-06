@@ -81,7 +81,7 @@ class Fun(games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
             return True
         else:
             if discord.utils.get(ctx.author.roles, name="No Tags"):
-                raise ArgumentBaseError(message="You have been stunned (or you're restricted from using Carl-bot tags) and can't use any commands at the moment. <:dv_pepeHahaUSuckOwO:837653798313918475>")
+                raise ArgumentBaseError(message="You have the **No Tags** role and can't use any commands in the **Fun** cantegory. <:dv_pepeHahaUSuckOwO:837653798313918475>")
         return True
 
     @checks.requires_roles()
