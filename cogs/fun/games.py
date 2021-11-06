@@ -134,9 +134,9 @@ class games(commands.Cog):
             summary = f"**Summary**\nThe correct number is **{chosen}**, and I will tell people that the number is **between {small} and {big} (both inclusive)**.\n\nNow head to {channel.mention}, and say `start` to initialize the game!"
             await ctx.author.send(summary)
             self.planning_numberevent.remove(ctx.author.id)
-            embed = discord.Embed(title="Guess the Number game!", description=f"**{ctx.author}** is starting a Guess the Number game!\nYou have to guess a number that is **between {small} and {big}** (both inclusive).\n\n{ctx.author.display_name}, say `start` to start this game or `cancel` to cancel it.", color=self.client.embed_color)
+            embed = discord.Embed(title="Guess the Number game!", description=f"**{ctx.author}** is starting a Guess the Number game!\nYou have to guess a number that is **between {small} and {big}** (both inclusive).", color=self.client.embed_color)
             self.numberevent_channels.append(channel.id)
-            await channel.send(embed=embed)
+            await channel.send(f"{ctx.author.mention}, say `start` to start this game or `cancel` to cancel it!", embed=embed)
             try:
                 def check(message):
                     return message.content.lower() in ['start', 'cancel'] and message.author.id == ctx.author.id and message.channel.id == channel.id
