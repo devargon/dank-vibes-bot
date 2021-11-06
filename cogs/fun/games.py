@@ -190,12 +190,17 @@ class games(commands.Cog):
         Challenge your friend to a nick bet! Both of you will choose a nickname for one another, and one of you will choose a side of the coin.
         If the coin flips onto the side that you choose, you will win! The loser will have their nickname changed.
         """
+        if await self.client.pool_pg.fetchval("SELECT user_id FROM freezenick WHERE user_id = $1", ctx.author.id):
+            return await ctx.send("Your nickname is currently frozen. Wait until your nickname is unfrozen before placing a nick bet with someone else.")
         if member is None:
             return await ctx.send("You need to specify who you want to nick bet with.")
         if member == ctx.author:
             return await ctx.send("Don't be shy, go nick bet with other people instead!")
         if member in self.client.get_cog('fun').scrambledusers:
             return await ctx.send(f"{member}'s nickname is currently scrambled. Wait until their nickname is unscrambled before placing a nick bet with them.")
+        if await self.client.pool_pg.fetchval("SELECT user_id FROM freezenick WHERE user_id = $1", member.id):
+            return await ctx.send(f"{member}'s nickname is currently frozen. Wait until their nickname is unfrozen before placing a nick bet with them.")
+
         if member.bot:
             return await ctx.send(f"🤖 **{member}**: `I'll rather have a nick bet with {random.choice([botacc for botacc in ctx.guild.members if botacc.bot])}.`")
         if duration is not None:
@@ -239,7 +244,6 @@ class games(commands.Cog):
                     b.disabled = True
                 await self.response.edit(view=self)
                 self.stop()
-
         view = consent(member)
         embed = discord.Embed(title=f"Hey {member.name}!", description=f"Would you like to have a nick bet with {ctx.author.name}? {f'The loser will have their nickname frozen for **{humanize_timedelta(seconds=duration)} **.' if duration is not None else ''}", color=self.client.embed_color)
         msg = await ctx.send(member.mention, embed=embed, view=view)
@@ -251,7 +255,7 @@ class games(commands.Cog):
         elif view.returning_value == False:
             embed.color, embed.title = discord.Color.red(), "You declined the nick bet :("
             return await msg.edit(embed=embed)
-        embed.color, embed.title = discord.Color.green(), "You accepted the nick bet. Yay!"
+        embed.color, embed.title, embed.description = discord.Color.green(), "You accepted the nick bet. Yay!", "Remember, all nicknames **must follow server rules**. That includes the **NSFW rule**.\nFailure to follow these rules will result in a blacklist from the bot, or getting the \"No Tags\" role."
         await msg.edit(embed=embed)
         membernick = None
         authornick = None
