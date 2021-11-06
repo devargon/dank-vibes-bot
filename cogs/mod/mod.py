@@ -2,7 +2,7 @@ import time
 import discord
 import datetime
 import asyncio
-from discord.ext import commands
+from discord.ext import commands, menus
 from utils import checks
 from utils.format import text_to_file, stringtime_duration
 from .lockdown import lockdown
@@ -16,6 +16,19 @@ from utils.time import humanize_timedelta
 import time
 from utils.converters import BetterRoles
 from fuzzywuzzy import process
+from utils.menus import CustomMenu
+
+class FrozenNicknames(menus.ListPageSource):
+    def __init__(self, entries, title):
+        self.title = title
+        super().__init__(entries, per_page=10)
+
+    async def format_page(self, menu, entries):
+        embed = discord.Embed(title=self.title, color=menu.ctx.bot.embed_color, timestamp=discord.utils.utcnow())
+        for entry in entries:
+            embed.add_field(name=f"{entry[0]}", value=entry[1], inline=False)
+        embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        return embed
 
 class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
     """
@@ -221,6 +234,7 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
         Freezes a user's nickname, causing their nickname to always display the nickname that you state in the command.
         To specify a duration, add --duration [duration] at the end.
         """
+        return await ctx.send("This command is meant to be a command for manually freezing nicknames, but it will be disabled until further notice. To see the active frozen nicknames, check `dv.freezenicks`.")
         if member is None:
             return await ctx.send("You need to tell me who you want to freezenick.")
         if nickname is None:
@@ -239,6 +253,31 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
             timetounfreeze = 9223372036854775807
             await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason) VALUES($1, $2, $3, $4, $5, $6)", member.id, ctx.guild.id, nickname, old_nick, timetounfreeze, f"Freezenick command invoked by {ctx.author}")
             return await ctx.send(f"{member.mention}'s nickname is now frozen to `{nickname}`.")
+
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.command(name="freezenicks")
+    async def active_freezenicks(self, ctx):
+        """
+        Lists the active blacklists.
+        """
+        title = "Active frozen nicknames"
+        result = await self.client.pool_pg.fetch("SELECT * FROM freezenick WHERE guild_id = $1", ctx.guild.id)
+        frozennicknames = []
+        for entry in result:
+            member = self.client.get_user(entry.get('user_id'))
+            name = f"{entry.get('id')}. {member} ({member.id})" if member is not None else f"{entry.get('id')}. {entry.get('user_id')}"
+            details = f"Frozen nickname: {entry.get('nickname')}\n"
+            details += f"Reason: {entry.get('reason')}\n"
+            details += f"Unfrozen: <t:{entry.get('time')}:R>\n" if entry.get('time') != 9223372036854775807 else 'Until: Eternity\n'
+            frozennicknames.append((name, details))
+        if len(frozennicknames) <= 10:
+            embed = discord.Embed(title=title, color=self.client.embed_color, timestamp=discord.utils.utcnow())
+            for suggestion in frozennicknames:
+                embed.add_field(name=suggestion[0], value=suggestion[1], inline=False)
+            return await ctx.send(embed=embed)
+        else:
+            pages = CustomMenu(source=FrozenNicknames(frozennicknames, title), clear_reactions_after=True, timeout=60)
+            return await pages.start(ctx)
 
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name='unfreezenick', aliases=['ufn'])
