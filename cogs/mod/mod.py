@@ -211,7 +211,7 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
             spammers = sorted(spammers.items(), key=lambda t: t[1], reverse=True)
             messages.extend(f'- **{author}**: {count}' for author, count in spammers)
 
-        await ctx.send('\n'.join(messages), delete_after=10)
+        await ctx.send('\n'.join(messages), delete_after=3.0)
 
     class Duration(commands.FlagConverter, case_insensitive=True, delimiter=' ', prefix='--'):
         duration: Optional[str]
