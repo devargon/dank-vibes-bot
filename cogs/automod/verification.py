@@ -23,10 +23,10 @@ class Verification(commands.Cog):
                         await member.send("You were automatically kicked from Dank Vibes as you have not agreed to the rules yet. To participate in the many giveaways/heists that Dank Vibes offers, come back and **agree to the rules** by pressing `Complete` at the bottom of your Discord client! https://cdn.discordapp.com/attachments/616007729718231161/906394155343818832/Screenshot_2021-11-06_at_9.36.42_AM.png\nhttps://discord.gg/dankmemer")
                     except:
                         await member.kick(reason="Auto kick - Incomplete Verification")
-                        await self.client.get_channel(616007729718231161).send(f"{member} was kicked for not completing the verification. I was unable to DM them to tell them they were kicked for not completing the verification.")
+                        await self.client.get_channel(616007729718231161).send(f"{member} ({member.id}) was kicked for not completing the verification. I was unable to DM them to tell them they were kicked for not completing the verification.")
                     else:
                         await member.kick(reason="Auto kick - Incomplete Verification")
-                        await self.client.get_channel(616007729718231161).send(f"{member} was kicked for not completing the verification.")
+                        await self.client.get_channel(616007729718231161).send(f"{member} ({member.id}) was kicked for not completing the verification.")
 
     @commands.Cog.listener()
     async def on_member_update(self, member_before, member_after):
