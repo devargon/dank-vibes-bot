@@ -144,5 +144,5 @@ class ServerRule(commands.Cog):
         if whitelist:
             embed.add_field(name='Whitelisted Roles', value="\n".join([ctx.guild.get_role(r).mention if ctx.guild.get_role(r) is not None else r for r in whitelist]), inline=True)
         if blacklist:
-            embed.add_field(name='Blacklisted Roles', value="\n".join([ctx.guild.get_role(r).mention if ctx.guild.ger_role(r) is not None else r for r in blacklist]), inline=True)
+            embed.add_field(name='Blacklisted Roles', value="\n".join([ctx.guild.get_role(r).mention if ctx.guild.get_role(r) is not None else r for r in blacklist]), inline=True)
         await ctx.send(embed=embed)
