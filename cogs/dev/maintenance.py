@@ -105,7 +105,7 @@ class Maintenance(commands.Cog):
             values = []
             for name in sorted(list(self.client.cogs.keys())):
                 self.client.maintenance_message[name] = message
-                values.append(name, message)
+                values.append((name, message))
             await self.client.pool_pg.executemany(query, values)
         else:
             if not (cog := self.client.get_cog(cog_name)):
@@ -116,7 +116,7 @@ class Maintenance(commands.Cog):
                 embed.add_field(name=f"{self.get_emoji(enabled)} {cog.qualified_name.capitalize()}", value=self.client.maintenance_message.get(cog.qualified_name), inline=True)
                 return await ctx.send(embed=embed)
             value = (cog.qualified_name, message)
-            await self.client.pool_pg.execute(query, value)
+            await self.client.pool_pg.execute(query, *value)
             self.client.maintenance_message[cog.qualified_name] = message
         return await ctx.checkmark()
 
