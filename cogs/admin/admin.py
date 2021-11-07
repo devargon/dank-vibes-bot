@@ -20,7 +20,7 @@ class Blacklist(menus.ListPageSource):
         super().__init__(entries, per_page=10)
 
     async def format_page(self, menu, entries):
-        embed = discord.Embed(title=self.title, color=menu.ctx.bot.embed_color, timestamp=discord.utils.utcnow())
+        embed = discord.Embed(title=self.title, description="To know more about a blacklist, do `dv.blacklists <ID>`. ", color=menu.ctx.bot.embed_color, timestamp=discord.utils.utcnow())
         for entry in entries:
             embed.add_field(name=f"{entry[0]}", value=entry[1], inline=False)
         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
@@ -130,7 +130,7 @@ class Admin(BetterSelfroles, Joining, Sticky, ServerRule, commands.Cog, name='ad
                 return await ctx.send("Timed out. Please try again.")
             if len(reason.content) > 1500:
                 error = "The reason can only be up to 1500 characters."
-            reason = '' if reason.content.lower() == 'none' else reason.content
+            reason = 'No reason' if reason.content.lower() == 'none' else reason.content
         while duration is None:
             msg = "How long is the blacklist for? To blacklist the user permanently, type `none`."
             if error:
@@ -151,14 +151,24 @@ class Admin(BetterSelfroles, Joining, Sticky, ServerRule, commands.Cog, name='ad
         else:
             timeuntil = 9223372036854775807
         id = await self.client.pool_pg.fetchval("INSERT INTO blacklist(user_id, moderator_id, blacklist_active, reason, time_until) VALUES($1, $2, $3, $4, $5) RETURNING incident_id", user.id, ctx.author.id, True, reason, timeuntil, column='incident_id')
-        embed=discord.Embed(title=f"{user} is now blacklisted.", description=f"Reason: **{reason}**\nBlacklisted for: **{'Eternity' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}**\nBlacklisted until: {'NA' if timeuntil == 9223372036854775807 else f'<t:{timeuntil}:R>'}", color=discord.Color.red())
+        embed=discord.Embed(title=f"{user} is now blacklisted.", description=f"**Reason**: {reason}\n**Blacklisted for**: {'Eternity' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}\nBlacklisted until: {'NA' if timeuntil == 9223372036854775807 else f'<t:{timeuntil}:R>'}", color=discord.Color.red())
         logembed = discord.Embed(title=f"Bot Blacklist: Case {id}", description=f"**Reason:** {reason}\n**Blacklisted for**: {'Eternity' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}\n**Blacklisted until**: {'NA' if timeuntil == 9223372036854775807 else f'<t:{timeuntil}:R>'}\n**Responsible Moderator**: {ctx.author} ({ctx.author.id})", color=discord.Color.red())
         logembed.set_author(name=f"{user} ({user.id})", icon_url=user.display_avatar.url)
         embed.set_footer(text="To unblacklist someone, use the `unblacklist` command.")
         embed.set_thumbnail(url=user.display_avatar.url)
-        embed = await self.client.get_user(self.client.owner_id).send(embed=embed)
-        await ctx.send(embed=embed)
+        dm_description=["You have been blacklisted from using this bot by the developers or an Admin from Dank Vibes.", '', f"**Reason:** {reason}", f"**Blacklisted for**: {'Permanently' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}"]
+        if duration != 9223372036854775807:
+            dm_description.append(f"You will not be able to use {ctx.me.name}'s commands until <t:{timeuntil}>.")
+        dm_description.append('')
+        dm_description.append("If you think this is a mistake or would like your blacklist to be rescinded, please open a ticket in <#870880772985344010>.")
+        dmembed = discord.Embed(title="⚠️ Warning!", description='\n'.join(dm_description), color=discord.Color.red())
+        try:
+            await user.send(embed=dmembed)
+        except:
+            return await ctx.send("I was unable to tell them that they have been blacklisted in their DMs.")
         await self.client.get_channel(906433823594668052).send(embed=logembed)
+        await ctx.send(embed=embed)
+
 
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="blacklists")
@@ -177,6 +187,7 @@ class Admin(BetterSelfroles, Joining, Sticky, ServerRule, commands.Cog, name='ad
             member = ctx.guild.get_member(result.get('user_id'))
             embed = discord.Embed(title=f"Blacklist {inquery}", description=f"__Reason for blacklist__\n{result.get('reason')}", color=discord.Color.red() if result.get('blacklist_active') else discord.Color.green())
             embed.set_author(icon_url=member.display_avatar.url, name=f"{member} ({member.id})")
+            embed.add_field
             embed.add_field(name="Is blacklist active?", value=result.get('blacklist_active'), inline=True)
             if result.get('blacklist_active'):
                 embed.add_field(name="Blacklist until", value="Eternity" if result.get('time_until') == 9223372036854775807 else f"<t:{result.get('time_until')}:R>", inline=True)
@@ -213,7 +224,7 @@ class Admin(BetterSelfroles, Joining, Sticky, ServerRule, commands.Cog, name='ad
             details = f"Reason: {blacklist.get('reason')}\n"
             if blacklist.get('blacklist_active'):
                 details += f"Until: <t:{blacklist.get('time_until')}:R>\n" if blacklist.get('time_until') != 9223372036854775807 else 'Until: Eternity\n'
-            details += f"Active: {'<:DVB_True:887589686808309791>' if blacklist.get('blacklist_active') else '<:DVB_False:887589731515392000>'}"
+            details += f"Active: {'<:DVB_True:887589686808309791>' if blacklist.get('blacklist_active') else '<:DVB_False:887589731515392000>'}\n"
             details += f"Moderator: {moderator} ({moderator.id})" if moderator is not None else f"Moderator: {blacklist.get('moderator_id')}"
             blacklists.append((name, details))
         if len(blacklists) <= 10:
@@ -236,7 +247,7 @@ class Admin(BetterSelfroles, Joining, Sticky, ServerRule, commands.Cog, name='ad
             return await ctx.send(f"{user.mention} is currently not blacklisted.")
         await self.client.pool_pg.execute("UPDATE blacklist SET blacklist_active = $1 WHERE user_id = $2 and incident_id = $3", False, user.id, active_blacklist.get('incident_id'))
         embed = discord.Embed(title=f"{user} is now blacklisted.", color=discord.Color.green())
-        logembed = discord.Embed(title=f"Bot Blacklist: Case {active_blacklist.get('incident_id')}", description=f"**Reason:** Manually unblacklisted by {ctx.author}\n**Responsible Moderator**: {ctx.author} ({ctx.author.id})", color=discord.Color.green())
+        logembed = discord.Embed(title=f"Bot Unblacklist: Case {active_blacklist.get('incident_id')}", description=f"**Reason:** Manually unblacklisted by {ctx.author}\n**Responsible Moderator**: {ctx.author} ({ctx.author.id})", color=discord.Color.green())
         logembed.set_author(name=f"{user} ({user.id})", icon_url=user.display_avatar.url)
         await ctx.send(embed=embed)
         await self.client.get_channel(906433823594668052).send(embed=logembed)
