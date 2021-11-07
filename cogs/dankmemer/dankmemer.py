@@ -285,7 +285,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                     if len(payload.embeds) == 0 or payload.author.id == message.author.id or not payload.author.bot or message.channel != payload.channel or payload.author.id != 270904126974590976:
                         return False
                     else:
-                        return payload.embeds[0].title == f"Here are yer daily coins, {message.author.name}" or payload.embeds[0].title == f"Here are your daily coins, {message.author.name}"
+                        return payload.embeds[0].title and payload.embeds[0].title == f"Here are yer daily coins, {message.author.name}" or payload.embeds[0].title == f"Here are your daily coins, {message.author.name}"
                 try:
                     botresponse = await self.client.wait_for("message", check=check_daily, timeout=10)
                 except asyncio.TimeoutError:
@@ -311,7 +311,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                     if len(payload.embeds) == 0 or payload.author.id == message.author.id or not payload.author.bot or message.channel != payload.channel or payload.author.id != 270904126974590976:
                         return False
                     else:
-                        return payload.embeds[0].title == f"Here are yer weekly coins, {message.author.name}" or payload.embeds[0].title == f"Here are your weekly coins, {message.author.name}"
+                        return payload.embeds[0].title and payload.embeds[0].title == f"Here are yer weekly coins, {message.author.name}" or payload.embeds[0].title == f"Here are your weekly coins, {message.author.name}"
                 try:
                     botresponse = await self.client.wait_for("message", check=check_weekly, timeout=10)
                 except asyncio.TimeoutError:
@@ -340,7 +340,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                     if len(payload.embeds) == 0 or payload.author.id == message.author.id or not payload.author.bot or message.channel != payload.channel or payload.author.id != 270904126974590976:
                         return False
                     else:
-                        return payload.embeds[0].title == f"Here are yer monthly coins, {message.author.name}" or payload.embeds[0].title == f"Here are your monthly coins, {message.author.name}"
+                        return payload.embeds[0].title and payload.embeds[0].title == f"Here are yer monthly coins, {message.author.name}" or payload.embeds[0].title == f"Here are your monthly coins, {message.author.name}"
                 try:
                     botresponse = await self.client.wait_for("message", check=check_monthly, timeout=10)
                 except asyncio.TimeoutError:
@@ -364,7 +364,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
             else:
                 pass
 
-        if len(message.embeds) > 0 and len(message.mentions) > 0 and message.embeds[0].title == "Pending Confirmation" and "tryna buy a lottery ticket" in message.embeds[0].description:
+        if len(message.embeds) > 0 and len(message.mentions) > 0 and message.embeds[0].title and message.embeds[0].description and message.embeds[0].title == "Pending Confirmation" and "tryna buy a lottery ticket" in message.embeds[0].description:
             member = message.mentions[0]
             def check_lottery(payload_before, payload_after):
                 return payload_before.author == message.author and payload_after.author == message.author and payload_before.id == message.id and payload_after.id == message.id and len(message.embeds) > 0
@@ -373,6 +373,8 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
             except asyncio.TimeoutError:
                 return await checkmark(message)
             else:
+                if not message.embeds[0].title:
+                    return
                 if message.embeds[0].title == "Action Canceled" or message.embeds[0].title == "Action Canceled":
                     return await message.add_reaction("<:crossmark:841186660662247444>")
                 if message.embeds[0].title == "Action Confirmed":
@@ -403,7 +405,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
             except asyncio.TimeoutError:
                 return await checkmark(message)
             else:
-                if f"{message.author.name} has redeemed their" in redeemresponse.embeds[0].title:
+                if redeemresponse.embeds[0].title and f"{message.author.name} has redeemed their" in redeemresponse.embeds[0].title:
                     member = message.author
                     nextredeemtime = round(time.time()) + 604800
                     existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 7)
@@ -576,7 +578,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
         """
         Daily Box Reminder
         """
-        if len(message.embeds) > 0 and message.author.id == 270904126974590976 and message.embeds[0].title=="Opening Daily Box":
+        if len(message.embeds) > 0 and message.author.id == 270904126974590976 and message.embeds[0].title and message.embeds[0].title=="Opening Daily Box":
             def check_dailybox(payload_before, payload_after):
                 return payload_after.id == message.id
             try:
@@ -595,11 +597,11 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                                     await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextdailyboxtime, member.id, 18)
                                 else:
                                     await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 18, message.channel.id, message.guild.id, nextdailyboxtime)
-                return await crossmark(message)
+                return await checkmark(message)
         """
         Work Reminder
         """
-        if len(message.embeds) > 0 and message.author.id == 270904126974590976 and len(message.mentions) > 0 and (message.embeds[0].description.startswith("**TERRIBLE work!**") or message.embeds[0].description.startswith("**Great work!**")):
+        if len(message.embeds) > 0 and message.author.id == 270904126974590976 and len(message.mentions) > 0 and  message.embeds[0].description and (message.embeds[0].description.startswith("**TERRIBLE work!**") or message.embeds[0].description.startswith("**Great work!**")):
                 member = message.mentions[0]
                 nextworktime = round(time.time()) + 3600
                 existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 4)
