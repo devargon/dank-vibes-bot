@@ -373,6 +373,8 @@ class BetterSelfroles(commands.Cog):
                 self.client.add_view(server_pings(), message_id=selfrolemessages.get('server_pings'))
             if selfrolemessages.get('bot_roles'):
                 self.client.add_view(bot_roles(), message_id=selfrolemessages.get('bot_roles'))
+            if selfrolemessages.get('random_color'):
+                self.client.add_view(random_color())
             if selfrolemessages.get('colors'):
                 self.client.add_view(colors(), message_id=selfrolemessages.get('colors'))
             if selfrolemessages.get('specialcolors'):
