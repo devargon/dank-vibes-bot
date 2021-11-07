@@ -5,9 +5,11 @@ from time import time
 class Verification(commands.Cog):
     def __init__(self, client):
         self.client = client
+        self.check_verification.start()
 
     @tasks.loop(minutes=30.0)
     async def check_verification(self):
+        await self.client.wait_until_ready()
         for guild in self.client.guilds:
             is_enabled = await self.client.pool_pg.fetchval("SELECT enabled FROM serverconfig WHERE settings = $1 and guild_id = $2", 'verification', guild.id)
             if is_enabled:
@@ -46,3 +48,6 @@ class Verification(commands.Cog):
         else:
             return
         await member_before.add_roles(*roles, reason="Member finished Membership Screening")
+
+    def cog_unload(self) -> None:
+        self.check_verification.stop()
