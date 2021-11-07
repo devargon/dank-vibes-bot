@@ -178,7 +178,7 @@ class Admin(BetterSelfroles, Joining, Sticky, ServerRule, commands.Cog, name='ad
         To see the list of flags, use this command without any arguments.
         """
         if inquery is None:
-            embed = discord.Embed(title="Blacklist Utilities", description="`--active` - list active blacklists.\n--inactive` - list inactive blacklists.\n`<num>` - show a specific blacklist.\n`<member>` - list a member's blacklist.\n`--all` lists all past blacklists.", color=discord.Color.green())
+            embed = discord.Embed(title="Blacklist Utilities", description="`--active` - list active blacklists.\n``--inactive` - list inactive blacklists.\n`<num>` - show a specific blacklist.\n`<member>` - list a member's blacklist.\n`--all` lists all past blacklists.", color=discord.Color.green())
             return await ctx.send(embed=embed)
         if type(inquery) == int:
             result = await self.client.pool_pg.fetchrow("SELECT * FROM blacklist WHERE incident_id = $1", inquery)
@@ -210,7 +210,7 @@ class Admin(BetterSelfroles, Joining, Sticky, ServerRule, commands.Cog, name='ad
             else:
                 return await ctx.send("You did not provide a proper flag.")
         else:
-            embed = discord.Embed(title="Blacklist Utilities", description="`--active` - list active blacklists.\n--inactive` - list inactive blacklists.\n`<num>` - show a specific blacklist.\n`<member>` - list a member's blacklist.\n`--all` lists all past blacklists.", color=discord.Color.green())
+            embed = discord.Embed(title="Blacklist Utilities", description="`--active` - list active blacklists.\n`--inactive` - list inactive blacklists.\n`<num>` - show a specific blacklist.\n`<member>` - list a member's blacklist.\n`--all` lists all past blacklists.", color=discord.Color.green())
             return await ctx.send(embed=embed)
         if len(query) == 2:
             result = await self.client.pool_pg.fetch(query[0], query[1])
