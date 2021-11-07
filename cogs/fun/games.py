@@ -193,21 +193,28 @@ class games(commands.Cog):
         if await self.client.pool_pg.fetchval("SELECT user_id FROM freezenick WHERE user_id = $1", ctx.author.id):
             return await ctx.send("Your nickname is currently frozen. Wait until your nickname is unfrozen before placing a nick bet with someone else.")
         if member is None:
+            ctx.command.reset_cooldown(ctx)
             return await ctx.send("You need to specify who you want to nick bet with.")
         if member == ctx.author:
+            ctx.command.reset_cooldown(ctx)
             return await ctx.send("Don't be shy, go nick bet with other people instead!")
         if member in self.client.get_cog('fun').scrambledusers:
+            ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"{member}'s nickname is currently scrambled. Wait until their nickname is unscrambled before placing a nick bet with them.")
         if await self.client.pool_pg.fetchval("SELECT user_id FROM freezenick WHERE user_id = $1", member.id):
+            ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"{member}'s nickname is currently frozen. Wait until their nickname is unfrozen before placing a nick bet with them.")
 
         if member.bot:
+            ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"🤖 **{member}**: `I'll rather have a nick bet with {random.choice([botacc for botacc in ctx.guild.members if botacc.bot])}.`")
         if duration is not None:
             duration = stringtime_duration(duration)
             if duration is None:
+                ctx.command.reset_cooldown(ctx)
                 return await ctx.send("You need to specify a valid duration. I can only read timings with `y`, `d`, `h`, `m` or `s`.")
             if duration > 86400:
+                ctx.command.reset_cooldown(ctx)
                 return await ctx.send("You can't have a nick bet for longer than 24 hours.")
         class consent(discord.ui.View):
             def __init__(self, target):
@@ -250,9 +257,11 @@ class games(commands.Cog):
         view.response = msg
         await view.wait()
         if view.returning_value is None:
+            ctx.command.reset_cooldown(ctx)
             embed.color, embed.title = discord.Color.red(), "You didn't respond in time."
             return await msg.edit(embed=embed)
         elif view.returning_value == False:
+            ctx.command.reset_cooldown(ctx)
             embed.color, embed.title = discord.Color.red(), "You declined the nick bet :("
             return await msg.edit(embed=embed)
         embed.color, embed.title, embed.description = discord.Color.green(), "You accepted the nick bet. Yay!", "Remember, all nicknames **must follow server rules**. That includes the **NSFW rule**.\nFailure to follow these rules will result in a blacklist from the bot, or getting the \"No Tags\" role."
@@ -269,9 +278,11 @@ class games(commands.Cog):
                 membernickmsg = await self.client.wait_for('message', check=lambda
                     m: m.author.id == ctx.author.id and m.channel.id == ctx.channel.id, timeout=30.0)
             except asyncio.TimeoutError:
+                ctx.command.reset_cooldown(ctx)
                 return await ctx.send(f"{ctx.author.name} didn't respond in time, hence this nick bet is cancelled.")
             else:
                 if membernickmsg.content.lower() == 'cancel':
+                    ctx.command.reset_cooldown(ctx)
                     return await ctx.send("This nick bet is cancelled.")
                 if await self.client.check_blacklisted_content(membernickmsg.content):
                     error = "you can't use blacklisted words."
@@ -289,9 +300,11 @@ class games(commands.Cog):
                 authornickmsg = await self.client.wait_for('message', check=lambda
                     m: m.author.id == member.id and m.channel.id == ctx.channel.id, timeout=30.0)
             except asyncio.TimeoutError:
+                ctx.command.reset_cooldown(ctx)
                 return await ctx.send(f"{member.mention} didn't respond in time, hence this nick bet is cancelled.")
             else:
                 if authornickmsg.content.lower() == 'cancel':
+                    ctx.command.reset_cooldown(ctx)
                     return await ctx.send("This nick bet is cancelled.")
                 if await self.client.check_blacklisted_content(authornickmsg.content):
                     error = "you can't use blacklisted words."
@@ -342,6 +355,7 @@ class games(commands.Cog):
         await coinpickview.wait()
         if coinpickview.returning_value is None:
             embed.color, embed.description = discord.Color.red(), "You didn't respond in time."
+            ctx.command.reset_cooldown(ctx)
             return await coinpickmsg.edit(embed=embed)
         coinflipembed = discord.Embed(title=f"{member.name} chose {'Heads! <:DVB_CoinHead:905400213785690172>' if coinpickview.returning_value == True else 'Tails! <:DVB_CoinTail:905400213676638279>'}", description="I'm flipping the coin...", color=self.client.embed_color).set_image(url="https://cdn.nogra.me/core/coinflip.gif")
         coinflipmsg = await ctx.send(embed=coinflipembed)
