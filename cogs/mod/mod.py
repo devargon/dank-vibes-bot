@@ -285,7 +285,6 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
         """
         Unfreezes a user's nickname.
         """
-        intduration = None
         if member is None:
             return await ctx.send("You need to tell me who you want to freezenick.")
         existing = await self.client.pool_pg.fetchrow("SELECT * FROM freezenick WHERE user_id = $1 and guild_id = $2",

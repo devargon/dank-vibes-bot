@@ -28,6 +28,7 @@ class censor(commands.Cog):
         """
         if content is None:
             return await ctx.send("You need to specify what you want to censor.")
+        content = content.lower()
         if len(content) > 1000:
             return await ctx.send("You can only censor strings up to 1000 characters long.")
         existing = await self.client.pool_pg.fetchval("SELECT string FROM blacklisted_words WHERE string = $1", content)
@@ -59,6 +60,7 @@ class censor(commands.Cog):
         """
         if content is None:
             return await ctx.send("You need to specify what you want to censor.")
+        content = content.lower()
         if len(content) > 1000:
             return await ctx.send("You can only censor strings up to 1000 characters long.")
         existing = await self.client.pool_pg.fetchval("SELECT string FROM blacklisted_words WHERE string = $1", content)
