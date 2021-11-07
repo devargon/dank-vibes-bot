@@ -239,7 +239,10 @@ def stringtime_duration(string:str):
         string += "0"
     if string.endswith('/') or string.endswith('*') or string.endswith('^'):
         string += "1"
-    intstring = evaluate(string)
+    try:
+        intstring = evaluate(string)
+    except:
+        return None
     intstring = int(intstring) if intstring is not None else intstring
     return intstring
 
