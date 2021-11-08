@@ -65,7 +65,7 @@ class Fun(games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
             return
         if ctx.command.name == 'chatchart':
             self.chatchart_is_running = False
-        elif ctx.command.name == 'gen':
+        elif ctx.command.name == 'lockgen':
             self.gen_is_muted = False
 
     def lowered_cooldown(message):
@@ -394,6 +394,7 @@ class Fun(games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
                     has_warned = True
         return await ctx.send(f"{member.mention}, your nickname has been restored... until someone scrambles your nickname again.")
 
+    @checks.is_not_blacklisted()
     @checks.requires_roles()
     @commands.cooldown(1200, 1, commands.BucketType.user)
     @commands.command(name="chatchart")
