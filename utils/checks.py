@@ -34,7 +34,6 @@ def requires_roles() -> callable:
         if enabled == True:
             return True
         roles = await ctx.bot.pool_pg.fetch("SELECT role_id, whitelist FROM rules WHERE guild_id=$1 AND command=$2", ctx.guild.id, get_command_name(ctx.command))
-        print(roles)
         if ctx.author.guild_permissions.administrator:
             return True
         if not roles:
@@ -72,6 +71,16 @@ def in_beta() -> Callable:
         else:
             raise ArgumentBaseError(message="This feature is still in development and is not available to the public at the moment. Be sure to check it again soon!")
     return commands.check(predicate)
+
+def is_not_blacklisted() -> callable:
+    async def predicate(ctx):
+        blacklisted_users = await ctx.bot.pool_pg.fetchrow("SELECT * FROM blacklist WHERE user_id = $1 and blacklist_active = $2", ctx.author.id, True)
+        if blacklisted_users:
+            if ctx.message.author.id in [321892489470410763, 650647680837484556, 515725341910892555]:
+                return True
+            raise ArgumentBaseError(message="You have been blacklisted from using this function.")
+        return True
+    return commands.check(predicate=predicate)
 
 def base_dev() -> callable:
     async def predicate(ctx):
