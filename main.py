@@ -66,14 +66,12 @@ class dvvt(commands.AutoShardedBot):
         if ctx.cog:
             if ctx.author.id not in [650647680837484556, 515725341910892555, 321892489470410763]:
                 blacklist = await self.pool_pg.fetchrow("SELECT * FROM blacklist WHERE user_id = $1 and blacklist_active = $2", message.author.id, True)
-                if blacklist:
-                    if time.time() <= blacklist.get('time_until'):
-                        return
+                if blacklist and time.time() >= blacklist.get('time_until'):
                     await self.pool_pg.execute("UPDATE blacklist SET blacklist_active = $1 WHERE user_id = $2 and incident_id = $3", False, message.author.id, blacklist.get('incident_id'))
                     embed = discord.Embed(title=f"Bot Unblacklist | Case {blacklist.get('incident_id')}", description=f"**Reason**: Blacklist over, automatically rescinded\n**Responsible Moderator**: {ctx.me} ({ctx.me.id})", color=discord.Color.green())
                     embed.set_author(name=f"{message.author} ({message.author.id})", icon_url=message.author.display_avatar.url)
                     await self.get_channel(906433823594668052).send(embed=embed)
-                    await message.reply("You are no longer blacklisted from using the bot.")
+                    await message.reply("You are no longer blacklisted from using the bot, and can use all functions of the bot.")
                     return await self.invoke(ctx)
             if self.maintenance.get(ctx.cog.qualified_name) and message.author.id not in [321892489470410763, 650647680837484556]:
                 maintenance_message = self.maintenance_message.get(ctx.cog.qualified_name)
@@ -123,6 +121,12 @@ class dvvt(commands.AutoShardedBot):
         for word in blacklisted_words:
             if word.get('string') in string.lower():
                 return True
+        return False
+
+    async def check_blacklisted_user(self, member):
+        blacklisted_users = await self.pool_pg.fetchrow("SELECT * FROM blacklist WHERE user_id = $1 and blacklist_active = $2", member.id, True)
+        if blacklisted_users:
+            return True
         return False
 
     def get_guild_prefix(self, guild):
