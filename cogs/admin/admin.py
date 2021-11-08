@@ -156,9 +156,9 @@ class Admin(BetterSelfroles, Joining, Sticky, ServerRule, commands.Cog, name='ad
         logembed.set_author(name=f"{user} ({user.id})", icon_url=user.display_avatar.url)
         embed.set_footer(text="To unblacklist someone, use the `unblacklist` command.")
         embed.set_thumbnail(url=user.display_avatar.url)
-        dm_description=["You have been blacklisted from using this bot by the developers or an Admin from Dank Vibes.", '', f"**Reason:** {reason}", f"**Blacklisted for**: {'Permanently' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}"]
+        dm_description=["You have been blacklisted from using certain functions of this bot by the developers or an Admin from Dank Vibes.", '', f"**Reason:** {reason}", f"**Blacklisted for**: {'Permanently' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}"]
         if duration != 9223372036854775807:
-            dm_description.append(f"You will not be able to use {ctx.me.name}'s commands until <t:{timeuntil}>.")
+            dm_description.append(f"The functions that you can't use include but are not limited to:\n`-` Using `nickbet`, `nick` and `chatchart` commands\n`-` Being nickbetted against\n\nYour blacklist will end on <t:{timeuntil}>.")
         dm_description.append('')
         dm_description.append("If you think this is a mistake or would like your blacklist to be rescinded, please open a ticket in <#870880772985344010>.")
         dmembed = discord.Embed(title="⚠️ Warning!", description='\n'.join(dm_description), color=discord.Color.red())
