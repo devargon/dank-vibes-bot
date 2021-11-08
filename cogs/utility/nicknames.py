@@ -122,6 +122,7 @@ class nicknames(commands.Cog):
                     self.client.add_view(NicknamePersistentView(self.client), message_id=entry.get('messageid'))
             self.persistent_views_added = True
 
+    @checks.is_not_blacklisted()
     @commands.command(name="nick", aliases = ["requestnick", "setnick"])
     @checks.not_in_gen()
     async def setnick(self, ctx, *, nickname = None):
