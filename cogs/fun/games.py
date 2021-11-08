@@ -183,6 +183,7 @@ class games(commands.Cog):
                                     return await guessingmsg.reply(f"{guessingmsg.author.mention}", embed=embed)
 
     @checks.requires_roles()
+    @checks.is_not_blacklisted()
     @commands.cooldown(1, 300, commands.BucketType.user)
     @commands.command(name="nickbet")
     async def nickbet(self, ctx, member: discord.Member = None, duration: str = None):
@@ -204,7 +205,9 @@ class games(commands.Cog):
         if await self.client.pool_pg.fetchval("SELECT user_id FROM freezenick WHERE user_id = $1", member.id):
             ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"{member}'s nickname is currently frozen. Wait until their nickname is unfrozen before placing a nick bet with them.")
-
+        if await self.client.check_blacklisted_user(member):
+            ctx.command.reset_cooldown(ctx)
+            return await ctx.send(f"{member} is currently blacklisted from using the bot. You cannot have a nick bet with them.")
         if member.bot:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"🤖 **{member}**: `I'll rather have a nick bet with {random.choice([botacc for botacc in ctx.guild.members if botacc.bot])}.`")
