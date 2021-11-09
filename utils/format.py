@@ -7,6 +7,8 @@ from discord.ext import commands
 import inflect
 import math
 from expr import evaluate
+import aiohttp
+from utils.errors import ArgumentBaseError
 
 class plural:
     """
@@ -254,3 +256,15 @@ def grammarformat(iterable):
     if len(iterable) == 2:
         return iterable[0] + ' and ' + iterable[1]
     return ', '.join(iterable[:-1]) + ', and ' + iterable[-1]
+
+async def get_image(url:str):
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(url) as r:
+                data = await r.read()
+        except aiohttp.InvalidURL:
+            raise ArgumentBaseError(message=f"Invalid URL: {url}")
+        except aiohttp.ClientError:
+            raise ArgumentBaseError(message="Something went wrong while trying to get the image.")
+        else:
+            return data
