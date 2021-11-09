@@ -127,7 +127,6 @@ class ItemGames(commands.Cog):
         useritem_query = "SELECT {} FROM inventories WHERE user_id = $1".format(item)
         useritem = await self.client.pool_pg.fetchval(useritem_query, user.id)
         if does_inventory_exist:
-            print(does_inventory_exist)
             if useritem is None:
                 useritem_query = "UPDATE inventories SET {} = $2 WHERE user_id = $1 RETURNING {}".format(item, item)
             else:
@@ -144,16 +143,13 @@ class ItemGames(commands.Cog):
         useritem = await self.client.pool_pg.fetchval(useritem_query, user.id)
         if does_inventory_exist:
             if useritem is None:
-                print("inventory exists but user has None of item")
                 useritem_query = "UPDATE inventories SET {} = $2 WHERE user_id = $1 RETURNING {}".format(item, item)
                 return await self.client.pool_pg.fetchval(useritem_query, user.id, -abs(amount), column=item)
             else:
                 newcount = does_inventory_exist.get(item) - amount
-                print("inventory exists and user will sdsjkadh")
                 useritem_query = "UPDATE inventories SET {} = {} - $2 WHERE user_id = $1 RETURNING {}".format(item, item, item)
                 return await self.client.pool_pg.fetchval(useritem_query, user.id, amount, column=item)
         else:
-            print("inventory does not exist")
             useritem_query = "INSERT INTO inventories (user_id, {}) VALUES ($1, $2) RETURNING {}".format(item, item)
             return await self.client.pool_pg.fetchval(useritem_query, user.id, amount*-1, column=item)
 
@@ -296,7 +292,6 @@ class ItemGames(commands.Cog):
         if item is None:
             return await ctx.send("You need to specify the item you want to know about.")
         itemname = await self.get_item_name(item)
-        print(itemname)
         if itemname is None:
             return await ctx.send(f"There is no item named `{item}`.")
         itemdata = await self.client.pool_pg.fetchrow("SELECT * FROM iteminfo WHERE name = $1", itemname)

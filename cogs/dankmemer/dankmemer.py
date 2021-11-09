@@ -285,7 +285,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                     if len(payload.embeds) == 0 or payload.author.id == message.author.id or not payload.author.bot or message.channel != payload.channel or payload.author.id != 270904126974590976:
                         return False
                     else:
-                        return payload.embeds[0].title and payload.embeds[0].title == f"Here are yer daily coins, {message.author.name}" or payload.embeds[0].title == f"Here are your daily coins, {message.author.name}"
+                        return payload.embeds[0].title and payload.embeds[0].title == f"{message.author.name}'s Daily Coins"
                 try:
                     botresponse = await self.client.wait_for("message", check=check_daily, timeout=10)
                 except asyncio.TimeoutError:
