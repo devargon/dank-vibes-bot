@@ -10,7 +10,10 @@ from discord.ext import menus
 from utils import checks
 from utils.menus import CustomMenu
 import math
-from utils.format import plural
+from utils.format import plural, get_image
+from PIL import Image
+import asyncio
+from io import BytesIO
 
 
 class ItemLeaderboard(menus.ListPageSource):
@@ -104,6 +107,9 @@ class ItemGames(commands.Cog):
     async def get_item_name(self, name):
         item_names = await self.client.pool_pg.fetch("SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = $1", 'inventories')
         items = [i.get('column_name') for i in item_names if i.get('column_name') != 'user_id']
+        for character in list(name):
+            if character.isalpha():
+                name.replace(character, '')
         lst = difflib.get_close_matches(name, items, n=1, cutoff=0.4)
         if len(lst) == 0:
             return None
@@ -117,27 +123,39 @@ class ItemGames(commands.Cog):
         return useritem
 
     async def add_item_count(self, item, user, amount):
+        does_inventory_exist = await self.client.pool_pg.fetchrow("SELECT * FROM inventories WHERE user_id = $1", user.id)
         useritem_query = "SELECT {} FROM inventories WHERE user_id = $1".format(item)
-        print(useritem_query)
         useritem = await self.client.pool_pg.fetchval(useritem_query, user.id)
-        print(useritem)
-        if useritem is None:
-            useritem_query = "INSERT INTO inventories (user_id, {}) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET {} = $2 RETURNING {}".format(item, item, item)
-            return await self.client.pool_pg.fetchval(useritem_query, user.id, amount, column=item)
-
+        if does_inventory_exist:
+            print(does_inventory_exist)
+            if useritem is None:
+                useritem_query = "UPDATE inventories SET {} = $2 WHERE user_id = $1 RETURNING {}".format(item, item)
+            else:
+                useritem_query = "UPDATE inventories SET {} = {} + $2 WHERE user_id = $1 RETURNING {}".format(item, item, item)
         else:
-            useritem_query = "UPDATE inventories SET {} = {} + $1 WHERE user_id = $2 RETURNING {}".format(item, item, item)
-            return await self.client.pool_pg.fetchval(useritem_query, amount, user.id, column=item)
+            useritem_query = "INSERT INTO inventories (user_id, {}) VALUES ($1, $2) RETURNING {}".format(item, item)
+        return await self.client.pool_pg.fetchval(useritem_query, user.id, amount, column=item)
 
     async def remove_item_count(self, item, user, amount):
+        if amount < 0:
+            amount = abs(amount)
+        does_inventory_exist = await self.client.pool_pg.fetchrow("SELECT * FROM inventories WHERE user_id = $1", user.id)
         useritem_query = "SELECT {} FROM inventories WHERE user_id = $1".format(item)
         useritem = await self.client.pool_pg.fetchval(useritem_query, user.id)
-        if useritem is None:
-            useritem_query = "INSERT INTO inventories (user_id, {}) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET {} = $2 RETURNING {}".format(item, item, item)
-            return await self.client.pool_pg.fetchval(useritem_query, user.id, abs(amount), column=item)
+        if does_inventory_exist:
+            if useritem is None:
+                print("inventory exists but user has None of item")
+                useritem_query = "UPDATE inventories SET {} = $2 WHERE user_id = $1 RETURNING {}".format(item, item)
+                return await self.client.pool_pg.fetchval(useritem_query, user.id, -abs(amount), column=item)
+            else:
+                newcount = does_inventory_exist.get(item) - amount
+                print("inventory exists and user will sdsjkadh")
+                useritem_query = "UPDATE inventories SET {} = {} - $2 WHERE user_id = $1 RETURNING {}".format(item, item, item)
+                return await self.client.pool_pg.fetchval(useritem_query, user.id, amount, column=item)
         else:
-            useritem_query = "UPDATE inventories SET {} = {} - $1 WHERE user_id = $2 RETURNING {}".format(item, item, item)
-            return await self.client.pool_pg.fetchval(useritem_query, amount, user.id, column=item)
+            print("inventory does not exist")
+            useritem_query = "INSERT INTO inventories (user_id, {}) VALUES ($1, $2) RETURNING {}".format(item, item)
+            return await self.client.pool_pg.fetchval(useritem_query, user.id, amount*-1, column=item)
 
 
     async def get_leaderboard(self, guild, query, top):
@@ -198,6 +216,33 @@ class ItemGames(commands.Cog):
         itemname = await self.get_item_name(item)
         if itemname is None:
             return await ctx.send(f"There is no item names `{item}`.")
+        if member == ctx.author:
+            details = await self.client.pool_pg.fetchrow("SELECT image FROM iteminfo WHERE name=$1", itemname)
+            member_avatar = await member.display_avatar.with_format('png').read()
+            emoji = details.get('image')
+            if emoji is None:
+                return await ctx.send("An error encountered while trying to get the details of this item.")
+            emoji_bytes = await get_image(emoji)
+            loop = asyncio.get_event_loop()
+            def generate():
+                main = Image.open("assets/spiderman.jpg")
+                backg = main.copy()
+                ima2 = Image.open(BytesIO(member_avatar)).convert('RGBA')
+                ima2 = ima2.resize((94, 94))
+                backg.paste(ima2, (86, 0), ima2)
+                backg.paste(ima2, (568, 4), ima2)
+                emoji = Image.open(BytesIO(emoji_bytes)).convert('RGBA')
+                emoji = emoji.resize((71, 71))
+                backg.paste(emoji, (203, 86), emoji)
+                backg.paste(emoji, (411, 131), emoji)
+                b = BytesIO()
+                backg.save(b, format="png", optimize=True, quality=25)
+                b.seek(0)
+                file = discord.File(fp=b, filename="audacity.png")
+                return file
+
+            file = await loop.run_in_executor(None, generate)
+            return await ctx.send(file=file)
         if num is None:
             num = 1
         if num < 1:
@@ -251,6 +296,7 @@ class ItemGames(commands.Cog):
         if item is None:
             return await ctx.send("You need to specify the item you want to know about.")
         itemname = await self.get_item_name(item)
+        print(itemname)
         if itemname is None:
             return await ctx.send(f"There is no item named `{item}`.")
         itemdata = await self.client.pool_pg.fetchrow("SELECT * FROM iteminfo WHERE name = $1", itemname)
