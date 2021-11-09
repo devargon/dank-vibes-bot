@@ -4,6 +4,7 @@ from utils import checks
 import asyncio
 from PIL import Image, ImageFilter, ImageFont, ImageDraw
 from io import BytesIO
+import numpy as np
 
 class imgen(commands.Cog):
     def __init__(self, client):
@@ -95,3 +96,35 @@ class imgen(commands.Cog):
 
         file = await loop.run_in_executor(None, generate)
         await ctx.send(file=file)
+
+    @checks.requires_roles()
+    @commands.command(name='annoy')
+    async def annoy(self, ctx, member: discord.Member = None):
+        """
+        PLS STOP DMING ME
+        """
+        if member is None:
+            return await ctx.send("mention someone lol")
+        loop = asyncio.get_event_loop()
+        member_avatar = await member.display_avatar.with_format('png').read()
+        def generate():
+            base = Image.open("assets/annoybase.jpg")
+            avatar = Image.open(BytesIO(member_avatar)).convert('RGB')
+            avatar = avatar.resize((96, 96))
+            lum_img = Image.new('L', [96, 96], 0)
+            draw = ImageDraw.Draw(lum_img)
+            draw.pieslice([(0, 0), (96, 96)], 0, 360, fill=255, outline="white")
+            img_arr = np.array(avatar)
+            lum_img_arr = np.array(lum_img)
+            final_img_arr = np.dstack((img_arr, lum_img_arr))
+            new_ava = Image.fromarray(final_img_arr)
+            base.paste(new_ava, (24, 164), new_ava)
+            ping = Image.open('assets/ping.png')
+            base.paste(ping, (52, 220), ping)
+            b = BytesIO()
+            base.save(b, format="png", optimize=True, quality=25)
+            b.seek(0)
+            file = discord.File(fp=b, filename="STOPDMINGME.png")
+            return file
+        file = await loop.run_in_executor(None, generate)
+        await ctx.send(f"{member.display_name} STOP DMING 🤬🤬🤬", file=file)
