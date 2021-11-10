@@ -195,10 +195,10 @@ class OwO(commands.Cog, name='owo'):
                     await asyncio.sleep(0.1)
 
     @daily_owo_reset.before_loop
-    async def wait_until_7am(self):
+    async def wait_until_8am(self):
         await self.client.wait_until_ready()
         now = discord.utils.utcnow()
-        next_run = now.replace(hour=7, minute=0, second=0)
+        next_run = now.replace(hour=8, minute=0, second=0)
         if next_run < now:
             next_run += timedelta(days=1)
         await discord.utils.sleep_until(next_run)
