@@ -174,6 +174,9 @@ class ItemGames(commands.Cog):
     @checks.has_permissions_or_role(administrator=True)
     @commands.group(name="inventory", aliases=['inv'], invoke_without_command=True)
     async def inventory(self, ctx, member: discord.Member = None):
+        """
+        Check out your inventory in Dank Vibes Bot!
+        """
         if member is None:
             member = ctx.author
         result = await self.client.pool_pg.fetchrow("SELECT * FROM inventories WHERE user_id = $1", member.id)
@@ -205,6 +208,9 @@ class ItemGames(commands.Cog):
     @checks.has_permissions_or_role(administrator=True)
     @inventory.command(name="give", aliases=["g", 'share'])
     async def item_give(self, ctx, member: discord.Member = None, item: str = None, num: int = None):
+        """
+        Share some of your items with someone! During events, this command may not work for certain items.
+        """
         if member is None:
             return await ctx.send("Specify a member to give items.")
         if item is None:
@@ -267,6 +273,9 @@ class ItemGames(commands.Cog):
     @checks.dev()
     @inventory.command(name="edit", aliases=["devgive", "dg"])
     async def item_edit(self, ctx, member: discord.Member = None, item: str = None, num:int = None):
+        """
+        Developer Utilities - Edit the item count of a user.
+        """
         if member is None:
             return await ctx.send("Specify a member to give items.")
         if item is None:
@@ -289,6 +298,9 @@ class ItemGames(commands.Cog):
 
     @inventory.command(name="info", aliases=['item'])
     async def item_info(self, ctx, item: str = None):
+        """
+        Know more about an item.
+        """
         if item is None:
             return await ctx.send("You need to specify the item you want to know about.")
         itemname = await self.get_item_name(item)
@@ -313,28 +325,14 @@ class ItemGames(commands.Cog):
         """
         Shows the Skull leaderboard for Dank Vibes.
         """
-        await ctx.send("This command is deprecated and will be removed in a later update. Use `dv.itemlb` instead!")
-        async with ctx.typing():
-            arg = "total 5" if arg is None else arg
-            number = [int(i) for i in arg.split() if i.isdigit()]
-            top = 5 if len(number) == 0 else number[0]
-            title = "Skull Leaderboard 🎖"
-            query = "SELECT user_id, skull FROM inventories WHERE skull IS NOT null ORDER BY skull DESC LIMIT $1"
-            leaderboard = await self.get_leaderboard(ctx.guild, query, top)
-            if isinstance(leaderboard, discord.Embed):
-                leaderboard.title = title
-                return await ctx.send(embed=leaderboard)
-            else:
-                pages = CustomMenu(source=ItemLeaderboard(leaderboard, title), clear_reactions_after=True, timeout=60)
-                return await pages.start(ctx)
+        await ctx.send("This command is deprecated. Use `dv.itemlb` instead!")
 
 
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name='itemleaderboard', aliases=['ilb', 'itemlb'])
     async def itemleaderboard(self, ctx, *, item: str = None):
         """
-        Shows the Skull leaderboard for Dank Vibes.
-        You can specify how many members you want to see on the leaderboard.
+        Shows the leaderboard for a certain item!
         """
         if item is None:
             return await ctx.send("You need to specify the item you want to know about.")
