@@ -97,7 +97,7 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("Wait until the lockdown from `dv.lockgen` is over.")
         if member is None:
-            if ctx.message.mentions > 0:
+            if len(ctx.message.mentions) > 0:
                 member = ctx.message.mentions[0]
             else:
                 ctx.command.reset_cooldown(ctx)
