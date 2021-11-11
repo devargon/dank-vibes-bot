@@ -260,6 +260,7 @@ class games(commands.Cog):
                 self.stop()
         view = consent(member)
         self.nickbets.append(member.id)
+        self.nickbets.append(ctx.author.id)
         embed = discord.Embed(title=f"Hey {member.name}!", description=f"Would you like to have a nick bet with {ctx.author.name}? {f'The loser will have their nickname frozen for **{humanize_timedelta(seconds=duration)} **.' if duration is not None else ''}", color=self.client.embed_color)
         msg = await ctx.send(member.mention, embed=embed, view=view)
         view.response = msg
@@ -268,10 +269,12 @@ class games(commands.Cog):
             ctx.command.reset_cooldown(ctx)
             embed.color, embed.title = discord.Color.red(), "You didn't respond in time."
             self.nickbets.remove(member.id)
+            self.nickbets.remove(ctx.author.id)
             return await msg.edit(embed=embed)
         elif view.returning_value == False:
             ctx.command.reset_cooldown(ctx)
             self.nickbets.remove(member.id)
+            self.nickbets.remove(ctx.author.id)
             embed.color, embed.title = discord.Color.red(), "You declined the nick bet :("
             return await msg.edit(embed=embed)
         embed.color, embed.title, embed.description = discord.Color.green(), "You accepted the nick bet. Yay!", "Remember, all nicknames **must follow server rules**. That includes the **NSFW rule**.\nFailure to follow these rules will result in a blacklist from the bot, or getting the \"No Tags\" role."
@@ -290,11 +293,13 @@ class games(commands.Cog):
             except asyncio.TimeoutError:
                 ctx.command.reset_cooldown(ctx)
                 self.nickbets.remove(member.id)
+                self.nickbets.remove(ctx.author.id)
                 return await ctx.send(f"{ctx.author.name} didn't respond in time, hence this nick bet is cancelled.")
             else:
                 if membernickmsg.content.lower() == 'cancel':
                     ctx.command.reset_cooldown(ctx)
                     self.nickbets.remove(member.id)
+                    self.nickbets.remove(ctx.author.id)
                     return await ctx.send("This nick bet is cancelled.")
                 if await self.client.check_blacklisted_content(membernickmsg.content):
                     error = "you can't use blacklisted words."
@@ -314,11 +319,13 @@ class games(commands.Cog):
             except asyncio.TimeoutError:
                 ctx.command.reset_cooldown(ctx)
                 self.nickbets.remove(member.id)
+                self.nickbets.remove(ctx.author.id)
                 return await ctx.send(f"{member.mention} didn't respond in time, hence this nick bet is cancelled.")
             else:
                 if authornickmsg.content.lower() == 'cancel':
                     ctx.command.reset_cooldown(ctx)
                     self.nickbets.remove(member.id)
+                    self.nickbets.remove(ctx.author.id)
                     return await ctx.send("This nick bet is cancelled.")
                 if await self.client.check_blacklisted_content(authornickmsg.content):
                     error = "you can't use blacklisted words."
@@ -371,6 +378,7 @@ class games(commands.Cog):
             embed.color, embed.description = discord.Color.red(), "You didn't respond in time."
             ctx.command.reset_cooldown(ctx)
             self.nickbets.remove(member.id)
+            self.nickbets.remove(ctx.author.id)
             return await coinpickmsg.edit(embed=embed)
         coinflipembed = discord.Embed(title=f"{member.name} chose {'Heads! <:DVB_CoinHead:905400213785690172>' if coinpickview.returning_value == True else 'Tails! <:DVB_CoinTail:905400213676638279>'}", description="I'm flipping the coin...", color=self.client.embed_color).set_image(url="https://cdn.nogra.me/core/coinflip.gif")
         coinflipmsg = await ctx.send(embed=coinflipembed)
