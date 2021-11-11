@@ -246,7 +246,7 @@ class Admin(BetterSelfroles, Joining, Sticky, ServerRule, commands.Cog, name='ad
         if active_blacklist is None:
             return await ctx.send(f"{user.mention} is currently not blacklisted.")
         await self.client.pool_pg.execute("UPDATE blacklist SET blacklist_active = $1 WHERE user_id = $2 and incident_id = $3", False, user.id, active_blacklist.get('incident_id'))
-        embed = discord.Embed(title=f"{user} is now blacklisted.", color=discord.Color.green())
+        embed = discord.Embed(title=f"{user} is now unblacklisted.", color=discord.Color.green())
         logembed = discord.Embed(title=f"Bot Unblacklist: Case {active_blacklist.get('incident_id')}", description=f"**Reason:** Manually unblacklisted by {ctx.author}\n**Responsible Moderator**: {ctx.author} ({ctx.author.id})", color=discord.Color.green())
         logembed.set_author(name=f"{user} ({user.id})", icon_url=user.display_avatar.url)
         await ctx.send(embed=embed)
