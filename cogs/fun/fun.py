@@ -59,6 +59,7 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
         self.karutaevent_isrunning = False
         self.planning_numberevent = []
         self.numberevent_channels = []
+        self.nickbets = []
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
