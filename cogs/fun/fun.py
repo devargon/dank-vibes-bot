@@ -17,6 +17,7 @@ import os
 import aiohttp
 from utils.errors import ArgumentBaseError
 from .games import games
+from .color import color
 from typing import Optional
 
 blacklisted_words = ['N-renoteQ3R', 'n.i.g.g.e.r', 'n i g a', 'nygga', 'niuggers', 'nigger',
@@ -39,7 +40,7 @@ blacklisted_words = ['N-renoteQ3R', 'n.i.g.g.e.r', 'n i g a', 'nygga', 'niuggers
                      'neeger', 'nighha', 'n1gg@', 'n!g3r', 'nig', 'nigg', 'anigame']
 
 
-class Fun(games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
+class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
     """
     Fun commands
     """
@@ -95,8 +96,11 @@ class Fun(games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("Wait until the lockdown from `dv.lockgen` is over.")
         if member is None:
-            ctx.command.reset_cooldown(ctx)
-            return await ctx.send(f"Here we have a human AKA {ctx.author} showing you that they are able to dumbfight you, although they could've just done it already. <:dv_pepeHahaUSuckOwO:837653798313918475>\nThat being said, {ctx.author.mention} you need to tell me who you want to dumbfight.")
+            if ctx.message.mentions > 0:
+                member = ctx.message.mentions[0]
+            else:
+                ctx.command.reset_cooldown(ctx)
+                return await ctx.send(f"Here we have a human AKA {ctx.author.mention} showing you that they are able to dumbfight you, although they could've just done it already. <:dv_pepeHahaUSuckOwO:837653798313918475>")
         if ctx.channel.id in self.mutedusers and member.id in self.mutedusers[ctx.channel.id]:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"**{member.name}** is currently muted in a dumbfight. Wait a few moments before using this command.")
@@ -394,7 +398,6 @@ class Fun(games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
                     has_warned = True
         return await ctx.send(f"{member.mention}, your nickname has been restored... until someone scrambles your nickname again.")
 
-    @checks.is_not_blacklisted()
     @checks.requires_roles()
     @commands.cooldown(1200, 1, commands.BucketType.user)
     @commands.command(name="chatchart")
