@@ -21,3 +21,4 @@ databases/votetracker.db
 temp
 chromedriver.exe
 test.py
+venv
