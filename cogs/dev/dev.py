@@ -485,9 +485,9 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
         if type(inquery) == int:
             result = await self.client.pool_pg.fetchrow("SELECT * FROM suggestions WHERE suggestion_id = $1", inquery)
             if result is not None:
-                member = ctx.guild.get_member(result.get('user_id'))
+                member = self.client.get_user(result.get('user_id'))
                 embed = discord.Embed(title=f"Suggestion {inquery}", description = result.get('suggestion'), color=self.client.embed_color)
-                embed.add_field(name="Suggested by", value=f"{member} ({member.id})" if member else result.get('user_id', inline=True))
+                embed.add_field(name="Suggested by", value=f"{member} ({member.id})" if member else result.get('user_id'), inline=True)
                 embed.add_field(name="Status", value="Closed" if result.get('finish') else "Open", inline=True)
                 if result.get('finish'):
                     response = await self.client.pool_pg.fetchrow("SELECT * FROM suggestion_response WHERE suggestion_id = $1", inquery)
