@@ -25,8 +25,6 @@ class NicknamePersistentView(discord.ui.View):
         else:
             authordetails = f"{nicktarget} ({nicktarget.id})"
         ID, nickname, approver = nickname_request.get('id'), nickname_request.get('nickname'), interaction.guild.get_member(interaction.user.id)
-        if not approver.guild_permissions.manage_roles:
-            return await interaction.response.send_message("You don't have the required permissions to approve this nickname.", ephemeral=True)
         if nicktarget is None:
             output = (1, "Failed: Member has left the server",)
         else:
@@ -79,8 +77,6 @@ class NicknamePersistentView(discord.ui.View):
             authordetails = f"{nicktarget} ({nicktarget.id})"
         ID = nickname_request.get('id')
         approver = interaction.guild.get_member(interaction.user.id)
-        if not approver.guild_permissions.manage_roles:
-            return await interaction.response.send_message("You don't have the required permissions to approve this nickname.", ephemeral=True)
         if nicktarget is None:
             output = (1, "Failed: Member has left the server",)
         else:
