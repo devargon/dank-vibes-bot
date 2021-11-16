@@ -8,6 +8,7 @@ from utils.buttons import confirm
 from utils.format import stringtime_duration
 from utils.time import humanize_timedelta
 from time import time
+from utils.errors import NicknameIsManaged
 
 
 class games(commands.Cog):
@@ -203,12 +204,9 @@ class games(commands.Cog):
         if member.id in self.nickbets:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("That person is currently nickbetting with someone else.")
-        if member in self.client.get_cog('fun').scrambledusers:
-            ctx.command.reset_cooldown(ctx)
-            return await ctx.send(f"{member}'s nickname is currently scrambled. Wait until their nickname is unscrambled before placing a nick bet with them.")
         if await self.client.pool_pg.fetchval("SELECT user_id FROM freezenick WHERE user_id = $1", member.id):
             ctx.command.reset_cooldown(ctx)
-            return await ctx.send(f"{member}'s nickname is currently frozen. Wait until their nickname is unfrozen before placing a nick bet with them.")
+            raise NicknameIsManaged()
         if await self.client.check_blacklisted_user(member):
             ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"{member} is currently blacklisted from using the bot. You cannot have a nick bet with them.")

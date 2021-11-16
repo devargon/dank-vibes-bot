@@ -15,7 +15,7 @@ from typing import Union
 import matplotlib.pyplot as plt
 import os
 import aiohttp
-from utils.errors import ArgumentBaseError
+from utils.errors import ArgumentBaseError, NicknameIsManaged
 from .games import games
 from .color import color
 from typing import Optional
@@ -339,13 +339,10 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("I ain't bullying bots.")
         if await self.client.pool_pg.fetchval("SELECT user_id FROM freezenick WHERE user_id = $1", member.id):
-            return await ctx.send(f"{member}'s nickname is currently frozen (either by a moderator or due to a nick bet), hence you cannot scramble their nickname.")
+            raise NicknameIsManaged()
         if member == ctx.author:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("Why change your own nickname when you can scramble others' nicknames?")
-        if member in self.scrambledusers:
-            ctx.command.reset_cooldown(ctx)
-            return await ctx.send(f"**{member.name}**'s nickname is currently scrambled. Use this command when their nickname has returned to normal.")
         member_name = member.display_name
         if len(member_name) == 1:
             if len(member.name) != 1:
@@ -370,34 +367,13 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
         if new_name is None:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"I can't scramble **{member.name}**'s name as their scrambled name will still be the same/the resulting name is blacklisted.")
+        await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason) VALUES($1, $2, $3, $4, $5, $6)", member.id, ctx.guild.id, new_name, member_name, round(time.time()) + 180, f"[Scrambled nickname]({ctx.message.jump_url})")
         try:
             await member.edit(nick=new_name, reason=f"Nickname scrambled by {ctx.author}")
-            self.scrambledusers.append(member)
         except discord.Forbidden:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("Sorry! I am unable to change that user's name, probably due to role hierachy or missing permissions.")
-        await ctx.send(f"{member}'s name is now {new_name}!\n{member.mention}, your nickname/username has been scrambled by **{ctx.author.name}**. It will automatically revert to your previous nickname/username after 3 minutes. If you try to change your nickname, the timer will reset and you'll have to wait 3 minutes again. ")
-        def check(payload_before, payload_after):
-            return payload_before == member and payload_before.display_name == new_name and payload_after.display_name != new_name
-        active = True
-        has_warned = False
-        while active:
-            try:
-                await self.client.wait_for("member_update", check = check, timeout=180)
-            except asyncio.TimeoutError:
-                try:
-                    await member.edit(nick=member_name, reason=f"Nickname restored from scramble command invoked by {ctx.author}")
-                    active = False
-                    self.scrambledusers.remove(member)
-                except:
-                    active = False
-                    self.scrambledusers.remove(member)
-            else:
-                await member.edit(nick=new_name, reason=f"User tried to change their nickname despite scramble command invoked by {ctx.author}")
-                if has_warned == False:
-                    await ctx.send(f"{member.mention} how bad! You changed your nickname before the three minutes were up. The timer has reset and your scrambled nickname will still remain on you until 3 minutes are up.")
-                    has_warned = True
-        return await ctx.send(f"{member.mention}, your nickname has been restored... until someone scrambles your nickname again.")
+        await ctx.send(f"{member}'s name is now {new_name}!\n{member.mention}, your nickname/username has been scrambled by **{ctx.author.name}** and it is frozen for 3 minutes. It will automatically revert to your previous nickname/username after. ")
 
     @checks.requires_roles()
     @commands.cooldown(1200, 1, commands.BucketType.user)

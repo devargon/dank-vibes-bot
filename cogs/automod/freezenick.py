@@ -7,7 +7,7 @@ class Freezenick(commands.Cog):
         self.client = client
         self.freezenick.start()
 
-    @tasks.loop(seconds=30.0)
+    @tasks.loop(seconds=5.0)
     async def freezenick(self):
         await self.client.wait_until_ready()
         try:
