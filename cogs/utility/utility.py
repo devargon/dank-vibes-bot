@@ -308,7 +308,7 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
                                 um.append(idk)
                                 if 'stats' in content:
                                     stats = content['stats']
-                                    idk = f"<:Reply:871808167011549244> {plural(int(stats['additions'])):addition}, {plural(int(stats['deletions'])):deletions}"
+                                    idk = f"<:Reply:871808167011549244> {plural(int(stats['additions'])):addition}, {plural(int(stats['deletions'])):deletion}"
                                     um.append(idk)
                                 um.append("\n__**Files Changed**__")
                                 if 'files' in content and len(content['files']) > 0:
