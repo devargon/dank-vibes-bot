@@ -33,5 +33,5 @@ class InvalidDatabase(ArgumentBaseError):
         super().__init__(message=f"**{arg}** is not a valid database.", **kwargs)
 
 class NicknameIsManaged(ArgumentBaseError):
-    def __init__(self, arg, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(message=f"The user you're interacting with has their nickname managed/frozen by the bot.", **kwargs)
