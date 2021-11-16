@@ -36,9 +36,9 @@ Uncheck the "Public Bot" checkbox if you only want to allow yourself to invite t
    TOKEN=Your Discord bot's token
    HOST=127.0.0.1 (if you're testing your bot with a local database)
    DATABASE=The name of the database in the PostgreSQL server.
-   USER=The username you set for the bot to access the PostgreSQL server.
+   dbUSER=The username you set for the bot to access the PostgreSQL server.
    dbPASSWORD=The password you set for the bot to access the PostgreSQL server.
-   dbGITHUBPAT = The GitHub personal access token you generated in step 5
+   GITHUBPAT = The GitHub personal access token you generated in step 5
    ```
    It should look something like this: ![](https://cdn.nogra.me/screenshots/notepad%2B%2B_VtdIwXXZ7t.png)
 9. Start the bot.
