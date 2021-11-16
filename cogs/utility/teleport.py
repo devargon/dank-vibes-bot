@@ -3,6 +3,7 @@ import discord
 from utils import checks
 from discord.ext import commands, menus
 from utils.menus import CustomMenu
+import asyncio
 
 class get_checkpoint_pages(menus.ListPageSource):
     def __init__(self, data, author):
@@ -32,6 +33,8 @@ class Teleport(commands.Cog):
             return await ctx.send("I don't have any channel saved for that checkpoint.")
         channel = f"<#{channel_id}>"
         await ctx.send(channel, delete_after=5)
+        await asyncio.sleep(5.0)
+        await ctx.message.delete()
 
     @checks.requires_roles()
     @teleport.command(name='add', usage="<checkpoint_name> <channel>")
