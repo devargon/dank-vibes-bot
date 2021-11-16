@@ -382,10 +382,31 @@ class games(commands.Cog):
             return await coinpickmsg.edit(embed=embed)
         coinflipembed = discord.Embed(title=f"{member.name} chose {'Heads! <:DVB_CoinHead:905400213785690172>' if coinpickview.returning_value == True else 'Tails! <:DVB_CoinTail:905400213676638279>'}", description="I'm flipping the coin...", color=self.client.embed_color).set_image(url="https://cdn.nogra.me/core/coinflip.gif")
         coinflipmsg = await ctx.send(embed=coinflipembed)
-        heads_or_tails = random.choice([True, False])
-        loser = None
-        nick = None
+        heads_or_tails = random.choice([True, True, True, True, True, True, False, False, False, False, False, False, None])
         await asyncio.sleep(5.0)
+        if heads_or_tails == None:
+            try:
+                old_nick = ctx.author.display_name
+                await ctx.author.edit(nick=authornick)
+                if duration and duration > 0:
+                    await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason) VALUES($1, $2, $3, $4, $5, $6)", ctx.author.id, ctx.guild.id, authornick, old_nick, round(time()) + duration, f"[Nick bet]({ctx.message.jump_url})")
+            except discord.HTTPException:
+                return await ctx.send(f"I couldn't change some nicknames due to permission issues.")
+            try:
+                old_nick = member.display_name
+                await member.edit(nick=membernick)
+                if duration and duration > 0:
+                    await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason) VALUES($1, $2, $3, $4, $5, $6)", member.id, ctx.guild.id, membernick, old_nick, round(time()) + duration, f"[Nick bet]({ctx.message.jump_url})")
+            except discord.HTTPException:
+                return await ctx.send(f"I couldn't change some nicknames due to permission issues.")
+            await coinflipmsg.delete()
+            coinflipembed.description = "Oh what just happened...\nLooks like the coin landed on its edge! I guess both of you lost ¯\_(ツ)_/¯"
+            coinflipembed.set_image(url=discord.Embed.Empty)
+            coinflipembed.set_thumbnail(url="https://preview.redd.it/x4eb8v0dvsv31.png?auto=webp&s=849a80f279ac59060e2f0bdc35b9c30723bdb745")
+            await ctx.send(embed=coinflipembed)
+            if duration and duration > 0:
+                await ctx.send(f"Both {ctx.author.name} and {member.name}'s nicknames have been frozen to their respective chosen nicknames for **{humanize_timedelta(seconds=duration)}**. Their nicknames will be unfrozen <t:{round(time())+duration}:R>.")
+            return
         if heads_or_tails == True:
             coinflipembed.description = "The coin landed on Heads!! <:DVB_CoinHead:905400213785690172>"
             coinflipembed.set_image(url="https://cdn.nogra.me/core/coinflip_heads.gif")
