@@ -353,6 +353,8 @@ class BetterSelfroles(commands.Cog):
     async def on_ready(self):
         selfrolemessages = await self.client.pool_pg.fetchrow("SELECT age, gender, location, minigames, event_pings, dank_pings, server_pings, bot_roles, random_color, colors, specialcolors, boostping, vipheist FROM selfrolemessages WHERE guild_id = $1", 595457764935991326)
         categories = ['age', 'gender', 'location', 'minigames', 'event_pings', 'dank_pings', 'server_pings', 'bot_roles', 'random_color', 'colors', 'specialcolors', 'boostping', 'vipheist']
+        if selfrolemessages == None:
+            return
         if not self.selfroleviews_added:
             if len(selfrolemessages) == 0:
                 self.selfroleviews_added = True
