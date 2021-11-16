@@ -87,6 +87,69 @@ class dvvt(commands.AutoShardedBot):
         await self.wait_until_ready()
 
     async def on_ready(self):
+        all_tables = ['prefixes', 'dankreminders', 'stats', 'nicknames', 'channelconfigs', 'dmrequestslog',
+                      'dumbfightlog', 'joinmessages', 'dmrequests', 'messagelog', 'lockdownmsgs',
+                      'remindersettings', 'inventories', 'iteminfo', 'tempweekly', 'rules', 'serverconfig',
+                      'owocurrent', 'owopast', 'temp', 'stickymessages', 'maintenance', 'teleport',
+                      'suggestion_response', 'suggestions', 'lockdownprofiles', 'grinderdata', 'messagemilestones',
+                      'viprolemessages', 'karutaeventconfig', 'autoreactions', 'owocount', 'milestones', 'rmpreference',
+                      'roleremove', 'votecount', 'cooldowns', 'selfrolemessages', 'devmode', 'blacklisted_words',
+                      'blacklist', 'freezenick']
+        tables = await self.pool_pg.fetch("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';")
+        tables = [i.get('table_name') for i in tables]
+        if tables is None:
+            pass
+        else:
+            missing_tables = []
+            for table in all_tables:
+                if table not in tables:
+                    missing_tables.append(table)
+            if len(missing_tables) == 0:
+                pass
+            else:
+                print("Some databases do not exist, creating them now...")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS autoreactions(guild_id bigint, trigger text, response text)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS blacklist(incident_id serial, user_id bigint, moderator_id bigint, blacklist_active boolean, time_until bigint, reason text)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS blacklisted_words(string text)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS channelconfigs(guild_id bigint NOT null PRIMARY KEY, nickname_channel_id bigint, dmchannel_id bigint)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS cooldowns(command_name text, member_id bigint, time bigint)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS dankreminders(member_id bigint, remindertype bigint, channel_id bigint, guild_id bigint, time bigint)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS devmode(user_id bigint, devmode boolean)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS dmrequests(id serial, member_id bigint, target_id bigint, dmcontent text, messageid bigint)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS dmrequestslog(id bigint, member_id bigint, target_id bigint, approver_id bigint, dmcontent text, status integer)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS dumbfightlog(invoker_id bigint, target_id bigint, did_win integer)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS freezenick(id serial, user_id bigint, guild_id bigint, nickname text, old_nickname text, time bigint, reason text)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS grinderdata(user_id bigint PRIMARY KEY, today bigint, past_week bigint, last_week bigint, past_month bigint, all_time bigint, last_dono_time bigint, last_dono_msg text)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS inventories(user_id bigint PRIMARY KEY, skull bigint, argonphallicobject bigint, llamaspit bigint, slicefrenzylesliecake bigint, wickedrusteze bigint)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS iteminfo(name text PRIMARY KEY, fullname text, description text, emoji text, image text)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS joinmessages(guild_id bigint PRIMARY KEY, channel_id bigint, plain_text text, embed_details text, delete_after integer)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS karutaeventconfig(channel_id text, percentage_chance real)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS lockdownmsgs(guild_id bigint, profile_name text, startmsg text, endmsg text)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS lockdownprofiles(guild_id bigint, profile_name text, channel_id bigint)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS maintenance(cog_name text PRIMARY KEY, message text, enabled boolean)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS messagelog(user_id bigint PRIMARY KEY, messagecount bigint)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS messagemilestones(messagecount integer, roleid bigint)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS milestones(votecount integer, roleid bigint)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS nicknames(id serial, member_id bigint PRIMARY KEY, nickname text, messageid bigint)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS owocount(member_id bigint PRIMARY KEY, daily_count integer, weekly_count integer, total_count integer, yesterday integer, last_week integer)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS owocurrent(member_id bigint PRIMARY KEY, daily_count integer, weekly_count integer, total_count integer)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS owopast(member_id bigint PRIMARY KEY, yesterday integer, last_week integer)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS prefixes(guild_id bigint PRIMARY KEY, prefix text)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS remindersettings(member_id bigint PRIMARY KEY, method integer, daily bigint, lottery bigint, work bigint, lifesaver bigint, apple integer, redeem integer, weekly integer, monthly integer, hunt integer, fish integer, dig integer, highlow integer, snakeeyes integer, search integer, crime integer, beg integer, dailybox integer, horseshoe integer, pizza integer, drop integer)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS rmpreference(member_id bigint PRIMARY KEY, rmtype integer)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS roleremove(member_id bigint PRIMARY KEY)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS rules(guild_id bigint, command text, role_id bigint, whitelist boolean)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS selfrolemessages(guild_id bigint, age bigint, gender bigint, location bigint, minigames bigint, event_pings bigint, dank_pings bigint, server_pings bigint, bot_roles bigint, random_color bigint, colors bigint, specialcolors bigint, boostping bigint, vipheist bigint)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS serverconfig(guild_id bigint, settings text, enabled boolean)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS stats(member_id bigint, remindertype integer, time bigint)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS stickmessages(guild_id bigint PRIMARY KEY, channel_id bigint, message_id bigint, type integer, message text)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS suggestion_response(suggestion_id integer, user_id bigint, response_id bigint, message_id bigint, message text)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS suggestions(suggestion_id serial, user_id bigint, finish boolean, response_id bigint, suggestion text)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS teleport(member_id bigint, checkpoint text, channel_id bigint)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS temp(member_id bigint PRIMARY KEY, daily_count integer, weekly_count integer, total_count integer, yesterday integer, last_week integer)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS tempweekly(member_id bigint PRIMARY KEY, yesterday integer, last_week integer)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS viprolemessages(guild_id bigint, colors bigint, vipcolors bigint, boostgaw bigint, vipheistping bigint)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS votecount(member_id bigint PRIMARY KEY, count integer)")
         print("Bot is ready")
 
     @property
