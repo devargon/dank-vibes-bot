@@ -17,6 +17,7 @@ import os
 import asyncio
 from utils.format import ordinal, comma_number, plural
 from utils import checks
+import os
 
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
@@ -232,7 +233,9 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
         embed = discord.Embed(title="<a:DVB_Loading:909997219644604447> Contacting the GitHub server...", color=self.client.embed_color)
         msg = await ctx.send(embed=embed)
         now = time.perf_counter()
-        headers = {'Authorization': 'token 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'}
+        token = f"token {os.getenv('GITHUBPAT')}"
+        headers = {'Authorization': token}
+        print(headers)
         async with aiohttp.ClientSession(headers=headers) as session:
             async with session.get("https://api.github.com/repos/argo0n/dank-vibes-bot") as r:
                 if r.status == 200:
