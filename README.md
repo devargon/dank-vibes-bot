@@ -18,6 +18,8 @@ This is the repository for the bot used in Dank Vibes, a Dank Memer partnered se
  - Dank Vibes Bot uses discord.py (2.0.0a) to make use of interaction features such as buttons.
  - Dank Vibes Bot uses PostgreSQL for all database needs.
 
+### Instructions
+
 1. Install PostgreSQL on your machine. You can do so with these guides for [Ubuntu](https://www.digitalocean.com/community/tutorials/how-to-install-postgresql-on-ubuntu-20-04-quickstart), and for [Windows and Mac](https://www.enterprisedb.com/docs/supported-open-source/postgresql/installer/02_installing_postgresql_with_the_graphical_installation_wizard/).
    - You can find download links for PostgreSQL installation [here](https://www.postgresql.org/download/).
 2. Using the terminal, run `git clone https://github.com/argo0n/dank-vibes-bot/` in your preferred directory to clone the bot's source code. 
