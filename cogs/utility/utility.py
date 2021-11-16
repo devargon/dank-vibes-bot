@@ -1,3 +1,5 @@
+import aiohttp
+import datetime
 import sys
 import time
 import discord
@@ -13,45 +15,7 @@ from utils.time import humanize_timedelta
 import psutil
 import os
 import asyncio
-
-footertext = {
-    752403154259148810: 'stinky !! 😤',
-    395020663116529674: 'diarhea human',
-    594959254369337345: 'Kannazumi',
-    602066975866355752: 'i\'m standing on thick ice',
-    542905463541465088: 'DiAri',
-    27409176946409543: 'funky',
-    650647680837484556: 'wow, the cleanest human has summoned me',
-    406748083377012746: 'jitu :)',
-    436720581501517824: 'clayde nice pfp',
-    493063931191885825: 'the nicest human on earth :3',
-    515725341910892555: 'no you are not getting su perms ven',
-    642318626044772362: 'sussy amogus impostor',
-    752242566493372539: 'ley please tell blu to be less stinky ty',
-    264019387009204224: 'DiAri',
-    424685275793457173: 'foxy',
-    740783485270229084: 'AKEH',
-    506320624377921546: 'Hi Jenn :)',
-    366069251137863681: 'bobbi :(',
-    560251854399733760: 'frenzy uwu :3',
-    392127809939570688: 'hi kathy :)',
-    697969807789654076: 'desteva uwu',
-    517115653623119913: 'dany :)',
-    689561648863772813: 'Kannazumi',
-    722202979532275752: 'the delete button is so close to the enter button',
-    695161675782815825: 'ann hiihihihihii',
-    592092580846632994: 'hey tanzil',
-    727409176946409543: 'jazyyyyyy',
-    663867896195186698: 'hello leslie :)',
-    267608116370079745: 'hey kate :))',
-    886598864965103727: 'azumi i hope you lose all your dumbfights',
-    722109586487640074: 'hello demon :))',
-    719890992723001354: 'mystic :(',
-    542447261658120221: 'bav you pro',
-    501319699167051777: 'hello ghosty :)',
-    391242096201302039: 'hello pacific',
-}
-from utils.format import ordinal
+from utils.format import ordinal, comma_number, plural
 from utils import checks
 
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
@@ -212,8 +176,6 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
         embed.add_field(name="Created at", value=channel.created_at.strftime("%a, %b %d, %Y") if channel.created_at is not None else 'Unknown')
         category = discord.utils.get(ctx.guild.categories, id=channel.category_id)
         embed.add_field(name="Under Category", value=category.name or "Unknown")
-        if ctx.author.id in footertext:
-            embed.set_footer(icon_url=ctx.guild.icon.url, text=footertext[ctx.author.id]) # you can remove this if you want idk
         await ctx.send(embed=embed)
 
     @checks.not_in_gen()
@@ -260,3 +222,104 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
         embed.set_author(name=f"{ctx.author.name}'s Cooldowns", icon_url=str(ctx.author.display_avatar.url))
         embed.set_footer(text=ctx.guild.name,  icon_url=str(ctx.guild.icon.url))
         await ctx.send(embed=embed)
+
+    @checks.dev()
+    @commands.command(name="github")
+    async def irdkwhatthisis(self, ctx):
+        """
+        Shows the link to the github repo.
+        """
+        embed = discord.Embed(title="<a:DVB_Loading:909997219644604447> Contacting the GitHub server...", color=self.client.embed_color)
+        msg = await ctx.send(embed=embed)
+        now = time.perf_counter()
+        headers = {'Authorization': 'token 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'}
+        async with aiohttp.ClientSession(headers=headers) as session:
+            async with session.get("https://api.github.com/repos/argo0n/dank-vibes-bot") as r:
+                if r.status == 200:
+                    data = await r.json()
+                    if "full_name" in data:
+                        embed.title = f"GitHub Repository: {data['full_name']}"
+                        if "html_url" in data:
+                            embed.url=data['html_url']
+                    else:
+                        embed.title = "Retrieving data failed."
+                        embed.description = "Data did not have a key for `full_name`."
+                        embed.color = discord.Color.red()
+                        return await msg.edit(embed=embed)
+                    if "description" in data:
+                        embed.description = data['description']
+                    if "owner" in data:
+                        if "login" in data['owner']:
+                            embed.add_field(name="🧑‍⚖️ Owner", value=f"[{data['owner']['login']}]({data['owner']['html_url']})", inline=True)
+                    if "size" in data:
+                        embed.add_field(name="💾 Size", value=f"{comma_number(data['size'])} KB", inline=True)
+                    if "visibility" in data:
+                        embed.add_field(name="🔒 Visibility", value=data['visibility'], inline=True)
+                    if "default_branch" in data:
+                        default_branch = data['default_branch']
+                    else:
+                        default_branch = None
+                else:
+                    embed.title = "Retrieving data failed."
+                    embed.description = f"GitHub did not return a 200 status code.\nStatus code: {r.status}"
+                    embed.color=discord.Color.red()
+                    return await msg.edit(embed=embed)
+            async with session.get("https://api.github.com/repos/argo0n/dank-vibes-bot/contributors") as r:
+                if r.status == 200:
+                    data = await r.json()
+                    if len(data) > 0:
+                        embed.add_field(name="🧑‍💻 Contributors", value="\n".join([f"[{contributor['login']}]({contributor['html_url']})" for contributor in data]), inline=True)
+                else:
+                    embed.add_field(name="🧑‍💻 Contributors", value=f"GitHub did not return a 200 status code.\nStatus code: {r.status}", inline=True)
+            async with session.get("https://api.github.com/repos/argo0n/dank-vibes-bot/branches") as r:
+                if r.status == 200:
+                    data = await r.json()
+                    if len(data) > 0:
+                        branches = [branch['name'] for branch in data]
+                        formatted_branches = []
+                        for branch in branches:
+                            if branch == default_branch:
+                                formatted_branches.append(f"**{branch}**")
+                            else:
+                                formatted_branches.append(branch)
+                        embed.add_field(name="📂 Branches", value="\n".join(formatted_branches), inline=True)
+                else:
+                    embed.add_field(name="📂 Branches", value=f"GitHub did not return a 200 status code.\nStatus code: {r.status}", inline=True)
+                embed.add_field(name="🛠️ Last commit", value="<a:DVB_Loading:909997219644604447> Contacting the GitHub server...", inline=False)
+            await msg.edit(content="Initial data retrieved in `{}`ms".format(round((time.perf_counter() - now) * 1000)), embed=embed)
+            async with session.get("https://api.github.com/repos/argo0n/dank-vibes-bot/commits?page=1&per_page=1") as r:
+                content = await r.json()
+                embed.remove_field(-1)
+                if r.status == 200:
+                    if len(content) > 0:
+                        async with session.get(content[0]['url']) as r:
+                            if r.status == 200:
+                                content = await r.json()
+                                sha = content['sha']
+                                um = [f"[`{sha[:7]}`]({content['html_url']}) [{content['commit']['message']}]({content['html_url']})"]
+                                idk = "<:ReplyCont:871807889587707976> **Commited by:** " + content['commit']['author']['name']
+                                um.append(idk)
+                                date = datetime.datetime.strptime(content['commit']['author']['date'], "%Y-%m-%dT%H:%M:%SZ")
+                                date = date.strftime("%d %b %Y, %I:%M:%S %p")
+                                idk = "<:ReplyCont:871807889587707976> **At: ** " + date
+                                um.append(idk)
+                                if 'stats' in content:
+                                    stats = content['stats']
+                                    idk = f"<:Reply:871808167011549244> {plural(int(stats['additions'])):addition}, {plural(int(stats['deletions'])):deletions}"
+                                    um.append(idk)
+                                um.append("\n__**Files Changed**__")
+                                if 'files' in content and len(content['files']) > 0:
+                                    files = content['files']
+                                    for file in files:
+                                        idk = f"[{file['filename']}]({file['blob_url']}) <:DVB_plus:910010210310041630> {file['additions']}, <:DVB_minus:910010210310057994> {file['deletions']}"
+                                        um.append(idk)
+                                else:
+                                    um.append("No files changed.")
+                            else:
+                                um = ["GitHub did not return a 200 status code.\nStatus code: {r.status}"]
+                    else:
+                        um = ["GitHub did not return any commits."]
+                    embed.add_field(name="🛠️ Last commit", value="\n".join(um), inline=False)
+                else:
+                    embed.add_field(name="🛠️ Last commit", value=f"GitHub did not return a 200 status code.\nStatus code: {r.status}", inline=False)
+                await msg.edit(content="All retrieved in `{}`ms".format(round((time.perf_counter() - now) * 1000)), embed=embed)
