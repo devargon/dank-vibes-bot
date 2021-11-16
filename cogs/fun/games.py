@@ -187,7 +187,7 @@ class games(commands.Cog):
     @checks.requires_roles()
     @checks.is_not_blacklisted()
     @commands.cooldown(1, 300, commands.BucketType.user)
-    @commands.command(name="nickbet")
+    @commands.command(name="nickbet", aliases = ['nb'])
     async def nickbet(self, ctx, member: discord.Member = None, duration: str = None):
         """
         Challenge your friend to a nick bet! Both of you will choose a nickname for one another, and one of you will choose a side of the coin.
