@@ -30,8 +30,8 @@ load_dotenv('credentials.env')
 token = os.getenv('TOKEN')
 host = os.getenv('HOST') if os.name == "nt" else '127.0.0.1'
 database = os.getenv('DATABASE')
-user = os.getenv('USER') if os.name == 'nt' else 'dankvibes'
-password = os.getenv('PASSWORD') if os.name == 'nt' else 'Qwerty12345'
+user = os.getenv('dbUSER') if os.name == 'nt' else 'dankvibes'
+password = os.getenv('dbPASSWORD') if os.name == 'nt' else 'Qwerty12345'
 
 
 intents = discord.Intents(guilds = True, members = True, presences = True, messages = True, reactions = True, emojis = True, invites = True, voice_states = True)
