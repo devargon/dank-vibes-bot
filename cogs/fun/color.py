@@ -12,7 +12,7 @@ class ColorDisplay(menus.ListPageSource):
         super().__init__(entries, per_page=1)
 
     async def format_page(self, menu, entries):
-        embed = discord.Embed(title=self.title, description=entries[0], color = 0x57F0F0, timestamp=discord.utils.utcnow())
+        embed = discord.Embed(title=self.title, description=entries[0], color = entries[2], timestamp=discord.utils.utcnow())
         embed.set_thumbnail(url=entries[1])
         embed.set_image(url=self.avatar)
         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
@@ -42,7 +42,7 @@ class color(commands.Cog):
             hexcode = rgb_to_hex(color)
             hex_int = int(hexcode, 16)
             hex_int = hex_int + 0x200
-            messagecontents.append((f"HEX: `{hexcode}`\nRGB: `{color}`\nINT: `{int(hex_int)}`", f"https://api.alexflipnote.dev/color/image/{hexcode}"))
+            messagecontents.append((f"HEX: `{hexcode}`\nRGB: `{color}`\nINT: `{int(hex_int)}`", f"https://api.alexflipnote.dev/color/image/{hexcode}", int(hex_int)))
         title = f"{member.name}'s Profile Picture Color"
         pages = CustomMenu(source=ColorDisplay(messagecontents, title, member.display_avatar.url), clear_reactions_after=True, timeout=60)
         return await pages.start(ctx)
