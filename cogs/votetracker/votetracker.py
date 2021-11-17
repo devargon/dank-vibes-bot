@@ -8,7 +8,7 @@ import datetime
 from PIL import ImageFont, Image, ImageDraw
 from utils.time import humanize_timedelta
 from discord.ext import commands, tasks
-from utils.format import print_exception, ordinal
+from utils.format import print_exception, ordinal, plural
 from io import BytesIO
 from utils.buttons import *
 from utils import checks
@@ -72,34 +72,14 @@ class VoteTracker(commands.Cog, name='votetracker'):
     def __init__(self, client):
         self.client = client
         self.description = "Vote tracker commands"
-        self.vdankster.start()
         self.reminders.start()
         self.leaderboardloop.start()
         self.client.topgg_webhook = topgg.WebhookManager(client).dsl_webhook("/webhook", "ABCDE")
         self.client.topgg_webhook.run(5000)
 
     def cog_unload(self):
-        self.vdankster.stop()
         self.reminders.stop()
         self.leaderboardloop.stop()
-
-    @tasks.loop(seconds=5.0) # this is the looping task that will remove the Vibing Dankster role from the person.
-    async def vdankster(self):
-        await self.client.wait_until_ready()
-        timenow = round(time.time()) # Gets the time now
-        result = await self.client.pool_pg.fetch("SELECT * FROM roleremove WHERE roletime < $1", timenow)
-        if len(result) == 0:
-            return
-        for row in result: #individually iterates through the list of people who have voted for dv more than 12 hours ago
-            guild = self.client.get_guild(guildid)
-            member = guild.get_member(row.get('member_id'))
-            role = guild.get_role(vdanksterid)
-            if guild is not None and member is not None and role is not None: #if a member leaves, it won't break this function
-                try:
-                    await member.remove_roles(role, reason="24 hours passed since voting") #removes the vibing dankster role
-                except discord.Forbidden:
-                    pass
-            await self.client.pool_pg.execute("DELETE FROM roleremove WHERE member_id = $1 and rmtime = $2 and roletime = $3",row.get('member_id'), row.get('rmtime'), row.get('roletime')) # Removes the member from the database, but it is not published yet so it will not be overwritten
 
     @tasks.loop(seconds=5.0) # this is the looping task that will remind people to vote in 12 hours.
     async def reminders(self):
@@ -208,14 +188,19 @@ class VoteTracker(commands.Cog, name='votetracker'):
             await self.client.pool_pg.execute("UPDATE votecount SET count = $1 where member_id = $2", votecount, userid)
         try:
             await member.add_roles(vdankster, reason="Voted for the server")
-            rolesummary = f"{member.name}#{member.discriminator} has received the role {vdankster.mention} for 24 hours."  # this is over here so that if the role is added properly, it will be shown in the embed
+            rolesummary = f"You've received the role {vdankster.mention} for 24 hours."  # this is over here so that if the role is added properly, it will be shown in the embed
         except discord.Forbidden:
             pass # If it can't add the role, it won't be in the summary of roles added
-        existing_remind_remove = await self.client.pool_pg.fetchrow("SELECT * from roleremove where member_id = $1", userid)
-        if existing_remind_remove is None:
+        existing_remind = await self.client.pool_pg.fetchrow("SELECT * from roleremove where member_id = $1", userid)
+        if existing_remind is None:
             await self.client.pool_pg.execute("INSERT INTO roleremove VALUES($1, $2, $3)", userid, timetoremind, timetoremove)
         else:
             await self.client.pool_pg.execute("UPDATE roleremove SET rmtime = $1, roletime = $2 WHERE member_id = $3", timetoremind, timetoremove, userid)
+        existing_remove = await self.client.pool_pg.fetchrow("SELECT * FROM timedrole WHERE member_id = $1 and role_id = $2", userid, vdanksterid)
+        if existing_remove is None:
+            await self.client.pool_pg.execute("INSERT INTO timedrole VALUES($1, $2, $3, $4)", userid, guildid, vdanksterid, timetoremove)
+        else:
+            await self.client.pool_pg.execute("UPDATE timedrole SET time = $1 WHERE member_id = $2 and role_id = $3", timetoremove, userid, vdanksterid)
         milestones = await self.client.pool_pg.fetch("SELECT * FROM milestones")
         if len(milestones) != 0: # there are settings for milestones
             for milestone in milestones:
@@ -227,12 +212,10 @@ class VoteTracker(commands.Cog, name='votetracker'):
                 ):
                     try:
                         await member.add_roles(role, reason = f"Milestone reached for user") # adds the role
-                        rolesummary += f"\n**In addition, {member.name}#{member.discriminator} has gotten the role {role.mention} for voting {milestone[0]} times!** 🥳" # adds on to the summary of roles added
+                        rolesummary += f"\n**You've also gotten the role {role.mention} for voting {milestone[0]} times!** 🥳" # adds on to the summary of roles added
                     except discord.Forbidden:
                         pass
-        embed = discord.Embed(title=f"Thank you for voting for {guild.name} on Top.gg, {member.name}!",
-                              description=f"You have voted {guild.name} for **{votecount}** time(s).\n[You can vote for Dank Vibes here!](https://top.gg/servers/595457764935991326/vote)",
-                              timestamp=discord.utils.utcnow(), color=0x57f0f0)
+        embed = discord.Embed(title=f"Thank you for voting for {guild.name}, {member.name}!", description=f"You've voted **{plural(votecount):time}** so far.\n[You can vote for Dank Vibes on top.gg here!](https://top.gg/servers/595457764935991326/vote)", timestamp=discord.utils.utcnow(), color=0x57f0f0)
         embed.set_author(name=f"{member.name}#{member.discriminator} ({member.id})", icon_url=member.display_avatar.url)
         embed.set_footer(text=guild.name, icon_url=guild.icon.url)
         qbemojis = ["https://cdn.discordapp.com/emojis/869579459420913715.gif?v=1", "https://cdn.discordapp.com/emojis/869579448708653066.gif?v=1", "https://cdn.discordapp.com/emojis/869579493776457838.gif?v=1", "https://cdn.discordapp.com/emojis/869579480509841428.gif?v=1", "https://cdn.discordapp.com/emojis/873643650607894548.gif?v=1", "https://cdn.discordapp.com/emojis/871970548576559155.gif?v=1", "https://cdn.discordapp.com/emojis/872470665607909417.gif?v=1", "https://cdn.discordapp.com/emojis/830920902019514408.gif?v=1"]
