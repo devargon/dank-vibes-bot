@@ -103,10 +103,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
                 class VoteLink(discord.ui.View):
                     def __init__(self):
                         super().__init__()
-                        self.add_item(discord.ui.Button(label='Vote for Dank Vibes at Top.gg',
-                                                        url="https://top.gg/servers/595457764935991326/vote",
-                                                        emoji=discord.PartialEmoji.from_str(
-                                                            '<a:dv_iconOwO:837943874973466664>')))
+                        self.add_item(discord.ui.Button(label='Vote for Dank Vibes at Top.gg', url="https://top.gg/servers/595457764935991326/vote", emoji=discord.PartialEmoji.from_str('<a:dv_iconOwO:837943874973466664>')))
                 if member is None:
                     return
                 if preferences.get('rmtype') == 1:
