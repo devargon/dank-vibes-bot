@@ -24,7 +24,6 @@ from.logging import Logging
 from utils.converters import MemberUserConverter, TrueFalse
 from typing import Optional, Union
 from utils.menus import CustomMenu
-import random
 from utils.context import DVVTcontext
 
 
