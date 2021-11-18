@@ -14,21 +14,21 @@ class Verification(commands.Cog):
             is_enabled = await self.client.pool_pg.fetchval("SELECT enabled FROM serverconfig WHERE settings = $1 and guild_id = $2", 'verification', guild.id)
             if is_enabled:
                 has_not_verified = [member for member in guild.members if (not member.bot) and (member.pending == True)]
-                is_bannable = []
+                needs_to_remind = []
+                embed = discord.Embed(title="Verify in Dank Vibes", description="Remember to click on the **Verify** Button in <#910425487103365160> to gain access to the server!", color=5763312)
+                embed.set_thumbnail(url="https://cdn.discordapp.com/icons/595457764935991326/a_fba2b3f7548d99cd344931e27930ec4d.gif?size=1024")
+                embed.set_footer(text="Dank Vibes", icon_url="https://cdn.discordapp.com/icons/595457764935991326/a_fba2b3f7548d99cd344931e27930ec4d.gif?size=1024")
                 for member in has_not_verified:
                     if time() - member.joined_at.timestamp() > 86400:
-                        is_bannable.append(member)
+                        needs_to_remind.append(member)
                     else:
                         pass
-                for member in is_bannable:
+                for member in needs_to_remind:
                     try:
-                        await member.send("You were automatically kicked from Dank Vibes as you have not agreed to the rules yet. To participate in the many giveaways/heists that Dank Vibes offers, come back and **agree to the rules** by pressing `Complete` at the bottom of your Discord client! https://cdn.discordapp.com/attachments/616007729718231161/906394155343818832/Screenshot_2021-11-06_at_9.36.42_AM.png\nhttps://discord.gg/dankmemer")
+                        await member.send(embed=embed)
                     except:
-                        await member.kick(reason="Auto kick - Incomplete Verification")
-                        await self.client.get_channel(616007729718231161).send(f"{member} ({member.id}) was kicked for not completing the verification. I was unable to DM them to tell them they were kicked for not completing the verification.")
-                    else:
-                        await member.kick(reason="Auto kick - Incomplete Verification")
-                        await self.client.get_channel(616007729718231161).send(f"{member} ({member.id}) was kicked for not completing the verification.")
+                        await self.client.get_channel(910425487103365160).send(f"{member.mention}", delete_after = 1.0)
+                    await self.client.get_channel(616007729718231161).send(f"{member} ({member.id}) has been reminded about verifying. *This will be removed at a later date, am just using it to monitor*")
 
     @commands.Cog.listener()
     async def on_member_update(self, member_before, member_after):
