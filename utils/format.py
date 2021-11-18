@@ -220,27 +220,42 @@ def stringnum_toint(string:str):
     return intstring
 
 def stringtime_duration(string:str):
-    allowedsymbols=["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "m", "s", 'h', 'y', 'd']
+    allowedsymbols=["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "m", "s", 'h', 'y', 'd', 'r', 'e', 'c', 'm', 'i', 'n']
     string = string.lower()
     for character in list(string):
         if character not in allowedsymbols:
             return None
     if string.isnumeric():
         return int(string)
-    if 'm' in string:
-        string = string.replace('m', '*60+')
+    if 'sec' in string:
+        string = string.replace('sec', '+')
     if 's' in string:
         string = string.replace('s', '+')
+    if 'min' in string:
+        string = string.replace('mins', '*60+').replace('min', '*60+')
+    if 'm' in string:
+        string = string.replace('m', '*60+')
+    if 'hour' in string:
+        string = string.replace('hours', '*3600+').replace('hour', '*3600+')
+    if 'hr' in string:
+        string = string.replace('hrs', '*3600+').replace('hr', '*3600+')
     if 'h' in string:
         string = string.replace('h', '*3600+')
+    if 'year' in string:
+        string = string.replace('years', '*31536000+').replace('year', '*31536000+')
+    if 'yr' in string:
+        string = string.replace('yrs', '*31536000+').replace('yr', '*31536000+')
     if 'y' in string:
         string = string.replace('y', '*31536000+')
+    if 'day' in string:
+        string = string.replace('days', '*86400+').replace('day', '*86400+')
     if 'd' in string:
         string = string.replace('d', '*86400+')
     if string.endswith('+') or string.endswith('-'):
         string += "0"
     if string.endswith('/') or string.endswith('*') or string.endswith('^'):
         string += "1"
+    print(string)
     try:
         intstring = evaluate(string)
     except:
