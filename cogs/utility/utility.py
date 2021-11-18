@@ -310,19 +310,20 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
                                     stats = content['stats']
                                     idk = f"<:Reply:871808167011549244> {plural(int(stats['additions'])):addition}, {plural(int(stats['deletions'])):deletion}"
                                     um.append(idk)
-                                um.append("\n__**Files Changed**__")
+                                embed.add_field(name="🛠️ Last commit", value="\n".join(um), inline=False)
+                                fileschanged = []
                                 if 'files' in content and len(content['files']) > 0:
                                     files = content['files']
                                     for file in files:
                                         idk = f"[{file['filename']}]({file['blob_url']}) <:DVB_plus:910010210310041630> {file['additions']}, <:DVB_minus:910010210310057994> {file['deletions']}"
-                                        um.append(idk)
+                                        fileschanged.append(idk)
                                 else:
-                                    um.append("No files changed.")
+                                    fileschanged.append("No files changed.")
                             else:
                                 um = ["GitHub did not return a 200 status code.\nStatus code: {r.status}"]
                     else:
                         um = ["GitHub did not return any commits."]
-                    embed.add_field(name="🛠️ Last commit", value="\n".join(um), inline=False)
+                    embed.add_field(name="📂 Files changed", value="\n".join(fileschanged), inline=False)
                 else:
                     embed.add_field(name="🛠️ Last commit", value=f"GitHub did not return a 200 status code.\nStatus code: {r.status}", inline=False)
                 await msg.edit(content="All retrieved in `{}`ms".format(round((time.perf_counter() - now) * 1000)), embed=embed)

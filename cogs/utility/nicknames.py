@@ -4,7 +4,7 @@ from datetime import datetime
 from discord.ext import commands
 emojis = ["<:checkmark:841187106654519296>", "<:crossmark:841186660662247444>"]
 from utils import checks
-
+from utils.errors import NicknameIsManaged
 
 class NicknamePersistentView(discord.ui.View):
     def __init__(self, client):
@@ -35,12 +35,9 @@ class NicknamePersistentView(discord.ui.View):
             else:
                 output = (2, "Approved and Changed",)
         await self.client.pool_pg.execute("DELETE from nicknames WHERE id = $1", ID)
-        embed = discord.Embed(title="Nickname Change Request", color=discord.Color.green() if output[0] == 2 else discord.Color.red(), timestamp=discord.utils.utcnow())
-        embed.set_author(name=authordetails)
-        embed.add_field(name="Nickname", value=nickname, inline=True)
-        embed.add_field(name="Status", value=output[1], inline=True)
-        if nicktarget is not None:
-            embed.set_thumbnail(url=nicktarget.display_avatar.url)
+        embed = interaction.message.embeds[0]
+        embed.set_field_at(-1, name="Status", value=output[1], inline=False)
+        embed.color = discord.Color.green() if output[0] == 2 else discord.Color.red()
         embed.set_footer(text=f"This message will be deleted in 10 seconds.")
         for b in self.children:
             b.disabled = True
@@ -82,11 +79,9 @@ class NicknamePersistentView(discord.ui.View):
         else:
             output = (0, "Denied",)
         await self.client.pool_pg.execute("DELETE from nicknames WHERE id = $1", ID)
-        embed = discord.Embed(title="Nickname Change Request", color=discord.Color.green() if output[0] == 2 else discord.Color.red(), timestamp=discord.utils.utcnow())
-        embed.set_author(name=authordetails)
-        embed.add_field(name="Status", value=output[1], inline=True)
-        if nicktarget is not None:
-            embed.set_thumbnail(url=nicktarget.display_avatar.url)
+        embed = interaction.message.embeds[0]
+        embed.set_field_at(-1, name="Status", value=output[1], inline=False)
+        embed.color = discord.Color.red()
         embed.set_footer(text=f"This message will be deleted in 10 seconds.")
         for b in self.children:
             b.disabled = True
@@ -128,6 +123,9 @@ class nicknames(commands.Cog):
         if nickname is None:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("What do you want your nickname to be? `dv.nick <nickname>`")
+        if await self.client.pool_pg.fetchval("SELECT user_id FROM freezenick WHERE user_id = $1", ctx.author.id):
+            ctx.command.reset_cooldown(ctx)
+            return await ctx.send("Your nickname is currently frozen (probably due to a nick bet), even using `dv.nick` wouldn't change anything LOL.")
         if len(nickname) > 32:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"Your nickname is currently {len(nickname)} characters long. It can only be 32 characters long.")
@@ -146,9 +144,13 @@ class nicknames(commands.Cog):
             ID = pastnickname.get('id')
             await self.client.pool_pg.execute("UPDATE nicknames set nickname = $1 where id = $2", nickname, ID)
             requestembed = discord.Embed(title="Nickname Change Request", color=0x57F0F0, timestamp=discord.utils.utcnow())
-            requestembed.set_author(name=f"{ctx.author} ({ctx.author.id})")
+            if ctx.author.name == ctx.author.display_name:
+                requestembed.set_author(name=f"{ctx.author} ({ctx.author.id})")
+            else:
+                requestembed.set_author(name=f"{ctx.author.display_name} ({ctx.author}, {ctx.author.id})")
             requestembed.add_field(name="Nickname", value=nickname, inline=True)
-            requestembed.add_field(name="Status", value="Awaiting Approval", inline=True)
+            requestembed.add_field(name="Requested where", value=f"[Jump to message]({ctx.message.jump_url})", inline=True)
+            requestembed.add_field(name="Status", value="Awaiting Approval", inline=False)
             requestembed.set_thumbnail(url=ctx.author.display_avatar.url)
             requestembed.set_footer(text=f"Request ID: {pastnickname.get('id')}", icon_url=ctx.guild.icon.url)
             try:
@@ -165,12 +167,13 @@ class nicknames(commands.Cog):
             embed = discord.Embed(title="Nickname Change Request", color=0x57F0F0, timestamp=discord.utils.utcnow())
             embed.set_author(name=f"{ctx.author} ({ctx.author.id})")
             embed.add_field(name="Nickname", value=nickname, inline=True)
-            embed.add_field(name="Status", value="Awaiting Approval", inline=True)
+            embed.add_field(name="Requested where", value=f"[Jump to message]({ctx.message.jump_url})", inline=True)
+            embed.add_field(name="Status", value="Awaiting Approval", inline=False)
             embed.set_thumbnail(url=ctx.author.display_avatar.url)
             embed.set_footer(text=f"Request ID: {ID}", icon_url=ctx.guild.icon.url)
             new_message = await request_channel.send(embed=embed, view=approveview)
             await self.client.pool_pg.execute("UPDATE nicknames set messageid = $1 where id = $2", new_message.id, ID)
-        authorembed = discord.Embed(title="Your nickname request has been submitted!", description="It will be manually approved/denied by higher-ups. I will DM you on the status of your nickname request.", color=0x57F0F0, timestamp=discord.utils.utcnow())
+        authorembed = discord.Embed(title="Your nickname request has been submitted!", description="It will be manually approved/denied by the mods. I will DM you on the status of your nickname request.", color=0x57F0F0, timestamp=discord.utils.utcnow())
         authorembed.set_author(icon_url=ctx.guild.icon.url, name=ctx.guild.name)
         authorembed.add_field(name="Nickname", value=nickname, inline=True)
         authorembed.add_field(name="Request ID", value=str(ID), inline=True)
