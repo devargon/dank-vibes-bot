@@ -5,13 +5,13 @@ import discord
 from typing import Optional
 from utils.menus import CustomMenu
 from discord import Webhook
-from discord.ext import commands, menus, tasks
+from discord.ext import commands, menus
 from utils import checks
 import re
 import time
 from utils.format import comma_number, stringnum_toint
 from utils.buttons import confirm
-from expr import evaluate
+from datetime import datetime
 
 guildid = 871734809154707467 if os.name == "nt" else 595457764935991326
 tgrinderroleID = 896052592797417492 if os.name == "nt" else 827270880182009956
@@ -19,7 +19,7 @@ grinderroleID = 896052612284166204 if os.name == "nt" else 859494328422367273
 mystic = 719890992723001354
 bav = 542447261658120221
 argon = 650647680837484556
-donochannel = 896068443093229579 if os.name == "nt" else 862574856846704661
+donochannel = 871737314831908974 if os.name == "nt" else 862574856846704661
 logchannel = 871737332431216661 if os.name == "nt" else 896693789312319508
 holder = 827080569501777942 if os.name == "nt" else 798238834340528149
 grinderlogID = 896068443093229579 if os.name == "nt" else 862433139921911809
@@ -208,7 +208,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         else:
             member = message.guild.get_member(userid)
             if not (discord.utils.get(member.roles, id=tgrinderroleID) or discord.utils.get(member.roles, id=grinderroleID)):
-                return
+                return await message.channel.send("You don't have the required roles or the roles declared are invalid.")
             result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", userid)
             if result is None:
                 await self.client.pool_pg.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)", userid, amt, amt, 0, amt, amt, round(time.time()), message.jump_url)
@@ -219,7 +219,11 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             logembed.set_footer(text=f"{message.guild.name} Grinder Log", icon_url=message.guild.icon.url)
             await self.client.get_channel(grinderlogID).send(f"A grinder transaction by `{member} ({member.id})` has been logged.", embed=logembed)
             await message.channel.send(f"{member.mention}, I have logged your transfer of **⏣ {comma_number(amt)}** to {dankholder}.")
-            if result.get('today') + amt >= 5000000:
+            if result is None:
+                old = 0
+            else:
+                old = result.get('today')
+            if old + amt >= 5000000:
                 try:
                     await member.send("<:DVB_True:887589686808309791> You have completed your Grinder requirement for today! I will notify you when you can submit your next ⏣ 5,000,000 again.")
                 except:
@@ -239,17 +243,9 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         tgrinderrole = ctx.guild.get_role(tgrinderroleID)
         if grinderrole is None or tgrinderrole is None:
             return await ctx.send("One or more roles declared in this command are invalid, hence the command cannot proceed.")
-        grinders = [member for member in ctx.guild.members if
-                    grinderrole in member.roles or tgrinderrole in member.roles]  # gets all grinders
+        grinders = [member for member in ctx.guild.members if grinderrole in member.roles or tgrinderrole in member.roles]  # gets all grinders
         if not grinders:
             return await ctx.send("There are no grinders to be DMed.")
-        hiddengrinders = len(grinders) - 20  # number of grinders that will be hidden in "and ... more"
-        message = ""
-        while len(message) < 3700 and len(grinders) > hiddengrinders and grinders:
-            member = grinders.pop(0)
-            message += f"{member}\n"  # add grinders name to embed
-        if len(grinders) != 0:
-            message += f"And **{len(grinders)}** more."
         confirmview = confirm(ctx, self.client, 15.0)
         grinders = [member for member in ctx.guild.members if grinderrole in member.roles or tgrinderrole in member.roles]
         embed = discord.Embed(title="DM Grinders?", description=f"I will be checking the grinder requirement for the {len(grinders)} grinders and trial grinders, and I'll send a summary to <#{logchannel}>. Afterwards, I'll DM them to update them about the grinder check. Are you sure?", color=0x57F0F0)
@@ -323,8 +319,8 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             async with aiohttp.ClientSession() as session:
                 webhook = Webhook.from_url(webhook_url, session=session)
                 reportchannel = self.client.get_channel(logchannel)
-                await reportchannel.send(f"**__DV GRINDERS REQ SUMMARY__** (on <t:{round(time.time())}:F>)")
-                await webhook.send(f"**__DV GRINDERS REQ SUMMARY__** (on <t:{round(time.time())}:F>)", username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
+                await reportchannel.send(f"**__DV GRINDERS SUMMARY__** (for **{discord.utils.utcnow().strftime('%A, %d %B %Y')}**)")
+                await webhook.send(f"**__DV GRINDERS SUMMARY__** (for **{discord.utils.utcnow().strftime('%A, %d %B %Y')}**)", username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
                 for dat in completed_req:
                     if len(content) < 1800:
                         content += f"\n<:DVB_True:887589686808309791> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
@@ -342,6 +338,8 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                         await reportchannel.send(content)
                 await reportchannel.send(content)
                 await webhook.send(content, username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
+                await reportchannel.send(f"Total grinded today: {sum([dat[1] for dat in completed_req] + [dat[1] for dat in not_complete])}")
+                await webhook.send(f"Total grinded today: {sum([dat[1] for dat in completed_req] + [dat[1] for dat in not_complete])}", username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
             await msg.edit(content=f"""
 <:DVB_start_complete:895172800627769447> Checking daily requirement 
 <:DVB_middle_complete:895172800627769444> Updating statistics
