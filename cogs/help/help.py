@@ -297,7 +297,9 @@ class DVBotHelp(commands.DefaultHelpCommand):
         with contextlib.suppress(commands.CommandError):
             await command.can_run(self.context)
             return await self.context.reply(embed=self.get_command_help(command), mention_author=False)
-        raise ArgumentBaseError(message="You don't have enough permission to see this help.") from None
+        if command.cog.qualified_name.lower() in ['admin', 'dev', 'mod']:
+            raise ArgumentBaseError(message="You don't have enough permission to see this help.") from None
+        return await self.context.reply(embed=self.get_command_help(command), mention_author=False)
 
     async def send_command_help(self, command):
         """
