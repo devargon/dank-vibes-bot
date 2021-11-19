@@ -192,14 +192,17 @@ class ItemGames(commands.Cog):
                 if item_count > 0:
                     item_name = None
                     item_emoji = None
+                    item_hidden = None
                     for i in itemdetails:
                         if i.get('name') == item:
                             item_name = i.get('fullname')
                             item_emoji = i.get('emoji')
-                    if item_name is None or item_emoji is None:
-                        invpage += f"`{comma_number(item_count)}` - **This item is missing important details, hence it cannot be displayed.**\n"
-                    else:
-                        invpage += f"{item_emoji} **{item_name}** • {comma_number(item_count)}\n"
+                            item_hidden = i.get('hidden')
+                    if item_hidden != True:
+                        if item_name is None or item_emoji is None:
+                            invpage += f"`{comma_number(item_count)}` - **This item is missing important details, hence it cannot be displayed.**\n"
+                        else:
+                            invpage += f"{item_emoji} **{item_name}** • {comma_number(item_count)}\n"
         embed = discord.Embed(description=invpage, color=self.client.embed_color)
         embed.set_author(name=f"{member}'s Inventory", icon_url=member.display_avatar.url)
         embed.set_footer(text="Use dv.inv info [item] to know more about an item.")
@@ -295,6 +298,23 @@ class ItemGames(commands.Cog):
             modifiedno = count + num
         await self.client.pool_pg.execute(' '.join(insquery))
         return await ctx.send(f"<:DVB_True:887589686808309791> I successfully gave {member} {num} {itemname}s, they now have {modifiedno} {itemname}s.")
+
+    @inventory.command(name="items")
+    async def items(self, ctx):
+        """
+        Get a list of items in the database.
+        """
+        count = await self.client.pool_pg.fetchval("SELECT COUNT(*) FROM iteminfo")
+        if count == 0:
+            embed = discord.Embed(title="Items you can get", description="There are no items.", color=self.client.embed_color)
+        else:
+            embed = discord.Embed(title="Items you can get", description=f"Here are all the items you can get. There are {count} of them!", color=self.client.embed_color)
+            items = await self.client.pool_pg.fetch("SELECT name, fullname, emoji, description FROM iteminfo")
+            for item in items:
+                query = "SELECT SUM({}) FROM inventories".format(item.get('name'))
+                in_circulation = await self.client.pool_pg.fetchval(query)
+                embed.add_field(name=f"{item.get('emoji')} {item.get('fullname')}", value=f"{item.get('description')}\nIn circulation: `{comma_number(in_circulation)}`", inline=False)
+        await ctx.send(embed=embed)
 
     @inventory.command(name="info", aliases=['item'])
     async def item_info(self, ctx, item: str = None):
