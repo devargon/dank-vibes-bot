@@ -39,6 +39,7 @@ Uncheck the "Public Bot" checkbox if you only want to allow yourself to invite t
    dbUSER=The username you set for the bot to access the PostgreSQL server.
    dbPASSWORD=The password you set for the bot to access the PostgreSQL server.
    GITHUBPAT = The GitHub personal access token you generated in step 5
+   state = 1 (anything other than above 1 means the bot is the development version)
    ```
    It should look something like this: ![](https://cdn.nogra.me/screenshots/notepad%2B%2B_VtdIwXXZ7t.png)
 9. Start the bot.
