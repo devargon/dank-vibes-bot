@@ -49,7 +49,7 @@ class BrowserScreenshot(commands.Cog):
                 try:
                     #asyncio.run(msgsend(ctx, "Starting web browser..."))
                     #WGET THE CHROME DRIVER OR IT WILL NOT WORK
-                    if os.name == "nt":
+                    if os.getenv('state') == '1':
                         browser = webdriver.Chrome(r"C:\Users\laiye\Downloads\chromedriver.exe", options=self.op)
                     else:
                         browser = webdriver.Chrome(options=self.op)

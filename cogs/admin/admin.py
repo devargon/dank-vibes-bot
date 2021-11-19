@@ -38,7 +38,7 @@ class verifyView(discord.ui.View):
         if discord.utils.get(interaction.user.roles, id=690422173407641610):
             await interaction.user.remove_roles(discord.utils.get(interaction.user.guild.roles, id=690422173407641610))
         roleids = [905980110954455070, 905980110157541446, 905980109268324402, 905980108148461599, 905980107435442186] \
-            if os.name == 'nt' else \
+            if os.getenv('state') == '1' else \
             [905980107435442186, 905980108148461599, 905980109268324402, 905980110157541446, 905980110954455070]
         roles = [interaction.guild.get_role(roleid) for roleid in roleids]
         for role in roles:

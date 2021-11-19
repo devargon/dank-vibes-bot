@@ -61,9 +61,9 @@ class VoteSettingView(discord.ui.View):
 
 
 
-guildid = 871734809154707467 if os.name == "nt" else 595457764935991326 #testing server: 871734809154707467
-vdanksterid = 874897331252760586 if os.name == "nt" else 683884762997587998 #testing server role: 874897331252760586
-channelid = 874897401729671189 if os.name == "nt" else 754725833540894750 # 874897401729671189
+guildid = 871734809154707467 if os.getenv('state') == '1' else 595457764935991326 #testing server: 871734809154707467
+vdanksterid = 874897331252760586 if os.getenv('state') == '1' else 683884762997587998 #testing server role: 874897331252760586
+channelid = 874897401729671189 if os.getenv('state') == '1' else 754725833540894750 # 874897401729671189
 
 class VoteTracker(commands.Cog, name='votetracker'):
     """

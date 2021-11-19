@@ -12,18 +12,17 @@ import time
 from utils.format import comma_number, stringnum_toint
 from utils.buttons import confirm
 from datetime import datetime
-
-guildid = 871734809154707467 if os.name == "nt" else 595457764935991326
-tgrinderroleID = 896052592797417492 if os.name == "nt" else 827270880182009956
-grinderroleID = 896052612284166204 if os.name == "nt" else 859494328422367273
+guildid = 871734809154707467 if os.getenv('state') == '1' else 595457764935991326
+tgrinderroleID = 896052592797417492 if os.getenv('state') == '1' else 827270880182009956
+grinderroleID = 896052612284166204 if os.getenv('state') == '1' else 859494328422367273
 mystic = 719890992723001354
 bav = 542447261658120221
 argon = 650647680837484556
-donochannel = 871737314831908974 if os.name == "nt" else 862574856846704661
-logchannel = 871737332431216661 if os.name == "nt" else 896693789312319508
-holder = 827080569501777942 if os.name == "nt" else 798238834340528149
-grinderlogID = 896068443093229579 if os.name == "nt" else 862433139921911809
-webhook_url = 'https://canary.discord.com/api/webhooks/896095030970818622/kI5DdgTRxbfkDS-xdoULPpDqan1nDpRexe6g8D4K5c-Dw5Rn-RLKyUBRCkesLhBwgO_p' if os.name == 'nt' else 'https://ptb.discord.com/api/webhooks/896106637541142558/mQ6wq5MvdoywSAuGlOrMCZIf068y5Ao73B9kOdyT16UBCp2m9A7vQRQThtHvbmP4a_mT'
+donochannel = 871737314831908974 if os.getenv('state') == '1' else 862574856846704661
+logchannel = 871737332431216661 if os.getenv('state') == '1' else 896693789312319508
+holder = 827080569501777942 if os.getenv('state') == '1' else 798238834340528149
+grinderlogID = 896068443093229579 if os.getenv('state') == '1' else 862433139921911809
+webhook_url = 'https://canary.discord.com/api/webhooks/896095030970818622/kI5DdgTRxbfkDS-xdoULPpDqan1nDpRexe6g8D4K5c-Dw5Rn-RLKyUBRCkesLhBwgO_p' if os.getenv('state') == '1' else 'https://ptb.discord.com/api/webhooks/896106637541142558/mQ6wq5MvdoywSAuGlOrMCZIf068y5Ao73B9kOdyT16UBCp2m9A7vQRQThtHvbmP4a_mT'
 
 class MessageFlag(commands.FlagConverter, case_insensitive = True, delimiter = ' ', prefix='--'):
     msg : Optional[str]
