@@ -94,7 +94,7 @@ class dvvt(commands.AutoShardedBot):
                       'suggestion_response', 'suggestions', 'lockdownprofiles', 'grinderdata', 'messagemilestones',
                       'viprolemessages', 'karutaeventconfig', 'autoreactions', 'owocount', 'milestones', 'rmpreference',
                       'roleremove', 'votecount', 'cooldowns', 'selfrolemessages', 'devmode', 'blacklisted_words',
-                      'blacklist', 'freezenick']
+                      'blacklist', 'freezenick', 'autorole', 'giveaways', 'giveawayentrants']
         tables = await self.pool_pg.fetch("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';")
         tables = [i.get('table_name') for i in tables]
         if tables is None:
@@ -109,6 +109,7 @@ class dvvt(commands.AutoShardedBot):
             else:
                 print("Some databases do not exist, creating them now...")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS autoreactions(guild_id bigint, trigger text, response text)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS autorole(member_id bigint, guild_id bigint, role_id bigint, time bigint)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS blacklist(incident_id serial, user_id bigint, moderator_id bigint, blacklist_active boolean, time_until bigint, reason text)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS blacklisted_words(string text)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS channelconfigs(guild_id bigint NOT null PRIMARY KEY, nickname_channel_id bigint, dmchannel_id bigint)")
@@ -120,8 +121,10 @@ class dvvt(commands.AutoShardedBot):
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS dumbfightlog(invoker_id bigint, target_id bigint, did_win integer)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS freezenick(id serial, user_id bigint, guild_id bigint, nickname text, old_nickname text, time bigint, reason text)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS grinderdata(user_id bigint PRIMARY KEY, today bigint, past_week bigint, last_week bigint, past_month bigint, all_time bigint, last_dono_time bigint, last_dono_msg text)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS giveaways(name text, guild_id bigint, channel_id bigint, message_id bigint, time bigint)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS giveawayentrants(message_id bigint, user_id bigint)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS inventories(user_id bigint PRIMARY KEY, skull bigint, argonphallicobject bigint, llamaspit bigint, slicefrenzylesliecake bigint, wickedrusteze bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS iteminfo(name text PRIMARY KEY, fullname text, description text, emoji text, image text)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS iteminfo(name text PRIMARY KEY, fullname text, description text, emoji text, image text, hidden boolean)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS joinmessages(guild_id bigint PRIMARY KEY, channel_id bigint, plain_text text, embed_details text, delete_after integer)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS karutaeventconfig(channel_id text, percentage_chance real)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS lockdownmsgs(guild_id bigint, profile_name text, startmsg text, endmsg text)")
@@ -150,7 +153,6 @@ class dvvt(commands.AutoShardedBot):
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS tempweekly(member_id bigint PRIMARY KEY, yesterday integer, last_week integer)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS viprolemessages(guild_id bigint, colors bigint, vipcolors bigint, boostgaw bigint, vipheistping bigint)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS votecount(member_id bigint PRIMARY KEY, count integer)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS autorole(member_id bigint, guild_id bigint, role_id bigint, time bigint)")
         print("Bot is ready")
 
     @property
