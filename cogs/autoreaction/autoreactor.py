@@ -164,7 +164,6 @@ class Autoreaction(commands.Cog, name='autoreaction'):
         Set your personal auto reaction.
 
         Cooldown: 30 minutes
-        Required roles: <@&819998671742959636>, <@&645934789160992768>, <@&739199912377319427> or <@&847461305774243890>
         """
         if response is None:
             ctx.command.reset_cooldown(ctx)
