@@ -63,7 +63,7 @@ class HelpSearchButton(BaseButton):
         help_obj = self.view.help_command
         bot = help_obj.context.bot
         command = bot.get_command(self.selected)
-        embed = help_obj.get_command_help(command)
+        embed = await help_obj.get_command_help(command)
         await interaction.response.send_message(content=f"Help for **{self.selected}**", embed=embed, ephemeral=True)
 
 class Information(HelpMenuBase):
@@ -239,7 +239,7 @@ class DVBotHelp(commands.DefaultHelpCommand):
         menu_view = HelpMenuView(*buttons, **loads)
         await ctx.reply(embed=embed, view=menu_view)
 
-    def get_command_help(self, command):
+    async def get_command_help(self, command):
         """
         Returns an Embed version of the command object given.
         """
@@ -247,6 +247,15 @@ class DVBotHelp(commands.DefaultHelpCommand):
             raise commands.NoPrivateMessage
         embed = discord.Embed(title=self.get_command_name(command))
         embed.description = self.get_help(command, brief=False)
+        command_withno_prefix = self.get_command_name(command).replace(self.context.clean_prefix, '')
+        roles = await self.context.bot.pool_pg.fetch("SELECT * FROM rules WHERE guild_id = $1 AND command = $2", self.context.guild.id, command_withno_prefix)
+        if len(roles) > 0:
+            required_roles = []
+            for role in roles:
+                role = self.context.guild.get_role(role.get('role_id'))
+                if role is not None:
+                    required_roles.append(role.mention)
+            embed.description = embed.description + "\nRequired roles: " + ', '.join(required_roles)
         embed.color = 0x57F0F0
         embed.timestamp = discord.utils.utcnow()
         if alias := self.get_aliases(command):
@@ -296,10 +305,10 @@ class DVBotHelp(commands.DefaultHelpCommand):
     async def handle_help(self, command):
         with contextlib.suppress(commands.CommandError):
             await command.can_run(self.context)
-            return await self.context.reply(embed=self.get_command_help(command), mention_author=False)
+            return await self.context.reply(embed=await self.get_command_help(command), mention_author=False)
         if command.cog.qualified_name.lower() in ['admin', 'dev', 'mod']:
             raise ArgumentBaseError(message="You don't have enough permission to see this help.") from None
-        return await self.context.reply(embed=self.get_command_help(command), mention_author=False)
+        return await self.context.reply(embed=await self.get_command_help(command), mention_author=False)
 
     async def send_command_help(self, command):
         """
@@ -321,7 +330,7 @@ class DVBotHelp(commands.DefaultHelpCommand):
             return await self.handle_help(group)
         command_data = {}
         lists = command_data.setdefault(group, list_commands)
-        embed = self.get_command_help(group)
+        embed = await self.get_command_help(group)
         # view = MenuViewBase(self.context, HelpSource)
         view = HelpMenuView(embed=embed, help_object=self, context=self.context)
         # view.help_command = self
