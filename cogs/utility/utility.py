@@ -235,7 +235,6 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
         now = time.perf_counter()
         token = f"token {os.getenv('GITHUBPAT')}"
         headers = {'Authorization': token}
-        print(headers)
         async with aiohttp.ClientSession(headers=headers) as session:
             async with session.get("https://api.github.com/repos/argo0n/dank-vibes-bot") as r:
                 if r.status == 200:
