@@ -24,7 +24,7 @@ class Whois(commands.Cog):
         if (joined_at := getattr(user, 'joined_at', None)):
             joined_at = joined_at.strftime("%a, %b %d, %Y") if joined_at is not None else 'Unknown'
             description.append(f"• Joined server on: **{joined_at}**")
-        if ctx.author.guild_permissions.kick_members:
+        if ctx.author.guild_permissions.kick_members and isinstance(user, discord.Member):
             description.append(f"• User is verified: {f'<:DVB_False:887589731515392000> They have **{humanize_timedelta(seconds=user.joined_at.timestamp()+86400-round(time()))}** to complete the Membership Screening.' if user.pending else '<:DVB_True:887589686808309791>'}")
         embed = discord.Embed(color=self.client.embed_color)
         embed.set_author(name="{}'s Information".format(user.name), icon_url=user.display_avatar.url)
