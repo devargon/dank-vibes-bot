@@ -275,7 +275,7 @@ class games(commands.Cog):
             self.nickbets.remove(ctx.author.id)
             embed.color, embed.title = discord.Color.red(), "You declined the nick bet :("
             return await msg.edit(embed=embed)
-        embed.color, embed.title, embed.description = discord.Color.green(), "You accepted the nick bet. Yay!", "Remember, all nicknames **must follow server rules**. That includes the **NSFW rule**.\nFailure to follow these rules will result in a blacklist from the bot, or getting the \"No Tags\" role."
+        embed.color, embed.title, embed.description = discord.Color.green(), "You accepted the nick bet. Yay!", "Nicknames **must follow server rules**. That includes the **NSFW rule**.\nFailure to follow these rules will result in a blacklist from the bot, or getting the \"No Tags\" role."
         await msg.edit(embed=embed)
         membernick = None
         authornick = None
@@ -368,7 +368,7 @@ class games(commands.Cog):
                 await self.response.edit(view=self)
 
         coinpickview = pickACoin(ctx, member)
-        embed = discord.Embed(description=f"The nickname chosen for {ctx.author.name} is `{authornick}`, and the nickname chosen for {member.name} is `{membernick}`.\n\n{member.name}, please pick a side of the coin, and I'll flip the coin to see who's the winner!", color=self.client.embed_color)
+        embed = discord.Embed(description=f"The nickname chosen for {ctx.author.name} is `{authornick}`.\nThe nickname chosen for {member.name} is `{membernick}`.\n\n{member.name}, please pick a side of the coin, and I'll flip the coin to see who's the winner!", color=self.client.embed_color)
         coinpickmsg = await ctx.send(member.mention, embed=embed, view=coinpickview)
         coinpickview.response = coinpickmsg
         await coinpickview.wait()
@@ -378,10 +378,17 @@ class games(commands.Cog):
             self.nickbets.remove(member.id)
             self.nickbets.remove(ctx.author.id)
             return await coinpickmsg.edit(embed=embed)
-        coinflipembed = discord.Embed(title=f"{member.name} chose {'Heads! <:DVB_CoinHead:905400213785690172>' if coinpickview.returning_value == True else 'Tails! <:DVB_CoinTail:905400213676638279>'}", description="I'm flipping the coin...", color=self.client.embed_color).set_image(url="https://cdn.nogra.me/core/coinflip.gif")
-        coinflipmsg = await ctx.send(embed=coinflipembed)
+        embed.title = f"{member.name} chose {'Heads! <:DVB_CoinHead:905400213785690172>' if coinpickview.returning_value == True else 'Tails! <:DVB_CoinTail:905400213676638279>'}"
+        olddesc = f"{embed.description.splitlines()[0]}\n{embed.description.splitlines()[1]}\n"
+        embed.description = f"{olddesc}\nI'm flipping the coin..."
+        embed.set_thumbnail(url="https://cdn.nogra.me/core/coin_spin.gif")
+        try:
+            await coinpickmsg.edit(embed=embed)
+        except:
+            coinpickmsg = await coinpickmsg.send(embed=embed)
         heads_or_tails = random.choice([True, True, True, True, True, True, False, False, False, False, False, False, None])
-        await asyncio.sleep(5.0)
+        await asyncio.sleep(3.0)
+        coinflipembed = discord.Embed(title=f"{member.name} chose {'Heads! <:DVB_CoinHead:905400213785690172>' if coinpickview.returning_value == True else 'Tails! <:DVB_CoinTail:905400213676638279>'}",description="I'm flipping the coin...", color=self.client.embed_color).set_image(url="https://cdn.nogra.me/core/coinflip.gif")
         if heads_or_tails == None:
             try:
                 old_nick = ctx.author.display_name
@@ -397,44 +404,46 @@ class games(commands.Cog):
                     await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason) VALUES($1, $2, $3, $4, $5, $6)", member.id, ctx.guild.id, membernick, old_nick, round(time()) + duration, f"[Nick bet]({ctx.message.jump_url})")
             except discord.HTTPException:
                 return await ctx.send(f"I couldn't change some nicknames due to permission issues.")
-            await coinflipmsg.delete()
-            coinflipembed.description = "Oh what just happened...\nLooks like the coin landed on its edge! I guess both of you lost ¯\_(ツ)_/¯"
+            coinflipembed.description = f"{olddesc}\nOh what just happened...\nLooks like the coin landed on its edge! I guess both of you lost ¯\_(ツ)_/¯"
             coinflipembed.set_image(url=discord.Embed.Empty)
             coinflipembed.set_thumbnail(url="https://preview.redd.it/x4eb8v0dvsv31.png?auto=webp&s=849a80f279ac59060e2f0bdc35b9c30723bdb745")
-            await ctx.send(embed=coinflipembed)
+            try:
+                await coinpickmsg.edit(embed=coinflipembed)
+            except:
+                await ctx.send(embed=coinflipembed)
             if duration and duration > 0:
                 await ctx.send(f"Both {ctx.author.name} and {member.name}'s nicknames have been frozen to their respective chosen nicknames for **{humanize_timedelta(seconds=duration)}**. Their nicknames will be unfrozen <t:{round(time())+duration}:R>.")
             return
         if heads_or_tails == True:
-            coinflipembed.description = "The coin landed on Heads!! <:DVB_CoinHead:905400213785690172>"
+            coinflipembed.description = f"{olddesc}\nThe coin landed on Heads!! <:DVB_CoinHead:905400213785690172>"
             coinflipembed.set_image(url="https://cdn.nogra.me/core/coinflip_heads.gif")
             if coinpickview.returning_value == True:
                 coinflipembed.color, coinflipembed.description = discord.Color.green(), coinflipembed.description + f"\n\n{member.name} won the bet! 🎊"
-                await coinflipmsg.edit(embed=coinflipembed)
                 loser = ctx.author
                 nick = authornick
                 old_nick = ctx.author.display_name
             else:
                 coinflipembed.color, coinflipembed.description = discord.Color.red(), coinflipembed.description + f"\n\n{ctx.author.name} won the bet, and {member.name} lost 🪦"
-                await coinflipmsg.edit(embed=coinflipembed)
                 loser = member
                 nick = membernick
                 old_nick = member.display_name
         else:
-            coinflipembed.description = " The coin landed on Tails!! <:DVB_CoinTail:905400213676638279>"
+            coinflipembed.description = f"{olddesc}\nThe coin landed on Tails!! <:DVB_CoinTail:905400213676638279>"
             coinflipembed.set_image(url="https://cdn.nogra.me/core/coinflip_tails.gif")
             if coinpickview.returning_value == True:
                 coinflipembed.color, coinflipembed.description = discord.Color.red(), coinflipembed.description + f"\n\n{ctx.author.name} won the bet, and {member.name} lost 🪦"
-                await coinflipmsg.edit(embed=coinflipembed)
                 loser = member
                 nick = membernick
                 old_nick = member.display_name
             else:
                 coinflipembed.color, coinflipembed.description = discord.Color.green(), coinflipembed.description + f"\n\n{member.name} won the bet! 🎊"
-                await coinflipmsg.edit(embed=coinflipembed)
                 loser = ctx.author
                 nick = authornick
                 old_nick = ctx.author.display_name
+        try:
+            await coinpickmsg.edit(embed=coinflipembed)
+        except:
+            await ctx.send(embed=coinflipembed)
         self.nickbets.remove(member.id)
         try:
             await loser.edit(nick=nick)
