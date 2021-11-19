@@ -123,6 +123,9 @@ class nicknames(commands.Cog):
         if nickname is None:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("What do you want your nickname to be? `dv.nick <nickname>`")
+        if nickname == ctx.author.display_name:
+            ctx.command.reset_cooldown(ctx)
+            return await ctx.send("You already have that nickname!")
         if await self.client.pool_pg.fetchval("SELECT user_id FROM freezenick WHERE user_id = $1", ctx.author.id):
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("Your nickname is currently frozen (probably due to a nick bet), even using `dv.nick` wouldn't change anything LOL.")
