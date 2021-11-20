@@ -367,12 +367,12 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
         if new_name is None:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"I can't scramble **{member.name}**'s name as their scrambled name will still be the same/the resulting name is blacklisted.")
-        await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason) VALUES($1, $2, $3, $4, $5, $6)", member.id, ctx.guild.id, new_name, member_name, round(time.time()) + 180, f"[Scrambled nickname]({ctx.message.jump_url})")
         try:
             await member.edit(nick=new_name, reason=f"Nickname scrambled by {ctx.author}")
         except discord.Forbidden:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("Sorry! I am unable to change that user's name, probably due to role hierachy or missing permissions.")
+        await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason) VALUES($1, $2, $3, $4, $5, $6)", member.id, ctx.guild.id, new_name, member_name, round(time.time()) + 180, f"[Scrambled nickname]({ctx.message.jump_url})")
         await ctx.send(f"{member}'s name is now {new_name}!\n{member.mention}, your nickname/username has been scrambled by **{ctx.author.name}** and it is frozen for 3 minutes. It will automatically revert to your previous nickname/username after. ")
 
     @checks.requires_roles()
