@@ -388,7 +388,7 @@ class games(commands.Cog):
             coinpickmsg = await coinpickmsg.send(embed=embed)
         heads_or_tails = random.choice([True, True, True, True, True, True, False, False, False, False, False, False, None])
         await asyncio.sleep(3.0)
-        coinflipembed = discord.Embed(title=f"{member.name} chose {'Heads! <:DVB_CoinHead:905400213785690172>' if coinpickview.returning_value == True else 'Tails! <:DVB_CoinTail:905400213676638279>'}",description="I'm flipping the coin...", color=self.client.embed_color).set_image(url="https://cdn.nogra.me/core/coinflip.gif")
+        coinflipembed = embed
         if heads_or_tails == None:
             try:
                 old_nick = ctx.author.display_name
@@ -405,7 +405,6 @@ class games(commands.Cog):
             except discord.HTTPException:
                 return await ctx.send(f"I couldn't change some nicknames due to permission issues.")
             coinflipembed.description = f"{olddesc}\nOh what just happened...\nLooks like the coin landed on its edge! I guess both of you lost ¯\_(ツ)_/¯"
-            coinflipembed.set_image(url=discord.Embed.Empty)
             coinflipembed.set_thumbnail(url="https://preview.redd.it/x4eb8v0dvsv31.png?auto=webp&s=849a80f279ac59060e2f0bdc35b9c30723bdb745")
             try:
                 await coinpickmsg.edit(embed=coinflipembed)
@@ -416,7 +415,7 @@ class games(commands.Cog):
             return
         if heads_or_tails == True:
             coinflipembed.description = f"{olddesc}\nThe coin landed on Heads!! <:DVB_CoinHead:905400213785690172>"
-            coinflipembed.set_image(url="https://cdn.nogra.me/core/coinflip_heads.gif")
+            coinflipembed.set_thumbnail(url="https://cdn.discordapp.com/emojis/905400213785690172.png?size=96")
             if coinpickview.returning_value == True:
                 coinflipembed.color, coinflipembed.description = discord.Color.green(), coinflipembed.description + f"\n\n{member.name} won the bet! 🎊"
                 loser = ctx.author
@@ -429,7 +428,7 @@ class games(commands.Cog):
                 old_nick = member.display_name
         else:
             coinflipembed.description = f"{olddesc}\nThe coin landed on Tails!! <:DVB_CoinTail:905400213676638279>"
-            coinflipembed.set_image(url="https://cdn.nogra.me/core/coinflip_tails.gif")
+            coinflipembed.set_thumbnail(url="https://cdn.discordapp.com/emojis/905400213676638279.png?size=96")
             if coinpickview.returning_value == True:
                 coinflipembed.color, coinflipembed.description = discord.Color.red(), coinflipembed.description + f"\n\n{ctx.author.name} won the bet, and {member.name} lost 🪦"
                 loser = member
