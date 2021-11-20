@@ -13,9 +13,6 @@ from utils.format import grammarformat, stringtime_duration
 from utils.time import humanize_timedelta
 from utils.menus import CustomMenu
 from time import time
-import os
-
-verify_role = 911541857807384677
 
 class Blacklist(menus.ListPageSource):
     def __init__(self, entries, title):
@@ -29,26 +26,6 @@ class Blacklist(menus.ListPageSource):
         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return embed
 
-class verifyView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @discord.ui.button(emoji="✅", label="Verify", style=discord.ButtonStyle.blurple, custom_id='dv:verify')
-    async def verifybutton(self, button: discord.ui.Button, interaction: discord.Interaction):
-        await interaction.response.defer()
-        await interaction.followup.send("<a:DVB_Loading:909997219644604447> Verifying you...", ephemeral=True)
-        verifyrole = interaction.guild.get_role(verify_role)
-        if verifyrole:
-            await interaction.user.remove_roles(verifyrole)
-        roleids = [905980110954455070, 905980110157541446, 905980109268324402, 905980108148461599, 905980107435442186] \
-            if os.getenv('state') == '1' else \
-            [837591810389442600, 671426678807068683, 671426686100963359, 671426692077584384, 649499248320184320]
-        roles = [interaction.guild.get_role(roleid) for roleid in roleids]
-        for role in roles:
-            if role not in interaction.user.roles:
-                await interaction.user.add_roles(role, reason="User completed manual verification")
-        await interaction.followup.send("You've been verified! You should now be able to talk.", ephemeral=True)
-
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
 
@@ -60,13 +37,6 @@ class Admin(BetterSelfroles, Joining, Sticky, ServerRule, commands.Cog, name='ad
         self.client = client
         self.queue = []
         self.selfroleviews_added = False
-        self.verifyview = False
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        if not self.verifyview == True:
-            self.client.add_view(verifyView())
-            self.verifyview = True
 
     async def handle_toggle(self, guild, settings) -> bool:
         if (result := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", guild.id, settings)) is not None:
@@ -477,15 +447,3 @@ class Admin(BetterSelfroles, Joining, Sticky, ServerRule, commands.Cog, name='ad
         except Exception as e:
             return await ctx.send(f"There was an issue with adding roles. I've temporarily stopped promoting {member}. More details: {e}")
         return await ctx.send(f"{member.mention} congratulations on your promotion to:  **{', '.join(role.name for role in tupremove)}**!")
-
-    @checks.has_permissions_or_role(administrator=True)
-    @commands.command(name="verify")
-    async def verify(self, ctx):
-        """
-        Sends the message that allows people to be verified with a button.
-        """
-        embed = discord.Embed(title="__**VERIFY**__", url="https://discord.gg/invite/dankmemer", description="Click the **Verify** button below this embed to gain access to the server. By clicking you agree to all the rules mentioned above!\n** **", color=5763312)
-        embed.set_footer(text="Dank Vibes", icon_url="https://cdn.discordapp.com/icons/595457764935991326/a_58b91a8c9e75742d7b423411b0205b2b.gif")
-        embed.set_image(url="https://cdn.discordapp.com/attachments/616007729718231161/910817422557196328/rawr_nya.gif")
-        embed.set_thumbnail(url="https://cdn.discordapp.com/icons/595457764935991326/a_fba2b3f7548d99cd344931e27930ec4d.gif?size=1024")
-        await ctx.send(embed=embed, view=verifyView())
