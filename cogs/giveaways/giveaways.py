@@ -46,10 +46,10 @@ class GiveawayView(discord.ui.View):
         giveawayembed.set_field_at(-1, name="Entrants", value=comma_number(entrant_no))
         await giveawaymessage.edit(embed=giveawayembed)
 
-    @discord.ui.button(emoji=discord.PartialEmoji.from_str("<a:dv_iconOwO:837943874973466664>"), label="Extra Entry", custom_id="dvb:giveawayextraentry")
+    @discord.ui.button(emoji=discord.PartialEmoji.from_str("<:DVB_plus1:911608605759901766>"), label="Extra Entry", custom_id="dvb:giveawayextraentry")
     async def ExtraEntry(self, button: discord.ui.Button, interaction: discord.Interaction):
         giveawaymessage = interaction.message
-        is_giveaway_valid = await self.client.pool_pg.fetchrow("SELECT * FROM giveaways WHERE message_id = $1 AND time < $2", giveawaymessage.id, round(time()))
+        is_giveaway_valid = await self.client.pool_pg.fetchrow("SELECT * FROM giveaways WHERE message_id = $1 AND time > $2", giveawaymessage.id, round(time()))
         if is_giveaway_valid == None:
             return await interaction.response.send_message("It appears that this giveaway doesn't exist or has ended.", ephemeral=True)
         voterole = interaction.guild.get_role(voteid)
@@ -97,7 +97,7 @@ class giveaways(commands.Cog):
                 await message.edit(embed=giveawayembed)
 
 
-    @tasks.loop(seconds=2.0)
+    @tasks.loop(seconds=3.0)
     async def end_giveaways(self):
         await self.client.wait_until_ready()
         ended_giveaways = await self.client.pool_pg.fetch("SELECT * FROM giveaways WHERE time < $1", round(time()))
@@ -127,10 +127,10 @@ class giveaways(commands.Cog):
                         if len(winners) == 0:
                             await channel.send(f"I could not find a winner from the **{giveaway.get('name')}** giveaway.\nhttps://discord.com/channels/{guild.id}/{channel.id}/{giveaway.get('message_id')}")
                         else:
-                            message = f"{random.choice(guild.emojis)} **{entrant_no}** user(s) entered, {grammarformat([winner.mention for winner in winners])} snagged away **{giveaway.get('name')}**!\nhttps://discord.com/channels/{guild.id}/{channel.id}/{giveaway.get('message_id')}"
-                            await channel.send(message)
                             giveawayembed.add_field(name="Winners", value=f"{grammarformat([winner.mention for winner in winners])}", inline=False)
                             await gawmessage.edit(embed=giveawayembed, view=view)
+                            message = f"{random.choice(guild.emojis)} **{entrant_no}** user(s) entered, {grammarformat([winner.mention for winner in winners])} snagged away **{giveaway.get('name')}**!\nhttps://discord.com/channels/{guild.id}/{channel.id}/{giveaway.get('message_id')}"
+                            await channel.send(message)
                             winembed = discord.Embed(title=f"You've won the {giveaway.get('name')} giveaway!", description="The prize should be given to you within 24 hours. If you have not received it by then, contact a mod in <#870880772985344010>.", color=self.client.embed_color, timestamp=discord.utils.utcnow())
                             winembed.set_author(name=guild.name, icon_url=guild.icon.url)
                             for winner in winners:
