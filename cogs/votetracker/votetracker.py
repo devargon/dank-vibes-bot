@@ -8,22 +8,23 @@ import datetime
 from PIL import ImageFont, Image, ImageDraw
 from utils.time import humanize_timedelta
 from discord.ext import commands, tasks
-from utils.format import print_exception, ordinal, plural
+from utils.format import print_exception, ordinal, plural, short_time
 from io import BytesIO
 from utils.buttons import *
 from utils import checks
 
 class VoteSetting(discord.ui.Select):
-    def __init__(self, client, context, response):
+    def __init__(self, client, context, response, currentsetting):
         self.client = client
         self.response = response
         self.context = context
-        options = [
-            discord.SelectOption(label = "DM", description = f"{self.client.user.name} will DM you after 12 hours to vote for the server.", emoji = discord.PartialEmoji.from_str("<:DVB_Letter:884743813166407701>"), default = False),
-            discord.SelectOption(label = "Ping", description = f"{self.client.user.name} will ping you after 12 hours to vote for the server.", emoji = discord.PartialEmoji.from_str("<:DVB_Ping:883744614295674950>"), default =False),
-            discord.SelectOption(label = "None", description = f"{self.client.user.name} will not remind you to vote for the server.", emoji = discord.PartialEmoji.from_str("<:DVB_None:884743780027219989>"), default = False)
-        ]
-
+        self.currentsetting = currentsetting
+        labels = ["None", "DM", "Ping"]
+        descriptions = [f"{self.client.user.name} will not remind you to vote for the server.", f"{self.client.user.name} will DM you after 12 hours to vote for the server.", f"{self.client.user.name} will ping you after 12 hours to vote for the server."]
+        emojis = [discord.PartialEmoji.from_str("<:DVB_None:884743780027219989>"), discord.PartialEmoji.from_str("<:DVB_Letter:884743813166407701>"), discord.PartialEmoji.from_str("<:DVB_Ping:883744614295674950>")]
+        options = []
+        for index, label in enumerate(labels):
+            options.append(discord.SelectOption(label=label, description=descriptions[labels.index(label)], emoji=emojis[labels.index(label)], default=True if index == self.currentsetting else False))
         super().__init__(placeholder='Choose your type of vote reminder...', min_values=1, max_values=1, options=options)
 
     async def callback(self, interaction: discord.Interaction):
@@ -38,13 +39,21 @@ class VoteSetting(discord.ui.Select):
             await interaction.response.send_message("Your reminder settings have been changed. You will **not be reminded** to vote for Dank Vibes.\nYou will lose out on some vote perks if you don't vote regularly!", ephemeral=True)
 
 class VoteSettingView(discord.ui.View):
-    def __init__(self, client, ctx, timeout):
+    def __init__(self, client, ctx, timeout, currentsetting, timetovote):
         self.client = client
         self.timeout = timeout
         self.response = None
         self.context = ctx
+        self.currentsetting = currentsetting
         super().__init__(timeout=timeout)
-        self.add_item(VoteSetting(client=self.client, context=self.context, response=self.response))
+        self.add_item(VoteSetting(client=self.client, context=self.context, response=self.response, currentsetting = self.currentsetting))
+        if timetovote > 0:
+            label = f"Vote at top.gg - {short_time(timetovote)}"
+        else:
+            label = f"Vote at top.gg"
+        self.add_item(discord.ui.Button(label=label, url="https://top.gg/servers/595457764935991326/vote", emoji=discord.PartialEmoji.from_str('<a:dv_iconOwO:837943874973466664>'), disabled = True if timetovote > 0 else False))
+
+
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         ctx = self.context
@@ -109,7 +118,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
                 if preferences.get('rmtype') == 1:
                     message = "You can now vote for Dank Vibes again!"
                     if first_time:
-                        message += " By voting for Dank Vibes **multiple times**, you can get **special perks**! Run `-voterperks` in a channel to find out more.\n\nTip: You can turn off reminders or be pinged for voting by selecting the respective option in `dv.votereminder`. Use this in a server channel though.\nhttps://cdn.nogra.me/core/votereminder.gif"
+                        message += " By voting for Dank Vibes **multiple times**, you can get **special perks**! Run `-voterperks` in a channel to find out more.\n\nTip: You can turn off reminders or be pinged for voting by selecting the respective option in `dv.myvotes`. Use this in a server channel though."
                     try:
                         await member.send(message, view=VoteLink())
                     except discord.Forbidden:
@@ -223,25 +232,13 @@ class VoteTracker(commands.Cog, name='votetracker'):
         except discord.Forbidden:
             pass
 
-    @commands.command(name="votereminder", aliases = ["vrm"])
+    @commands.command(name="votereminder", aliases=["vrm"])
     @checks.not_in_gen()
     async def votereminder(self, ctx):
         """
-        Manage your vote reminder here!
+        Manage your vote reminder here! This command will be deprecated in a later update.
         """
-        preferences = await self.client.pool_pg.fetchrow("SELECT rmtype FROM rmpreference WHERE member_id = $1", ctx.author.id)
-        if preferences is None:  # if it's the first time for the user to invoke the command, it will create an entry automatically with the default setting "none".
-            await self.client.pool_pg.execute("INSERT INTO rmpreference VALUES($1, $2)", ctx.author.id, 0)
-            preferences = await self.client.pool_pg.fetchrow("SELECT rmtype FROM rmpreference WHERE member_id = $1", ctx.author.id) # fetches the new settings after the user's entry containing the 'none' setting has been created
-        currentpreference = preferences.get('rmtype')
-        embed = discord.Embed(title=f"Dank Vibes vote reminder", description=f"Every 12 hours after you vote, you can be reminded to [vote for Dank Vibes on top.gg](https://top.gg/servers/595457764935991326/vote).", timestamp=discord.utils.utcnow(), color=self.client.embed_color)
-        embed.add_field(name="Your current reminder setting", value="DM" if currentpreference == 1 else "Ping" if currentpreference == 2 else "No reminder" if currentpreference == 0 else "Unknown; Please try to choose a reminder setting!", inline=False) #shows current reminder setting
-        embed.set_footer(text=f"Choose your preferred reminder type via the menu.")
-        embed.set_thumbnail(url=ctx.guild.icon.url)
-        view = VoteSettingView(client=self.client, ctx=ctx, timeout=30.0)
-        message = await ctx.send(embed=embed, view=view)
-        view.response = message
-        await view.wait()
+        return await ctx.send("This command's functions have been merged with `dv.myv`.")
 
     @commands.group(invoke_without_command=True, name="voteroles")
     @commands.has_guild_permissions(administrator=True)
@@ -412,17 +409,37 @@ class VoteTracker(commands.Cog, name='votetracker'):
         timenow = round(time.time())
         if member is not None and "<@" in ctx.message.content: # you can delete this if you want, I just added it to tease them hehe
             await ctx.send("Nice try, but you can't view other users' votecount.")
-        votecount = await self.client.pool_pg.fetchrow("SELECT count FROM votecount where member_id = $1", ctx.author.id)
-        count = 0 if votecount is None else votecount.get('count') # number of times user has voted
+        count = await self.client.pool_pg.fetchval("SELECT count FROM votecount where member_id = $1", ctx.author.id) or 0
         result = await self.client.pool_pg.fetchrow("SELECT * FROM roleremove WHERE member_id = $1 and rmtime > $2", ctx.author.id, timenow)
+        nextmilestone = await self.client.pool_pg.fetchval("SELECT votecount FROM milestones WHERE votecount > $1 LIMIT 1", count)
         if result is not None and result.get('rmtime') != 9223372036854775807:
-            desc = f"You can [vote for Dank Vibes](https://top.gg/servers/595457764935991326/vote) <t:{result.get('rmtime')}:R>." #if the user has voted recently
+            desc = f"You can vote <t:{result.get('rmtime')}:R>!"
         else:
-            desc = f"You can now [vote for Dank Vibes](https://top.gg/servers/595457764935991326/vote) again!" # self explanatory
-        embed = discord.Embed(title=f"You have voted for Dank Vibes **__{count}__** times.",
-                              description=desc, color=self.client.embed_color, timestamp = discord.utils.utcnow())
-        embed.set_author(name=f"{ctx.author.name}#{ctx.author.discriminator}", icon_url=ctx.author.display_avatar.url)
-        embed.add_field(name="Want to be reminded to vote for Dank Vibes?", value="Select **DM** or **Ping** in `dv.votereminder`.")
-        embed.set_footer(text="You can see your rank on the vote leaderboard with dv.voteleaderboard!")
+            desc = f"You can vote now!"
+        embed = discord.Embed(title=f"You have voted for Dank Vibes **__{plural(count):__**time}.", description=desc, timestamp = discord.utils.utcnow(), url="https://top.gg/servers/595457764935991326/vote")
+        embed.set_author(name=ctx.author.name, icon_url=ctx.author.display_avatar.url)
+        preferences = await self.client.pool_pg.fetchval("SELECT rmtype FROM rmpreference WHERE member_id = $1", ctx.author.id)
+        if preferences is None:  # if it's the first time for the user to invoke the command, it will create an entry automatically with the default setting "none".
+            preferences = await self.client.pool_pg.fetchval("INSERT INTO rmpreference VALUES($1, $2) RETURNING rmtype", ctx.author.id, 0, column='rmtype')  # fetches the new settings after the user's entry containing the 'none' setting has been created
+        if preferences == 0:
+            footer_msg = "You are currently not reminded to vote for Dank Vibes. You can be reminded to vote for Dank Vibes by choosing DMs or pings on the dropdown menu below!"
+        elif preferences == 1:
+            footer_msg = "You can change your reminder preference below!"
+        elif preferences == 2:
+            footer_msg = "You can change your reminder preference below!"
+        else:
+            footer_msg = None
+        if nextmilestone is not None:
+            count_to_next = nextmilestone - count
+            embed.add_field(name="Milestones 🏁", value=f"You are **{count_to_next}** votes away from reaching **{nextmilestone} votes**!", inline=False)
+        if footer_msg is not None:
+            embed.set_footer(text=footer_msg)
         embed.set_thumbnail(url=ctx.guild.icon.url)
-        await ctx.send(embed=embed)
+        if result.get('rmtime') == 9223372036854775807:
+            duration = 0
+        else:
+            duration = result.get('rmtime') - timenow
+        view = VoteSettingView(client=self.client, ctx=ctx, timeout=30.0, currentsetting = preferences, timetovote=duration)
+        message = await ctx.send(embed=embed, view=view)
+        view.response = message
+        await view.wait()
