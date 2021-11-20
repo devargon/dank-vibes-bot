@@ -77,12 +77,12 @@ class ErrorHandler(commands.Cog):
             await self.client.get_channel(871737028105109574).send(
                 f"I encountered a Discord Server Error at {ctx.channel.mention}: {ctx.message.jump_url}")
         else:
-            embed = discord.Embed(title="Oh no! something went wrong.", description="It has been sent to the bot developer, it'll be fixed soon.", color=discord.Color.red())
+            embed = discord.Embed(title="⚠️ Oh no!", description="Something terribly went wrong when this command was used.\n\nThe developers have been notified and it will fixed soon.", color=discord.Color.red())
             if ctx.author.id in [650647680837484556, 321892489470410763]:
                 embed.add_field(name="Error", value=f"```prolog\n{error}\n```\n<#871737028105109574>")
                 await send_error(embed=embed)
             else:
-                embed.set_footer(text="The developers have been directly notified about the error; refrain from repeatedly using this command at the moment.")
+                embed.set_footer(text="In the meantime, do not keep running this command.")
                 await send_error(embed=embed, delete_after=10)
             traceback_error = print_exception(f'Ignoring exception in command {ctx.command}:', error)
             error_message = f"**Command:** `{ctx.message.content}`\n" \
