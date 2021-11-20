@@ -322,7 +322,18 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
                                 um = ["GitHub did not return a 200 status code.\nStatus code: {r.status}"]
                     else:
                         um = ["GitHub did not return any commits."]
-                    embed.add_field(name="📂 Files changed", value="\n".join(fileschanged), inline=False)
+                    totalfileschanged = "\n".join(fileschanged)
+                    if len(totalfileschanged) > 1024:
+                        tempstring = ''
+                        for file in fileschanged:
+                            if len(tempstring) + len(file) < 1024:
+                                tempstring += file + "\n"
+                            else:
+                                embed.add_field(name="📂 Files changed", value=tempstring, inline=False)
+                                tempstring = file + "\n"
+                        embed.add_field(name="📂 Files changed", value=tempstring, inline=False)
+                    else:
+                        embed.add_field(name="📂 Files changed", value="\n".join(fileschanged), inline=False)
                 else:
                     embed.add_field(name="🛠️ Last commit", value=f"GitHub did not return a 200 status code.\nStatus code: {r.status}", inline=False)
                 await msg.edit(content="All retrieved in `{}`ms".format(round((time.perf_counter() - now) * 1000)), embed=embed)
