@@ -122,7 +122,7 @@ class dvvt(commands.AutoShardedBot):
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS dumbfightlog(invoker_id bigint, target_id bigint, did_win integer)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS freezenick(id serial, user_id bigint, guild_id bigint, nickname text, old_nickname text, time bigint, reason text)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS grinderdata(user_id bigint PRIMARY KEY, today bigint, past_week bigint, last_week bigint, past_month bigint, all_time bigint, last_dono_time bigint, last_dono_msg text)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS giveaways(name text, guild_id bigint, channel_id bigint, message_id bigint, time bigint)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS giveaways(guild_id bigint, channel_id bigint, message_id bigint, time bigint, name text, host_id bigint, winners integer)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS giveawayentrants(message_id bigint, user_id bigint)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS inventories(user_id bigint PRIMARY KEY, skull bigint, argonphallicobject bigint, llamaspit bigint, slicefrenzylesliecake bigint, wickedrusteze bigint)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS iteminfo(name text PRIMARY KEY, fullname text, description text, emoji text, image text, hidden boolean)")
