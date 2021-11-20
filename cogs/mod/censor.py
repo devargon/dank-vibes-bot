@@ -9,7 +9,7 @@ class censor_list_pagination(menus.ListPageSource):
         super().__init__(entries, per_page=20)
 
     async def format_page(self, menu, page):
-        embed = discord.Embed(color=0x57F0F0, title=self.title, timestamp=discord.utils.utcnow())
+        embed = discord.Embed(color=menu.ctx.bot.embed_color, title=self.title, timestamp=discord.utils.utcnow())
         embed.description = "\n".join(page)
         embed.set_footer(text="Content in this censor list is used for moderating echo-like commands in this bot, and will not auto delete messages with such blacklisted content.")
         return embed

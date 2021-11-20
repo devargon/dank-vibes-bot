@@ -190,11 +190,11 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
             if len(streeng) < 3900:
                 streeng += f"{channel}\n"
             else:
-                embed = discord.Embed(title = f"Channels that {member.name}#{member.discriminator} can access", description=streeng, color = 0x57f0f0)
+                embed = discord.Embed(title = f"Channels that {member.name}#{member.discriminator} can access", description=streeng, color = self.client.embed_color)
                 await ctx.send(embed=embed)
                 streeng = f"{channel}\n"
         embed = discord.Embed(title=f"Channels that {member.name}#{member.discriminator} can access",
-                            description=streeng, color=0x57f0f0)
+                            description=streeng, color=self.client.embed_color)
         await ctx.send(embed=embed)
 
     async def _complex_cleanup_strategy(self, ctx, search):

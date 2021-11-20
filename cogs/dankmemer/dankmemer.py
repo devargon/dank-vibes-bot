@@ -734,7 +734,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
         pizza = len(await self.client.pool_pg.fetch("SELECT * from stats WHERE remindertype = $1", 20))
 
         onhold = len(await self.client.pool_pg.fetch("SELECT * FROM dankreminders"))
-        embed = discord.Embed(title="Dank Memer Reminder Statistics", description=f"Fetched in {round(time.perf_counter() - timecounter, 3)} seconds.", color = 0x57F0F0, timestamp= discord.utils.utcnow())
+        embed = discord.Embed(title="Dank Memer Reminder Statistics", description=f"Fetched in {round(time.perf_counter() - timecounter, 3)} seconds.", color = self.client.embed_color, timestamp= discord.utils.utcnow())
         embed.add_field(name="Top 3 reminder types:", value=listof or "None", inline=True)
         embed.add_field(name="Top 3 reminder users:", value=listofreminders or "None", inline=True)
         embed.add_field(name="Number of activated settings", value=str(len(await self.client.pool_pg.fetch("SELECT * FROM remindersettings"))), inline=False)
@@ -899,7 +899,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                          hunttime or "**Ready!**", fishtime or "**Ready!**", digtime or "**Ready!**", highlowtime or "**Ready!**",
                          snakeeyestime or "**Ready!**", searchtime or "**Ready!**", crimetime or "**Ready!**", begtime or "**Ready!**",
                          dailyboxtime or "**Ready!**", horseshoetime or "**Ready!**", pizzatime or "**Ready!**"]
-        embed = discord.Embed(title="Your Dank Memer reminders", description="**Select the button that corresponds to the reminder to enable/disable it.**\nChange how you want to be reminded with the select menu.", color=0x57f0f0, timestamp=discord.utils.utcnow())
+        embed = discord.Embed(title="Your Dank Memer reminders", description="**Select the button that corresponds to the reminder to enable/disable it.**\nChange how you want to be reminded with the select menu.", color=self.client.embed_color, timestamp=discord.utils.utcnow())
         embed.set_author(name=ctx.author, icon_url=ctx.author.display_avatar.url)
         embed.description = embed.description + f"""\nClaim daily <:DVB_calendar:873107952159059991>: {remindertimes[0]}
 Claim weekly <:DVB_week:876711052669247528>: {remindertimes[1]}

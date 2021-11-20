@@ -78,7 +78,7 @@ class lockdown_pagination(menus.ListPageSource):
         super().__init__(entries, per_page=20)
 
     async def format_page(self, menu, page):
-        embed = discord.Embed(color=0x57F0F0, title=self.title, timestamp=discord.utils.utcnow())
+        embed = discord.Embed(color=menu.ctx.bot.embed_color, title=self.title, timestamp=discord.utils.utcnow())
         embed.description = "\n".join(page)
         embed.add_field(name="Legend", value="<:DVB_Neutral:887589643686670366> `-` Unknown\n<:DVB_False:887589731515392000> `-` **Locked** for <@&649499248320184320>\n<:DVB_True:887589686808309791> `-` **Unlocked** for <@&649499248320184320>")
         embed.set_footer(text="The lockdown status may not be 100% accurate.")

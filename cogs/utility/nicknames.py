@@ -146,7 +146,7 @@ class nicknames(commands.Cog):
         if pastnickname is not None:
             ID = pastnickname.get('id')
             await self.client.pool_pg.execute("UPDATE nicknames set nickname = $1 where id = $2", nickname, ID)
-            requestembed = discord.Embed(title="Nickname Change Request", color=0x57F0F0, timestamp=discord.utils.utcnow())
+            requestembed = discord.Embed(title="Nickname Change Request", color=self.client.embed_color, timestamp=discord.utils.utcnow())
             if ctx.author.name == ctx.author.display_name:
                 requestembed.set_author(name=f"{ctx.author} ({ctx.author.id})")
             else:
@@ -167,7 +167,7 @@ class nicknames(commands.Cog):
         else:
             await self.client.pool_pg.execute("INSERT INTO nicknames(member_id, nickname) values($1, $2)", ctx.author.id, nickname)
             ID = (await self.client.pool_pg.fetchrow("SELECT id FROM nicknames where member_id = $1 and nickname = $2", ctx.author.id, nickname)).get('id')
-            embed = discord.Embed(title="Nickname Change Request", color=0x57F0F0, timestamp=discord.utils.utcnow())
+            embed = discord.Embed(title="Nickname Change Request", color=self.client.embed_color, timestamp=discord.utils.utcnow())
             embed.set_author(name=f"{ctx.author} ({ctx.author.id})")
             embed.add_field(name="Nickname", value=nickname, inline=True)
             embed.add_field(name="Requested where", value=f"[Jump to message]({ctx.message.jump_url})", inline=True)
@@ -176,7 +176,7 @@ class nicknames(commands.Cog):
             embed.set_footer(text=f"Request ID: {ID}", icon_url=ctx.guild.icon.url)
             new_message = await request_channel.send(embed=embed, view=approveview)
             await self.client.pool_pg.execute("UPDATE nicknames set messageid = $1 where id = $2", new_message.id, ID)
-        authorembed = discord.Embed(title="Your nickname request has been submitted!", description="It will be manually approved/denied by the mods. I will DM you on the status of your nickname request.", color=0x57F0F0, timestamp=discord.utils.utcnow())
+        authorembed = discord.Embed(title="Your nickname request has been submitted!", description="It will be manually approved/denied by the mods. I will DM you on the status of your nickname request.", color=self.client.embed_color, timestamp=discord.utils.utcnow())
         authorembed.set_author(icon_url=ctx.guild.icon.url, name=ctx.guild.name)
         authorembed.add_field(name="Nickname", value=nickname, inline=True)
         authorembed.add_field(name="Request ID", value=str(ID), inline=True)

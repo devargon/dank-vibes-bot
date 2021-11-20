@@ -256,7 +256,7 @@ class DVBotHelp(commands.DefaultHelpCommand):
                 if role is not None:
                     required_roles.append(role.mention)
             embed.description = embed.description + "\nRequired roles: " + ', '.join(required_roles)
-        embed.color = 0x57F0F0
+        embed.color = self.context.bot.embed_color
         embed.timestamp = discord.utils.utcnow()
         if alias := self.get_aliases(command):
             embed.add_field(name="Aliases", value=f'[{" | ".join(f"`{x}`" for x in alias)}]', inline=True)
@@ -278,7 +278,7 @@ class DVBotHelp(commands.DefaultHelpCommand):
             raise ArgumentBaseError(message="You don't have enough permission to see this help.") from None
         embeds = []
         for chunks in more_itertools.chunked(list_commands, 5):
-            embed = discord.Embed(title=f"{getattr(cog, 'qualified_name', 'No').capitalize()} Category", color=0x57F0F0)
+            embed = discord.Embed(title=f"{getattr(cog, 'qualified_name', 'No').capitalize()} Category", color=self.context.bot.embed_color)
             embed.set_footer(text=f"Requested by {self.context.author}", icon_url=self.context.author.display_avatar.url)
             for command in chunks:
                 embed.add_field(name=self.get_command_name(command), value=self.get_help(command, brief=True), inline=False)
@@ -294,7 +294,7 @@ class DVBotHelp(commands.DefaultHelpCommand):
             return await self.handle_help(group)
         embeds = []
         for chunks in more_itertools.chunked(list_commands, 4):
-            embed = discord.Embed(title=self.get_command_name(group), color=0x57F0F0)
+            embed = discord.Embed(title=self.get_command_name(group), color=self.context.bot.embed_color)
             embed.description = f"{self.get_help(group, brief=False)}\nUsage: {self.get_command_usage(group)}"
             embed.set_footer(text=f"Requested by {self.context.author}", icon_url=self.context.author.display_avatar.url)
             for command in chunks:

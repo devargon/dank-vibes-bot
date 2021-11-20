@@ -14,7 +14,7 @@ class betcheck_pagination(menus.ListPageSource):
         super().__init__(entries, per_page=20)
 
     async def format_page(self, menu, page):
-        embed = discord.Embed(color=0x57F0F0, title=self.title)
+        embed = discord.Embed(color=menu.ctx.bot.embed_color, title=self.title)
         embed.description = "\n".join(page)
         return embed
 

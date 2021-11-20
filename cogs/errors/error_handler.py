@@ -77,20 +77,5 @@ class ErrorHandler(commands.Cog):
             await self.client.get_channel(871737028105109574).send(
                 f"I encountered a Discord Server Error at {ctx.channel.mention}: {ctx.message.jump_url}")
         else:
-            embed = discord.Embed(title="Oh no! something went wrong.", description="It has been sent to the bot developer, it'll be fixed soon.", color=discord.Color.red())
-            if ctx.author.id in [650647680837484556, 321892489470410763]:
-                embed.add_field(name="Error", value=f"```prolog\n{error}\n```\n<#871737028105109574>")
-                await send_error(embed=embed)
-            else:
-                embed.set_footer(text="The developers have been directly notified about the error; refrain from repeatedly using this command at the moment.")
-                await send_error(embed=embed, delete_after=10)
             traceback_error = print_exception(f'Ignoring exception in command {ctx.command}:', error)
-            error_message = f"**Command:** `{ctx.message.content}`\n" \
-                            f"**Message ID:** `{ctx.message.id}`\n" \
-                            f"**Author:** `{ctx.author}` ({ctx.author.id})\n" \
-                            f"**Guild:** `{ctx.guild}` ({ctx.guild.id})\n" \
-                            f"**Channel:** `{ctx.channel}` ({ctx.channel.id})\n" \
-                            f"**Jump:** [`jump`]({ctx.message.jump_url})```py\n" \
-                            f"{traceback_error}\n" \
-                            f"```"
-            await self.client.error_channel.send(content=f"<@&871740422932824095> Check this out",embed=discord.Embed(color=0xffcccb, description=error_message, timestamp=discord.utils.utcnow()).set_footer(text=f"From: {ctx.guild.name}", icon_url=ctx.guild.icon.url), allowed_mentions=discord.AllowedMentions(roles=True))
+            await ctx.send(embed = discord.Embed(description=f"```py\n{traceback_error}\n```", color=0x1E90FF))
