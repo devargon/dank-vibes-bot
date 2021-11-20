@@ -28,7 +28,7 @@ class Verification(commands.Cog):
                 embed = discord.Embed(title="Verify in Dank Vibes", description="Remember to click on the **Verify** Button in <#910425487103365160> to gain access to the server!", color=5763312)
                 embed.set_thumbnail(url="https://cdn.discordapp.com/icons/595457764935991326/a_fba2b3f7548d99cd344931e27930ec4d.gif?size=1024")
                 embed.set_footer(text="Dank Vibes", icon_url="https://cdn.discordapp.com/icons/595457764935991326/a_fba2b3f7548d99cd344931e27930ec4d.gif?size=1024")
-                verify = guild.get_role(690422173407641610)
+                verify = guild.get_role(911541857807384677)
                 for member in has_not_verified:
                     if verify is not None and verify not in member.roles:
                         await member.add_roles(verify)
