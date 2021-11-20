@@ -7,7 +7,7 @@ class Verification(commands.Cog):
         self.client = client
         self.check_verification.start()
 
-    @tasks.loop(minutes=30.0)
+    @tasks.loop(seconds=60.0)
     async def check_verification(self):
         await self.client.wait_until_ready()
         for guild in self.client.guilds:
@@ -28,15 +28,20 @@ class Verification(commands.Cog):
                 embed = discord.Embed(title="Verify in Dank Vibes", description="Remember to click on the **Verify** Button in <#910425487103365160> to gain access to the server!", color=5763312)
                 embed.set_thumbnail(url="https://cdn.discordapp.com/icons/595457764935991326/a_fba2b3f7548d99cd344931e27930ec4d.gif?size=1024")
                 embed.set_footer(text="Dank Vibes", icon_url="https://cdn.discordapp.com/icons/595457764935991326/a_fba2b3f7548d99cd344931e27930ec4d.gif?size=1024")
+                verify = guild.get_role(690422173407641610)
                 for member in has_not_verified:
-                    try:
-                        await member.send(embed=embed)
-                    except:
-                        await self.client.get_channel(910425487103365160).send(f"{member.mention}", delete_after = 1.0)
-                    await self.client.get_channel(616007729718231161).send(f"{member} ({member.id}) has been reminded about verifying. *This will be removed at a later date, am just using it to monitor*")
+                    if verify is not None and verify not in member.roles:
+                        await member.add_roles(verify)
+                        try:
+                            await member.send(embed=embed)
+                        except:
+                            await self.client.get_channel(910425487103365160).send(f"{member.mention}", delete_after = 1.0)
+                        await self.client.get_channel(616007729718231161).send(f"{member} ({member.id}) has been reminded about verifying. *This will be removed at a later date, am just using it to monitor*")
 
     @commands.Cog.listener()
     async def on_member_update(self, member_before, member_after):
+        if time() - member_before.joined_at.timestamp() > 86400:
+            return
         is_enabled = await self.client.pool_pg.fetchval("SELECT enabled FROM serverconfig WHERE settings = $1 and guild_id = $2", 'verification', member_after.guild.id)
         if is_enabled != True:
             return

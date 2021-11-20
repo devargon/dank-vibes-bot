@@ -15,6 +15,8 @@ from utils.menus import CustomMenu
 from time import time
 import os
 
+verify_role = 911541857807384677
+
 class Blacklist(menus.ListPageSource):
     def __init__(self, entries, title):
         self.title = title
@@ -35,11 +37,12 @@ class verifyView(discord.ui.View):
     async def verifybutton(self, button: discord.ui.Button, interaction: discord.Interaction):
         await interaction.response.defer()
         await interaction.followup.send("<a:DVB_Loading:909997219644604447> Verifying you...", ephemeral=True)
-        if discord.utils.get(interaction.user.roles, id=690422173407641610):
-            await interaction.user.remove_roles(discord.utils.get(interaction.user.guild.roles, id=690422173407641610))
+        verifyrole = interaction.guild.get_role(verify_role)
+        if verifyrole:
+            await interaction.user.remove_roles(verifyrole)
         roleids = [905980110954455070, 905980110157541446, 905980109268324402, 905980108148461599, 905980107435442186] \
             if os.getenv('state') == '1' else \
-            [905980107435442186, 905980108148461599, 905980109268324402, 905980110157541446, 905980110954455070]
+            [837591810389442600, 671426678807068683, 671426686100963359, 671426692077584384, 649499248320184320]
         roles = [interaction.guild.get_role(roleid) for roleid in roleids]
         for role in roles:
             if role not in interaction.user.roles:
