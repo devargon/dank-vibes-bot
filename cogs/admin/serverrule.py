@@ -142,7 +142,7 @@ class ServerRule(commands.Cog):
         whitelist, blacklist = roles
         embed = discord.Embed(color=self.client.embed_color, title=f"Permissions for `{command}`")
         if whitelist:
-            embed.add_field(name='Whitelisted Roles', value="\n".join([ctx.guild.get_role(r).mention if ctx.guild.get_role(r) is not None else r for r in whitelist]), inline=True)
+            embed.add_field(name='Whitelisted Roles', value="\n".join([ctx.guild.get_role(r).mention if ctx.guild.get_role(r) is not None else f'Deleted role: {r}' for r in whitelist]), inline=True)
         if blacklist:
-            embed.add_field(name='Blacklisted Roles', value="\n".join([ctx.guild.get_role(r).mention if ctx.guild.get_role(r) is not None else r for r in blacklist]), inline=True)
+            embed.add_field(name='Blacklisted Roles', value="\n".join([ctx.guild.get_role(r).mention if ctx.guild.get_role(r) is not None else f'Deleted role: {r}' for r in blacklist]), inline=True)
         await ctx.send(embed=embed)
