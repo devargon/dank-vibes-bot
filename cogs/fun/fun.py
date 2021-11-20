@@ -244,8 +244,8 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
             return await ctx.send("Your accompanying message can only be at most 180 characters.")
         try:
             await ctx.message.delete() # hides the ping so it has to delete the message that was sent to ping user
-        except discord.Forbidden:
-            await ctx.send("I could not complete this command as I am missing the permissions to delete your message.")
+        except (discord.HTTPException, discord.Forbidden):
+            await ctx.send("I could not complete this command as I could not delete your message.")
             return
         if message is None:
             message = ''
