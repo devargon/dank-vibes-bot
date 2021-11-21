@@ -213,10 +213,9 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
         Cleans up the bot's messages and bot's commands.
         Maximum allowed is 100 messages.
         """
-
+        await ctx.message.delete()
         strategy = self._complex_cleanup_strategy
         search = min(max(2, search), 1000)
-
         spammers = await strategy(ctx, search)
         deleted = sum(spammers.values())
         messages = [f'{deleted} message{" was" if deleted == 1 else "s were"} removed.']
@@ -224,7 +223,6 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
             messages.append('')
             spammers = sorted(spammers.items(), key=lambda t: t[1], reverse=True)
             messages.extend(f'- **{author}**: {count}' for author, count in spammers)
-
         await ctx.send('\n'.join(messages), delete_after=3.0)
 
     @checks.has_permissions_or_role(administrator=True)
