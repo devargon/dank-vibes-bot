@@ -110,7 +110,6 @@ class dvvt(commands.AutoShardedBot):
             else:
                 print("Some databases do not exist, creating them now...")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS autoreactions(guild_id bigint, trigger text, response text)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS autorole(member_id bigint, guild_id bigint, role_id bigint, time bigint)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS blacklist(incident_id serial, user_id bigint, moderator_id bigint, blacklist_active boolean, time_until bigint, reason text)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS blacklisted_words(string text)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS channelconfigs(guild_id bigint NOT null PRIMARY KEY, nickname_channel_id bigint, dmchannel_id bigint)")
@@ -152,6 +151,7 @@ class dvvt(commands.AutoShardedBot):
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS teleport(member_id bigint, checkpoint text, channel_id bigint)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS temp(member_id bigint PRIMARY KEY, daily_count integer, weekly_count integer, total_count integer, yesterday integer, last_week integer)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS tempweekly(member_id bigint PRIMARY KEY, yesterday integer, last_week integer)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS timedrole(member_id bigint, guild_id bigint, role_id bigint, time bigint)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS viprolemessages(guild_id bigint, colors bigint, vipcolors bigint, boostgaw bigint, vipheistping bigint)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS votecount(member_id bigint PRIMARY KEY, count integer)")
         print("Bot is ready")
