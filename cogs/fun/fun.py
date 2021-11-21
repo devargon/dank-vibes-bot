@@ -69,7 +69,8 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
             self.chatchart_is_running = False
         elif ctx.command.name == 'lockgen':
             self.gen_is_muted = False
-
+        elif ctx.command.name == "nickbet":
+            self.nickbets = []
     def lowered_cooldown(message):
         if discord.utils.get(message.author.roles, id=874931276329656370):
             return commands.Cooldown(1, 900)

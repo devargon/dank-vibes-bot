@@ -9,6 +9,7 @@ from utils.format import stringtime_duration
 from utils.time import humanize_timedelta
 from time import time
 from utils.errors import NicknameIsManaged
+import contextlib
 
 
 class games(commands.Cog):
@@ -266,13 +267,15 @@ class games(commands.Cog):
         if view.returning_value is None:
             ctx.command.reset_cooldown(ctx)
             embed.color, embed.title = discord.Color.red(), "You didn't respond in time."
-            self.nickbets.remove(member.id)
-            self.nickbets.remove(ctx.author.id)
+            with contextlib.suppress(ValueError):
+                self.nickbets.remove(member.id)
+                self.nickbets.remove(ctx.author.id)
             return await msg.edit(embed=embed)
         elif view.returning_value == False:
             ctx.command.reset_cooldown(ctx)
-            self.nickbets.remove(member.id)
-            self.nickbets.remove(ctx.author.id)
+            with contextlib.suppress(ValueError):
+                self.nickbets.remove(member.id)
+                self.nickbets.remove(ctx.author.id)
             embed.color, embed.title = discord.Color.red(), "You declined the nick bet :("
             return await msg.edit(embed=embed)
         embed.color, embed.title, embed.description = discord.Color.green(), "You accepted the nick bet. Yay!", "Nicknames **must follow server rules**. That includes the **NSFW rule**.\nFailure to follow these rules will result in a blacklist from the bot, or getting the \"No Tags\" role."
@@ -290,14 +293,16 @@ class games(commands.Cog):
                     m: m.author.id == ctx.author.id and m.channel.id == ctx.channel.id, timeout=30.0)
             except asyncio.TimeoutError:
                 ctx.command.reset_cooldown(ctx)
-                self.nickbets.remove(member.id)
-                self.nickbets.remove(ctx.author.id)
+                with contextlib.suppress(ValueError):
+                    self.nickbets.remove(member.id)
+                    self.nickbets.remove(ctx.author.id)
                 return await ctx.send(f"{ctx.author.name} didn't respond in time, hence this nick bet is cancelled.")
             else:
                 if membernickmsg.content.lower() == 'cancel':
                     ctx.command.reset_cooldown(ctx)
-                    self.nickbets.remove(member.id)
-                    self.nickbets.remove(ctx.author.id)
+                    with contextlib.suppress(ValueError):
+                        self.nickbets.remove(member.id)
+                        self.nickbets.remove(ctx.author.id)
                     return await ctx.send("This nick bet is cancelled.")
                 if await self.client.check_blacklisted_content(membernickmsg.content):
                     error = "you can't use blacklisted words."
@@ -316,14 +321,16 @@ class games(commands.Cog):
                     m: m.author.id == member.id and m.channel.id == ctx.channel.id, timeout=30.0)
             except asyncio.TimeoutError:
                 ctx.command.reset_cooldown(ctx)
-                self.nickbets.remove(member.id)
-                self.nickbets.remove(ctx.author.id)
+                with contextlib.suppress(ValueError):
+                    self.nickbets.remove(member.id)
+                    self.nickbets.remove(ctx.author.id)
                 return await ctx.send(f"{member.mention} didn't respond in time, hence this nick bet is cancelled.")
             else:
                 if authornickmsg.content.lower() == 'cancel':
                     ctx.command.reset_cooldown(ctx)
-                    self.nickbets.remove(member.id)
-                    self.nickbets.remove(ctx.author.id)
+                    with contextlib.suppress(ValueError):
+                        self.nickbets.remove(member.id)
+                        self.nickbets.remove(ctx.author.id)
                     return await ctx.send("This nick bet is cancelled.")
                 if await self.client.check_blacklisted_content(authornickmsg.content):
                     error = "you can't use blacklisted words."
@@ -375,8 +382,9 @@ class games(commands.Cog):
         if coinpickview.returning_value is None:
             embed.color, embed.description = discord.Color.red(), "You didn't respond in time."
             ctx.command.reset_cooldown(ctx)
-            self.nickbets.remove(member.id)
-            self.nickbets.remove(ctx.author.id)
+            with contextlib.suppress(ValueError):
+                self.nickbets.remove(member.id)
+                self.nickbets.remove(ctx.author.id)
             return await coinpickmsg.edit(embed=embed)
         embed.title = f"{member.name} chose {'Heads! <:DVB_CoinHead:905400213785690172>' if coinpickview.returning_value == True else 'Tails! <:DVB_CoinTail:905400213676638279>'}"
         olddesc = f"{embed.description.splitlines()[0]}\n{embed.description.splitlines()[1]}\n"
@@ -443,7 +451,9 @@ class games(commands.Cog):
             await coinpickmsg.edit(embed=coinflipembed)
         except:
             await ctx.send(embed=coinflipembed)
-        self.nickbets.remove(member.id)
+        with contextlib.suppress(ValueError):
+            self.nickbets.remove(member.id)
+            self.nickbets.remove(ctx.author.id)
         try:
             await loser.edit(nick=nick)
         except discord.HTTPException:
