@@ -236,6 +236,7 @@ class giveaways(commands.Cog):
         await self.client.pool_pg.execute("INSERT INTO giveaways VALUES($1, $2, $3, $4, $5, $6, $7)", ctx.guild.id, channel.id, giveawaymessage.id, ends_at, prize, ctx.author.id, winner)
         await giveawaymessage.edit(embed=embed, view=GiveawayView(self.client))
         pingrole = 758174135276142593 if os.getenv('state') == '0' else 895815588289581096
+        author_said_yes = False
         pingmsg = await ctx.send(f"Do you want to ping <@&{pingrole}>? Say `yes` within **20 seconds** `[0/2]`")
         try:
             msg = await self.client.wait_for('message', timeout=20.0, check=lambda m: not m.author.bot and m.channel == ctx.channel and m.content == 'yes')
@@ -243,9 +244,11 @@ class giveaways(commands.Cog):
             await ctx.send("Two people did not say `yes`. I will not be pinging the role.", delete_after=5.0)
         else:
             await msg.delete()
+            if msg.author.id == ctx.author.id:
+                author_said_yes = True
             await pingmsg.edit(content=f"Do you want to ping <@&{pingrole}>? Say `yes` within **60 seconds** `[1/2]`")
             try:
-                msg = await self.client.wait_for('message', timeout=60.0, check=lambda m: not m.author.bot and m.channel == ctx.channel and m.content == 'yes')
+                msg = await self.client.wait_for('message', timeout=60.0, check=lambda m: not m.author.bot and m.channel == ctx.channel and m.content == 'yes' and m.author.id != ctx.author.id if author_said_yes else m.author.id == ctx.author.id)
             except asyncio.TimeoutError:
                 await ctx.send("Two people did not say `yes`. I will not be pinging the role.", delete_after=5.0)
             else:
