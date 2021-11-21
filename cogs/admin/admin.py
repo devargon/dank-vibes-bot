@@ -128,9 +128,12 @@ class Admin(BetterSelfroles, Joining, Sticky, ServerRule, commands.Cog, name='ad
                 reason = await self.client.wait_for('message', timeout=60, check=lambda m: m.author == ctx.author and m.channel == ctx.channel)
             except asyncio.TimeoutError:
                 return await ctx.send("Timed out. Please try again.")
+            if reason.content.lower() == 'cancel':
+                return await ctx.send(f"Pending blacklist cancelled.")
             if len(reason.content) > 1500:
                 error = "The reason can only be up to 1500 characters."
             reason = 'No reason' if reason.content.lower() == 'none' else reason.content
+        error = None
         while duration is None:
             msg = "How long is the blacklist for? To blacklist the user permanently, type `none`."
             if error:
@@ -140,6 +143,8 @@ class Admin(BetterSelfroles, Joining, Sticky, ServerRule, commands.Cog, name='ad
                 duration = await self.client.wait_for('message', timeout=60, check=lambda m: m.author == ctx.author and m.channel == ctx.channel)
             except asyncio.TimeoutError:
                 return await ctx.send("Timed out. Please try again.")
+            if duration.content.lower() == 'cancel':
+                return await ctx.send(f"Pending blacklist cancelled.")
             if duration.content.lower() == 'none':
                 duration = 9223372036854775807
             else:
