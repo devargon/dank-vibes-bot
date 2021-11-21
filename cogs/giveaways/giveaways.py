@@ -77,6 +77,7 @@ class giveaways(commands.Cog):
     def __init__(self, client):
         self.client = client
         self.giveawayview_added = False
+        self.end_giveaways.start()
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -84,7 +85,6 @@ class giveaways(commands.Cog):
             self.client.add_view(GiveawayView(self.client))
             self.giveawayview_added = True
             #self.change_entrantcount.start()
-            self.end_giveaways.start()
 
     @tasks.loop(seconds=5.0)
     async def change_entrantcount(self):
@@ -101,58 +101,73 @@ class giveaways(commands.Cog):
 
     @tasks.loop(seconds=3.0)
     async def end_giveaways(self):
-        await self.client.wait_until_ready()
-        ended_giveaways = await self.client.pool_pg.fetch("SELECT * FROM giveaways WHERE time < $1", round(time()))
-        if len(ended_giveaways) > 0:
-            for giveaway in ended_giveaways:
-                guild = self.client.get_guild(giveaway.get("guild_id"))
-                if guild is not None:
-                    channel = guild.get_channel(giveaway.get("channel_id"))
-                    if channel is not None:
-                        gawmessage = await self.client.get_channel(giveaway.get("channel_id")).fetch_message(giveaway.get("message_id"))
-                        entrant_no = await self.client.pool_pg.fetchval("SELECT COUNT(DISTINCT user_id) FROM giveawayentrants WHERE message_id = $1", giveaway.get("message_id"))
-                        view = discord.ui.View.from_message(gawmessage)
-                        for b in view.children:
-                            if isinstance(b, discord.ui.Button):
-                                    b.disabled = True
-                        giveawayembed = gawmessage.embeds[0]
-                        giveawayembed.set_author(url="https://cdn.discordapp.com/attachments/871737314831908974/911294206872526879/ezgif-3-53092e7bef9b.png", name="This giveaway has ended!")
-                        entries = await self.client.pool_pg.fetch("SELECT * FROM giveawayentrants WHERE message_id = $1", giveaway.get("message_id"))
-                        winners = []
-                        while len(winners) != giveaway.get("winners") and len(entries) > 0:
-                            winner = random.choice(entries)
-                            if winner.get("user_id") not in winners:
-                                member = guild.get_member(winner.get("user_id"))
-                                if member is not None:
-                                    winners.append(member)
-                            entries.remove(winner)
-                        if len(winners) == 0:
-                            await channel.send(f"I could not find a winner from the **{giveaway.get('name')}** giveaway.\nhttps://discord.com/channels/{guild.id}/{channel.id}/{giveaway.get('message_id')}")
+        try:
+            await self.client.wait_until_ready()
+            ended_giveaways = await self.client.pool_pg.fetch("SELECT * FROM giveaways WHERE time < $1", round(time()))
+            if len(ended_giveaways) > 0:
+                for giveaway in ended_giveaways:
+                    guild = self.client.get_guild(giveaway.get("guild_id"))
+                    if guild is not None:
+                        channel = guild.get_channel(giveaway.get("channel_id"))
+                        if channel is not None:
+                            gawmessage = await self.client.get_channel(giveaway.get("channel_id")).fetch_message(giveaway.get("message_id"))
+                            entrant_no = await self.client.pool_pg.fetchval("SELECT COUNT(DISTINCT user_id) FROM giveawayentrants WHERE message_id = $1", giveaway.get("message_id"))
+                            view = discord.ui.View.from_message(gawmessage)
+                            for b in view.children:
+                                if isinstance(b, discord.ui.Button):
+                                        b.disabled = True
+                            giveawayembed = gawmessage.embeds[0]
+                            giveawayembed.set_author(url="https://cdn.discordapp.com/attachments/871737314831908974/911294206872526879/ezgif-3-53092e7bef9b.png", name="This giveaway has ended!")
+                            entries = await self.client.pool_pg.fetch("SELECT * FROM giveawayentrants WHERE message_id = $1", giveaway.get("message_id"))
+                            winners = []
+                            while len(winners) != giveaway.get("winners") and len(entries) > 0:
+                                winner = random.choice(entries)
+                                if winner.get("user_id") not in winners:
+                                    member = guild.get_member(winner.get("user_id"))
+                                    if member is not None:
+                                        winners.append(member)
+                                entries.remove(winner)
+                            if len(winners) == 0:
+                                await channel.send(f"I could not find a winner from the **{giveaway.get('name')}** giveaway.\nhttps://discord.com/channels/{guild.id}/{channel.id}/{giveaway.get('message_id')}")
+                            else:
+                                giveawayembed.add_field(name="Winners", value=f"{grammarformat([winner.mention for winner in winners])}", inline=False)
+                                print("editing giveaway message embed")
+                                await gawmessage.edit(embed=giveawayembed, view=view)
+                                message = f"{random.choice(guild.emojis)} **{entrant_no}** user(s) entered, {grammarformat([winner.mention for winner in winners])} snagged away **{giveaway.get('name')}**!\nhttps://discord.com/channels/{guild.id}/{channel.id}/{giveaway.get('message_id')}"
+                                print("sending winner message")
+                                await channel.send(message)
+                                winembed = discord.Embed(title=f"You've won the {giveaway.get('name')} giveaway!", description="The prize should be given to you within 24 hours. If you have not received it by then, contact a mod in <#870880772985344010>.", color=self.client.embed_color, timestamp=discord.utils.utcnow())
+                                winembed.set_author(name=guild.name, icon_url=guild.icon.url)
+                                for winner in winners:
+                                    try:
+                                        print("DMing winner")
+                                        await winner.send(embed=winembed)
+                                    except:
+                                        pass
+                                host = guild.get_member(giveaway.get("host_id"))
+                                if host is not None:
+                                    hostembed = discord.Embed(
+                                        title=f"Your {giveaway.get('name')} giveaway has ended!",
+                                        description=f"{grammarformat([f'{winner} ({winner.id})' for winner in winners])} won the giveaway.",
+                                        url=f"https://discord.com/channels/{guild.id}/{channel.id}/{giveaway.get('message_id')}",
+                                        color=self.client.embed_color, timestamp = discord.utils.utcnow())
+                                    try:
+                                        print("DMing host")
+                                        await host.send(embed=hostembed)
+                                    except:
+                                        pass
                         else:
-                            giveawayembed.add_field(name="Winners", value=f"{grammarformat([winner.mention for winner in winners])}", inline=False)
-                            await gawmessage.edit(embed=giveawayembed, view=view)
-                            message = f"{random.choice(guild.emojis)} **{entrant_no}** user(s) entered, {grammarformat([winner.mention for winner in winners])} snagged away **{giveaway.get('name')}**!\nhttps://discord.com/channels/{guild.id}/{channel.id}/{giveaway.get('message_id')}"
-                            await channel.send(message)
-                            winembed = discord.Embed(title=f"You've won the {giveaway.get('name')} giveaway!", description="The prize should be given to you within 24 hours. If you have not received it by then, contact a mod in <#870880772985344010>.", color=self.client.embed_color, timestamp=discord.utils.utcnow())
-                            winembed.set_author(name=guild.name, icon_url=guild.icon.url)
-                            for winner in winners:
-                                try:
-                                    await winner.send(embed=winembed)
-                                except:
-                                    pass
-                            host = guild.get_member(giveaway.get("host_id"))
-                            if host is not None:
-                                hostembed = discord.Embed(
-                                    title=f"Your {giveaway.get('name')} giveaway has ended!",
-                                    description=f"{grammarformat([f'{winner} ({winner.id})' for winner in winners])} won the giveaway.",
-                                    url=f"https://discord.com/channels/{guild.id}/{channel.id}/{giveaway.get('message_id')}",
-                                    color=self.client.embed_color, timestamp = discord.utils.utcnow())
-                                try:
-                                    await host.send(embed=hostembed)
-                                except:
-                                    pass
-                await self.client.pool_pg.execute("DELETE FROM giveaways WHERE message_id = $1", giveaway.get("message_id"))
-                await self.client.pool_pg.execute("DELETE FROM giveawayentrants WHERE message_id = $1", giveaway.get("message_id"))
+                            print("channel is none")
+                    else:
+                        print("guild is none")
+                    print("clearing data in database")
+                    await self.client.pool_pg.execute("DELETE FROM giveaways WHERE message_id = $1", giveaway.get("message_id"))
+                    await self.client.pool_pg.execute("DELETE FROM giveawayentrants WHERE message_id = $1", giveaway.get("message_id"))
+            else:
+                return
+        except Exception as e:
+            embed = discord.Embed(title="Error in giveaways", description=f"```py\n{e}\n```", color=self.client.embed_color)
+            await self.client.get_channel(871737028105109574).send(embed=embed)
 
 
     class RoleFlags(commands.FlagConverter, case_insensitive=True, delimiter=' ', prefix='--'):
@@ -273,7 +288,7 @@ class giveaways(commands.Cog):
         return await ctx.send("i'm not really a giveaway bot so here's a youtube video instead <https://www.youtube.com/watch?v=dQw4w9WgXcQ>")
 
     @checks.has_permissions_or_role(administrator=True)
-    @giveaway.command(name="active")
+    @giveaway.command(name="active", aliases = ['a'])
     async def giveaway_active(self, ctx):
         """
         Lists active giveaways.
