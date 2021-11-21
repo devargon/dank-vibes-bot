@@ -146,7 +146,7 @@ class BrowserScreenshot(commands.Cog):
                         result += f"'`-` <:DVB_secure:894962850110509056> Owned by: **{owner}**"
                     return result
             async with ctx.typing():
-                ssldetails = await loop.run_in_executor(None, get_ssl_information)
+                ssldetails = await loop.run_in_executor(None, get_ssl_information) or f"**__Certificate Information for {domain}__\nNo information is available.**"
             embed = discord.Embed(title=f"Website details for {domain}", description=ssldetails+"\n\nScreenshot: ", timestamp=discord.utils.utcnow(), color=self.client.embed_color)
             embed.set_image(url=f"attachment://{filename}")
             with open('assets/linkinfo.json', 'r', encoding='utf8') as f:
