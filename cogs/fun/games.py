@@ -277,7 +277,10 @@ class games(commands.Cog):
                 self.nickbets.remove(member.id)
                 self.nickbets.remove(ctx.author.id)
             embed.color, embed.title = discord.Color.red(), "You declined the nick bet :("
-            return await msg.edit(embed=embed)
+            try:
+                return await msg.edit(embed=embed)
+            except:
+                return await ctx.send(embed=embed)
         embed.color, embed.title, embed.description = discord.Color.green(), "You accepted the nick bet. Yay!", "Nicknames **must follow server rules**. That includes the **NSFW rule**.\nFailure to follow these rules will result in a blacklist from the bot, or getting the \"No Tags\" role."
         await msg.edit(embed=embed)
         membernick = None
