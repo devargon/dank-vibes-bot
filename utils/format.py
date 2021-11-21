@@ -294,21 +294,16 @@ def generate_loadbar(percentage: float, length: Optional[int] = 20):
     eStartLoad = "<:DVB_eStartLoad:912007458938044436>"
     eMiddleLoad = "<:DVB_eMiddleLoad:912007458992574534>"
     eEndLoad = "<:DVB_eEndLoad:912007458942230608>"
-    print("Percentage: {}".format(round(percentage, 3)))
     if length is None:
         length = 20
     rounded = round(percentage * length)
-    print("{} of {}".format(rounded, length))
     if rounded == 0:
-        print("There is no progress at all")
         return eStartLoad + eMiddleLoad * (length - 2) + eEndLoad
     else:
         if rounded == length:
-            print("is completely done")
             return StartLoad + MiddleLoad * (length - 2) + aEndLoad
         else:
             if rounded > 1:
                 return StartLoad + MiddleLoad * (rounded - 1 - 1) + aMiddleLoad  + eMiddleLoad * (length - rounded - 1) + eEndLoad
             else:
-                print("just started")
                 return aStartLoad + eMiddleLoad * (length - 1 - 1) + eEndLoad

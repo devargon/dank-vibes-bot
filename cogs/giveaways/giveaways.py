@@ -131,16 +131,16 @@ class giveaways(commands.Cog):
                                 await channel.send(f"I could not find a winner from the **{giveaway.get('name')}** giveaway.\nhttps://discord.com/channels/{guild.id}/{channel.id}/{giveaway.get('message_id')}")
                             else:
                                 giveawayembed.add_field(name="Winners", value=f"{grammarformat([winner.mention for winner in winners])}", inline=False)
-                                print("editing giveaway message embed")
+                                #print("editing giveaway message embed")
                                 await gawmessage.edit(embed=giveawayembed, view=view)
                                 message = f"{random.choice(guild.emojis)} **{entrant_no}** user(s) entered, {grammarformat([winner.mention for winner in winners])} snagged away **{giveaway.get('name')}**!\nhttps://discord.com/channels/{guild.id}/{channel.id}/{giveaway.get('message_id')}"
-                                print("sending winner message")
+                                #print("sending winner message")
                                 await channel.send(message)
                                 winembed = discord.Embed(title=f"You've won the {giveaway.get('name')} giveaway!", description="The prize should be given to you within 24 hours. If you have not received it by then, contact a mod in <#870880772985344010>.", color=self.client.embed_color, timestamp=discord.utils.utcnow())
                                 winembed.set_author(name=guild.name, icon_url=guild.icon.url)
                                 for winner in winners:
                                     try:
-                                        print("DMing winner")
+                                        #print("DMing winner")
                                         await winner.send(embed=winembed)
                                     except:
                                         pass
@@ -152,15 +152,17 @@ class giveaways(commands.Cog):
                                         url=f"https://discord.com/channels/{guild.id}/{channel.id}/{giveaway.get('message_id')}",
                                         color=self.client.embed_color, timestamp = discord.utils.utcnow())
                                     try:
-                                        print("DMing host")
+                                        #print("DMing host")
                                         await host.send(embed=hostembed)
                                     except:
                                         pass
                         else:
-                            print("channel is none")
+                            pass
+                            #print("channel is none")
                     else:
-                        print("guild is none")
-                    print("clearing data in database")
+                        pass
+                        #print("guild is none")
+                     #print("clearing data in database")
                     await self.client.pool_pg.execute("DELETE FROM giveaways WHERE message_id = $1", giveaway.get("message_id"))
                     await self.client.pool_pg.execute("DELETE FROM giveawayentrants WHERE message_id = $1", giveaway.get("message_id"))
             else:
