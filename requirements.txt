@@ -30,3 +30,4 @@ typing-extensions
 urllib3
 wincertstore==0.2
 yarl
+alexflipnote.py
