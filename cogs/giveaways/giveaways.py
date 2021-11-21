@@ -1,3 +1,4 @@
+import asyncio
 from time import time
 from datetime import datetime
 import typing
@@ -6,6 +7,7 @@ from utils.format import comma_number, plural, stringtime_duration, grammarforma
 from utils.time import humanize_timedelta
 import os
 import random
+from utils.buttons import confirm
 
 voteid = 874897331252760586 if os.getenv('state') == '1' else 739199912377319427
 
@@ -158,6 +160,7 @@ class giveaways(commands.Cog):
         time: typing.Optional[str]
         prize: typing.Optional[str]
         winner: typing.Optional[str]
+        msg: typing.Optional[str]
 
 
     @checks.has_permissions_or_role(administrator=True)
@@ -168,9 +171,10 @@ class giveaways(commands.Cog):
 
         Available flags:
         `--channel <channel>` The channel where the giveaway is created, default is the channel where you used the command.
-        `--time<time>` The duration of the giveaway, default is 24 hours.
+        `--time <time>` The duration of the giveaway, default is 24 hours.
         `--prize <prize>` The prize for the giveaway, default is <a:dv_iconOwO:837943874973466664> **1 Pepe Trophy**.
         `--winner <number>` Number of winners, default is 1.
+        `--msg <msg>` Message accompanied with the ping, default is enter the giveaway above
         """
         if flags.channel is None:
             channel = ctx.channel
@@ -199,6 +203,8 @@ class giveaways(commands.Cog):
             return await ctx.send("You cannot have more than 80 winners.")
         if len(prize) > 70:
             return await ctx.send("The prize's name cannot be longer than 70 characters.")
+        if flags.msg is not None and len(flags.msg) > 1000:
+            return await ctx.send("The message that accompanies the ping cannot be longer than 1000 characters.")
         if duration > 2592000:
             return await ctx.send("The giveaway cannot last longer than 30 days.")
         ends_at = round(time()) + duration
@@ -212,6 +218,30 @@ class giveaways(commands.Cog):
         giveawaymessage = await channel.send(embed=discord.Embed(title="<a:DVB_Loading:909997219644604447> Initializing giveaway...", color=self.client.embed_color))
         await self.client.pool_pg.execute("INSERT INTO giveaways VALUES($1, $2, $3, $4, $5, $6, $7)", ctx.guild.id, channel.id, giveawaymessage.id, ends_at, prize, ctx.author.id, winner)
         await giveawaymessage.edit(embed=embed, view=GiveawayView(self.client))
+        pingrole = 758174135276142593 if os.getenv('state') == '0' else 895815588289581096
+        pingmsg = await ctx.send(f"Do you want to ping <@&{pingrole}>? Say `yes` within **20 seconds** `[0/2]`")
+        try:
+            msg = await self.client.wait_for('message', timeout=20.0, check=lambda m: not m.author.bot and m.channel == ctx.channel and m.content == 'yes')
+        except asyncio.TimeoutError:
+            await ctx.send("Two people did not say `yes`. I will not be pinging the role.", delete_after=5.0)
+        else:
+            await msg.delete()
+            await pingmsg.edit(content=f"Do you want to ping <@&{pingrole}>? Say `yes` within **60 seconds** `[1/2]`")
+            try:
+                msg = await self.client.wait_for('message', timeout=60.0, check=lambda m: not m.author.bot and m.channel == ctx.channel and m.content == 'yes')
+            except asyncio.TimeoutError:
+                await ctx.send("Two people did not say `yes`. I will not be pinging the role.", delete_after=5.0)
+            else:
+                await msg.delete()
+                await pingmsg.edit(content=f"Do you want to ping <@&{pingrole}>? Say `yes` within **60 seconds** `[2/2]`", delete_after=2.0)
+                if flags.msg is None:
+                    if prize == "<a:dv_iconOwO:837943874973466664> 1 Pepe Trophy":
+                        additional_message = "Enter the daily trophy giveaway above! <:DVB_Trophy:911244980599804015>"
+                    else:
+                        additional_message = f"React to the giveaway above ♡"
+                else:
+                    additional_message = flags.msg
+                await ctx.send(f"<@&{pingrole}> {additional_message}", allowed_mentions=discord.AllowedMentions(everyone=False, roles=True, users=True))
 
     @checks.has_permissions_or_role(administrator=True)
     @commands.group(name="giveaway", aliases=['g'], invoke_without_command=True)
