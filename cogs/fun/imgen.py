@@ -5,10 +5,15 @@ import asyncio
 from PIL import Image, ImageFilter, ImageFont, ImageDraw
 from io import BytesIO
 import numpy as np
+import os
+import alexflipnote
+
+alexflipnoteAPI = os.getenv('alexflipnoteAPI')
 
 class imgen(commands.Cog):
     def __init__(self, client):
         self.client = client
+        self.alex_api = alexflipnote.Client(alexflipnoteAPI)
 
     @checks.requires_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
@@ -128,3 +133,85 @@ class imgen(commands.Cog):
             return file
         file = await loop.run_in_executor(None, generate)
         await ctx.send(f"{member.display_name} STOP DMING 🤬🤬🤬", file=file)
+
+    @checks.requires_roles()
+    @commands.command(name="captcha")
+    async def captcha(self, ctx, *, text: str = None):
+        """
+        Generate a reCAPTCHA button with the specified text.
+        """
+        if text is None:
+            additional_message = "You can specify what text to show in the reCAPTCHA button!"
+            text = "I'm not a robot"
+        else:
+            additional_message = None
+        recaptchaimage = await self.alex_api.captcha(text)
+        image_bytes = await recaptchaimage.read()
+        await ctx.send(additional_message, file=discord.File(fp=image_bytes, filename="reCAPTCHA.png"))
+
+    @checks.requires_roles()
+    @commands.command(name="didyoumean", aliases=['dym', 'google'], usage="<2 texts separated by a comma>")
+    async def didyoumean(self, ctx, *, text: str = None):
+        """
+        When you search for `text1` on Google, but they ask you if you meant `text2`...
+        """
+        if text is None or len(text.split(',')) < 2:
+            return await ctx.send("You need to specify two texts that are separated by a comma.")
+        text = text.split(',')
+        text = [text[0][:50], ','.join(text[1:][:50])]
+        didyoumeanimage = await self.alex_api.didyoumean(text[0], text[1])
+        image_bytes = await didyoumeanimage.read()
+        await ctx.send(file=discord.File(fp=image_bytes, filename="didyoumean.png"))
+
+    @checks.requires_roles()
+    @commands.command(name="drake", usage="<2 texts separated by a comma>")
+    async def drake(self, ctx, *, text: str = None):
+        """
+        I don't really know how to explain this meme... It's just the drake meme thing
+        """
+        if text is None or len(text.split(',')) < 2:
+            return await ctx.send("You need to specify two texts that are separated by a comma.")
+        text = text.split(',')
+        text = [text[0][:50], ','.join(text[1:][:50])]
+        image = await self.alex_api.drake(text[0], text[1])
+        image_bytes = await image.read()
+        await ctx.send(file=discord.File(fp=image_bytes, filename="drake.png"))
+
+    @checks.requires_roles()
+    @commands.command(name="fact")
+    async def fact(self, ctx, *, text: str = None):
+        """
+        IT IS A FACT!!!
+        """
+        if text is None:
+            return await ctx.send("You need to specify a fact.")
+        text = text[:50]
+        image = await self.alex_api.facts(text)
+        image_bytes = await image.read()
+        await ctx.send(file=discord.File(fp=image_bytes, filename="fact.png"))
+
+    @checks.requires_roles()
+    @commands.command(name="bad")
+    async def bad(self, ctx, member: discord.Member = None):
+        """
+        you bad bad but a man is scolding you instead
+        """
+        if member == None:
+            member = ctx.author
+        avatar = member.display_avatar.with_format("png").url
+        image = await self.alex_api.bad(avatar)
+        image_bytes = await image.read()
+        await ctx.send(file=discord.File(fp=image_bytes, filename="bad.png"))
+
+    @checks.requires_roles()
+    @commands.command(name="what")
+    async def what(self, ctx, member: discord.Member = None):
+        """
+        *sanctuary guardian music plays*
+        """
+        if member == None:
+            member = ctx.author
+        avatar = member.display_avatar.with_format("png").url
+        image = await self.alex_api.what(avatar)
+        image_bytes = await image.read()
+        await ctx.send(file=discord.File(fp=image_bytes, filename="WHAT.png"))

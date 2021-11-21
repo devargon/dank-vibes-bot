@@ -8,6 +8,7 @@ import random
 import aiohttp
 import asyncio
 import operator
+import alexflipnote
 from typing import Union
 import matplotlib.pyplot as plt
 
@@ -23,25 +24,7 @@ from .itemgames import ItemGames
 from .games import games
 from .color import color
 
-blacklisted_words = ['N-renoteQ3R', 'n.i.g.g.e.r', 'n i g a', 'nygga', 'niuggers', 'nigger',
-                     'https://discordnitro.link/stearncommunity', 'kill yourself', 'figgot', 'ching chong',
-                     'frigger', 'retard', 'n06g4s', 'n1gga', 'nicecar', 'nig a', 'discorcl.click', 'n!ggas', 'n1g@',
-                     'kyś', 'nigg', '𓂺', 'negro', 'tranny', 'https://discorcl.click/gift/b5xkymkdgtacxja', 'nigga',
-                     'ñïbbä', 'rxtarded', '.ni.gga.', 'nixgger', '░', 'etard', 'n1 66 er', 'niglet', 'nag gers',
-                     'noiga', 'n8gga', 'retarted', 'discord.qq', 'n iggers', 'nêģŕö',
-                     'send this to all servers you are in.', 'fagot', 're.tard', 'n!6g3r',
-                     'http://discordglft.ru/gift', 'cars', 'nergga', 'kýs', 'n1gər', 'r3tard', 'nigg4',
-                     'https://steamdiscordnitro.ru/gift', 'n1g||64', 'nigga', 'naggers', 're tar d', 'neega',
-                     'ni99er', 'steamcommunytu', 'night', 'nigga', 'gleam.io', 'n!gga', 'nigga', 'nidgga',
-                     'niogger', '⠿', 'no664s', 'nippa', 'nlgger', 'nibbas', 'nìģêŕ', 'nebbas', 'nigas', 'nigga',
-                     'nice', '卐', 'negga', 'n1gg3rs', 'n I g g a', 'nigba', 'furfag', 'n3bb4s', 'nugga', 'n¡gga',
-                     'n!gger', 'n.i.g.g.a', 'higgers', 'nirrger', 'n1gger', 'fucktard', '⣿', 'steamcommnuitry',
-                     'migga', 'https://discordnitro.link/steam/gifts', 'n|ggers', 'giveawaynitro.com', 'f@g',
-                     'リ╎⊣⊣ᒷ∷', 'retrded', 'https://discordgift.ru.com/gift', 'r3tar d', 'n!gg3r', 'nibba', 'niqqer',
-                     'kyfs', 'discord.qg', 'fa.g', 'nagger', 'nigfa', 'send this to all the servers you are in',
-                     'faggot', 'niceca||r', 'nig gas', 'n!gg@', 'hey, free discord gifted nitro for 1 month:',
-                     'neeger', 'nighha', 'n1gg@', 'n!g3r', 'nig', 'nigg', 'anigame']
-
+alexflipnoteAPI = os.getenv('alexflipnoteAPI')
 
 class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
     """
@@ -63,6 +46,7 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
         self.planning_numberevent = []
         self.numberevent_channels = []
         self.nickbets = []
+        self.alex_api = alexflipnote.Client(alexflipnoteAPI)
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
