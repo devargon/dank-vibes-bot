@@ -1,24 +1,27 @@
 import discord
 from discord import Webhook
-import time
-import asyncio
 from discord.ext import commands
+
+import os
+import time
 import random
+import aiohttp
+import asyncio
+import operator
+from typing import Union
+import matplotlib.pyplot as plt
+
+from utils import checks
 from utils.time import humanize_timedelta
+from utils.errors import ArgumentBaseError, NicknameIsManaged
+from utils.format import generate_loadbar
+
 from .dm import dm
 from .imgen import imgen
 from .snipe import snipe
 from .itemgames import ItemGames
-from utils import checks
-import operator
-from typing import Union
-import matplotlib.pyplot as plt
-import os
-import aiohttp
-from utils.errors import ArgumentBaseError, NicknameIsManaged
 from .games import games
 from .color import color
-from typing import Optional
 
 blacklisted_words = ['N-renoteQ3R', 'n.i.g.g.e.r', 'n i g a', 'nygga', 'niuggers', 'nigger',
                      'https://discordnitro.link/stearncommunity', 'kill yourself', 'figgot', 'ching chong',
@@ -391,7 +394,6 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
         if channel is None or type(channel) is str:
             channel = ctx.channel
         embed=discord.Embed(title=f"Shuffling through #{channel}'s message history...", description=f"Fetching messages from Discord's API...", color=self.client.embed_color)
-        embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/871737314831908974/880374020267212830/discord_loading.gif")
         statusmessage = await ctx.send(embed=embed)
         messagecount = 0
         self.chatchart_is_running = True
@@ -410,9 +412,8 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
                     else:
                         data[authorid] += 1
             messagecount += 1
-            if messagecount %250 == 0:
-                embed=discord.Embed(title=f"Shuffling through #{channel}'s message history...", description=f"Scanned {messagecount} of the last **5000** messages sent here.\n\n{'■'*int(messagecount/250)}{'□'*int((20-(messagecount/250)))}", color=self.client.embed_color)
-                embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/871737314831908974/880374020267212830/discord_loading.gif")
+            if messagecount %500 == 0:
+                embed=discord.Embed(title=f"Shuffling through #{channel}'s message history...", description=f"**{messagecount}** of the last **5000** messages scanned.\n\n{generate_loadbar(messagecount/5000, 10)}", color=self.client.embed_color)
                 try:
                     await statusmessage.edit(embed=embed)
                 except:

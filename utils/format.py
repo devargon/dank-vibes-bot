@@ -9,6 +9,7 @@ import math
 from expr import evaluate
 import aiohttp
 from utils.errors import ArgumentBaseError
+from typing import Optional
 
 class plural:
     """
@@ -282,3 +283,32 @@ async def get_image(url:str):
             raise ArgumentBaseError(message="Something went wrong while trying to get the image.")
         else:
             return data
+
+def generate_loadbar(percentage: float, length: Optional[int] = 20):
+    aStartLoad = "<a:DVB_aStartLoad:912007459898544198>"
+    aMiddleLoad = "<a:DVB_aMiddleLoad:912007457214185565>"
+    aEndLoad = "<a:DVB_aEndLoad:912007457591668827>"
+    StartLoad = "<:DVB_StartLoad:912007458581516289>"
+    MiddleLoad = "<:DVB_MiddleLoad:912007459118411786>"
+    EndLoad = "<:DVB_EndLoad:912007458594127923>"
+    eStartLoad = "<:DVB_eStartLoad:912007458938044436>"
+    eMiddleLoad = "<:DVB_eMiddleLoad:912007458992574534>"
+    eEndLoad = "<:DVB_eEndLoad:912007458942230608>"
+    print("Percentage: {}".format(round(percentage, 3)))
+    if length is None:
+        length = 20
+    rounded = round(percentage * length)
+    print("{} of {}".format(rounded, length))
+    if rounded == 0:
+        print("There is no progress at all")
+        return eStartLoad + eMiddleLoad * (length - 2) + eEndLoad
+    else:
+        if rounded == length:
+            print("is completely done")
+            return StartLoad + MiddleLoad * (length - 2) + aEndLoad
+        else:
+            if rounded > 1:
+                return StartLoad + MiddleLoad * (rounded - 1 - 1) + aMiddleLoad  + eMiddleLoad * (length - rounded - 1) + eEndLoad
+            else:
+                print("just started")
+                return aStartLoad + eMiddleLoad * (length - 1 - 1) + eEndLoad
