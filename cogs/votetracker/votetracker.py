@@ -24,7 +24,7 @@ class VoteSetting(discord.ui.Select):
         emojis = [discord.PartialEmoji.from_str("<:DVB_None:884743780027219989>"), discord.PartialEmoji.from_str("<:DVB_Letter:884743813166407701>"), discord.PartialEmoji.from_str("<:DVB_Ping:883744614295674950>")]
         options = []
         for index, label in enumerate(labels):
-            options.append(discord.SelectOption(label=label, description=descriptions[labels.index(label)], emoji=emojis[labels.index(label)], default=True if index == self.currentsetting else False))
+            options.append(discord.SelectOption(label=label, description=descriptions[labels.index(label)], emoji=emojis[labels.index(label)], default=True if index == self.currentsetting and label != "None" else False))
         super().__init__(placeholder='Choose your type of vote reminder...', min_values=1, max_values=1, options=options)
 
     async def callback(self, interaction: discord.Interaction):
@@ -402,13 +402,11 @@ class VoteTracker(commands.Cog, name='votetracker'):
 
     @commands.command(name="myvotes", aliases=["myv", "myvote", "votes"])
     @checks.not_in_gen()
-    async def myvotes(self, ctx, member = None): # member variable is not used actually
+    async def myvotes(self, ctx): # member variable is not used actually
         """
         See how many times you have voted for Dank Vibes.
         """
         timenow = round(time.time())
-        if member is not None and "<@" in ctx.message.content: # you can delete this if you want, I just added it to tease them hehe
-            await ctx.send("Nice try, but you can't view other users' votecount.")
         count = await self.client.pool_pg.fetchval("SELECT count FROM votecount where member_id = $1", ctx.author.id) or 0
         result = await self.client.pool_pg.fetchrow("SELECT * FROM roleremove WHERE member_id = $1 and rmtime > $2", ctx.author.id, timenow)
         nextmilestone = await self.client.pool_pg.fetchval("SELECT votecount FROM milestones WHERE votecount > $1 LIMIT 1", count)
@@ -431,7 +429,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
             footer_msg = None
         if nextmilestone is not None:
             count_to_next = nextmilestone - count
-            embed.add_field(name="Milestones 🏁", value=f"You are **{count_to_next}** votes away from reaching **{nextmilestone} votes**!", inline=False)
+            embed.add_field(name="Milestones 🏁", value=f"You are **{plural(count_to_next):** vote} away from reaching **{nextmilestone} votes**!", inline=False)
         if footer_msg is not None:
             embed.set_footer(text=footer_msg)
         embed.set_thumbnail(url=ctx.guild.icon.url)
