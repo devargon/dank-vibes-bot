@@ -242,16 +242,20 @@ def stringtime_duration(string:str):
         string = string.replace('hrs', '*3600+').replace('hr', '*3600+')
     if 'h' in string:
         string = string.replace('h', '*3600+')
+    if 'day' in string:
+        string = string.replace('days', '*86400+').replace('day', '*86400+')
+    if 'd' in string:
+        string = string.replace('d', '*86400+')
+    if 'week' in string:
+        string = string.replace('weeks', '*604800+').replace('week', '*604800+')
+    if 'w' in string:
+        string = string.replace('w', '*604800+')
     if 'year' in string:
         string = string.replace('years', '*31536000+').replace('year', '*31536000+')
     if 'yr' in string:
         string = string.replace('yrs', '*31536000+').replace('yr', '*31536000+')
     if 'y' in string:
         string = string.replace('y', '*31536000+')
-    if 'day' in string:
-        string = string.replace('days', '*86400+').replace('day', '*86400+')
-    if 'd' in string:
-        string = string.replace('d', '*86400+')
     if string.endswith('+') or string.endswith('-'):
         string += "0"
     if string.endswith('/') or string.endswith('*') or string.endswith('^'):
