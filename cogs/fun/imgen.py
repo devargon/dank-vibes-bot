@@ -45,6 +45,7 @@ class imgen(commands.Cog):
         await ctx.send(file=file)
 
     @checks.requires_roles()
+    @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.command(name="stank")
     async def stank(self, ctx, member: discord.Member = None):
         """
@@ -74,6 +75,7 @@ class imgen(commands.Cog):
         await msg.edit(f"To steal this emoji, go to your server and paste this in: `!steal {member.display_name}stank {msg.attachments[0].proxy_url}`")
 
     @checks.requires_roles()
+    @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.command(name="audacity")
     async def audacity(self, ctx, member: discord.Member = None):
         """
@@ -103,6 +105,7 @@ class imgen(commands.Cog):
         await ctx.send(file=file)
 
     @checks.requires_roles()
+    @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.command(name='annoy')
     async def annoy(self, ctx, member: discord.Member = None):
         """
@@ -135,6 +138,7 @@ class imgen(commands.Cog):
         await ctx.send(f"{member.display_name} STOP DMING 🤬🤬🤬", file=file)
 
     @checks.requires_roles()
+    @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.command(name="captcha")
     async def captcha(self, ctx, *, text: str = None):
         """
@@ -150,6 +154,7 @@ class imgen(commands.Cog):
         await ctx.send(additional_message, file=discord.File(fp=image_bytes, filename="reCAPTCHA.png"))
 
     @checks.requires_roles()
+    @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.command(name="didyoumean", aliases=['dym', 'google'], usage="<2 texts separated by a comma>")
     async def didyoumean(self, ctx, *, text: str = None):
         """
@@ -164,6 +169,7 @@ class imgen(commands.Cog):
         await ctx.send(file=discord.File(fp=image_bytes, filename="didyoumean.png"))
 
     @checks.requires_roles()
+    @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.command(name="drake", usage="<2 texts separated by a comma>")
     async def drake(self, ctx, *, text: str = None):
         """
@@ -178,6 +184,7 @@ class imgen(commands.Cog):
         await ctx.send(file=discord.File(fp=image_bytes, filename="drake.png"))
 
     @checks.requires_roles()
+    @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.command(name="fact")
     async def fact(self, ctx, *, text: str = None):
         """
@@ -191,6 +198,7 @@ class imgen(commands.Cog):
         await ctx.send(file=discord.File(fp=image_bytes, filename="fact.png"))
 
     @checks.requires_roles()
+    @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.command(name="bad")
     async def bad(self, ctx, member: discord.Member = None):
         """
@@ -204,6 +212,7 @@ class imgen(commands.Cog):
         await ctx.send(file=discord.File(fp=image_bytes, filename="bad.png"))
 
     @checks.requires_roles()
+    @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.command(name="what")
     async def what(self, ctx, member: discord.Member = None):
         """
