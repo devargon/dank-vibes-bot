@@ -77,7 +77,7 @@ class ErrorHandler(commands.Cog):
             await self.client.get_channel(871737028105109574).send(
                 f"I encountered a Discord Server Error at {ctx.channel.mention}: {ctx.message.jump_url}")
         else:
-            embed = discord.Embed(title="⚠️ Oh no!", description="Something terribly went wrong when this command was used.\n\nThe developers have been notified and it will fixed soon.", color=discord.Color.red())
+            embed = discord.Embed(title="⚠️ Oh no!", description="Something terribly went wrong when this command was used.\n\nThe developers have been notified and it'll fixed soon.", color=discord.Color.red())
             if ctx.author.id in [650647680837484556, 321892489470410763]:
                 embed.add_field(name="Error", value=f"```prolog\n{error}\n```\n<#871737028105109574>")
                 await send_error(embed=embed)
