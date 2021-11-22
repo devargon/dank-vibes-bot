@@ -221,7 +221,7 @@ def stringnum_toint(string:str):
     return intstring
 
 def stringtime_duration(string:str):
-    allowedsymbols=["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "m", "s", 'h', 'y', 'd', 'r', 'e', 'c', 'm', 'i', 'n']
+    allowedsymbols=["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "m", "s", 'h', 'y', 'd', 'r', 'e', 'c', 'm', 'i', 'n', 'w', 'k']
     string = string.lower()
     for character in list(string):
         if character not in allowedsymbols:
