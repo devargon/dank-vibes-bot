@@ -9,7 +9,7 @@ import os
 import random
 from utils.buttons import confirm
 
-voteid = 874897331252760586 if os.getenv('state') == '1' else 739199912377319427
+voteid = 874897331252760586 if os.getenv('state') == '1' else 683884762997587998
 
 import discord
 from discord.ext import commands, tasks, menus
@@ -187,16 +187,14 @@ class giveaways(commands.Cog):
         Starts a trophy giveaway.
 
         Available flags:
-        `--channel <channel>` The channel where the giveaway is created, default is the channel where you used the command.
         `--time <time>` The duration of the giveaway, default is 24 hours.
         `--prize <prize>` The prize for the giveaway, default is <a:dv_iconOwO:837943874973466664> **1 Pepe Trophy**.
         `--winner <number>` Number of winners, default is 1.
         `--msg <msg>` Message accompanied with the ping, default is enter the giveaway above
         """
-        if flags.channel is None:
-            channel = ctx.channel
-        else:
-            channel = flags.channel
+        channel = ctx.channel
+        if os.getenv('state') == "0" and channel.id not in [630587061665267713, 803039330310029362]:
+            return await ctx.send("This command can only be used in certain channels.")
         if flags.time is None:
             duration = 86400
         else:
