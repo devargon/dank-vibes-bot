@@ -239,7 +239,7 @@ class giveaways(commands.Cog):
         giveawaymessage = await channel.send(embed=discord.Embed(title="<a:DVB_Loading:909997219644604447> Initializing giveaway...", color=self.client.embed_color))
         await self.client.pool_pg.execute("INSERT INTO giveaways VALUES($1, $2, $3, $4, $5, $6, $7, $8)", ctx.guild.id, channel.id, giveawaymessage.id, ends_at, prize, ctx.author.id, winner, True)
         await giveawaymessage.edit(embed=embed, view=GiveawayView(self.client))
-        if flags.noping is None:
+        if flags.noping is not None:
             return
         pingrole = 758174135276142593 if os.getenv('state') == '0' else 895815588289581096
         author_said_yes = False
