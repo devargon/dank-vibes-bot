@@ -431,7 +431,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         if footer_msg is not None:
             embed.set_footer(text=footer_msg)
         embed.set_thumbnail(url=ctx.guild.icon.url)
-        if result is not None and result.get('rmtime') == 9223372036854775807:
+        if result is None or result.get('rmtime') == 9223372036854775807:
             duration = 0
         else:
             duration = result.get('rmtime') - timenow
