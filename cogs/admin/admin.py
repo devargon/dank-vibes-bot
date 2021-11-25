@@ -51,7 +51,7 @@ class Admin(BetterSelfroles, Joining, Sticky, ServerRule, commands.Cog, name='ad
         await self.client.pool_pg.execute("UPDATE serverconfig SET enabled=$1 WHERE guild_id=$2 AND settings=$3", result, guild.id, settings)
         return result
 
-    @commands.command(name='serverconfig')
+    @commands.command(name='serverconfig', aliases=["serverconf"])
     @commands.has_guild_permissions(administrator=True)
     async def serverconfig(self, ctx):
         """
@@ -70,13 +70,16 @@ class Admin(BetterSelfroles, Joining, Sticky, ServerRule, commands.Cog, name='ad
             votelb = votelb.get('enabled')
         if (verification := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "verification")) is not None:
             verification = verification.get('enabled')
+        if (censor := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "censor")) is not None:
+            censor = censor.get('enabled')
         embed.add_field(name=f"{get_emoji(owodaily)} OwO Daily Leaderboard", value=f"{'Enabled' if owodaily else 'Disabled'}", inline=False)
         embed.add_field(name=f"{get_emoji(owoweekly)} OwO Weekly Leaderboard", value=f"{'Enabled' if owoweekly else 'Disabled'}", inline=False)
         embed.add_field(name=f"{get_emoji(votelb)} Vote Leaderboard", value=f"{'Enabled' if votelb else 'Disabled'}", inline=False)
         embed.add_field(name=f"{get_emoji(verification)} Verify after Membership Screening", value=f"{'Enabled' if votelb else 'Disabled'}", inline=False)
+        embed.add_field(name=f"{get_emoji(censor)} Delete blacklisted messages (Not in use)", value='Enabled' if censor else 'Disabled', inline=False)
         embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon.url)
         message = await ctx.send(embed=embed)
-        emojis = ['1⃣', '2⃣', '3⃣', '4️⃣', 'ℹ']
+        emojis = ['1⃣', '2⃣', '3⃣', '4️⃣', '5️⃣', 'ℹ']
         for emoji in emojis:
             await message.add_reaction(emoji)
         def check(payload):
@@ -101,6 +104,10 @@ class Admin(BetterSelfroles, Joining, Sticky, ServerRule, commands.Cog, name='ad
             elif str(response.emoji) == emojis[3]:
                 votelb = await self.handle_toggle(ctx.guild, 'verification')
                 embed.set_field_at(index=3, name=f"{get_emoji(votelb)} Verify after Membership Screening", value=f"{'Enabled' if votelb else 'Disabled'}", inline=False)
+                await message.edit(embed=embed)
+            elif str(response.emoji) == emojis[4]:
+                votelb = await self.handle_toggle(ctx.guild, 'censor')
+                embed.set_field_at(index=4, name=f"{get_emoji(votelb)} Delete blacklisted messages (Not in use)", value=f"{'Enabled' if votelb else 'Disabled'}", inline=False)
                 await message.edit(embed=embed)
             elif str(response.emoji) == emojis[4]:
                 tempembed = discord.Embed(title='Information', color=self.client.embed_color, description="React with the emojis to toggle leaderboards")
