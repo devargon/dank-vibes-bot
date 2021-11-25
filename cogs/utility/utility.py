@@ -91,8 +91,8 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
         Shows some information about this bot.
         """
         value_1 = []
-        value_1.append(f'⚙ Commands: {len(self.client.commands)}')
-        value_1.append(f'<:user_mention:868806554961453116> Users: `{len(self.client.users)}`')
+        value_1.append(f'<:DVB_commands:913426937869926440> {len(self.client.commands)}')
+        value_1.append(f'<:DVB_users:913426937362391111> {len(self.client.users)}')
         text = 0
         voice = 0
         stage = 0
@@ -106,17 +106,17 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
                     voice += 1
                 elif isinstance(channel, discord.StageChannel):
                     stage += 1
-        value_1.append(f"<:text_channel:868806636230283314>  Text Channels: `{text}`")
-        value_1.append(f'<:voice_channel:868806601123958834> Voice Channels: `{voice}`')
+        value_1.append(f"<:text_channel:868806636230283314> {text}")
+        value_1.append(f'<:voice_channel:868806601123958834> {voice}')
         if stage != 0:
-            value_1.append(f'<:stage_channel:868806674452987924> Stage Channels: `{stage}`')
+            value_1.append(f'<:stage_channel:868806674452987924> {stage}')
         py_version = "{}.{}.{}".format(*sys.version_info[:3])
         dpy_version = discord.__version__
-        embed = discord.Embed(color=self.client.embed_color)
+        embed = discord.Embed(description=f"{ctx.guild.me.name} is a multipurpose bot designed to help members and enhance the Dank Vibes experience with a helpful set of fun and utility commands. \n\n{ctx.guild.me.name} is created by {str(self.client.get_user(321892489470410763))} with the Discord.py library, and developed by {str(self.client.get_user(321892489470410763))} and {str(self.client.get_user(650647680837484556))}.", color=self.client.embed_color)
         embed.add_field(name='Stats', value="\n".join(value_1), inline=True)
-        embed.add_field(name='Versions', value=f"<:python:868806455317393428> Python: `{py_version}`\n<:discordpy:868806486241992724> Discord.py: `{dpy_version}`", inline=True)
-        embed.add_field(name='Developers', value=f"{str(self.client.get_user(650647680837484556))}\n{str(self.client.get_user(321892489470410763))}", inline=True)
-        embed.add_field(name="Special Thanks To", value=f"{str(await self.client.fetch_user(727498137232736306))}\n{str(await self.client.fetch_user(560251854399733760))} <:DVB_RoarHeart:904877487778070528>\n{str(await self.client.fetch_user(642318626044772362))}", inline=True)
+        embed.add_field(name='Versions', value=f"<:python:868806455317393428> `{py_version}`\n<:discordpy:868806486241992724> `{dpy_version}`", inline=True)
+        embed.add_field(name='Developers', value=f"{str(self.client.get_user(650647680837484556))}", inline=True)
+        embed.add_field(name="Special Thanks To", value=f"{str(await self.client.fetch_user(727498137232736306))}\n{str(await self.client.fetch_user(321892489470410763))}", inline=True)
         if ctx.author.id in [650647680837484556, 515725341910892555, 321892489470410763]:
             loop = asyncio.get_event_loop()
             def get_advanced_details():
@@ -130,7 +130,7 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
             embed.add_field(name="RAM Usage", value=f"{details[0]}MB", inline=True)
             embed.add_field(name="CPU Usage", value=f"{details[1]}%", inline=True)
             embed.add_field(name="Uptime", value=f"{details[2]}", inline=True)
-        embed.set_author(name=str(ctx.guild.me), icon_url=ctx.guild.me.display_avatar.url)
+        embed.set_author(name=f"About {ctx.guild.me.name}", icon_url=ctx.guild.me.display_avatar.url)
         embed.set_thumbnail(url=ctx.guild.me.display_avatar.url)
         embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.display_avatar.url)
         embed.timestamp = discord.utils.utcnow()
