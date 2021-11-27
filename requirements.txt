@@ -32,3 +32,5 @@ wincertstore==0.2
 yarl
 alexflipnote.py
 more-itertools
+googletrans==3.1.0a0
+hyper
