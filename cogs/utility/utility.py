@@ -3,6 +3,7 @@ import datetime
 import sys
 import time
 import discord
+import httpcore._exceptions
 import humanize
 from abc import ABC
 from .l2lvc import L2LVC
@@ -11,13 +12,36 @@ from discord.ext import commands
 from .teleport import Teleport
 from .suggestion import Suggestion
 from .whois import Whois
+from utils.context import DVVTcontext
+from utils.errors import ArgumentBaseError
 from utils.time import humanize_timedelta
 import psutil
-import os
 import asyncio
 from utils.format import ordinal, comma_number, plural
 from utils import checks
 import os
+import googletrans, googletrans.models
+from googletrans import Translator
+import functools
+
+
+LANGUAGES = {'af': 'afrikaans', 'sq': 'albanian', 'am': 'amharic', 'ar': 'arabic', 'hy': 'armenian', 'az': 'azerbaijani',
+             'eu': 'basque', 'be': 'belarusian', 'bn': 'bengali', 'bs': 'bosnian', 'bg': 'bulgarian', 'ca': 'catalan',
+             'ceb': 'cebuano', 'ny': 'chichewa','zh-cn': 'chinese (simplified)','zh-tw': 'chinese (traditional)', 'co': 'corsican',
+             'hr': 'croatian', 'cs': 'czech', 'da': 'danish', 'nl': 'dutch', 'en': 'english', 'eo': 'esperanto', 'et': 'estonian',
+             'tl': 'filipino', 'fi': 'finnish', 'fr': 'french', 'fy': 'frisian', 'gl': 'galician', 'ka': 'georgian', 'de': 'german',
+             'el': 'greek', 'gu': 'gujarati', 'ht': 'haitian creole', 'ha': 'hausa', 'haw': 'hawaiian', 'iw': 'hebrew',
+             'he': 'hebrew', 'hi': 'hindi', 'hmn': 'hmong','hu': 'hungarian', 'is': 'icelandic', 'ig': 'igbo', 'id': 'indonesian',
+             'ga': 'irish', 'it': 'italian', 'ja': 'japanese', 'jw': 'javanese', 'kn': 'kannada', 'kk': 'kazakh', 'km': 'khmer',
+             'ko': 'korean', 'ku': 'kurdish (kurmanji)', 'ky': 'kyrgyz', 'lo': 'lao', 'la': 'latin', 'lv': 'latvian',
+             'lt': 'lithuanian', 'lb': 'luxembourgish', 'mk': 'macedonian', 'mg': 'malagasy', 'ms': 'malay', 'ml': 'malayalam',
+             'mt': 'maltese', 'mi': 'maori', 'mr': 'marathi', 'mn': 'mongolian', 'my': 'myanmar (burmese)', 'ne': 'nepali', 'no': 'norwegian',
+             'or': 'odia', 'ps': 'pashto', 'fa': 'persian', 'pl': 'polish', 'pt': 'portuguese', 'pa': 'punjabi', 'ro': 'romanian',
+             'ru': 'russian', 'sm': 'samoan', 'gd': 'scots gaelic', 'sr': 'serbian', 'st': 'sesotho', 'sn': 'shona', 'sd': 'sindhi',
+             'si': 'sinhala', 'sk': 'slovak', 'sl': 'slovenian', 'so': 'somali', 'es': 'spanish', 'su': 'sundanese', 'sw': 'swahili',
+             'sv': 'swedish', 'tg': 'tajik', 'ta': 'tamil', 'te': 'telugu', 'th': 'thai', 'tr': 'turkish', 'uk': 'ukrainian',
+             'ur': 'urdu', 'ug': 'uyghur', 'uz': 'uzbek', 'vi': 'vietnamese', 'cy': 'welsh', 'xh': 'xhosa', 'yi': 'yiddish',
+             'yo': 'yoruba', 'zu': 'zulu',}
 
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
@@ -30,6 +54,89 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
         self.client = client
         self.nickconfig = {}
         self.persistent_views_added = False
+        self.translator = Translator()
+
+
+    async def get_text_to_translate(self, ctx, userinput):
+        try:
+            msg = await commands.MessageConverter().convert(ctx=ctx, argument=userinput)
+        except Exception as e:
+            if isinstance(e, commands.ChannelNotReadable):
+                raise ArgumentBaseError(message="I do not have permission to view the channel where the message is in.")
+            else:
+                if ctx.message.reference and isinstance(ctx.message.reference.resolved, discord.Message):
+                    return ctx.message.reference.resolved.content
+                else:
+                    return userinput
+        else:
+            return msg.content
+
+
+    @commands.cooldown(10, 1, commands.BucketType.user)
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.group(name="translate", aliases=['trans', 'tl'], invoke_without_command=True)
+    async def translate_command(self, ctx, dest_language: str = None, *, text: str = None):
+        """
+        Translate text up to 1000 characters into a language of your choice, or English.
+        By default, the text's language is auto-detected then translated into English.
+        You can specify a language before the text to translate it into that language.
+
+        Examples:
+        `dv.translate 永远不会放弃你` will detect the text as Chinese and translate it into English.
+        `dv.translate hi 永远不会放弃你` will detect the text as Chinese, then translate it into Hindi, returning the result.
+
+        A list of languages available is shown in `dv.translate languages`.
+        """
+        async with ctx.typing():
+            text = await self.get_text_to_translate(ctx, text)
+            if text is not None:
+                if dest_language:
+                    if dest_language.lower() not in LANGUAGES:
+                        dest_language = "en"
+                    else:
+                        dest_language = dest_language.lower()
+                else:
+                    dest_language = "en"
+            else:
+                if dest_language is not None:
+                    text = await self.get_text_to_translate(ctx, dest_language)
+                    dest_language = "en"
+            print(dest_language)
+            if text is None or len(text) > 1000:
+                    return await ctx.send("Please specify text to translate.")
+            if len(text) > 1000:
+                return await ctx.send("The text to translate can only be 1000 characters long.")
+            embed = discord.Embed(title="Translate result", color=self.client.embed_color, timestamp=discord.utils.utcnow())
+            embed.add_field(name=f"Original Text - Detecting Language...", value=f"```\n{text}\n```", inline=False)
+            embed.add_field(name=f"Translated Text - Loading...", value=f"```\nTranslating\n```", inline=False)
+            transmsg = await ctx.send(embed=embed)
+            task = functools.partial(self.translator.translate, text=text, dest=dest_language)
+            try:
+                translated: googletrans.models.Translated = await self.client.loop.run_in_executor(None, task)
+            except Exception as e:
+                if isinstance(e, httpcore._exceptions.ConnectError):
+                    embed.color = discord.Color.red()
+                    embed.set_field_at(index=-2, name=f"Original Text", value=f"```\n{text}\n```", inline=False)
+                    embed.set_field_at(index=-1, name=f"Translated Text", value=f"```\nThe API is unavailable at the moment.\n```", inline=False)
+                    await transmsg.edit(embed=embed)
+                    return
+                else:
+                    raise e
+        embed.set_field_at(index=-2, name=f"Original Text - {LANGUAGES[translated.src.lower()].title()}", value=f"```\n{text}\n```", inline=False)
+        embed.set_field_at(index=-1, name=f"Translated Text - {LANGUAGES[translated.dest.lower()].title()}", value=f"```\n{translated.text}\n```", inline=False)
+        embed.set_footer(icon_url="https://upload.wikimedia.org/wikipedia/commons/d/db/Google_Translate_Icon.png", text="Powered by Google Translate")
+        await transmsg.edit(embed=embed)
+
+    @checks.has_permissions_or_role(administrator=True)
+    @translate_command.command(name="languages", aliases=["langs", "lang"])
+    async def translate_languages(self, ctx):
+        """
+        List all languages available for translation.
+        """
+        embed = discord.Embed(title="Languages", description="To specify a language when using the `translate` command, type the two letter codes of the language, with the exception of Chinese (Simplified) and Chinese (Traditional), which you must use the full code (`zh-cn`/`zh-tw`).\nAn example is: If I wanted to get the Hindi version of 永远不会放弃你, I will run `dv.translate hi 永远不会放弃你`, as `hi` stands for the Hindi language shown below.", color=self.client.embed_color, timestamp=discord.utils.utcnow())
+        embed.set_image(url="https://cdn.nogra.me/core/dvb_trans_languages.png")
+        await ctx.send(embed=embed)
+
 
     @commands.guild_only()
     @commands.command(name='uptime')
