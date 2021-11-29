@@ -100,7 +100,6 @@ class donations(commands.Cog):
                 async with ctx.typing():
                     await self.client.pool_pg.execute("INSERT INTO donation_categories VALUES($1, $2)", ctx.guild.id, category_name)
                     createdb_query = "CREATE TABLE donations.{}(user_id BIGINT PRIMARY KEY, value BIGINT)".format(f"guild{ctx.guild.id}_{category_name.lower()}")
-                    print(createdb_query)
                     await self.client.pool_pg.execute(createdb_query)
                     return await ctx.send(f"Category `{category_name}` created.")
 

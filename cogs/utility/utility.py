@@ -101,7 +101,6 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
                 if dest_language is not None:
                     text = await self.get_text_to_translate(ctx, dest_language)
                     dest_language = "en"
-            print(dest_language)
             if text is None or len(text) > 1000:
                     return await ctx.send("Please specify text to translate.")
             if len(text) > 1000:

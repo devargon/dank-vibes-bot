@@ -16,7 +16,6 @@ class Censor(commands.Cog):
             async def get_messages():
                 strbuffer = ""
                 async for i in message.channel.history(limit=3):
-                    print(i.content)
                     strbuffer += f"{i.author}: {i.content[:50] + '...' if len(i.content) > 50 else i.content}\n"
                     if i.author == message.author and i.content == message.content:
                         return strbuffer

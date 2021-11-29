@@ -117,8 +117,6 @@ class Autoreaction(commands.Cog, name='autoreaction'):
     async def autoreact_add(self, ctx, trigger: str = None, *, responses: EmojiOrString = None):
         """
         Add an auto reaction for a mention or username.
-
-        Required role: <@&608495204399448066>
         """
         if trigger is None or responses is None:
             return await ctx.send("Please include a trigger and a response")
@@ -143,8 +141,6 @@ class Autoreaction(commands.Cog, name='autoreaction'):
     async def autoreact_remove(self, ctx, trigger: str = None):
         """
         Remove an auto reaction.
-
-        Required role: <@&608495204399448066>
         """
         if trigger is None:
             return await ctx.send("Please include the trigger that you wanna remove.")
@@ -223,7 +219,6 @@ class Autoreaction(commands.Cog, name='autoreaction'):
         """
         Clear all auto reactions from the server
 
-        Required role: <@&663502776952815626>
         """
         ars = await self.client.pool_pg.fetch('SELECT DISTINCT trigger FROM autoreactions WHERE guild_id=$1', ctx.guild.id)
         if len(ars) == 0:
