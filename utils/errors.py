@@ -8,6 +8,10 @@ class ThisEmpty(ArgumentBaseError):
     def __init__(self, arg, **kwargs):
         super().__init__(message=f"No valid argument was converted. Which makes {arg} as empty.", **kwargs)
 
+class DonationCategoryDoesNotExist(ArgumentBaseError):
+    def __init__(self, arg, **kwargs):
+        super().__init__(message=f"The donation category {arg} does not exist.", **kwargs)
+
 class RoleNotFound(ArgumentBaseError):
     def __init__(self, arg, **kwargs):
         super().__init__(message=f"I couldn't find a role called {arg}.", **kwargs)
