@@ -801,7 +801,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
         newview.rmtimes = remindertimes
 
     @checks.admoon()
-    @commands.command(name="reminddrop", aliases=["rd"])
+    @commands.command(name="reminddrop")
     async def reminddrop(self, ctx, timetodrop:int, *, msg: str):
         """
         Sets a Drop reminder.
