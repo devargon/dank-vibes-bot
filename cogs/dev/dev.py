@@ -376,15 +376,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
         await ctx.send_interactive(self.get_sql(msg))
 
     @checks.admoon()
-    @commands.group(name="d", invoke_without_command=True)
-    async def d_base(self, ctx):
-        """
-        Developer utilities to simulate the bot.
-        """
-        return await ctx.help()
-
-    @checks.admoon()
-    @d_base.command(name="say", aliases=["echo"])
+    @commands.command(name="dsay", aliases=["decho"])
     async def d_say(self, ctx, channel: Optional[discord.TextChannel], *, message = None):
         """
         Talk as the bot.
@@ -402,15 +394,9 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
         except Exception as e:
             await ctx.crossmark()
             status = (0, e)
-        async with aiohttp.ClientSession() as session:
-            webhook = Webhook.from_url('https://canary.discord.com/api/webhooks/883198776406339624/mkno5cQXKLHtQH4bxbbx8kxis3qnvTbvJVxpvCM0JNLZC_kG5F8sicwSBwsxa-Gq8f90', session=session)
-            embed=discord.Embed(title=f"Echo action executed with {ctx.me}", description=message, color=discord.Color.green() if status[0] == 1 else discord.Color.red())
-            embed.add_field(name="Author", value=f"**{ctx.author}** ({ctx.author.id})", inline=True)
-            embed.add_field(name="Status", value=f"**{status[1]}**", inline=True)
-            await webhook.send(embed=embed, username=f"{self.client.user.name} Logs")
 
     @checks.admoon()
-    @d_base.command(name="reply")
+    @commands.command(name="dreply")
     async def d_reply(self, ctx, messageID_or_messageLink:Union[int, str] = None, channel:Optional[discord.TextChannel] = None, *, message_content=None):
         """
         Replies to a specified message as the bot.
@@ -444,23 +430,12 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
         if len(message_content) > 2000:
             return await ctx.send(f"Your message is {len(message_content)} characters long. It can only be 2000 characters long.")
         try:
-            await message.reply(
-                message_content,
-                allowed_mentions=discord.AllowedMentions(everyone=False, users=True, roles=False, replied_user=ping),
-            )
-
+            await message.reply(message_content, allowed_mentions=discord.AllowedMentions(everyone=False, users=True, roles=False, replied_user=ping))
             await ctx.checkmark()
             status = (1, "Sent successfully")
         except Exception as e:
             await ctx.crossmark()
             status = (0, e)
-        async with aiohttp.ClientSession() as session:
-            webhook = Webhook.from_url('https://canary.discord.com/api/webhooks/883198776406339624/mkno5cQXKLHtQH4bxbbx8kxis3qnvTbvJVxpvCM0JNLZC_kG5F8sicwSBwsxa-Gq8f90', session=session)
-            embed=discord.Embed(title=f"Message replied {ctx.me}", description=message_content, color=discord.Color.green() if status[0] == 1 else discord.Color.red())
-            embed.add_field(name="Author", value=f"**{ctx.author}** ({ctx.author.id})", inline=True)
-            embed.add_field(name="Status", value=f"**{status[1]}**", inline=True)
-            embed.add_field(name="Referenced Message", value=f"Author: {message.author}\nAt: <t:{round(message.created_at.timestamp())}>\nChannel: {message.channel}\nURL: [`Jump to message`]({message.jump_url})", inline=False)
-            await webhook.send(embed=embed, username=f"{self.client.user.name} Logs")
 
     @checks.admoon()
     @commands.command(name="error", aliases=["raiseerror"])
