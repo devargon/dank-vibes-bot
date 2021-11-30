@@ -216,7 +216,10 @@ def stringnum_toint(string:str):
         string += "0"
     if string.endswith('/') or string.endswith('*') or string.endswith('^'):
         string += "1"
-    intstring = evaluate(string)
+    try:
+        intstring = evaluate(string)
+    except:
+        raise ArgumentBaseError(message=f"Something went wrong while I was trying to calculate how much you meant from `{string}`. Please contact the developer about this!")
     intstring = int(intstring) if intstring is not None else intstring
     return intstring
 
