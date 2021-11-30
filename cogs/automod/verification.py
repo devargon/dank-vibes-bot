@@ -7,9 +7,10 @@ class Verification(commands.Cog):
         self.client = client
         self.check_verification.start()
 
-    @tasks.loop(seconds=60.0)
+    @tasks.loop(seconds=120.0)
     async def check_verification(self):
         await self.client.wait_until_ready()
+        await self.client.get_channel(915097225988833341).send("Check verification task is running")
         for guild in self.client.guilds:
             is_enabled = await self.client.pool_pg.fetchval("SELECT enabled FROM serverconfig WHERE settings = $1 and guild_id = $2", 'verification', guild.id)
             if is_enabled:
@@ -36,7 +37,6 @@ class Verification(commands.Cog):
                             await member.send(embed=embed)
                         except:
                             await self.client.get_channel(910425487103365160).send(f"{member.mention}", delete_after = 1.0)
-                        await self.client.get_channel(616007729718231161).send(f"{member} ({member.id}) has been reminded about verifying. *This will be removed at a later date, am just using it to monitor*")
 
     @commands.Cog.listener()
     async def on_member_update(self, member_before, member_after):
