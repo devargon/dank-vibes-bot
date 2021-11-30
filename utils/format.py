@@ -209,14 +209,17 @@ def stringnum_toint(string:str):
     if "m" in string:
         string = string.replace("m", "*1000000+")
     if "k" in string:
-        string = string.replace("d", "*1000+")
+        string = string.replace("k", "*1000+")
     if 'e' in string:
         string = string.replace("e", "*10^")
     if string.endswith('+') or string.endswith('-'):
         string += "0"
     if string.endswith('/') or string.endswith('*') or string.endswith('^'):
         string += "1"
-    intstring = evaluate(string)
+    try:
+        intstring = evaluate(string)
+    except:
+        raise ArgumentBaseError(message=f"Something went wrong while I was trying to calculate how much you meant from `{string}`. Please contact the developer about this!")
     intstring = int(intstring) if intstring is not None else intstring
     return intstring
 
