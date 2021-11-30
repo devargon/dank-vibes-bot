@@ -10,15 +10,18 @@ from utils import checks
 from time import time
 
 def get_emoji(category):
-    if "owo" in category.lower():
+    name = category.lower().strip()
+    if "owo" == name:
         emoji = "<:DVB_OwO:914573609580756992> "
-    elif "deriver" in category.lower():
+    elif "deriver" == name:
         emoji = "<:DVB_Deriver:914573802229346395> "
-    elif "pokemeow" in category.lower():
+    elif "pokemeow" == name:
         emoji = "<:DVB_PokeMeow:914573926250721371> "
-    elif "pokeworld" in category.lower():
+    elif "pokeworld" == name:
         emoji = "<:DVB_PokeWorld:914574672455159838> "
-    elif "wicked" in category.lower():
+    elif "poketwo" == name:
+        emoji = "<:DVB_PokeTwo:915096051441082421> "
+    elif "wicked" == name:
         emoji = "<:DVB_Wicked:914575135044939786> "
     else:
         emoji = ""
