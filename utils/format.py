@@ -199,13 +199,15 @@ class TabularData:
         return '\n'.join(to_draw)
 
 def stringnum_toint(string:str):
-    allowedsymbols=["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "m", "k", 'e', '.', '-']
+    allowedsymbols=["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "m", "k", 'e', '.', '-', ',']
     string = string.lower()
     for character in list(string):
         if character not in allowedsymbols:
             return None
     if string.isnumeric():
         return int(string)
+    if "," in string:
+        string = string.replace(", ", "").replace(",", "")
     if "m" in string:
         string = string.replace("m", "*1000000+")
     if "k" in string:
