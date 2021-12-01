@@ -155,7 +155,7 @@ class dankreminders(discord.ui.View):
 
 
         for emoji in reminderemojis:
-            self.add_item(somebutton(emoji=discord.PartialEmoji.from_str(emoji), label = labels[reminderemojis.index(emoji)] + f"{'' if self.rmtimes[reminderemojis.index(emoji)] is None else f' - {short_time(self.rmtimes[reminderemojis.index(emoji)])}'}", style=discord.ButtonStyle.green if is_enabled[reminderemojis.index(emoji)] else discord.ButtonStyle.red))
+            self.add_item(somebutton(emoji=discord.PartialEmoji.from_str(emoji), label = labels[reminderemojis.index(emoji)] + f"{'' if self.rmtimes[reminderemojis.index(emoji)] is None else f' - {short_time(self.rmtimes[reminderemojis.index(emoji)])}'}", style=discord.ButtonStyle.green if is_enabled[reminderemojis.index(emoji)] else discord.ButtonStyle.red, disabled=False if labels[reminderemojis.index(emoji)] == "Claim daily" else True))
 
         self.add_item(VoteSetting(self.client, self.context, self.response))
 
@@ -678,7 +678,6 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
         nextstreamtime = round(time.time()) + 600
         await self.handle_reminder_entry(member.id, 20, aftermsg.channel.id, aftermsg.guild.id, nextstreamtime)
         await checkmark(beforemsg)
-
     @checks.dev()
     @commands.command(name="drmstats", aliases = ["dankreminderstats, statistics"])
     async def statistics(self, ctx, argument = None):
@@ -996,6 +995,7 @@ Use a Horseshoe <:DVB_Horseshoe:888404491647463454>: {remindertimes[15]}
 Use a Pizza <:DVB_pizza:888404502280024145>: {remindertimes[16]}
 Stream 🎮: {remindertimes[17]}
 Post memes <:DVB_Laptop:915524266940854303>: {remindertimes[18]}"""
+        embed.description = embed.description + f"""\nClaim daily <:DVB_calendar:873107952159059991>: {remindertimes[0]}"""
         if ctx.author.id == 650647680837484556:
             embed.description = embed.description + "\nSlap Frenzy <a:DVB_pandaslap:876631217750048798>: **Always Ready**\nBonk Blu <a:DVB_bonk:877196623506194452>: **Always Ready**"
         embed.set_footer(text="To enable/disable reminders, use dv.dankreminder instead.", icon_url=ctx.guild.icon.url)
