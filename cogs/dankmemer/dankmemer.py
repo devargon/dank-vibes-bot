@@ -98,10 +98,10 @@ class dankreminders(discord.ui.View):
                   "Beg", "Search",
                   "Snakeeyes", "Highlow",
                   "Use a dailybox", "Use a horseshoe",
-                  "Use a pizza", "Get drop items", "Interact on stream", "Post memes"]
+                  "Use a pizza", "Get drop items", "(NEW!) Interact on stream", "(NEW!) Post memes"]
         is_enabled = [daily, weekly, monthly, lottery, work, donor, hunt, fish, dig, crime, beg, search, se, highlow, dailybox, horseshoe, pizza, drop, stream, postmeme]
 
-        async def update_message(emoji):
+        async def update_message(emoji, interaction: discord.Interaction):
             if str(emoji) == "<:DVB_calendar:873107952159059991>":
                 await self.client.pool_pg.execute("UPDATE remindersettings SET daily = $1 WHERE member_id = $2", numberswitcher(self.result.get('daily')), ctx.author.id)  # switches to enabled/disabled reminder
             elif str(emoji) == "<:DVB_week:876711052669247528>":
@@ -129,7 +129,7 @@ class dankreminders(discord.ui.View):
             elif str(emoji) == "<a:DVB_snakeeyes:888404298608812112>":
                 await self.client.pool_pg.execute("UPDATE remindersettings SET snakeeyes = $1 WHERE member_id = $2", numberswitcher(self.result.get('snakeeyes')), ctx.author.id)
             elif str(emoji) == "🔢":
-                await self.client.pool_pg.execute("UPDATE remindersettings SET search = $1 WHERE member_id = $2", numberswitcher(self.result.get('search')), ctx.author.id)
+                await self.client.pool_pg.execute("UPDATE remindersettings SET highlow = $1 WHERE member_id = $2", numberswitcher(self.result.get('highlow')), ctx.author.id)
             elif str(emoji) == "<a:DVB_DailyBox:888404475470024785>":
                 await self.client.pool_pg.execute("UPDATE remindersettings SET dailybox = $1 WHERE member_id = $2", numberswitcher(self.result.get('dailybox')), ctx.author.id)
             elif str(emoji) == "<:DVB_Horseshoe:888404491647463454>":
@@ -139,9 +139,10 @@ class dankreminders(discord.ui.View):
             elif str(emoji) == "<:DVB_sugarskull:904936096436215828>":
                 await self.client.pool_pg.execute("UPDATE remindersettings SET drop = $1 WHERE member_id = $2", numberswitcher(self.result.get('drop')), ctx.author.id)
             elif str(emoji) == "🎮":
+                if self.result.get('stream') != 1:
+                    await interaction.response.send_message("__**Important!**__\nThe stream reminder is currently in Beta stage, and might not work at times.\nThe reminder is working when I react to your Stream Manager message with <:checkmark:841187106654519296> after you **run an Ad, Read chat or collect donations**. Otherwise, something went wrong.\n\nFeel free to report bugs in <#870880772985344010>!", ephemeral=True)
                 await self.client.pool_pg.execute("UPDATE remindersettings SET stream = $1 WHERE member_id = $2", numberswitcher(self.result.get('stream')), ctx.author.id)
             elif str(emoji) == "<:DVB_Laptop:915524266940854303>":
-                print('ahem')
                 await self.client.pool_pg.execute("UPDATE remindersettings SET postmeme = $1 WHERE member_id = $2", numberswitcher(self.result.get('postmeme')), ctx.author.id)
             self.result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
             self.children[reminderemojis.index(str(emoji))].style = discord.ButtonStyle.red if is_enabled[reminderemojis.index(str(emoji))] == True else discord.ButtonStyle.green
@@ -150,7 +151,9 @@ class dankreminders(discord.ui.View):
 
         class somebutton(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
-                await update_message(self.emoji)
+                await update_message(self.emoji, interaction)
+
+
         for emoji in reminderemojis:
             self.add_item(somebutton(emoji=discord.PartialEmoji.from_str(emoji), label = labels[reminderemojis.index(emoji)] + f"{'' if self.rmtimes[reminderemojis.index(emoji)] is None else f' - {short_time(self.rmtimes[reminderemojis.index(emoji)])}'}", style=discord.ButtonStyle.green if is_enabled[reminderemojis.index(emoji)] else discord.ButtonStyle.red))
 
@@ -176,23 +179,28 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
     def __init__(self, client):
         self.client = client
         self.dankmemerreminders.start()
-        #self.dropreminder.start()
+        self.dropreminder.start()
         self.fighters = {}
 
     def cog_unload(self):
         self.dankmemerreminders.stop()
         self.dropreminder.stop()
 
+    async def handle_reminder_entry(self, member_id, remindertype, channel_id, guild_id, time):
+        existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member_id, remindertype)
+        if len(existing) > 0:
+            await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", time, member_id, remindertype)
+        else:
+            await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member_id, remindertype, channel_id, guild_id, time)
+
     @tasks.loop(seconds=5.0)
     async def dropreminder(self):
         try:
             await self.client.wait_until_ready()
-            print('flflflflfl')
             drop = await self.client.pool_pg.fetchrow("SELECT * FROM dankdrops WHERE time < $1", round(time.time()))
             if drop is None:
                 return
             else:
-                print('uwu rawr')
                 price = drop.get('price')
                 guild = self.client.get_guild(drop.get('guild_id'))
                 name = drop.get('name')
@@ -204,24 +212,20 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                 messages = []
                 ids = [i.get('member_id') for i in enabled]
                 tempmsg = f'{msg}\n\n'
-                print('dhdhdhdh')
                 for i in ids:
                     member = self.client.get_user(i)
                     if member is not None:
                         remindersettings = await self.client.pool_pg.fetchval("SELECT method FROM remindersettings WHERE member_id = $1", i)
                         if remindersettings == True:
                             try:
-                                print('dming')
                                 await member.send(msg)
                             except:
-                                print('adding instead')
                                 if len(tempmsg) + len(msg) < 1800:
                                     tempmsg += f"{member.mention}"
                                 else:
                                     messages.append(tempmsg)
                                     tempmsg = f"{msg}\n\n{member.mention}"
                         elif len(tempmsg) + len(msg) < 1800:
-                            print('adding')
                             tempmsg += f"{member.mention}"
                         else:
                             messages.append(tempmsg)
@@ -239,14 +243,16 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
     async def dankmemerreminders(self):
         try:
             await self.client.wait_until_ready()
+            if self.client.maintenance.get(self.qualified_name):
+                return
             results = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where time < $1", round(time.time())) # all reminders that are due for reminding
             if len(results) == 0:
                 return
             for result in results:
-                config = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", result.get('member_id')) # get the user's configuration
+                config = await self.client.pool_pg.fetchrow("SELECT member_id, method, daily, weekly, monthly, lottery, work, redeem, hunt, fish, dig, crime, beg, search, snakeeyes, highlow, dailybox, horseshoe, pizza, drop, stream, postmeme FROM remindersettings WHERE member_id = $1", result.get('member_id')) # get the user's configuration
                 if config is None: # no config means user doesn't even use this reminder system lol
                     pass
-                elif result.get('remindertype') not in [2, 3, 4, 6 , 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]: # since 2 3 4 5 corresponds to the respective reminders, if somehow an invalid number is inserted it skips straight to deleting
+                elif result.get('remindertype') not in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21]: # if the reminder type is not a valid one
                     pass
                 elif config[result.get('remindertype')] == 0: # activity specific reminder check
                     pass
@@ -257,39 +263,41 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                         if reminderaction == 2:
                             return "**claim your daily** <:DVB_calendar:873107952159059991>"
                         elif reminderaction == 3:
-                            return "**enter the lottery** <:DVB_lotteryticket:873110581085880321>"
+                            return "**claim your weekly** <:DVB_week:876711052669247528> "
                         elif reminderaction == 4:
-                            return "**work again** <:DVB_workbadge:873110507605872650>"
+                            return "**claim your monthly** <:DVB_month:876711072030150707> "
                         elif reminderaction == 5:
-                            return "**use a lifesaver** <:DVB_lifesaver:873110547854405722>"
+                            return "**enter the lottery** <:DVB_lotteryticket:873110581085880321>"
+                        elif reminderaction == 6:
+                            return "**work again** <:DVB_workbadge:873110507605872650>"
                         elif reminderaction == 7:
                             return "**redeem your Patreon perks** <:DVB_patreon:876628017194082395>"
                         elif reminderaction == 8:
-                            return "**claim your weekly** <:DVB_week:876711052669247528> "
-                        elif reminderaction == 9:
-                            return "**claim your monthly** <:DVB_month:876711072030150707> "
-                        elif reminderaction == 10:
                             return "`pls hunt` <:DVB_rifle:888404394805186571> "
-                        elif reminderaction == 11:
+                        elif reminderaction == 9:
                             return "`pls fish` <:DVB_fishing:888404317638369330>"
-                        elif reminderaction == 12:
+                        elif reminderaction == 10:
                             return "`pls dig` <:DVB_shovel:888404340426031126>"
+                        elif reminderaction == 11:
+                            return "`pls crime` <:DVB_Crime:888404653711192067>"
+                        elif reminderaction == 12:
+                            return "`pls beg` <:DVB_beg:888404456356610099>"
                         elif reminderaction == 13:
-                            return "`pls highlow` 🔢"
+                            return "`pls search` <:DVB_search:888405048260976660>"
                         elif reminderaction == 14:
                             return "`pls snakeeyes` <a:DVB_snakeeyes:888404298608812112>"
                         elif reminderaction == 15:
-                            return "`pls search` <:DVB_search:888405048260976660>"
+                            return "`pls highlow` 🔢"
                         elif reminderaction == 16:
-                            return "`pls crime` <:DVB_Crime:888404653711192067>"
-                        elif reminderaction == 17:
-                            return "`pls beg` <:DVB_beg:888404456356610099>"
-                        elif reminderaction == 18:
                             return "**use a dailybox** <a:DVB_DailyBox:888404475470024785>"
-                        elif reminderaction == 19:
+                        elif reminderaction == 17:
                             return "**use a horseshoe** <:DVB_Horseshoe:888404491647463454>"
-                        elif reminderaction == 20:
+                        elif reminderaction == 18:
                             return "**use a pizza** <:DVB_pizza:888404502280024145>"
+                        elif reminderaction == 20:
+                            return "**Interact with your stream** 🎮"
+                        elif reminderaction == 21:
+                            return "`pls pm` <:DVB_Laptop:915524266940854303>"
                     try:
                         member = self.client.get_guild(result.get('guild_id')).get_member(result.get('member_id'))
                         channel = self.client.get_channel(result.get('channel_id'))
@@ -299,7 +307,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                         if member is None or channel is None:
                             pass
                         elif config.get('method') == 1:  # DMs or is lottery/daily reminder
-                            if result.get('remindertype') in range(10, 21):
+                            if result.get('remindertype') in [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21]:
                                 try:
                                     await channel.send(f"{member.mention} You can now {message(result.get('remindertype'))}")  # DM
                                 except:
@@ -350,19 +358,15 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                 try:
                     botresponse = await self.client.wait_for("message", check=check_daily, timeout=10)
                 except asyncio.TimeoutError:
-                    return await checkmark(message)
+                    return await crossmark(message)
                 else:
                     member = message.author
                     nextdailytime = round(time.time())
                     while nextdailytime % 86400 != 0:
                         nextdailytime += 1
-                    existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 2)
-                    if len(existing) > 0:
-                        await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextdailytime, member.id, 2)
-                    else:
-                        await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 2, message.channel.id, message.guild.id, nextdailytime)
+                    await self.handle_reminder_entry(member.id, 2, message.channel.id, message.guild.id, nextdailytime)
                     with contextlib.suppress(discord.HTTPException):
-                        await botresponse.add_reaction("⏰")
+                        await clock(message)
             else:
                 pass
 
@@ -376,17 +380,13 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                 try:
                     botresponse = await self.client.wait_for("message", check=check_weekly, timeout=10)
                 except asyncio.TimeoutError:
-                    return await checkmark(message)
+                    return await crossmark(message)
                 else:
                     member = message.author
                     nextweeklytime = round(time.time()) + 604800
-                    existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 3)
-                    if len(existing) > 0:
-                        await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextweeklytime, member.id, 3)
-                    else:
-                        await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 3, message.channel.id, message.guild.id, nextweeklytime)
+                    await self.handle_reminder_entry(member.id, 3, message.channel.id, message.guild.id, nextweeklytime)
                     with contextlib.suppress(discord.HTTPException):
-                        await botresponse.add_reaction("⏰")
+                        await clock(botresponse)
             else:
                 pass
 
@@ -400,19 +400,13 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                 try:
                     botresponse = await self.client.wait_for("message", check=check_monthly, timeout=10)
                 except asyncio.TimeoutError:
-                    await checkmark(message)
+                    return await crossmark(message)
                 else:
                     member = message.author
                     nextmonthlytime = round(time.time()) + 2592000
-                    existing = await self.client.pool_pg.fetch(
-                        "SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 4)
-                    if len(existing) > 0:
-                        await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextmonthlytime, member.id, 4)
-                    else:
-                        await self.client.pool_pg.execute(
-                            "INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 4, message.channel.id, message.guild.id, nextmonthlytime)
+                    await self.handle_reminder_entry(member.id, 4, message.channel.id, message.guild.id, nextmonthlytime)
                     with contextlib.suppress(discord.HTTPException):
-                        await botresponse.add_reaction("⏰")
+                        await clock(botresponse)
             else:
                 pass
 
@@ -423,7 +417,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
             try:
                 newedit = await self.client.wait_for("message_edit", check=check_lottery, timeout=20)
             except asyncio.TimeoutError:
-                return await checkmark(message)
+                return await crossmark(message)
             else:
                 if not message.embeds[0].title:
                     return
@@ -434,13 +428,9 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                     while nextlotterytime % 3600 != 0:
                         nextlotterytime += 1
                     nextlotterytime += 30
-                    existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 5)
-                    if len(existing) > 0:
-                        await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextlotterytime, member.id, 5)
-                    else:
-                        await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 5, message.channel.id, message.guild.id, nextlotterytime)
+                    await self.handle_reminder_entry(member.id, 5, message.channel.id, message.guild.id, nextlotterytime)
                     with contextlib.suppress(discord.HTTPException):
-                        await message.add_reaction("⏰")
+                        await clock(message)
         """
         Redeem Reminder
         """
@@ -450,55 +440,37 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
             try:
                 redeemresponse = await self.client.wait_for("message", check=check_redeem, timeout = 15)
             except asyncio.TimeoutError:
-                return await checkmark(message)
+                return await crossmark(message)
             else:
                 if redeemresponse.embeds[0].title and f"{message.author.name} has redeemed their" in redeemresponse.embeds[0].title:
                     member = message.author
                     nextredeemtime = round(time.time()) + 604800
-                    existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 7)
-                    if len(existing) > 0:
-                        await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextredeemtime, member.id, 7)
-                    else:
-                        await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 7, message.channel.id, message.guild.id, nextredeemtime)
+                    await self.handle_reminder_entry(member.id, 7, message.channel.id, message.guild.id, nextredeemtime)
                     with contextlib.suppress(discord.HTTPException):
-                        await message.add_reaction("⏰")
+                        await clock(message)
                 else:
-                    return await message.add_reaction("<:crossmark:841186660662247444>")
+                    await crossmark(message)
         """
         Hunting Reminder
         """
         if message.content.startswith("You went hunting") and message.author.id == 270904126974590976 and len(message.mentions) > 0:
             member = message.mentions[0]
             nexthunttime = round(time.time()) + 30
-            existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 8)
-            if len(existing) > 0:
-                await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nexthunttime, member.id, 8)
-            else:
-                await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 8, message.channel.id, message.guild.id, nexthunttime)
+            await self.handle_reminder_entry(member.id, 8, message.channel.id, message.guild.id, nexthunttime)
         """
         Fishing Reminder
         """
         if (message.content.startswith("You cast out your line") or message.content.startswith("LMAO you found nothing.")) and message.author.id == 270904126974590976 and len(message.mentions) > 0:
             member = message.mentions[0]
             nextfishtime = round(time.time()) + 30
-            existing = await self.client.pool_pg.fetch(
-                "SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 9)
-            if len(existing) > 0:
-                await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextfishtime, member.id, 9)
-            else:
-                await self.client.pool_pg.execute(
-                    "INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 9, message.channel.id, message.guild.id, nextfishtime)
+            await self.handle_reminder_entry(member.id, 9, message.channel.id, message.guild.id, nextfishtime)
         """
         Dig Reminder
         """
         if (message.content.startswith("You dig in the dirt") or message.content.startswith("LMAO you found nothing in the ground.")) and message.author.id == 270904126974590976 and len(message.mentions) > 0:
             member = message.mentions[0]
             nextdigtime = round(time.time()) + 30
-            existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 10)
-            if len(existing) > 0:
-                await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextdigtime, member.id, 10)
-            else:
-                await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 10, message.channel.id, message.guild.id, nextdigtime)
+            await self.handle_reminder_entry(member.id, 10, message.channel.id, message.guild.id, nextdigtime)
         """
         Highlow Reminder
         """
@@ -520,11 +492,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                     else:
                         member = message.author
                         nexthighlowtime = round(time.time()) + 20
-                        existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 15)
-                        if len(existing) > 0:
-                            await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3",nexthighlowtime, member.id, 15)
-                        else:
-                            await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 15, message.channel.id, message.guild.id, nexthighlowtime)
+                        await self.handle_reminder_entry(member.id, 15, message.channel.id, message.guild.id, nexthighlowtime)
         """
         Snakeeyes Reminder
         """
@@ -551,11 +519,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
             else:
                 member = message.author
                 nextsnakeeyestime = round(time.time()) + 5
-                existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 14)
-                if len(existing) > 0:
-                    await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextsnakeeyestime, member.id, 14)
-                else:
-                    await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)",member.id, 14, message.channel.id, message.guild.id, nextsnakeeyestime)
+                await self.handle_reminder_entry(member.id, 14, message.channel.id, message.guild.id, nextsnakeeyestime)
         """
         Search Reminder
         """
@@ -573,11 +537,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
         if "What crime do you want to commit?" in message.content and message.author.id == 270904126974590976 and len(message.mentions) > 0:
             member = message.mentions[0]
             nextcrimetime = round(time.time()) + 20
-            existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 11)
-            if len(existing) > 0:
-                await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextcrimetime, member.id, 11)
-            else:
-                await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 11, message.channel.id, message.guild.id, nextcrimetime)
+            await self.handle_reminder_entry(member.id, 11, message.channel.id, message.guild.id, nextcrimetime)
         """
         Beg Reminder
         """
@@ -594,34 +554,21 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                 else:
                     member = message.author
                     nextbegtime = round(time.time()) + 30
-                    existing = await self.client.pool_pg.fetch(
-                        "SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 12)
-                    if len(existing) > 0:
-                        await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3",nextbegtime, member.id, 12)
-                    else:
-                        await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 12, message.channel.id, message.guild.id, nextbegtime)
+                    await self.handle_reminder_entry(member.id, 12, message.channel.id, message.guild.id, nextbegtime)
         """
         Horseshoe Reminder
         """
         if message.content.startswith("You equip your lucky horseshoe") and message.author.id == 270904126974590976 and len(message.mentions) > 0:
             member = message.mentions[0]
             nexthorseshoetime = round(time.time()) + 900
-            existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 17)
-            if len(existing) > 0:
-                await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nexthorseshoetime, member.id, 17)
-            else:
-                await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 17, message.channel.id, message.guild.id, nexthorseshoetime)
+            await self.handle_reminder_entry(member.id, 17, message.channel.id, message.guild.id, nexthorseshoetime)
         """
         Pizza Reminder
         """
         if message.content.startswith("You eat the perfect slice of pizza.") and message.author.id == 270904126974590976 and len(message.mentions) > 0:
             member = message.mentions[0]
             nextpizzatime = round(time.time()) + 3600
-            existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 18)
-            if len(existing) > 0:
-                await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextpizzatime, member.id, 18)
-            else:
-                await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 18, message.channel.id, message.guild.id, nextpizzatime)
+            await self.handle_reminder_entry(member.id, 18, message.channel.id, message.guild.id, nextpizzatime)
         """
         Daily Box Reminder
         """
@@ -639,11 +586,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                         for member in message.guild.members:
                             if botresponse.embeds[0].title == f"{member.name}'s Loot Haul!":
                                 nextdailyboxtime = round(time.time()) + 600
-                                existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 16)
-                                if len(existing) > 0:
-                                    await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextdailyboxtime, member.id, 16)
-                                else:
-                                    await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 16, message.channel.id, message.guild.id, nextdailyboxtime)
+                                await self.handle_reminder_entry(member.id, 16, message.channel.id, message.guild.id, nextdailyboxtime)
                 return await checkmark(message)
         """
         Work Reminder
@@ -651,16 +594,90 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
         if len(message.embeds) > 0 and message.author.id == 270904126974590976 and len(message.mentions) > 0 and message.embeds[0].description and (message.embeds[0].description.startswith("**TERRIBLE work!**") or message.embeds[0].description.startswith("**Great work!**")):
                 member = message.mentions[0]
                 nextworktime = round(time.time()) + 3600
-                existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 6)
-                if len(existing) > 0:
-                    await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextworktime, member.id, 6)
-                else:
-                    await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 6, message.channel.id, message.guild.id, nextworktime)
+                await self.handle_reminder_entry(member.id, 6, message.channel.id, message.guild.id, nextworktime)
                 with contextlib.suppress(discord.HTTPException):
-                    await message.add_reaction("⏰")
+                    await checkmark(message)
         """
         Postmeme reminder
         """
+        if message.author.id == 270904126974590976:
+            if len(message.mentions) > 0:
+                if len(message.embeds) > 0:
+                    if message.embeds[0].author:
+                        if message.embeds[0].author.name.endswith("meme posting session"):
+                            member = message.mentions[0]
+                            nextpostmemetime = round(time.time()) + 30
+                            await self.handle_reminder_entry(member.id, 21, message.channel.id, message.guild.id, nextpostmemetime)
+
+    @commands.Cog.listener()
+    async def on_message_edit(self, beforemsg, aftermsg):
+        if beforemsg.author.id != 270904126974590976:
+            return
+        if len(beforemsg.embeds) < 0 or len(aftermsg.embeds) < 0:
+            return
+        beforeembed = beforemsg.embeds[0]
+        afterembed = aftermsg.embeds[0]
+        if not beforeembed.author:
+            return
+        if not beforeembed.author.name:
+            return
+        if not beforeembed.author.name.endswith('Stream Manager'):
+            return
+        def get_member():
+            for member in beforemsg.guild.members:
+                if beforeembed.author.name == f"{member.name}'s Stream Manager":
+                    return member
+            return None
+        member = get_member()
+        if not member:
+            return
+        beforeview = discord.ui.View.from_message(beforemsg)
+        afterview = discord.ui.View.from_message(aftermsg)
+        def check_before_view():
+            for button in beforeview.children:
+                if not isinstance(button, discord.ui.Button):
+                    return False
+                if button.label.lower() == 'run ad' and button.disabled == False:
+                    pass
+                elif button.label.lower() == "read chat" and button.disabled == False:
+                    pass
+                elif button.label.lower() == "collect donations" and button.disabled == False:
+                    pass
+                elif button.label.lower() == "end stream" and button.disabled == False:
+                    pass
+                elif button.label.lower() == "view setup" and button.disabled == False:
+                    pass
+                elif button.label.lower() == "end interaction" and button.disabled == False:
+                    pass
+                else:
+                    return False
+            return True
+        if not check_before_view():
+            return
+        def check_after_view():
+            for button in afterview.children:
+                if not isinstance(button, discord.ui.Button):
+                    return False
+                if button.label.lower() == 'run ad' and button.disabled == True:
+                    pass
+                elif button.label.lower() == "read chat" and button.disabled == True:
+                    pass
+                elif button.label.lower() == "collect donations" and button.disabled == True:
+                    pass
+                elif button.label.lower() == "end stream" and button.disabled == False:
+                    pass
+                elif button.label.lower() == "view setup" and button.disabled == False:
+                    pass
+                elif button.label.lower() == "end interaction" and button.disabled == False:
+                    pass
+                else:
+                    return False
+            return True
+        if not check_after_view():
+            return
+        nextstreamtime = round(time.time()) + 600
+        await self.handle_reminder_entry(member.id, 20, aftermsg.channel.id, aftermsg.guild.id, nextstreamtime)
+        await checkmark(beforemsg)
 
     @checks.dev()
     @commands.command(name="drmstats", aliases = ["dankreminderstats, statistics"])
@@ -965,20 +982,20 @@ Claim weekly <:DVB_week:876711052669247528>: {remindertimes[1]}
 Claim monthly <:DVB_month:876711072030150707>: {remindertimes[2]}
 Enter the lottery <:DVB_lotteryticket:873110581085880321>: {remindertimes[3]}
 Work <:DVB_workbadge:873110507605872650>: {remindertimes[4]}
-Redeem donor rewards <:DVB_patreon:876628017194082395>: {remindertimes[6]}
-Hunt <:DVB_rifle:888404394805186571>: {remindertimes[7]}
-Fish <:DVB_fishing:888404317638369330>: {remindertimes[8]}
-Dig <:DVB_shovel:888404340426031126>: {remindertimes[9]}
-Crime <:DVB_Crime:888404653711192067>: {remindertimes[13]}
-Beg <:DVB_beg:888404456356610099> : {remindertimes[14]}
-Search <:DVB_search:888405048260976660>: {remindertimes[12]}
-Snakeeyes <a:DVB_snakeeyes:888404298608812112>: {remindertimes[11]}
-Highlow 🔢: {remindertimes[10]}
-Use a dailybox <a:DVB_DailyBox:888404475470024785>: {remindertimes[15]}
-Use a Horseshoe <:DVB_Horseshoe:888404491647463454>: {remindertimes[16]}
-Use a Pizza <:DVB_pizza:888404502280024145>: {remindertimes[17]}
-Stream 🎮: {remindertimes[18]}
-Post memes <:DVB_Laptop:915524266940854303>: {remindertimes[19]}"""
+Redeem donor rewards <:DVB_patreon:876628017194082395>: {remindertimes[5]}
+Hunt <:DVB_rifle:888404394805186571>: {remindertimes[6]}
+Fish <:DVB_fishing:888404317638369330>: {remindertimes[7]}
+Dig <:DVB_shovel:888404340426031126>: {remindertimes[8]}
+Crime <:DVB_Crime:888404653711192067>: {remindertimes[9]}
+Beg <:DVB_beg:888404456356610099> : {remindertimes[10]}
+Search <:DVB_search:888405048260976660>: {remindertimes[11]}
+Snakeeyes <a:DVB_snakeeyes:888404298608812112>: {remindertimes[12]}
+Highlow 🔢: {remindertimes[13]}
+Use a dailybox <a:DVB_DailyBox:888404475470024785>: {remindertimes[14]}
+Use a Horseshoe <:DVB_Horseshoe:888404491647463454>: {remindertimes[15]}
+Use a Pizza <:DVB_pizza:888404502280024145>: {remindertimes[16]}
+Stream 🎮: {remindertimes[17]}
+Post memes <:DVB_Laptop:915524266940854303>: {remindertimes[18]}"""
         if ctx.author.id == 650647680837484556:
             embed.description = embed.description + "\nSlap Frenzy <a:DVB_pandaslap:876631217750048798>: **Always Ready**\nBonk Blu <a:DVB_bonk:877196623506194452>: **Always Ready**"
         embed.set_footer(text="To enable/disable reminders, use dv.dankreminder instead.", icon_url=ctx.guild.icon.url)
