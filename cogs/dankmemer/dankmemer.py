@@ -380,16 +380,11 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                 else:
                     member = message.author
                     nextweeklytime = round(time.time()) + 604800
-                    existing = await self.client.pool_pg.fetch(
-                        "SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 8)
+                    existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 3)
                     if len(existing) > 0:
-                        await self.client.pool_pg.execute(
-                            "UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextweeklytime,
-                            member.id, 8)
+                        await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextweeklytime, member.id, 3)
                     else:
-                        await self.client.pool_pg.execute(
-                            "INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)",
-                            member.id, 8, message.channel.id, message.guild.id, nextweeklytime)
+                        await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 3, message.channel.id, message.guild.id, nextweeklytime)
                     with contextlib.suppress(discord.HTTPException):
                         await botresponse.add_reaction("⏰")
             else:
@@ -410,16 +405,12 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                     member = message.author
                     nextmonthlytime = round(time.time()) + 2592000
                     existing = await self.client.pool_pg.fetch(
-                        "SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 9)
+                        "SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 4)
                     if len(existing) > 0:
-                        await self.client.pool_pg.execute(
-                            "UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3",
-                            nextmonthlytime,
-                            member.id, 9)
+                        await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextmonthlytime, member.id, 4)
                     else:
                         await self.client.pool_pg.execute(
-                            "INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)",
-                            member.id, 9, message.channel.id, message.guild.id, nextmonthlytime)
+                            "INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 4, message.channel.id, message.guild.id, nextmonthlytime)
                     with contextlib.suppress(discord.HTTPException):
                         await botresponse.add_reaction("⏰")
             else:
@@ -443,16 +434,11 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                     while nextlotterytime % 3600 != 0:
                         nextlotterytime += 1
                     nextlotterytime += 30
-                    existing = await self.client.pool_pg.fetch(
-                        "SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 3)
+                    existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 5)
                     if len(existing) > 0:
-                        await self.client.pool_pg.execute(
-                            "UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3",
-                            nextlotterytime, member.id, 3)
+                        await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextlotterytime, member.id, 5)
                     else:
-                        await self.client.pool_pg.execute(
-                            "INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)",
-                            member.id, 3, message.channel.id, message.guild.id, nextlotterytime)
+                        await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 5, message.channel.id, message.guild.id, nextlotterytime)
                     with contextlib.suppress(discord.HTTPException):
                         await message.add_reaction("⏰")
         """
@@ -484,11 +470,11 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
         if message.content.startswith("You went hunting") and message.author.id == 270904126974590976 and len(message.mentions) > 0:
             member = message.mentions[0]
             nexthunttime = round(time.time()) + 30
-            existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 10)
+            existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 8)
             if len(existing) > 0:
-                await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nexthunttime, member.id, 10)
+                await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nexthunttime, member.id, 8)
             else:
-                await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 10, message.channel.id, message.guild.id, nexthunttime)
+                await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 8, message.channel.id, message.guild.id, nexthunttime)
         """
         Fishing Reminder
         """
@@ -496,23 +482,23 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
             member = message.mentions[0]
             nextfishtime = round(time.time()) + 30
             existing = await self.client.pool_pg.fetch(
-                "SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 11)
+                "SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 9)
             if len(existing) > 0:
-                await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextfishtime, member.id, 11)
+                await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextfishtime, member.id, 9)
             else:
                 await self.client.pool_pg.execute(
-                    "INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 11, message.channel.id, message.guild.id, nextfishtime)
+                    "INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 9, message.channel.id, message.guild.id, nextfishtime)
         """
         Dig Reminder
         """
         if (message.content.startswith("You dig in the dirt") or message.content.startswith("LMAO you found nothing in the ground.")) and message.author.id == 270904126974590976 and len(message.mentions) > 0:
             member = message.mentions[0]
             nextdigtime = round(time.time()) + 30
-            existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 12)
+            existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 10)
             if len(existing) > 0:
-                await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextdigtime, member.id, 12)
+                await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextdigtime, member.id, 10)
             else:
-                await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 12, message.channel.id, message.guild.id, nextdigtime)
+                await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 10, message.channel.id, message.guild.id, nextdigtime)
         """
         Highlow Reminder
         """
@@ -534,11 +520,11 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                     else:
                         member = message.author
                         nexthighlowtime = round(time.time()) + 20
-                        existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 13)
+                        existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 15)
                         if len(existing) > 0:
-                            await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3",nexthighlowtime, member.id, 13)
+                            await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3",nexthighlowtime, member.id, 15)
                         else:
-                            await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 13, message.channel.id, message.guild.id, nexthighlowtime)
+                            await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 15, message.channel.id, message.guild.id, nexthighlowtime)
         """
         Snakeeyes Reminder
         """
@@ -576,22 +562,22 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
         if "Where do you want to search?" in message.content and message.author.id == 270904126974590976 and len(message.mentions) > 0:
             member = message.mentions[0]
             nextsearchtime = round(time.time()) + 20
-            existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 15)
+            existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 13)
             if len(existing) > 0:
-                await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextsearchtime, member.id, 15)
+                await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextsearchtime, member.id, 13)
             else:
-                await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 15, message.channel.id, message.guild.id, nextsearchtime)
+                await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 13, message.channel.id, message.guild.id, nextsearchtime)
         """
         Crime Reminder
         """
         if "What crime do you want to commit?" in message.content and message.author.id == 270904126974590976 and len(message.mentions) > 0:
             member = message.mentions[0]
             nextcrimetime = round(time.time()) + 20
-            existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 16)
+            existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 11)
             if len(existing) > 0:
-                await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextcrimetime, member.id, 16)
+                await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextcrimetime, member.id, 11)
             else:
-                await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 16, message.channel.id, message.guild.id, nextcrimetime)
+                await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 11, message.channel.id, message.guild.id, nextcrimetime)
         """
         Beg Reminder
         """
@@ -609,33 +595,33 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                     member = message.author
                     nextbegtime = round(time.time()) + 30
                     existing = await self.client.pool_pg.fetch(
-                        "SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 17)
+                        "SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 12)
                     if len(existing) > 0:
-                        await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3",nextbegtime, member.id, 17)
+                        await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3",nextbegtime, member.id, 12)
                     else:
-                        await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 17, message.channel.id, message.guild.id, nextbegtime)
+                        await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 12, message.channel.id, message.guild.id, nextbegtime)
         """
         Horseshoe Reminder
         """
         if message.content.startswith("You equip your lucky horseshoe") and message.author.id == 270904126974590976 and len(message.mentions) > 0:
             member = message.mentions[0]
             nexthorseshoetime = round(time.time()) + 900
-            existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 19)
+            existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 17)
             if len(existing) > 0:
-                await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nexthorseshoetime, member.id, 19)
+                await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nexthorseshoetime, member.id, 17)
             else:
-                await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 19, message.channel.id, message.guild.id, nexthorseshoetime)
+                await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 17, message.channel.id, message.guild.id, nexthorseshoetime)
         """
         Pizza Reminder
         """
         if message.content.startswith("You eat the perfect slice of pizza.") and message.author.id == 270904126974590976 and len(message.mentions) > 0:
             member = message.mentions[0]
             nextpizzatime = round(time.time()) + 3600
-            existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 20)
+            existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 18)
             if len(existing) > 0:
-                await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextpizzatime, member.id, 20)
+                await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextpizzatime, member.id, 18)
             else:
-                await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 20, message.channel.id, message.guild.id, nextpizzatime)
+                await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 18, message.channel.id, message.guild.id, nextpizzatime)
         """
         Daily Box Reminder
         """
@@ -653,36 +639,28 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                         for member in message.guild.members:
                             if botresponse.embeds[0].title == f"{member.name}'s Loot Haul!":
                                 nextdailyboxtime = round(time.time()) + 600
-                                existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 18)
+                                existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 16)
                                 if len(existing) > 0:
-                                    await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextdailyboxtime, member.id, 18)
+                                    await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextdailyboxtime, member.id, 16)
                                 else:
-                                    await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 18, message.channel.id, message.guild.id, nextdailyboxtime)
+                                    await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 16, message.channel.id, message.guild.id, nextdailyboxtime)
                 return await checkmark(message)
         """
         Work Reminder
         """
-        if len(message.embeds) > 0 and message.author.id == 270904126974590976 and len(message.mentions) > 0 and  message.embeds[0].description and (message.embeds[0].description.startswith("**TERRIBLE work!**") or message.embeds[0].description.startswith("**Great work!**")):
+        if len(message.embeds) > 0 and message.author.id == 270904126974590976 and len(message.mentions) > 0 and message.embeds[0].description and (message.embeds[0].description.startswith("**TERRIBLE work!**") or message.embeds[0].description.startswith("**Great work!**")):
                 member = message.mentions[0]
                 nextworktime = round(time.time()) + 3600
-                existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 4)
+                existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 6)
                 if len(existing) > 0:
-                    await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextworktime, member.id, 4)
+                    await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextworktime, member.id, 6)
                 else:
-                    await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 4, message.channel.id, message.guild.id, nextworktime)
+                    await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 6, message.channel.id, message.guild.id, nextworktime)
                 with contextlib.suppress(discord.HTTPException):
                     await message.add_reaction("⏰")
-
-        if len(message.mentions) > 0 and "You've eaten an apple!" in message.content and message.author.bot:
-            member = message.mentions[0]
-            nextappletime = round(time.time()) + 86400
-            existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 6)
-            if len(existing) > 0:
-                await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextappletime, member.id, 6)
-            else:
-                await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 6, message.channel.id, message.guild.id, nextappletime)
-            with contextlib.suppress(discord.HTTPException):
-                await message.add_reaction("⏰")
+        """
+        Postmeme reminder
+        """
 
     @checks.dev()
     @commands.command(name="drmstats", aliases = ["dankreminderstats, statistics"])
