@@ -5,7 +5,7 @@ import discord
 from discord import ui
 import operator
 from utils import checks, buttons
-from datetime import datetime
+from datetime import datetime, timedelta
 from discord.ext import commands, tasks
 from utils.format import print_exception, short_time
 from .betting import betting
@@ -145,8 +145,8 @@ class dankreminders(discord.ui.View):
             elif str(emoji) == "<:DVB_Laptop:915524266940854303>":
                 await self.client.pool_pg.execute("UPDATE remindersettings SET postmeme = $1 WHERE member_id = $2", numberswitcher(self.result.get('postmeme')), ctx.author.id)
             self.result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
-            self.children[reminderemojis.index(str(emoji))].style = discord.ButtonStyle.red if is_enabled[reminderemojis.index(str(emoji))] == True else discord.ButtonStyle.green
-            is_enabled[reminderemojis.index(str(emoji))] = False if is_enabled[reminderemojis.index(str(emoji))] == True else True
+            self.children[reminderemojis.index(str(emoji))].style = discord.ButtonStyle.red if is_enabled[reminderemojis.index(str(emoji))] is True else discord.ButtonStyle.green
+            is_enabled[reminderemojis.index(str(emoji))] = False if is_enabled[reminderemojis.index(str(emoji))] is True else True
             await self.response.edit(view=self)
 
         class somebutton(discord.ui.Button):
@@ -181,10 +181,14 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
         self.dankmemerreminders.start()
         self.dropreminder.start()
         self.fighters = {}
+        self.trending_game = None
+        self.reset_trending_game.start()
+
 
     def cog_unload(self):
         self.dankmemerreminders.stop()
         self.dropreminder.stop()
+        self.reset_trending_game.stop()
 
     async def handle_reminder_entry(self, member_id, remindertype, channel_id, guild_id, time):
         existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member_id, remindertype)
@@ -192,6 +196,20 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
             await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", time, member_id, remindertype)
         else:
             await self.client.pool_pg.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member_id, remindertype, channel_id, guild_id, time)
+
+    @tasks.loop(hours=24.0)
+    async def reset_trending_game(self):
+        self.trending_game = None
+
+    @reset_trending_game.before_loop
+    async def wait_until_utc(self):
+        await self.client.wait_until_ready()
+        now = discord.utils.utcnow()
+        next_run = now.replace(hour=0, minute = 0, second = 0)
+        if next_run <= now:
+            next_run += timedelta(days=1)
+        await discord.utils.sleep_until(next_run)
+
 
     @tasks.loop(seconds=5.0)
     async def dropreminder(self):
@@ -216,7 +234,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                     member = self.client.get_user(i)
                     if member is not None:
                         remindersettings = await self.client.pool_pg.fetchval("SELECT method FROM remindersettings WHERE member_id = $1", i)
-                        if remindersettings == True:
+                        if remindersettings is True:
                             try:
                                 await member.send(msg)
                             except:
@@ -637,38 +655,71 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
             for button in beforeview.children:
                 if not isinstance(button, discord.ui.Button):
                     return False
-                if button.label.lower() == 'run ad' and button.disabled == False:
+                if button.label.lower() == 'run ad' and button.disabled is False:
                     pass
-                elif button.label.lower() == "read chat" and button.disabled == False:
+                elif button.label.lower() == "read chat" and button.disabled is False:
                     pass
-                elif button.label.lower() == "collect donations" and button.disabled == False:
+                elif button.label.lower() == "collect donations" and button.disabled is False:
                     pass
-                elif button.label.lower() == "end stream" and button.disabled == False:
+                elif button.label.lower() == "end stream" and button.disabled is False:
                     pass
-                elif button.label.lower() == "view setup" and button.disabled == False:
+                elif button.label.lower() == "view setup" and button.disabled is False:
                     pass
-                elif button.label.lower() == "end interaction" and button.disabled == False:
+                elif button.label.lower() == "end interaction" and button.disabled is False:
                     pass
                 else:
                     return False
             return True
         if not check_before_view():
+            print('did not fulfill have not interacted with stream')
+            def check_start_not_stream():
+                for button in beforeview.children:
+                    if not isinstance(button, discord.ui.Button):
+                        return False
+                    if button.label.lower() == "go live" and button.disabled is False:
+                        pass
+                    elif button.label.lower() == "view setup" and button.disabled is False:
+                        pass
+                    elif button.label.lower() == "end interaction" and button.disabled is False:
+                        pass
+                    else:
+                        return False
+                return True
+            if not check_start_not_stream():
+                return
+            def check_start_selecting_stream():
+                for button in beforeview.children:
+                    if isinstance(button, discord.ui.Select):
+                        print(button.placeholder.lower())
+                        if button.placeholder.lower() == "select a game":
+                            pass
+                    elif isinstance(button, discord.ui.Button):
+                        if button.label.lower() == "go live" and button.disabled is True:
+                            pass
+                        elif button.label.lower() == "go back" and button.disabled is False:
+                            pass
+                    else:
+                        return False
+                return True
+            if check_start_selecting_stream():
+                if self.trending_game is not None:
+                    return await beforemsg.reply("The current trending game to stream is **{}**!".format(self.trending_game), delete_after=10.0)
             return
         def check_after_view():
             for button in afterview.children:
                 if not isinstance(button, discord.ui.Button):
                     return False
-                if button.label.lower() == 'run ad' and button.disabled == True:
+                if button.label.lower() == 'run ad' and button.disabled is True:
                     pass
-                elif button.label.lower() == "read chat" and button.disabled == True:
+                elif button.label.lower() == "read chat" and button.disabled is True:
                     pass
-                elif button.label.lower() == "collect donations" and button.disabled == True:
+                elif button.label.lower() == "collect donations" and button.disabled is True:
                     pass
-                elif button.label.lower() == "end stream" and button.disabled == False:
+                elif button.label.lower() == "end stream" and button.disabled is False:
                     pass
-                elif button.label.lower() == "view setup" and button.disabled == False:
+                elif button.label.lower() == "view setup" and button.disabled is False:
                     pass
-                elif button.label.lower() == "end interaction" and button.disabled == False:
+                elif button.label.lower() == "end interaction" and button.disabled is False:
                     pass
                 else:
                     return False
@@ -753,7 +804,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
         timenow = round(time.time())
         alltime = await self.client.pool_pg.fetch("SELECT * from stats") # gets all entries from all time
         twentyfourhour = await self.client.pool_pg.fetch("SELECT * from stats WHERE time > $1", timenow - 86400) # gets all entries from the last 24 hours
-        week = await self.client.pool_pg.fetch("SELECT * from stats WHERE time > $1",timenow - 604800) # gets all entries from the past week
+        week = await self.client.pool_pg.fetch("SELECT * from stats WHERE time > $1", timenow - 604800) # gets all entries from the past week
         users = {} # result will be something like {321892489470410763: 123, 650647680837484556: 456}
         reminders = {} # result will be something like {Lottery: 123, Work: 45, Lifesaver: 67, Daily: 89}
         for entry in alltime:
@@ -920,6 +971,16 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
             embed.add_field(name=drop.get("item"), value=f"Cost: {drop.get('price')}\nDrop Time: <t:{drop.get('time')}>")
         await ctx.send(embed=embed)
 
+    @checks.admoon()
+    @commands.command(name="trendinggame")
+    async def trendinggame(self, ctx, *, game: str = None):
+        """
+        Set the current trending game.
+        """
+        if game is None:
+            return await ctx.send("The current trending game is **{}**".format(self.trending_game))
+        self.trending_game = game
+        await ctx.send("I've set the current trending game. This is how it will look like:\n\nThe current trending game to stream is **{}**!".format(game))
 
 
     @checks.not_in_gen()
