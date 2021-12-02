@@ -205,7 +205,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
     async def wait_until_utc(self):
         await self.client.wait_until_ready()
         now = discord.utils.utcnow()
-        next_run = now.replace(hour=0, minute = 0, second = 0)
+        next_run = now.replace(hour = 0, minute = 0, second = 0)
         if next_run <= now:
             next_run += timedelta(days=1)
         await discord.utils.sleep_until(next_run)
@@ -272,7 +272,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                     pass
                 elif result.get('remindertype') not in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21]: # if the reminder type is not a valid one
                     pass
-                elif config[result.get('remindertype')] == 0: # activity specific reminder check
+                elif config[result.get('remindertype')] != 1: # activity specific reminder check
                     pass
                 elif config.get('method') == 0: # chose not to be reminded
                     pass
