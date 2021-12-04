@@ -234,7 +234,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                     member = self.client.get_user(i)
                     if member is not None:
                         remindersettings = await self.client.pool_pg.fetchval("SELECT method FROM remindersettings WHERE member_id = $1", i)
-                        if remindersettings is True:
+                        if remindersettings == 1:
                             try:
                                 await member.send(msg)
                             except:
@@ -253,7 +253,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                 channel = self.client.get_channel(channel_id)
                 for message in messages:
                     await channel.send(message)
-            await self.client.pool_pg.execute("DELETE FROM dankdrops WHERE guild_id = $1 AND name = $2 AND price = $4 AND time = $4", drop.get('guild_id'), drop.get('name'), drop.get('price'), drop.get('time'))
+                await self.client.pool_pg.execute("DELETE FROM dankdrops WHERE guild_id = $1 AND name = $2 AND price = $3 AND time = $4", drop.get('guild_id'), drop.get('name'), drop.get('price'), drop.get('time'))
         except:
             pass
 
