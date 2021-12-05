@@ -382,7 +382,7 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
         messagecount = 0
         self.chatchart_is_running = True
         async for message in channel.history(limit=5000):
-            if message.webhook_id is None:
+            if isinstance(message.author, discord.Member):
                 if discord.utils.get(message.author.roles, name="No Tags"):
                     pass
                 else:
