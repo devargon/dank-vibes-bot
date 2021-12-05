@@ -383,18 +383,21 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
         self.chatchart_is_running = True
         async for message in channel.history(limit=5000):
             if message.webhook_id is None:
-                authorid = message.author.id
-                if message.author.bot:
-                    if ctx.message.content.endswith("--bots"):
+                if discord.utils.get(message.author.roles, name="No Tags"):
+                    pass
+                else:
+                    authorid = message.author.id
+                    if message.author.bot:
+                        if ctx.message.content.endswith("--bots"):
+                            if authorid not in data:
+                                data[authorid] = 1
+                            else:
+                                data[authorid] += 1
+                    else:
                         if authorid not in data:
                             data[authorid] = 1
                         else:
                             data[authorid] += 1
-                else:
-                    if authorid not in data:
-                        data[authorid] = 1
-                    else:
-                        data[authorid] += 1
             messagecount += 1
             if messagecount %500 == 0:
                 embed=discord.Embed(title=f"Shuffling through #{channel}'s message history...", description=f"**{messagecount}** of the last **5000** messages scanned.\n\n{generate_loadbar(messagecount/5000, 10)}", color=self.client.embed_color)
