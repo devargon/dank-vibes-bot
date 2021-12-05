@@ -466,3 +466,8 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
             await self.client.pool_pg.execute("UPDATE timedrole SET time = $1 WHERE member_id = $2 AND guild_id = $3 AND role_id = $4", finish, user.id, ctx.guild.id, accessrole.id)
         else:
             await self.client.pool_pg.execute("INSERT INTO timedrole VALUES($1, $2, $3, $4)", user.id, ctx.guild.id, accessrole.id, finish)
+
+    @commands.command(name="invite", hidden=True)
+    async def _invite(self, ctx):
+        embed = discord.Embed(title=f"Invite {self.client.user.name}!", description="[Click here to invite me to your server!](https://www.youtube.com/watch?v=9cjS9z0ZKUo)", color=self.client.embed_color)
+        await ctx.send(embed=embed)

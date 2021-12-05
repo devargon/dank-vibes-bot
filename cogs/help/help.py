@@ -281,7 +281,8 @@ class DVBotHelp(commands.DefaultHelpCommand):
             embed = discord.Embed(title=f"{getattr(cog, 'qualified_name', 'No').capitalize()} Category", color=self.context.bot.embed_color)
             embed.set_footer(text=f"Requested by {self.context.author}", icon_url=self.context.author.display_avatar.url)
             for command in chunks:
-                embed.add_field(name=self.get_command_name(command), value=self.get_help(command, brief=True), inline=False)
+                if command.name != "invite":
+                    embed.add_field(name=self.get_command_name(command), value=self.get_help(command, brief=True), inline=False)
             embeds.append(embed)
         return embeds
 
