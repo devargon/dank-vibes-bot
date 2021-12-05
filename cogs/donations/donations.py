@@ -257,10 +257,13 @@ class donations(commands.Cog):
             return await ctx.send("You must specify a category to add the donations to.")
         if amount <= 0:
             return await ctx.send("You must specify an amount greater than 0 to be added to {}'s donations.".format(member.name))
+        real_name = await self.client.pool_pg.fetchval("SELECT category_name FROM donation_categories WHERE guild_id = $1 AND lower(category_name) = $2", ctx.guild.id, category_name.lower())
+        if not real_name:
+            return await ctx.send(f"A category with the name `{category_name}` does not exist.")
         currentcount = await self.get_donation_count(member, category_name)
         QUERY = "INSERT INTO donations.{} VALUES ($1, $2) ON CONFLICT(user_id) DO UPDATE SET value=$2 RETURNING value".format(f"guild{ctx.guild.id}_{category_name.lower()}")
         newamount = await self.client.pool_pg.fetchval(QUERY, member.id, amount + currentcount, column='value')
-        embed = discord.Embed(title=f"Updated {member.name}'s **{category_name}** donations.", description=f"**Original amount**: `{comma_number(currentcount)}`\n**Amount added**: `{comma_number(amount)}`\n**New amount**: `{comma_number(newamount)}`", color=discord.Color.green(), timestamp=discord.utils.utcnow())
+        embed = discord.Embed(title=f"Updated {member.name}'s __{real_name}__ donations.", description=f"**Original amount**: `{comma_number(currentcount)}`\n**Amount added**: `{comma_number(amount)}`\n**New amount**: `{comma_number(newamount)}`", color=discord.Color.green(), timestamp=discord.utils.utcnow())
         embed.set_thumbnail(url=member.display_avatar.url)
         embed.set_author(name="Success!", icon_url="https://cdn.discordapp.com/emojis/575412409737543694.gif?size=96")
         embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
@@ -280,12 +283,17 @@ class donations(commands.Cog):
             return await ctx.send("You must specify a category to remove the donations from.")
         if amount <= 0:
             return await ctx.send("You must specify an amount greater than 0 to be removed from {}'s donations.".format(member.name))
+        real_name = await self.client.pool_pg.fetchval(
+            "SELECT category_name FROM donation_categories WHERE guild_id = $1 AND lower(category_name) = $2",
+            ctx.guild.id, category_name.lower())
+        if not real_name:
+            return await ctx.send(f"A category with the name `{category_name}` does not exist.")
         currentcount = await self.get_donation_count(member, category_name)
         if currentcount - amount < 0:
             return await ctx.send(f"You cannot remove more donations than the what {member.name} has in the {category_name} category.")
         QUERY = "INSERT INTO donations.{} VALUES ($1, $2) ON CONFLICT(user_id) DO UPDATE SET value=$2 RETURNING value".format(f"guild{ctx.guild.id}_{category_name.lower()}")
         newamount = await self.client.pool_pg.fetchval(QUERY, member.id, currentcount - amount, column='value')
-        embed = discord.Embed(title=f"Updated {member.name}'s **{category_name}** donations.", description=f"**Original amount**: `{comma_number(currentcount)}`\n**Amount removed**: `{comma_number(amount)}`\n**New amount**: `{comma_number(newamount)}`", color=discord.Color.orange(), timestamp=discord.utils.utcnow())
+        embed = discord.Embed(title=f"Updated {member.name}'s __{real_name}__ donations.", description=f"**Original amount**: `{comma_number(currentcount)}`\n**Amount removed**: `{comma_number(amount)}`\n**New amount**: `{comma_number(newamount)}`", color=discord.Color.orange(), timestamp=discord.utils.utcnow())
         embed.set_thumbnail(url=member.display_avatar.url)
         embed.set_author(name="Success!", icon_url="https://cdn.discordapp.com/emojis/575412409737543694.gif?size=96")
         embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
