@@ -1,3 +1,5 @@
+import typing
+
 import aiohttp
 import datetime
 import sys
@@ -446,7 +448,7 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
 
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="access")
-    async def access(self, ctx, user: discord.Member = None):
+    async def access(self, ctx, user: typing.Optional[discord.Member] = None):
         if user is None:
             if len(ctx.message.mentions) > 0:
                 user = ctx.message.mentions[0]
@@ -456,7 +458,7 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
         if accessrole is None:
             await ctx.send("Access role not found.")
             return
-        finish = round(time.time())+120
+        finish = round(time.time())+300
         await user.add_roles(accessrole, reason=f"Delayed role addition, authorized by {ctx.author}")
         embed = discord.Embed(title="Temporary Role Added!", description=f"{user.mention} has been given the {accessrole.mention} role and has access to <#915041843555758130> until the role is removed <t:{finish}:R>!", color=self.client.embed_color)
         await ctx.send(embed=embed)
