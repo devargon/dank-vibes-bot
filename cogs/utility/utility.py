@@ -1,3 +1,5 @@
+import typing
+
 import aiohttp
 import datetime
 import sys
@@ -443,3 +445,24 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
                 else:
                     embed.add_field(name="🛠️ Last commit", value=f"GitHub did not return a 200 status code.\nStatus code: {r.status}", inline=False)
                 await msg.edit(content="All retrieved in `{}`ms".format(round((time.perf_counter() - now) * 1000)), embed=embed)
+
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.command(name="access")
+    async def access(self, ctx, user: typing.Optional[discord.Member] = None):
+        if user is None:
+            if len(ctx.message.mentions) > 0:
+                user = ctx.message.mentions[0]
+            else:
+                user = ctx.author
+        accessrole = ctx.guild.get_role(905980110954455070) if os.getenv('state') == '1' else ctx.guild.get_role(915045523801640981)
+        if accessrole is None:
+            await ctx.send("Access role not found.")
+            return
+        finish = round(time.time())+300
+        await user.add_roles(accessrole, reason=f"Delayed role addition, authorized by {ctx.author}")
+        embed = discord.Embed(title="Temporary Role Added!", description=f"{user.mention} has been given the {accessrole.mention} role and has access to <#915041843555758130> until the role is removed <t:{finish}:R>!", color=self.client.embed_color)
+        await ctx.send(embed=embed)
+        if await self.client.pool_pg.fetchrow("SELECT * FROM timedrole WHERE member_id = $1 AND guild_id = $2 AND role_id = $3", user.id, ctx.guild.id, accessrole.id):
+            await self.client.pool_pg.execute("UPDATE timedrole SET time = $1 WHERE member_id = $2 AND guild_id = $3 AND role_id = $4", finish, user.id, ctx.guild.id, accessrole.id)
+        else:
+            await self.client.pool_pg.execute("INSERT INTO timedrole VALUES($1, $2, $3, $4)", user.id, ctx.guild.id, accessrole.id, finish)
