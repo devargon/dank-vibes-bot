@@ -31,6 +31,47 @@ class Christmas(commands.Cog, name="christmas"):
         self.ignoredchannels = {}
         self.ignoredcategories = {}
 
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        """
+        Main event handler for christmas games.
+        """
+        guildid = str(message.guild.id)
+        """
+        Caching the rate for the guild.
+        """
+        if guildid not in self.rate:
+            rate = await self.client.pool_pg.fetchval("SELECT percentage FROM christmaseventconfig WHERE guild_id = $1", message.guild.id)
+            if rate is None:
+                rate = 0
+            self.rate[guildid] = rate
+        """
+        Caching the ignored categories for the guild
+        """
+        if guildid not in self.ignoredcategories:
+            ignoredcategories = await self.client.pool_pg.fetch("SELECT * FROM ignoredchristmascat WHERE guild_id = $1", message.guild.id)
+            if len(ignoredcategories) == 0:
+                ignoredcategories = []
+                self.ignoredcategories[guildid] = ignoredcategories
+            else:
+                ids = [entry.get('category_id') for entry in ignoredcategories]
+                self.ignoredcategories[guildid] = ids
+        """
+        Caching the ignored channels for the guild
+        """
+        if guildid not in self.ignoredchannels:
+            ignoredchannels = await self.client.pool_pg.fetch("SELECT * FROM ignoredchristmaschan WHERE guild_id = $1", message.guild.id)
+            if len(ignoredchannels) == 0:
+                ignoredchannels = []
+                self.ignoredchannels[guildid] = ignoredchannels
+            else:
+                ids = [entry.get('channel_id') for entry in ignoredchannels]
+                self.ignoredchannels[guildid] = ids
+        if message.author.bot:
+            return
+
+
+
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.group(name='christmasconfig', aliases=['xmasconfig'], invoke_without_command=True)
     async def christmasconfig(self, ctx):
