@@ -4,6 +4,17 @@ from utils import checks
 from utils.format import human_join
 from typing import Optional
 import random
+import time
+import os
+
+modchannel = 743174564778868796 if os.getenv('state') == '0' else 871737314831908974
+
+something = ["Custom Role", "Free Odd Eye Raffle Entry", "+1 Amari Level", "+2 Amari Level", "+3 Amari Level",
+             "Access to reaction snipe", "Access to #general-spam (25x/50x multi)", "Create a private channel",
+             "1x/2x role multiplier", "Access to #reaction-logs", "Access to #dyno-message-logs",
+             "Join a surprise heist", "Use slash commands", "Access to `dv.dm`", "Access to `-paint`",
+             "Use Color roles", "Access to `dv.es`"]
+weights = [1, 2, 2, 2, 1, 3, 2, 2, 2, 3, 3, 3, 2, 3, 3, 3, 3, ]
 
 def format_channel(list_of_channels, split:Optional[bool] = False):
     """
@@ -20,6 +31,41 @@ def format_channel(list_of_channels, split:Optional[bool] = False):
         else:
             return "\n".join(list_of_channels)
 
+class ChoosePrize(discord.ui.View):
+    def __init__(self, prizes, member):
+        self.member = member
+        self.prizes = prizes
+        self.prize = None
+        self.response = None
+        super().__init__(timeout=15.0)
+
+        async def manage_prize(label):
+            self.prize = label
+            for b in self.children:
+                b.disabled = True
+            await self.response.edit(view=self)
+            self.stop()
+
+        class Prize(discord.ui.Button):
+            async def callback(self, interaction: discord.Interaction):
+                await manage_prize(self.label)
+
+        for prize in self.prizes:
+            self.add_item(Prize(label=prize, style=discord.ButtonStyle.blurple))
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user != self.member:
+            await interaction.response.send_message("These aren't your prizes to claim 😑", ephemeral=True)
+            return False
+        return True
+
+    async def on_timeout(self) -> None:
+        for b in self.children:
+            b.disabled = True
+        await self.response.edit(content="You failed to claim your prize.", view=self)
+
+
+
 
 class Christmas(commands.Cog, name="christmas"):
     """
@@ -30,6 +76,87 @@ class Christmas(commands.Cog, name="christmas"):
         self.rate = {}
         self.ignoredchannels = {}
         self.ignoredcategories = {}
+
+    async def manage_prize(self, message, prize, member):
+        if prize == "Custom Role":
+            await message.channel.send("You chose the **Custom Role**!\nYou will be able to keep this Custom Role for 2 days. Please wait until an admin DMs you with more information.")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a custom role for 2 days\n{message.jump_url}")
+            await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, "Custom Role Perk", round(time.time()) + 172800)
+
+        elif prize == "Free Odd Eye Raffle Entry":
+            await message.channel.send("You chose the **Free Odd Eye Raffle Entry**!\nYou can redeem a free Odd Eye entry.")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) can get a free odd eye raffle entry.\n{message.jump_url}")
+
+        elif prize == "+1 Amari Level":
+            await message.channel.send("You chose the **+1 Amari Level**!\nYour extra level will be added to you as soon as possible.")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won **+1 Amari Level**.\n{message.jump_url}")
+
+        elif prize == "+2 Amari Level":
+            await message.channel.send("You chose the **+2 Amari Level**!\nYour extra level will be added to you as soon as possible.")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won **+2 Amari Level**\n{message.jump_url}")
+
+        elif prize == "+3 Amari Level":
+            await message.channel.send("You chose the **+3 Amari Level**!\nYour extra level will be added to you as soon as possible.")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **+3 Amari Level**\n{message.jump_url}")
+
+        elif prize == "Access to reaction snipe":
+            await message.channel.send("You chose the **Access to reaction snipe**!\nYou can start using `dv.rs` until your access is automatically removed in 2 days.")
+            await self.client.pool_pg.execute("INSERT INTO commandaccess(member_id, command, until) VALUES($1, $2, $3)", member.id, "reactionsnipe", round(time.time()) + 172800)
+
+        elif prize == "Access to #general-spam (25x/50x multi)":
+            await message.channel.send("You chose the **Access to #general-spam (25x/50x multi)**!\nYour access to the channel will be given as soon as possible.")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won **Access to #general-spam\n{message.jump_url}")
+            await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
+
+        elif prize == "Create a private channel":
+            await message.channel.send("You chose the **Create a private channel**!\nYou will be given access to create a private channel in <#763458133116059680> as soon as possible.")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Create a private channel**\n{message.jump_url}")
+            await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
+
+        elif prize == "1x/2x role multiplier":
+            await message.channel.send("You chose the **1x/2x role multiplier**!\nMessages you sent will have an additional multiplier in AmariBot for 2 days. This perk will be given to you as soon as possible.")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **1x/2x role multiplier**")
+            await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
+
+        elif prize == "Access to #reaction-logs":
+            await message.channel.send("You chose the **Access to #reaction-logs**!\nYou will be given access to <#847710145001029672> as soon as possible.")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to #reaction-logs**")
+            await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize,round(time.time()) + 172800)
+
+        elif prize == "Access to #dyno-message-logs":
+            await message.channel.send("You chose the **Access to #dyno-message-logs**!\nYou will be given access to <#880990535282724926> as soon as possible.")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to #dyno-message-logs**")
+            await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize,round(time.time()) + 172800)
+
+        elif prize == "Join a surprise heist":
+            await message.channel.send("You chose the **Join a surprise heist**!\nYou can join a surprise heist xxx")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Join a surprise heist**")
+            await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
+
+        elif prize == "Use slash commands":
+            await message.channel.send("You chose the **Use slash commands**!You will be able to use bots' Slash Commands for 2 days. This access will be given to you as soon as possible.")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Use slash commands**")
+            await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
+
+        elif prize == "Access to `dv.dm`":
+            await message.channel.send("You chose the **Access to `dv.dm`**!\nActing like a messenger, Dank Vibes Bot anonymously will DM your target on your behalf. You can do so for two days!")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `dv.dm`**")
+            await self.client.pool_pg.execute("INSERT INTO commandaccess VALUES($1, $2, $3)", member.id, "dm", round(time.time()) + 172800)
+
+        elif prize == "Access to `-paint`":
+            await message.channel.send("You chose the **Access to `-paint`**!\nYou will be able to make other peoples' color roles change for a short period of time! This access will be given to you as soon as possible.")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `-paint`**")
+            await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
+
+        elif prize == "Use Color roles":
+            await message.channel.send("You chose the **Use Color roles**!\nYou will be able to grab exclusive color roles in <#641497978112180235>.")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Use Color roles**")
+            await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
+
+        elif prize == "Access to `dv.es`":
+            await message.channel.send("You chose the **Access to `dv.es`**!\nYou will be able to see what a user's message was before they edited it for two days!")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `dv.es`**")
+            await self.client.pool_pg.execute("INSERT INTO commandaccess VALUES($1, $2, $3)", member.id, "editsnipe", round(time.time()) + 172800)
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -65,7 +192,7 @@ class Christmas(commands.Cog, name="christmas"):
                 ignoredchannels = []
                 self.ignoredchannels[guildid] = ignoredchannels
             else:
-                ids = [entry.get('channel_id') for entry in ignoredchannels]
+                ids = [entry.get('channel_id') for entry in ignoredchannels],
                 self.ignoredchannels[guildid] = ids
         if message.author.bot:
             return
@@ -166,19 +293,19 @@ class Christmas(commands.Cog, name="christmas"):
         if extrasummary:
             embed.add_field(name="Also..", value=extrasummary, inline=False)
         embed.set_thumbnail(url=random.choice(['https://cdn.discordapp.com/emojis/568124063675973632.gif?size=96',
-                                            'https://cdn.discordapp.com/emojis/893450958326091777.png?size=96',
-                                            'https://cdn.discordapp.com/emojis/817909791287934986.png?size=96',
-                                            'https://cdn.discordapp.com/emojis/694973517862666360.png?size=96',
-                                            'https://cdn.discordapp.com/emojis/694973517816397824.png?size=96',
-                                            'https://cdn.discordapp.com/emojis/694973517677985792.png?size=96',
-                                            'https://cdn.discordapp.com/emojis/733017031493943718.gif?size=96',
-                                            'https://cdn.discordapp.com/emojis/706107990024913007.gif?size=96',
-                                            'https://cdn.discordapp.com/emojis/643747917017907240.gif?size=96',
-                                            'https://cdn.discordapp.com/emojis/766099048217313281.png?size=96',
-                                            'https://cdn.discordapp.com/emojis/722195328799080459.png?size=96',
-                                            'https://cdn.discordapp.com/emojis/679800699625799740.png?size=96',
-                                            'https://cdn.discordapp.com/emojis/706107989047771239.gif?size=96',
-                                            'https://cdn.discordapp.com/emojis/893449040421855242.png?size=96']))
+                                                'https://cdn.discordapp.com/emojis/893450958326091777.png?size=96',
+                                                'https://cdn.discordapp.com/emojis/817909791287934986.png?size=96',
+                                                'https://cdn.discordapp.com/emojis/694973517862666360.png?size=96',
+                                                'https://cdn.discordapp.com/emojis/694973517816397824.png?size=96',
+                                                'https://cdn.discordapp.com/emojis/694973517677985792.png?size=96',
+                                                'https://cdn.discordapp.com/emojis/733017031493943718.gif?size=96',
+                                                'https://cdn.discordapp.com/emojis/706107990024913007.gif?size=96',
+                                                'https://cdn.discordapp.com/emojis/643747917017907240.gif?size=96',
+                                                'https://cdn.discordapp.com/emojis/766099048217313281.png?size=96',
+                                                'https://cdn.discordapp.com/emojis/722195328799080459.png?size=96',
+                                                'https://cdn.discordapp.com/emojis/679800699625799740.png?size=96',
+                                                'https://cdn.discordapp.com/emojis/706107989047771239.gif?size=96',
+                                                'https://cdn.discordapp.com/emojis/893449040421855242.png?size=96']))
 
         await ctx.send(embed=embed)
 
@@ -385,5 +512,20 @@ class Christmas(commands.Cog, name="christmas"):
             embed.color = discord.Color.yellow()
         await ctx.send(embed=embed)
 
-
-
+    @checks.dev()
+    @commands.command(name="prizechoice", aliases=['pc'])
+    async def set_prize_choice(self, ctx, member:discord.Member = None):
+        """
+        Manually allows someone to claim a prize.
+        """
+        message = ctx.message
+        if member is None:
+            return await message.add_reaction("❌")
+        selected_prizes = random.choices(something, weights=weights, k=3)
+        prizeview = ChoosePrize(selected_prizes, member)
+        embed=discord.Embed(title="You won the minigame!", description=f"Choose one of the prizes to redeem below!", color=self.client.embed_color)
+        prizeview.response = await message.channel.send(embed=embed, view=prizeview)
+        print('baka')
+        await prizeview.wait()
+        print(prizeview.prize)
+        await self.manage_prize(ctx.message, prizeview.prize, member)
