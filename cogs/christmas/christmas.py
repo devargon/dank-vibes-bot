@@ -3,6 +3,7 @@ from discord.ext import commands
 from utils import checks
 from utils.format import human_join
 from typing import Optional
+import random
 
 def format_channel(list_of_channels, split:Optional[bool] = False):
     """
@@ -78,7 +79,7 @@ class Christmas(commands.Cog, name="christmas"):
                     cached_channels.append(channel.id)
                 else:
                     await self.client.pool_pg.execute("DELETE FROM ignoredchristmaschan WHERE channel_id = $1", channel_id)
-                    deleted_channels.append(channel_id)
+                    deleted_channels.append(str(channel_id))
             if guildid not in self.ignoredchannels or cached_channels != self.ignoredchannels[guildid]:
                 self.ignoredchannels[guildid] = cached_channels
         embed.add_field(name="Ignored Channels", value=format_channel(array, split=True) if len(array) > 0 else "None")
@@ -100,22 +101,22 @@ class Christmas(commands.Cog, name="christmas"):
                     category_id = entry.get('category_id')
                     category = ctx.guild.get_channel(category_id)
                     if category is not None and isinstance(category, discord.CategoryChannel):
-                        array.append(category.name)
+                        array.append(f"{category.name} ({category_id})")
                         cached_categories.append(category.id)
                     else:
                         await self.client.pool_pg.execute("DELETE FROM ignoredchristmascat WHERE category_id = $1", category_id)
                         deleted_categories.append(category_id)
         else:
             categoryids = [category_id for category_id in self.ignoredcategories[guildid]]
-        if array != ["None"]:
-            for category_id in self.ignoredcategories[guildid]:
-                category = ctx.guild.get_channel(category_id)
-                if category is not None and isinstance(category, discord.CategoryChannel):
-                    array.append(category.name)
-                    cached_categories.append(category.id)
-                else:
-                    await self.client.pool_pg.execute("DELETE FROM ignoredchristmascat WHERE category_id = $1", category_id)
-                    deleted_categories.append(category_id)
+            if guildid in self.ignoredcategories or array != ["None"]:
+                for category_id in categoryids:
+                    category = ctx.guild.get_channel(category_id)
+                    if category is not None and isinstance(category, discord.CategoryChannel):
+                        array.append(category.name)
+                        cached_categories.append(category.id)
+                    else:
+                        await self.client.pool_pg.execute("DELETE FROM ignoredchristmascat WHERE category_id = $1", category_id)
+                        deleted_categories.append(str(category_id))
             if guildid not in self.ignoredcategories or cached_categories != self.ignoredcategories[guildid]:
                 self.ignoredcategories[guildid] = cached_categories
         embed.add_field(name="Ignored Categories", value=format_channel(array, split=True) if len(array) > 0 else "None")
@@ -123,6 +124,21 @@ class Christmas(commands.Cog, name="christmas"):
             extrasummary += f"\n\n**These categories are invalid and were deleted from the list of ignored categories:** {', '.join(deleted_categories)}"
         if extrasummary:
             embed.add_field(name="Also..", value=extrasummary, inline=False)
+        embed.set_thumbnail(url=random.choice(['https://cdn.discordapp.com/emojis/568124063675973632.gif?size=96',
+                                            'https://cdn.discordapp.com/emojis/893450958326091777.png?size=96',
+                                            'https://cdn.discordapp.com/emojis/817909791287934986.png?size=96',
+                                            'https://cdn.discordapp.com/emojis/694973517862666360.png?size=96',
+                                            'https://cdn.discordapp.com/emojis/694973517816397824.png?size=96',
+                                            'https://cdn.discordapp.com/emojis/694973517677985792.png?size=96',
+                                            'https://cdn.discordapp.com/emojis/733017031493943718.gif?size=96',
+                                            'https://cdn.discordapp.com/emojis/706107990024913007.gif?size=96',
+                                            'https://cdn.discordapp.com/emojis/643747917017907240.gif?size=96',
+                                            'https://cdn.discordapp.com/emojis/766099048217313281.png?size=96',
+                                            'https://cdn.discordapp.com/emojis/722195328799080459.png?size=96',
+                                            'https://cdn.discordapp.com/emojis/679800699625799740.png?size=96',
+                                            'https://cdn.discordapp.com/emojis/706107989047771239.gif?size=96',
+                                            'https://cdn.discordapp.com/emojis/893449040421855242.png?size=96']))
+
         await ctx.send(embed=embed)
 
     @checks.has_permissions_or_role(manage_roles=True)
@@ -216,8 +232,6 @@ class Christmas(commands.Cog, name="christmas"):
         if len(channels) == 0:
             await ctx.send("You must specify at least one channel.")
             return
-        if guildid not in self.ignoredchannels:
-            self.ignoredchannels[guildid] = []
         ignoredchannels = self.ignoredchannels[guildid]
         removed_channels = []
         not_exist = []
@@ -239,18 +253,96 @@ class Christmas(commands.Cog, name="christmas"):
             already_added_string = ""
         embed = discord.Embed(title="Success!", description=f"{added_channel_string} has been removed from the list of ignored channels." if len(added_channel_string) > 0 else "", color=discord.Color.green())
         if already_added_string:
-            embed.add_field(name="Already Revmoed", value=f"{already_added_string} were not in the list of ignored channels.", inline=False)
+            embed.add_field(name="Already Removed", value=f"{already_added_string} were not in the list of ignored channels.", inline=False)
             embed.color = discord.Color.yellow()
         await ctx.send(embed=embed)
 
 
+    @checks.has_permissions_or_role(manage_roles=True)
+    @christmasconfig.command(name="ignorecategory", aliases=["icat"])
+    async def ignore_category_config(self, ctx, categories: commands.Greedy[discord.CategoryChannel]):
+        """
+        sets categories which channels inside will be ignored. You can provide a name, or the ID of the category.
+        """
+        guildid = str(ctx.guild.id)
+        if guildid not in self.ignoredcategories:
+            ignoredcategories = await self.client.pool_pg.fetch("SELECT * FROM ignoredchristmascat WHERE guild_id = $1", ctx.guild.id)
+            if len(ignoredcategories) == 0:
+                ignoredcategories = []
+                self.ignoredcategories[guildid] = ignoredcategories
+            else:
+                ids = [entry.get('category_id') for entry in ignoredcategories]
+                self.ignoredcategories[guildid] = ids
+        if len(categories) == 0:
+            await ctx.send("You must specify at least one category.")
+            return
+        ignoredcategories = self.ignoredcategories[guildid]
+        added_categories = []
+        already_added = []
+        for category in categories:
+            if category.id not in ignoredcategories:
+                await self.client.pool_pg.execute("INSERT INTO ignoredchristmascat (guild_id, category_id) VALUES ($1, $2)", ctx.guild.id, category.id)
+                ignoredcategories.append(category.id)
+                added_categories.append(category.name)
+            else:
+                already_added.append(category.mention)
+        self.ignoredcategories[guildid] = ignoredcategories
+        if len(added_categories) > 0:
+            added_category_string = format_channel(added_categories)
+        else:
+            added_category_string = ""
+        if len(already_added) > 0:
+            already_added_string = format_channel(already_added)
+        else:
+            already_added_string = ""
+        embed = discord.Embed(title="Success!", description=f"Channels inside **{added_category_string}** will be ignored by the bot.", color=discord.Color.green())
+        if already_added_string:
+            embed.add_field(name="Already Added", value=f"**{already_added_string}** were already in the list of ignored categories.", inline=False)
+            embed.color = discord.Color.yellow()
+        await ctx.send(embed=embed)
 
-
-
-
-
-
-
+    @checks.has_permissions_or_role(manage_roles=True)
+    @christmasconfig.command(name="unignorecategory", aliases=["uicat"])
+    async def unignore_category_config(self, ctx, categories: commands.Greedy[discord.CategoryChannel]):
+        """
+        Removes categories set in the list of ignored categories.
+        """
+        guildid = str(ctx.guild.id)
+        if guildid not in self.ignoredcategories:
+            ignoredcategories = await self.client.pool_pg.fetch("SELECT * FROM ignoredchristmascat WHERE guild_id = $1", ctx.guild.id)
+            if len(ignoredcategories) == 0:
+                ignoredcategories = []
+                self.ignoredcategories[guildid] = ignoredcategories
+            else:
+                ids = [entry.get('category_id') for entry in ignoredcategories]
+                self.ignoredcategories[guildid] = ids
+        if len(categories) == 0:
+            await ctx.send("You must specify at least one category.")
+            return
+        ignoredcategories = self.ignoredcategories[guildid]
+        removed_categories = []
+        not_exist = []
+        for category in categories:
+            if category.id in ignoredcategories:
+                await self.client.pool_pg.execute("DELETE FROM ignoredchristmascat WHERE guild_id = $1 AND category_id = $2", ctx.guild.id, category.id)
+                ignoredcategories.remove(category.id)
+                removed_categories.append(category.name)
+            else:
+                not_exist.append(category.name)
+        self.ignoredcategories[guildid] = ignoredcategories
+        if len(removed_categories) > 0:
+            removed_category_string = format_channel(removed_categories)
+        else:
+            removed_category_string = ""
+        if len(not_exist) > 0:
+            not_exist_string = format_channel(not_exist)
+        else:
+            not_exist_string = ""
+        embed = discord.Embed(title="Success!", description=f"**{removed_category_string}** has been removed from the list of ignored categories.", color=discord.Color.green())
+        if not_exist_string:
+            embed.add_field(name="Not Exist", value=f"**{not_exist_string}** were not in the list of ignored categories.", inline=False)
+            embed.color = discord.Color.yellow()
+        await ctx.send(embed=embed)
 
 
 
