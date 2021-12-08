@@ -1,7 +1,8 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, menus, tasks
 from utils import checks
 from utils.format import human_join
+from utils.menus import CustomMenu
 from typing import Optional
 import random
 import time
@@ -30,6 +31,17 @@ def format_channel(list_of_channels, split:Optional[bool] = False):
             return "\n".join(list_of_channels[:35]) + f"\n**And {len(list_of_channels) - 35} more...**"
         else:
             return "\n".join(list_of_channels)
+
+class ListPerks(menus.ListPageSource):
+    def __init__(self, entries, title):
+        self.title = title
+        super().__init__(entries, per_page=10)
+
+    async def format_page(self, menu, page):
+        embed = discord.Embed(color=menu.ctx.bot.embed_color, title=self.title, timestamp=discord.utils.utcnow())
+        for entry in page:
+            embed.add_field(name=entry[0], value=entry[1], inline=False)
+        return embed
 
 class ChoosePrize(discord.ui.View):
     def __init__(self, prizes, member):
@@ -157,6 +169,8 @@ class Christmas(commands.Cog, name="christmas"):
             await message.channel.send("You chose the **Access to `dv.es`**!\nYou will be able to see what a user's message was before they edited it for two days!")
             await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `dv.es`**")
             await self.client.pool_pg.execute("INSERT INTO commandaccess VALUES($1, $2, $3)", member.id, "editsnipe", round(time.time()) + 172800)
+
+    @tasks.loop()
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -529,3 +543,31 @@ class Christmas(commands.Cog, name="christmas"):
         await prizeview.wait()
         print(prizeview.prize)
         await self.manage_prize(ctx.message, prizeview.prize, member)
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name="existingperks", aliases=['ep'])
+    async def existing_perks(self, ctx):
+        """
+        List the perks that currently exist on members.
+        """
+        entries = await self.client.pool_pg.fetch("SELECT * FROM perkremoval")
+        commandentries = await self.client.pool_pg.fetch("SELECT * FROM commandaccess")
+        if len(entries) == 0 and len(commandentries) == 0:
+            return await ctx.send("There are no existing perks that are currently in use.")
+        something = []
+        for entry in entries:
+            member = ctx.guild.get_member(entry.get('member_id'))
+            if member is None:
+                displaymember = entry.get('member_id')
+            else:
+                displaymember = f"{member.mention} ({member.id})"
+            something.append((f"External: {entry.get('perk')}", f"**User**: {displaymember}\n**Until**: <t:{entry.get('until')}>"))
+        for entry in commandentries:
+            member = ctx.guild.get_member(entry.get('member_id'))
+            if member is None:
+                displaymember = entry.get('member_id')
+            else:
+                displaymember = f"{member.mention} ({member.id})"
+            something.append((f"Dank Vibes Bot: `{entry.get('command')}`", f"**User**: {displaymember}\n**Until**: <t:{entry.get('until')}>"))
+        pages = CustomMenu(source=ListPerks(something, "Existing Perks"), clear_reactions_after=True, timeout=60)
+        return await pages.start(ctx)
