@@ -232,7 +232,6 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
         Freezes a user's nickname, causing their nickname to always display the nickname that you state in the command.
         To specify a duration, add --duration [duration] at the end.
         """
-        return await ctx.send("This command is meant to be a command for manually freezing nicknames, but it will be disabled until further notice. To see the active frozen nicknames, check `dv.freezenicks`.")
         if member is None:
             return await ctx.send("You need to tell me who you want to freezenick.")
         if nickname is None:
