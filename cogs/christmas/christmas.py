@@ -7,6 +7,7 @@ from typing import Optional
 import random
 import time
 import os
+from .removingaccess import RemovingAccess
 
 modchannel = 743174564778868796 if os.getenv('state') == '0' else 871737314831908974
 
@@ -79,7 +80,7 @@ class ChoosePrize(discord.ui.View):
 
 
 
-class Christmas(commands.Cog, name="christmas"):
+class Christmas(RemovingAccess, commands.Cog, name="christmas"):
     """
     Christmas Celebration Features
     """
@@ -88,6 +89,8 @@ class Christmas(commands.Cog, name="christmas"):
         self.rate = {}
         self.ignoredchannels = {}
         self.ignoredcategories = {}
+        self.remind_perk_removal.start()
+        self.command_removal.start()
 
     async def manage_prize(self, message, prize, member):
         if prize == "Custom Role":
@@ -571,3 +574,8 @@ class Christmas(commands.Cog, name="christmas"):
             something.append((f"Dank Vibes Bot: `{entry.get('command')}`", f"**User**: {displaymember}\n**Until**: <t:{entry.get('until')}>"))
         pages = CustomMenu(source=ListPerks(something, "Existing Perks"), clear_reactions_after=True, timeout=60)
         return await pages.start(ctx)
+
+
+    def cog_unload(self) -> None:
+        self.remind_perk_removal.stop()
+        self.command_removal.stop()
