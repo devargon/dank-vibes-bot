@@ -83,6 +83,83 @@ class Game1_Candy(discord.ui.View):
                                  view=self)
 
 
+class Game2_Grinch(discord.ui.View):
+    def __init__(self):
+        self.grinch_position = ["<:DVB_Blank:918464127779876924>", "<:DVB_Grinch:918461400039432254>", "<:DVB_Blank:918464127779876924>"]
+        self.grinchHP = 20
+        self.response: discord.Message = None
+        self.grinch_hits = {}
+        super().__init__(timeout=20.0)
+
+        async def manage_candies(custom_id, interaction: discord.Interaction):
+            user = interaction.user
+            current_grinch_index = self.grinch_position.index("<:DVB_Grinch:918461400039432254>")
+            if int(custom_id) == current_grinch_index:
+                if user not in self.grinch_hits:
+                    self.grinch_hits[user] = 1
+                else:
+                    self.grinch_hits[user] = self.grinch_hits[user] + 1
+                self.grinchHP -= 1
+            if self.grinchHP == 0:
+                for b in self.children:
+                    b.disabled = True
+                embed = self.response.embeds[0]
+                embed.set_footer(text="This game has ended and you can no longer attack the Grinch.")
+                await self.response.edit(content="This game has ended and you can no longer attack the Grinch.", embed=embed, view=self)
+                self.stop()
+            else:
+                if random.choice([False, False, False, False, False, False, False, True]):
+                    current_position = self.grinch_position
+                    random.shuffle(current_position)
+                    self.grinch_position = current_position
+                    embed = self.response.embeds[0]
+                    embed.description = f"⛄⛄⛄\n{''.join(self.grinch_position)}\n\nClick on the correct snowball facing the Grinch to hit him with it!"
+                    await self.response.edit(embed=embed)
+        class HitGrinch(discord.ui.Button):
+            async def callback(self, interaction: discord.Interaction):
+                await manage_candies(self.custom_id, interaction)
+        for i in range(0, 3):
+            self.add_item(HitGrinch(style=discord.ButtonStyle.blurple, disabled=False, emoji=discord.PartialEmoji.from_str("<:DVB_snowball:918096323906007060>"), custom_id=str(i)))
+
+    async def on_timeout(self) -> None:
+        for b in self.children:
+            b.disabled = True
+        embed = self.response.embeds[0]
+        embed.set_footer(text="This game has ended and you can no longer attack the Grinch.")
+        await self.response.edit(content="This game has ended and you can no longer attack the Grinch.", embed=embed, view=self)
+
+class ChooseCurrencyPrize(discord.ui.View):
+    def __init__(self, member):
+        self.member = member
+        self.prizes = random.choices([["<:DankMemer:898501160992911380>", "Dank Memer"], ["<:currency:898494174557515826>", "Mudae"], ["<:TT_karutaOwO:913784526268932156>", "Karuta"], ["<:OwO:898501205360271380>", "OwO"], ["<:Pokemon:898501263849816064>", "Pokemon Bots"]], k=3)
+        self.prize = None
+        self.response = None
+        super().__init__(timeout=15.0)
+
+        async def manage_prize(label):
+            self.prize = label
+            for b in self.children:
+                b.disabled = True
+            await self.response.edit(view=self)
+            self.stop()
+
+        class Prize(discord.ui.Button):
+            async def callback(self, interaction: discord.Interaction):
+                await manage_prize(self.label)
+
+        for prize in self.prizes:
+            self.add_item(Prize(emoji=discord.PartialEmoji.from_str(prize[0]), label=prize[1], style=discord.ButtonStyle.blurple))
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user != self.member:
+            await interaction.response.send_message("These aren't your prizes to claim 😑", ephemeral=True)
+            return False
+        return True
+
+    async def on_timeout(self) -> None:
+        for b in self.children:
+            b.disabled = True
+        await self.response.edit(content="You failed to claim your prize.", view=self)
 
 class ChoosePrize(discord.ui.View):
     def __init__(self, prizes, member):
@@ -223,6 +300,8 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `dv.es`**\n*Sent for tracking purposes*")
             await self.client.pool_pg.execute("INSERT INTO commandaccess VALUES($1, $2, $3)", member.id, "editsnipe", round(time.time()) + 172800)
 
+
+
     @commands.Cog.listener()
     async def on_message(self, message):
         """
@@ -275,8 +354,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             return
         if message.channel.category_id in self.ignoredcategories[guildid]:
             return
-        #game = random.choice([0, 1, 2])
-        game = 0
+        game = random.choice([0, 1])
         if game == 0:
             candycount = random.randint(10, 20)
             gameview = Game1_Candy(candycount)
@@ -286,7 +364,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             else:
                 PersonGivingCandy = random.choice(modrole.members)
             embed = discord.Embed(title=f"{PersonGivingCandy} is giving out {candycount} free candies to everyone!", description=f"Press the button below to get candies!\nThe person with the highest number of candies gets to win something!", color=self.client.embed_color).set_thumbnail(url="https://cdn.discordapp.com/emojis/784042462364041216.gif?size=96")
-            gamemessage = await message.channel.send(embed=embed, view=gameview)
+            gamemessage = await message.channel.send("A new event is happening!", embed=embed, view=gameview)
             gameview.response = gamemessage
             await gameview.wait()
             if len(gameview.candyclaims) == 0:
@@ -294,6 +372,9 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             candyclaims = sorted(gameview.candyclaims.items(), key=operator.itemgetter(1), reverse=True)
             winner = candyclaims[0][0]
             selected_prizes = random.choices(something, weights=weights, k=3)
+            while selected_prizes[0] == selected_prizes[1] or selected_prizes[1] == selected_prizes[2]:
+                selected_prizes = random.choices(something, weights=weights, k=3)
+
             prizeview = ChoosePrize(selected_prizes, winner)
             prizeview.response = await message.channel.send(f"{winner.mention} You've won by collecting the highest number of candies (`{candyclaims[0][1]}`) among the other {len(candyclaims)-1} participants!\nChoose a prize below to redeem.", view=prizeview)
             await prizeview.wait()
@@ -301,7 +382,31 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
 
 
         elif game == 1:
-            await message.channel.send("Second game doesn't exist yet :(")
+            gameview = Game2_Grinch()
+            embed = discord.Embed(title="Help! The Grinch is coming to attempt to distrupt the Christmas celebrations!", description=f"⛄⛄⛄\n<:DVB_Blank:918464127779876924><:DVB_Grinch:918461400039432254><:DVB_Blank:918464127779876924>\n\nClick on the correct snowball facing the Grinch to hit him with it!", color=self.client.embed_color).set_thumbnail(url="https://cdn.discordapp.com/attachments/871737314831908974/918476839255699456/unknown.png")
+            gameview.response = await message.channel.send("A new event is happening!", embed=embed)
+            await asyncio.sleep(2.0)
+            await gameview.response.edit(view=gameview)
+            await gameview.wait()
+            if len(gameview.grinch_hits) == 0:
+                return await gameview.response.reply("**Nobody bothered to attack the Grinch!**\nYour Christmas celebrations are now ruined... <:DVB_Grinch:918461400039432254>")
+            else:
+                grinch_hits = sorted(gameview.grinch_hits.items(), key=operator.itemgetter(1), reverse=True)
+                winner = grinch_hits[0][0]
+                summary = []
+                for hit in grinch_hits:
+                    summary.append(f"**{hit[0]}** hit the Grinch `{hit[1]}` times.")
+                    embed = discord.Embed(title="Summary", description="\n".join(summary), color=self.client.embed_color)
+                await gameview.response.reply(embed=embed)
+                prizeview = ChooseCurrencyPrize(winner)
+                prizeview.response = await gameview.response.reply(f"{winner.mention} You've won by hitting the Grinch with the most snowballs!\nChoose a prize below.", view=prizeview)
+                await prizeview.wait()
+                prize = prizeview.prize
+                if prize is not None:
+                    await message.channel.send(f"You chose to receive bot currency for **{prize}**. Your prize will be given to you as soon as possible!")
+                    await self.client.get_channel(modchannel).send(f"{winner.mention} ({winner.id}) has won **{prize}** bot currency\n{message.jump_url}")
+
+
         elif game == 2:
             await message.channel.send("Third game doesn't exist yet :(")
 
@@ -629,6 +734,8 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
         if member is None:
             return await message.add_reaction("❌")
         selected_prizes = random.choices(something, weights=weights, k=3)
+        while selected_prizes[0] == selected_prizes[1] or selected_prizes[1] == selected_prizes[2]:
+            selected_prizes = random.choices(something, weights=weights, k=3)
         prizeview = ChoosePrize(selected_prizes, member)
         embed=discord.Embed(title="You won the minigame!", description=f"Choose one of the prizes to redeem below!", color=self.client.embed_color)
         prizeview.response = await message.channel.send(embed=embed, view=prizeview)
