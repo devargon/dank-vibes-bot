@@ -13,7 +13,6 @@ class RemovingAccess(commands.Cog):
 
     @tasks.loop(seconds=30.0)
     async def remind_perk_removal(self):
-        print('idk')
         await self.client.wait_until_ready()
         expired_perks = await self.client.pool_pg.fetch("SELECT * FROM perkremoval WHERE until < $1", round(time.time()))
         for perk in expired_perks:
@@ -28,7 +27,6 @@ class RemovingAccess(commands.Cog):
     @tasks.loop(seconds=30.0)
     async def command_removal(self):
         await self.client.wait_until_ready()
-        print('idk')
         try:
             expired_commands = await self.client.pool_pg.fetch("SELECT * FROM commandaccess WHERE until < $1", round(time.time()))
             for commandperk in expired_commands:
