@@ -6,7 +6,9 @@ from utils.menus import CustomMenu
 from typing import Optional
 import random
 import time
+import operator
 import os
+import asyncio
 from .removingaccess import RemovingAccess
 
 modchannel = 743174564778868796 if os.getenv('state') == '0' else 871737314831908974
@@ -44,6 +46,44 @@ class ListPerks(menus.ListPageSource):
             embed.add_field(name=entry[0], value=entry[1], inline=False)
         return embed
 
+class Game1_Candy(discord.ui.View):
+    def __init__(self, candyno):
+        self.candyno = candyno
+        self.winner = None
+        self.response: discord.Message = None
+        self.candyclaims = {}
+        super().__init__(timeout=20.0)
+
+        async def manage_candies(interaction: discord.Interaction):
+            user = interaction.user
+            if user not in self.candyclaims:
+                self.candyclaims[user] = 1
+            else:
+                self.candyclaims[user] = self.candyclaims[user] + 1
+            self.candyno -= 1
+            if self.candyno == 0:
+                for b in self.children:
+                    b.disabled = True
+                embed = self.response.embeds[0]
+                embed.set_footer(text="This game has ended and candies can no longer be collected.")
+                await self.response.edit(content="This game has ended and candies can no longer be collected.", embed=embed, view=self)
+                self.stop()
+        class Candy(discord.ui.Button):
+            async def callback(self, interaction: discord.Interaction):
+                await manage_candies(interaction)
+
+        self.add_item(Candy(style=discord.ButtonStyle.blurple, label="Grab a candy!", disabled=False, emoji="🍬"))
+
+    async def on_timeout(self) -> None:
+        for b in self.children:
+            b.disabled = True
+        embed = self.response.embeds[0]
+        embed.set_footer(text="This game has ended and candies can no longer be collected.")
+        await self.response.edit(content="This game has ended and candies can no longer be collected.", embed=embed,
+                                 view=self)
+
+
+
 class ChoosePrize(discord.ui.View):
     def __init__(self, prizes, member):
         self.member = member
@@ -52,19 +92,29 @@ class ChoosePrize(discord.ui.View):
         self.response = None
         super().__init__(timeout=15.0)
 
-        async def manage_prize(label):
-            self.prize = label
-            for b in self.children:
-                b.disabled = True
+        async def manage_prize(custom_id):
+            self.index = int(custom_id)
+            self.prize = self.prizes[self.index]
+            for index, b in enumerate(self.children):
+                if isinstance(b, discord.ui.Button):
+                    b.disabled = True
+                    if b.custom_id == custom_id:
+                        b.style = discord.ButtonStyle.green
+                    else:
+                        b.style = discord.ButtonStyle.grey
+                    b.emoji = "<a:NormieBoxOpen:861390923451727923>"
+                    b.label = f"{self.prizes[index]}"
             await self.response.edit(view=self)
             self.stop()
 
         class Prize(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
-                await manage_prize(self.label)
 
-        for prize in self.prizes:
-            self.add_item(Prize(label=prize, style=discord.ButtonStyle.blurple))
+                await manage_prize(self.custom_id)
+
+        for i in range(0, 3):
+            self.add_item(Prize(emoji=discord.PartialEmoji.from_str("<a:NormieBoxClosed:861390901405679626>"), custom_id=str(i), label="Click on me!", style=discord.ButtonStyle.blurple))
+
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user != self.member:
@@ -144,7 +194,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize,round(time.time()) + 172800)
 
         elif prize == "Join a surprise heist":
-            await message.channel.send("You chose the **Join a surprise heist**!\nYou can join a surprise heist xxx")
+            await message.channel.send("You chose the **Join a surprise heist**!\nFurther details will be given on how you'll be able to access the surprise heists.")
             await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Join a surprise heist**")
             await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
@@ -155,7 +205,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
 
         elif prize == "Access to `dv.dm`":
             await message.channel.send("You chose the **Access to `dv.dm`**!\nActing like a messenger, Dank Vibes Bot anonymously will DM your target on your behalf. You can do so for two days!")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `dv.dm`**")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `dv.dm`**\n*Sent for tracking purposes*")
             await self.client.pool_pg.execute("INSERT INTO commandaccess VALUES($1, $2, $3)", member.id, "dm", round(time.time()) + 172800)
 
         elif prize == "Access to `-paint`":
@@ -170,16 +220,16 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
 
         elif prize == "Access to `dv.es`":
             await message.channel.send("You chose the **Access to `dv.es`**!\nYou will be able to see what a user's message was before they edited it for two days!")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `dv.es`**")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `dv.es`**\n*Sent for tracking purposes*")
             await self.client.pool_pg.execute("INSERT INTO commandaccess VALUES($1, $2, $3)", member.id, "editsnipe", round(time.time()) + 172800)
-
-    @tasks.loop()
 
     @commands.Cog.listener()
     async def on_message(self, message):
         """
         Main event handler for christmas games.
         """
+        if message.author.bot:
+            return
         guildid = str(message.guild.id)
         """
         Caching the rate for the guild.
@@ -209,10 +259,51 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
                 ignoredchannels = []
                 self.ignoredchannels[guildid] = ignoredchannels
             else:
-                ids = [entry.get('channel_id') for entry in ignoredchannels],
+                ids = [entry.get('channel_id') for entry in ignoredchannels]
                 self.ignoredchannels[guildid] = ids
-        if message.author.bot:
+        rate = self.rate[guildid]
+        context = await self.client.get_context(message)
+        if context.valid is True:
             return
+        denominator = 1
+        while rate < 1:
+            rate *= 10
+            denominator *= 10
+        if not random.randint(0, denominator) <= rate:
+            return
+        if message.channel.id in self.ignoredchannels[guildid]:
+            return
+        if message.channel.category_id in self.ignoredcategories[guildid]:
+            return
+        #game = random.choice([0, 1, 2])
+        game = 0
+        if game == 0:
+            candycount = random.randint(10, 20)
+            gameview = Game1_Candy(candycount)
+            modrole = discord.utils.get(message.guild.roles, name="Mod")
+            if modrole is None:
+                PersonGivingCandy = self.client.user
+            else:
+                PersonGivingCandy = random.choice(modrole.members)
+            embed = discord.Embed(title=f"{PersonGivingCandy} is giving out {candycount} free candies to everyone!", description=f"Press the button below to get candies!\nThe person with the highest number of candies gets to win something!", color=self.client.embed_color).set_thumbnail(url="https://cdn.discordapp.com/emojis/784042462364041216.gif?size=96")
+            gamemessage = await message.channel.send(embed=embed, view=gameview)
+            gameview.response = gamemessage
+            await gameview.wait()
+            if len(gameview.candyclaims) == 0:
+                return await gamemessage.reply(f"Looks like no one claimed their candies... **{PersonGivingCandy}** is sad now :(")
+            candyclaims = sorted(gameview.candyclaims.items(), key=operator.itemgetter(1), reverse=True)
+            winner = candyclaims[0][0]
+            selected_prizes = random.choices(something, weights=weights, k=3)
+            prizeview = ChoosePrize(selected_prizes, winner)
+            prizeview.response = await message.channel.send(f"{winner.mention} You've won by collecting the highest number of candies (`{candyclaims[0][1]}`) among the other {len(candyclaims)-1} participants!\nChoose a prize below to redeem.", view=prizeview)
+            await prizeview.wait()
+            await self.manage_prize(prizeview.response, prizeview.prize, winner)
+
+
+        elif game == 1:
+            await message.channel.send("Second game doesn't exist yet :(")
+        elif game == 2:
+            await message.channel.send("Third game doesn't exist yet :(")
 
 
 
@@ -259,7 +350,6 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             for channel_id in ids:
                 channel = ctx.guild.get_channel(channel_id)
                 if channel is not None:
-                    print(array)
                     array.append(channel.mention)
                     cached_channels.append(channel.id)
                 else:
@@ -542,9 +632,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
         prizeview = ChoosePrize(selected_prizes, member)
         embed=discord.Embed(title="You won the minigame!", description=f"Choose one of the prizes to redeem below!", color=self.client.embed_color)
         prizeview.response = await message.channel.send(embed=embed, view=prizeview)
-        print('baka')
         await prizeview.wait()
-        print(prizeview.prize)
         await self.manage_prize(ctx.message, prizeview.prize, member)
 
     @checks.has_permissions_or_role(manage_roles=True)
