@@ -434,7 +434,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
         elif rate == 0:
             result = "**not spawn**"
         else:
-            result = f"have a **{round(rate*100, 2)}**% of spawning when a message is sent"
+            result = f"have a **{round(rate*100, 2)}**% chance of spawning when a message is sent"
         embed = discord.Embed(title="Christmas Event Config for {}".format(ctx.guild.name), description=f"Chistmas game events will {result}.")
         array = []
         cached_channels = []
