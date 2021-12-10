@@ -122,8 +122,6 @@ def is_bav_or_mystic() -> Callable:
     async def predicate(ctx):
         if not ctx.guild:
             raise commands.NoPrivateMessage()
-        if ctx.author.id in [719890992723001354, 542447261658120221]:
-            return True
         if ctx.author.guild_permissions.manage_roles == True:
             return True
         raise ArgumentBaseError(message="You need to be a `mystic` or `bav` or have the required permissions to use this command.")
