@@ -128,6 +128,33 @@ class Game2_Grinch(discord.ui.View):
         embed.set_footer(text="This game has ended and you can no longer attack the Grinch.")
         await self.response.edit(content="This game has ended and you can no longer attack the Grinch.", embed=embed, view=self)
 
+class Game3_FirstToClick(discord.ui.View):
+    def __init__(self, emoji):
+        self.response: discord.Message = None
+        self.isclicked = False
+        self.ItemEmoji = emoji
+        self.winner = None
+        super().__init__(timeout=20.0)
+
+
+        async def manage_game(button:discord.ui.Button, interaction: discord.Interaction):
+            if self.isclicked:
+                await interaction.response.send_message("Too late! Someone else has clicked the button already.", ephemeral=True)
+            else:
+                self.winner = interaction.user
+                button.style = discord.ButtonStyle.green
+                button.disabled = True
+                await self.response.edit(view=self)
+                self.stop()
+
+
+        class GrabItem(discord.ui.Button):
+            async def callback(self, interaction: discord.Interaction):
+                await manage_game(self, interaction)
+
+        self.add_item(GrabItem(style=discord.ButtonStyle.grey, disabled=True, emoji=self.ItemEmoji))
+
+
 class ChooseCurrencyPrize(discord.ui.View):
     def __init__(self, member):
         self.member = member
@@ -354,7 +381,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             return
         if message.channel.category_id in self.ignoredcategories[guildid]:
             return
-        game = random.choice([0, 1])
+        game = random.choice[0, 1, 2]
         if game == 0:
             candycount = random.randint(10, 20)
             gameview = Game1_Candy(candycount)
@@ -408,7 +435,41 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
 
 
         elif game == 2:
-            await message.channel.send("Third game doesn't exist yet :(")
+            item_names = await self.client.pool_pg.fetch("SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = $1", 'inventories')
+            items = [i.get('column_name') for i in item_names if i.get('column_name') != 'user_id']
+            chosen_item = random.choice(items)
+            itemdata = await self.client.pool_pg.fetchrow("SELECT * FROM iteminfo WHERE name = $1", chosen_item)
+            if itemdata is None:
+                return await message.channel.send("An error occured while trying to get the data for an item.")
+            name = itemdata.get('fullname')
+            emoji = itemdata.get('emoji')
+            gameview = Game3_FirstToClick(emoji)
+            embed = discord.Embed(title=f"**{self.client.user.name}** is dropping an item!", description=f"Grab it before anyone else does by clicking on the button!", color=self.client.embed_color).set_thumbnail(url=itemdata.get('image'))
+            gameview.response = await message.channel.send(embed=embed, view=gameview)
+            await asyncio.sleep(2.0)
+            gameview.children[0].disabled = False
+            gameview.children[0].style = discord.ButtonStyle.blurple
+            await gameview.response.edit(view=gameview)
+            await gameview.wait()
+            embed.set_footer(text=f"The game has ended and you can no longer collect the item.")
+            if gameview.winner is None:
+                return
+            user = gameview.winner
+            item = chosen_item
+            amount = 1
+            does_inventory_exist = await self.client.pool_pg.fetchrow("SELECT * FROM inventories WHERE user_id = $1", user.id)
+            useritem_query = "SELECT {} FROM inventories WHERE user_id = $1".format(item)
+            useritem = await self.client.pool_pg.fetchval(useritem_query, user.id)
+            if does_inventory_exist:
+                if useritem is None:
+                    useritem_query = "UPDATE inventories SET {} = $2 WHERE user_id = $1 RETURNING {}".format(item, item)
+                else:
+                    useritem_query = "UPDATE inventories SET {} = {} + $2 WHERE user_id = $1 RETURNING {}".format(item, item, item)
+            else:
+                useritem_query = "INSERT INTO inventories (user_id, {}) VALUES ($1, $2) RETURNING {}".format(item, item)
+            result = await self.client.pool_pg.fetchval(useritem_query, user.id, amount, column=item)
+            embed.description = f"{gameview.winner.mention} ({gameview.winner}) was the first to click! They've gotten **a {name}** {emoji}."
+            await gameview.response.edit(content=f"The game has ended and you can no longer collect the item.", embed=embed)
 
 
 
@@ -548,6 +609,32 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             guildid = str(ctx.guild.id)
             self.rate[guildid] = rate
             await ctx.send(f"The rate has been set to {rate * 100}%.\n{additional}")
+            denominator = 1
+            now = time.perf_counter()
+            while rate < 1:
+                rate *= 10
+                denominator *= 10
+            averagetries = []
+            var = 0
+            while len(averagetries) < 5 and time.perf_counter() - now < 5:
+                if time.perf_counter() - now < 5:
+                    if random.randint(0, denominator) <= rate:
+                        averagetries.append(var)
+                        var = 0
+                    else:
+                        var += 1
+                else:
+                    break
+            embed = discord.Embed(title="Chance Calculator")
+            value = ""
+            if len(averagetries) == 0:
+                value = "There was not enough time to calculate the chance of games spawning."
+            for i in averagetries:
+                value += f"`-` Game instance created after {i} tries\n"
+            averagemessages = round(sum(averagetries) / len(averagetries))
+            value += f"\nEvents will spawn on an average of every {averagemessages} messages sent."
+            embed.description = value
+            await ctx.send(embed=embed)
 
     @checks.has_permissions_or_role(manage_roles=True)
     @christmasconfig.command(name="ignorechannel", aliases=["ichan"])
