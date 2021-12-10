@@ -631,7 +631,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
     async def on_message_edit(self, beforemsg, aftermsg):
         if beforemsg.author.id != 270904126974590976:
             return
-        if len(beforemsg.embeds) < 0 or len(aftermsg.embeds) < 0:
+        if len(beforemsg.embeds) == 0 or len(aftermsg.embeds) == 0:
             return
         beforeembed = beforemsg.embeds[0]
         afterembed = aftermsg.embeds[0]
