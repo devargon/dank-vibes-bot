@@ -69,7 +69,10 @@ class Game1Candy(discord.ui.View):
                     b.disabled = True
                 embed = self.response.embeds[0]
                 embed.set_footer(text="This game has ended and candies can no longer be collected.")
-                await self.response.edit(content="This game has ended and candies can no longer be collected.", embed=embed, view=self)
+                try:
+                    await self.response.edit(content="This game has ended and candies can no longer be collected.", embed=embed, view=self)
+                except:
+                    pass
                 self.stop()
 
         class Candy(discord.ui.Button):
@@ -83,9 +86,10 @@ class Game1Candy(discord.ui.View):
             b.disabled = True
         embed = self.response.embeds[0]
         embed.set_footer(text="This game has ended and candies can no longer be collected.")
-        await self.response.edit(content="This game has ended and candies can no longer be collected.", embed=embed,
-                                 view=self)
-
+        try:
+            await self.response.edit(content="This game has ended and candies can no longer be collected.", embed=embed, view=self)
+        except:
+            pass
 
 class Game2Grinch(discord.ui.View):
     def __init__(self):
@@ -109,7 +113,10 @@ class Game2Grinch(discord.ui.View):
                     b.disabled = True
                 embed = self.response.embeds[0]
                 embed.set_footer(text="This game has ended and you can no longer attack the Grinch.")
-                await self.response.edit(content="This game has ended and you can no longer attack the Grinch.", embed=embed, view=self)
+                try:
+                    await self.response.edit(content="This game has ended and you can no longer attack the Grinch.", embed=embed, view=self)
+                except:
+                    pass
                 self.stop()
             else:
                 if random.choice([False, False, False, False, False, False, False, True]):
@@ -118,7 +125,10 @@ class Game2Grinch(discord.ui.View):
                     self.grinch_position = current_position
                     embed = self.response.embeds[0]
                     embed.description = f"⛄⛄⛄\n{''.join(self.grinch_position)}\n\nClick on the correct snowball facing the Grinch to hit him with it!"
-                    await self.response.edit(embed=embed)
+                    try:
+                        await self.response.edit(embed=embed)
+                    except:
+                        self.stop()
 
         class HitGrinch(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
@@ -131,7 +141,10 @@ class Game2Grinch(discord.ui.View):
             b.disabled = True
         embed = self.response.embeds[0]
         embed.set_footer(text="This game has ended and you can no longer attack the Grinch.")
-        await self.response.edit(content="This game has ended and you can no longer attack the Grinch.", embed=embed, view=self)
+        try:
+            await self.response.edit(content="This game has ended and you can no longer attack the Grinch.", embed=embed, view=self)
+        except:
+            pass
 
 
 class Game3FirstToClick(discord.ui.View):
@@ -149,7 +162,10 @@ class Game3FirstToClick(discord.ui.View):
                 self.winner = interaction.user
                 button.style = discord.ButtonStyle.green
                 button.disabled = True
-                await self.response.edit(view=self)
+                try:
+                    await self.response.edit(view=self)
+                except:
+                    pass
                 self.stop()
 
         class GrabItem(discord.ui.Button):
@@ -157,6 +173,16 @@ class Game3FirstToClick(discord.ui.View):
                 await manage_game(self, interaction)
 
         self.add_item(GrabItem(style=discord.ButtonStyle.grey, disabled=True, emoji=self.ItemEmoji))
+
+    async def on_timeout(self) -> None:
+        for b in self.children:
+            b.disabled = True
+        embed = self.response.embeds[0]
+        embed.set_footer(text="This game has ended and you can no pick up the item.")
+        try:
+            await self.response.edit(content="This game has ended and you can no pick up the item.", embed=embed, view=self)
+        except:
+            pass
 
 
 class ChooseCurrencyPrize(discord.ui.View):
@@ -171,7 +197,10 @@ class ChooseCurrencyPrize(discord.ui.View):
             self.prize = label
             for b in self.children:
                 b.disabled = True
-            await self.response.edit(view=self)
+            try:
+                await self.response.edit(view=self)
+            except:
+                pass
             self.stop()
 
         class Prize(discord.ui.Button):
@@ -190,7 +219,10 @@ class ChooseCurrencyPrize(discord.ui.View):
     async def on_timeout(self) -> None:
         for b in self.children:
             b.disabled = True
-        await self.response.edit(content="You failed to claim your prize.", view=self)
+        try:
+            await self.response.edit(content="You failed to claim your prize.", view=self)
+        except:
+            pass
 
 
 class ChoosePrize(discord.ui.View):
@@ -213,12 +245,14 @@ class ChoosePrize(discord.ui.View):
                         b.style = discord.ButtonStyle.grey
                     b.emoji = "<a:NormieBoxOpen:861390923451727923>"
                     b.label = f"{self.prizes[index]}"
-            await self.response.edit(view=self)
+            try:
+                await self.response.edit(view=self)
+            except:
+                pass
             self.stop()
 
         class Prize(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
-
                 await manage_prize(self.custom_id)
 
         for i in range(0, 3):
@@ -233,7 +267,10 @@ class ChoosePrize(discord.ui.View):
     async def on_timeout(self) -> None:
         for b in self.children:
             b.disabled = True
-        await self.response.edit(content="You failed to claim your prize.", view=self)
+        try:
+            await self.response.edit(content="You failed to claim your prize.", view=self)
+        except:
+            pass
 
 
 class Christmas(RemovingAccess, commands.Cog, name="christmas"):
@@ -395,18 +432,19 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             gameview.response = gamemessage
             await gameview.wait()
             if len(gameview.candyclaims) == 0:
-                return await gamemessage.reply(f"Looks like no one claimed their candies... **{PersonGivingCandy}** is sad now :(")
+                try:
+                    return await gamemessage.reply(f"Looks like no one claimed their candies... **{PersonGivingCandy}**'s sad now :(")
+                except:
+                    return await message.channel.send(f"Looks like no one claimed their candies... **{PersonGivingCandy}**'s sad now :(")
             candyclaims = sorted(gameview.candyclaims.items(), key=operator.itemgetter(1), reverse=True)
             winner = candyclaims[0][0]
             selected_prizes = random.choices(something, weights=weights, k=3)
             while selected_prizes[0] == selected_prizes[1] or selected_prizes[1] == selected_prizes[2]:
                 selected_prizes = random.choices(something, weights=weights, k=3)
-
             prizeview = ChoosePrize(selected_prizes, winner)
             prizeview.response = await message.channel.send(f"{winner.mention} You've won by collecting the highest number of candies (`{candyclaims[0][1]}`) among the other {len(candyclaims)-1} participants!\nChoose a prize below to redeem.", view=prizeview)
             await prizeview.wait()
             await self.manage_prize(prizeview.response, prizeview.prize, winner)
-
 
         elif game == 1:
             gameview = Game2Grinch()
@@ -416,7 +454,10 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             await gameview.response.edit(view=gameview)
             await gameview.wait()
             if len(gameview.grinch_hits) == 0:
-                return await gameview.response.reply("**Nobody bothered to attack the Grinch!**\nYour Christmas celebrations are now ruined... <:DVB_Grinch:918461400039432254>")
+                try:
+                    return await gameview.response.reply("**Nobody bothered to attack the Grinch!**\nYour Christmas celebrations are now ruined... <:DVB_Grinch:918461400039432254>")
+                except:
+                    return await message.channel.send("**Nobody bothered to attack the Grinch!**\nYour Christmas celebrations are now ruined... <:DVB_Grinch:918461400039432254>")
             else:
                 grinch_hits = sorted(gameview.grinch_hits.items(), key=operator.itemgetter(1), reverse=True)
                 winner = grinch_hits[0][0]
@@ -424,7 +465,10 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
                 for hit in grinch_hits:
                     summary.append(f"**{hit[0]}** hit the Grinch `{hit[1]}` times.")
                     embed = discord.Embed(title="Summary", description="\n".join(summary), color=self.client.embed_color)
-                await gameview.response.reply(embed=embed)
+                try:
+                    await gameview.response.reply(embed=embed)
+                except:
+                    await message.channel.send(embed=embed)
                 prizeview = ChooseCurrencyPrize(winner)
                 prizeview.response = await gameview.response.reply(f"{winner.mention} You've won by hitting the Grinch with the most snowballs!\nChoose a prize below.", view=prizeview)
                 await prizeview.wait()
@@ -432,7 +476,6 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
                 if prize is not None:
                     await message.channel.send(f"You chose to receive bot currency for **{prize}**. Your prize will be given to you as soon as possible!")
                     await self.client.get_channel(modchannel).send(f"{winner.mention} ({winner.id}) has won **{prize}** bot currency\n{message.jump_url}")
-
 
         elif game == 2:
             item_names = await self.client.pool_pg.fetch("SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = $1", 'inventories')
