@@ -20,11 +20,12 @@ something = ["Custom Role", "Free Odd Eye Raffle Entry", "+1 Amari Level", "+2 A
              "Use Color roles", "Access to `dv.es`"]
 weights = [1, 2, 2, 2, 1, 3, 2, 2, 2, 3, 3, 3, 2, 3, 3, 3, 3, ]
 
-def format_channel(list_of_channels, split:Optional[bool] = False):
+
+def format_channel(list_of_channels, split: Optional[bool] = False):
     """
     Formats a list of channels into a string.
     """
-    if split == False:
+    if not split:
         if len(list_of_channels) > 70:
             return ", ".join(list_of_channels[:70]) + f" and {len(list_of_channels) - 70}"
         else:
@@ -34,6 +35,7 @@ def format_channel(list_of_channels, split:Optional[bool] = False):
             return "\n".join(list_of_channels[:35]) + f"\n**And {len(list_of_channels) - 35} more...**"
         else:
             return "\n".join(list_of_channels)
+
 
 class ListPerks(menus.ListPageSource):
     def __init__(self, entries, title):
@@ -46,7 +48,8 @@ class ListPerks(menus.ListPageSource):
             embed.add_field(name=entry[0], value=entry[1], inline=False)
         return embed
 
-class Game1_Candy(discord.ui.View):
+
+class Game1Candy(discord.ui.View):
     def __init__(self, candyno):
         self.candyno = candyno
         self.winner = None
@@ -68,6 +71,7 @@ class Game1_Candy(discord.ui.View):
                 embed.set_footer(text="This game has ended and candies can no longer be collected.")
                 await self.response.edit(content="This game has ended and candies can no longer be collected.", embed=embed, view=self)
                 self.stop()
+
         class Candy(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
                 await manage_candies(interaction)
@@ -83,7 +87,7 @@ class Game1_Candy(discord.ui.View):
                                  view=self)
 
 
-class Game2_Grinch(discord.ui.View):
+class Game2Grinch(discord.ui.View):
     def __init__(self):
         self.grinch_position = ["<:DVB_Blank:918464127779876924>", "<:DVB_Grinch:918461400039432254>", "<:DVB_Blank:918464127779876924>"]
         self.grinchHP = 20
@@ -115,6 +119,7 @@ class Game2_Grinch(discord.ui.View):
                     embed = self.response.embeds[0]
                     embed.description = f"⛄⛄⛄\n{''.join(self.grinch_position)}\n\nClick on the correct snowball facing the Grinch to hit him with it!"
                     await self.response.edit(embed=embed)
+
         class HitGrinch(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
                 await manage_candies(self.custom_id, interaction)
@@ -128,7 +133,8 @@ class Game2_Grinch(discord.ui.View):
         embed.set_footer(text="This game has ended and you can no longer attack the Grinch.")
         await self.response.edit(content="This game has ended and you can no longer attack the Grinch.", embed=embed, view=self)
 
-class Game3_FirstToClick(discord.ui.View):
+
+class Game3FirstToClick(discord.ui.View):
     def __init__(self, emoji):
         self.response: discord.Message = None
         self.isclicked = False
@@ -136,8 +142,7 @@ class Game3_FirstToClick(discord.ui.View):
         self.winner = None
         super().__init__(timeout=20.0)
 
-
-        async def manage_game(button:discord.ui.Button, interaction: discord.Interaction):
+        async def manage_game(button: discord.ui.Button, interaction: discord.Interaction):
             if self.isclicked:
                 await interaction.response.send_message("Too late! Someone else has clicked the button already.", ephemeral=True)
             else:
@@ -146,7 +151,6 @@ class Game3_FirstToClick(discord.ui.View):
                 button.disabled = True
                 await self.response.edit(view=self)
                 self.stop()
-
 
         class GrabItem(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
@@ -188,6 +192,7 @@ class ChooseCurrencyPrize(discord.ui.View):
             b.disabled = True
         await self.response.edit(content="You failed to claim your prize.", view=self)
 
+
 class ChoosePrize(discord.ui.View):
     def __init__(self, prizes, member):
         self.member = member
@@ -219,7 +224,6 @@ class ChoosePrize(discord.ui.View):
         for i in range(0, 3):
             self.add_item(Prize(emoji=discord.PartialEmoji.from_str("<a:NormieBoxClosed:861390901405679626>"), custom_id=str(i), label="Click on me!", style=discord.ButtonStyle.blurple))
 
-
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user != self.member:
             await interaction.response.send_message("These aren't your prizes to claim 😑", ephemeral=True)
@@ -230,8 +234,6 @@ class ChoosePrize(discord.ui.View):
         for b in self.children:
             b.disabled = True
         await self.response.edit(content="You failed to claim your prize.", view=self)
-
-
 
 
 class Christmas(RemovingAccess, commands.Cog, name="christmas"):
@@ -290,12 +292,12 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
         elif prize == "Access to #reaction-logs":
             await message.channel.send("You chose the **Access to #reaction-logs**!\nYou will be given access to <#847710145001029672> as soon as possible.")
             await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to #reaction-logs**")
-            await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize,round(time.time()) + 172800)
+            await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "Access to #dyno-message-logs":
             await message.channel.send("You chose the **Access to #dyno-message-logs**!\nYou will be given access to <#880990535282724926> as soon as possible.")
             await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to #dyno-message-logs**")
-            await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize,round(time.time()) + 172800)
+            await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "Join a surprise heist":
             await message.channel.send("You chose the **Join a surprise heist**!\nFurther details will be given on how you'll be able to access the surprise heists.")
@@ -326,8 +328,6 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             await message.channel.send("You chose the **Access to `dv.es`**!\nYou will be able to see what a user's message was before they edited it for two days!")
             await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `dv.es`**\n*Sent for tracking purposes*")
             await self.client.pool_pg.execute("INSERT INTO commandaccess VALUES($1, $2, $3)", member.id, "editsnipe", round(time.time()) + 172800)
-
-
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -381,10 +381,10 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             return
         if message.channel.category_id in self.ignoredcategories[guildid]:
             return
-        game = random.choice[0, 1, 2]
+        game = random.choice([0, 1, 2])
         if game == 0:
             candycount = random.randint(10, 20)
-            gameview = Game1_Candy(candycount)
+            gameview = Game1Candy(candycount)
             modrole = discord.utils.get(message.guild.roles, name="Mod")
             if modrole is None:
                 PersonGivingCandy = self.client.user
@@ -409,7 +409,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
 
 
         elif game == 1:
-            gameview = Game2_Grinch()
+            gameview = Game2Grinch()
             embed = discord.Embed(title="Help! The Grinch is coming to attempt to distrupt the Christmas celebrations!", description=f"⛄⛄⛄\n<:DVB_Blank:918464127779876924><:DVB_Grinch:918461400039432254><:DVB_Blank:918464127779876924>\n\nClick on the correct snowball facing the Grinch to hit him with it!", color=self.client.embed_color).set_thumbnail(url="https://cdn.discordapp.com/attachments/871737314831908974/918476839255699456/unknown.png")
             gameview.response = await message.channel.send("A new event is happening!", embed=embed)
             await asyncio.sleep(2.0)
@@ -443,7 +443,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
                 return await message.channel.send("An error occured while trying to get the data for an item.")
             name = itemdata.get('fullname')
             emoji = itemdata.get('emoji')
-            gameview = Game3_FirstToClick(emoji)
+            gameview = Game3FirstToClick(emoji)
             embed = discord.Embed(title=f"**{self.client.user.name}** is dropping an item!", description=f"Grab it before anyone else does by clicking on the button!", color=self.client.embed_color).set_thumbnail(url=itemdata.get('image'))
             gameview.response = await message.channel.send(embed=embed, view=gameview)
             await asyncio.sleep(2.0)
@@ -467,11 +467,9 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
                     useritem_query = "UPDATE inventories SET {} = {} + $2 WHERE user_id = $1 RETURNING {}".format(item, item, item)
             else:
                 useritem_query = "INSERT INTO inventories (user_id, {}) VALUES ($1, $2) RETURNING {}".format(item, item)
-            result = await self.client.pool_pg.fetchval(useritem_query, user.id, amount, column=item)
+            await self.client.pool_pg.fetchval(useritem_query, user.id, amount, column=item)
             embed.description = f"{gameview.winner.mention} ({gameview.winner}) was the first to click! They've gotten **a {name}** {emoji}."
             await gameview.response.edit(content=f"The game has ended and you can no longer collect the item.", embed=embed)
-
-
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.group(name='christmasconfig', aliases=['xmasconfig'], invoke_without_command=True)
@@ -584,7 +582,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
 
     @checks.has_permissions_or_role(manage_roles=True)
     @christmasconfig.command(name="rate", aliases=["r"])
-    async def rate_config(self, ctx, rate:str = None):
+    async def rate_config(self, ctx, rate: str = None):
         """
         Sets the percentage that events will have a chance to spawn.
         """
@@ -724,7 +722,6 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             embed.color = discord.Color.yellow()
         await ctx.send(embed=embed)
 
-
     @checks.has_permissions_or_role(manage_roles=True)
     @christmasconfig.command(name="ignorecategory", aliases=["icat"])
     async def ignore_category_config(self, ctx, categories: commands.Greedy[discord.CategoryChannel]):
@@ -813,7 +810,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
 
     @checks.dev()
     @commands.command(name="prizechoice", aliases=['pc'])
-    async def set_prize_choice(self, ctx, member:discord.Member = None):
+    async def set_prize_choice(self, ctx, member: discord.Member = None):
         """
         Manually allows someone to claim a prize.
         """
@@ -824,7 +821,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
         while selected_prizes[0] == selected_prizes[1] or selected_prizes[1] == selected_prizes[2]:
             selected_prizes = random.choices(something, weights=weights, k=3)
         prizeview = ChoosePrize(selected_prizes, member)
-        embed=discord.Embed(title="You won the minigame!", description=f"Choose one of the prizes to redeem below!", color=self.client.embed_color)
+        embed = discord.Embed(title="You won the minigame!", description=f"Choose one of the prizes to redeem below!", color=self.client.embed_color)
         prizeview.response = await message.channel.send(embed=embed, view=prizeview)
         await prizeview.wait()
         await self.manage_prize(ctx.message, prizeview.prize, member)
@@ -839,24 +836,23 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
         commandentries = await self.client.pool_pg.fetch("SELECT * FROM commandaccess")
         if len(entries) == 0 and len(commandentries) == 0:
             return await ctx.send("There are no existing perks that are currently in use.")
-        something = []
+        perks = []
         for entry in entries:
             member = ctx.guild.get_member(entry.get('member_id'))
             if member is None:
                 displaymember = entry.get('member_id')
             else:
                 displaymember = f"{member.mention} ({member.id})"
-            something.append((f"External: {entry.get('perk')}", f"**User**: {displaymember}\n**Until**: <t:{entry.get('until')}>"))
+            perks.append((f"External: {entry.get('perk')}", f"**User**: {displaymember}\n**Until**: <t:{entry.get('until')}>"))
         for entry in commandentries:
             member = ctx.guild.get_member(entry.get('member_id'))
             if member is None:
                 displaymember = entry.get('member_id')
             else:
                 displaymember = f"{member.mention} ({member.id})"
-            something.append((f"Dank Vibes Bot: `{entry.get('command')}`", f"**User**: {displaymember}\n**Until**: <t:{entry.get('until')}>"))
+            perks.append((f"Dank Vibes Bot: `{entry.get('command')}`", f"**User**: {displaymember}\n**Until**: <t:{entry.get('until')}>"))
         pages = CustomMenu(source=ListPerks(something, "Existing Perks"), clear_reactions_after=True, timeout=60)
         return await pages.start(ctx)
-
 
     def cog_unload(self) -> None:
         self.remind_perk_removal.stop()
