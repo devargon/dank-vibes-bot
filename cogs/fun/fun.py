@@ -46,7 +46,7 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
         self.planning_numberevent = []
         self.numberevent_channels = []
         self.nickbets = []
-        self.alex_api = alexflipnote.Client(alexflipnoteAPI)
+        self.alex_api = alexflipnote.Client()
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
