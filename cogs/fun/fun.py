@@ -9,7 +9,7 @@ import aiohttp
 import asyncio
 import operator
 import alexflipnote
-from typing import Union
+from typing import Union, Optional
 import matplotlib.pyplot as plt
 
 from utils import checks
@@ -46,7 +46,7 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
         self.planning_numberevent = []
         self.numberevent_channels = []
         self.nickbets = []
-        self.alex_api = alexflipnote.Client(alexflipnoteAPI)
+        self.alex_api = alexflipnote.Client()
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
@@ -58,8 +58,12 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
             self.gen_is_muted = False
         elif ctx.command.name == "nickbet":
             self.nickbets = []
-    def lowered_cooldown(message):
+    def lowered_cooldown(message: discord.Message):
         if discord.utils.get(message.author.roles, id=874931276329656370):
+            return commands.Cooldown(1, 900)
+        elif discord.utils.get(message.author.roles, id=915094170593529916):
+            return commands.Cooldown(1, 900)
+        elif discord.utils.get(message.author.roles, id=915094236582518834):
             return commands.Cooldown(1, 900)
         elif discord.utils.get(message.author.roles, name="Vibing Investor"):
             return commands.Cooldown(1, 1800)
@@ -210,24 +214,17 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
                 await message.edit(content="🥺", embed=embed)
 
     @checks.requires_roles()
-    @commands.command(name="hideping", brief="hides ping", description= "hides ping", aliases = ["hp", "secretping", "sp"], hidden=True)
+    @commands.command(name="hideping", aliases = ["hp", "secretping", "sp"], hidden=True)
     @commands.cooldown(1,5, commands.BucketType.user)
-    async def hideping(self, ctx, member_or_messageLink: Union[discord.Member, str]=None, *, message=None):
+    async def hideping(self, ctx, channel: Optional[discord.TextChannel] = None, member: discord.Member=None, *, message=None):
         """
-        hides ping
+        Secretly ping someone with this command!
         """
-        if member_or_messageLink is None:
-            await ctx.send("You need to provide a member or message link.\n**Usage**: `hideping [member_or_messageLink] [message]`")
+        if channel is None:
+            channel = ctx.channel
+        if member is None:
+            await ctx.send("You need to provide a member or message link.\n**Usage**: `hideping <channel> [member] [message]`")
             return
-        if type(member_or_messageLink) is discord.Member:
-            member = member_or_messageLink
-        else:
-            try:
-                membermsg = await commands.MessageConverter.convert(self.client, ctx, member_or_messageLink)
-            except discord.NotFound:
-                await ctx.send("I could not find a message with the message link you provided.")
-            else:
-                member = membermsg.author
         if message is not None and len(message) > 180:
             return await ctx.send("Your accompanying message can only be at most 180 characters.")
         try:
@@ -240,11 +237,11 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
         if await self.client.check_blacklisted_content(message):
             message = ''
         content = f"{message or ''} ‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍ <@{member.id}>" # ik this looks sketchy, but you can paste it in discord and send it to see how this looks like :MochaLaugh:
-        webhooks = await ctx.channel.webhooks()
+        webhooks = await channel.webhooks()
         webhook = discord.utils.get(webhooks, name=self.client.user.name)
         if webhook is None:
             try:
-                webhook = await ctx.channel.create_webhook(name=self.client.user.name)
+                webhook = await channel.create_webhook(name=self.client.user.name)
             except discord.Forbidden:
                 try:
                     await ctx.send("I am unable to create a webhook to send the hideping message.")
@@ -362,6 +359,22 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
             return await ctx.send("Sorry! I am unable to change that user's name, probably due to role hierachy or missing permissions.")
         await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason) VALUES($1, $2, $3, $4, $5, $6)", member.id, ctx.guild.id, new_name, member_name, round(time.time()) + 180, f"[Scrambled nickname]({ctx.message.jump_url})")
         await ctx.send(f"{member}'s name is now {new_name}!\n{member.mention}, your nickname/username has been scrambled by **{ctx.author.name}** and it is frozen for 3 minutes. It will automatically revert to your previous nickname/username after. ")
+
+    @commands.cooldown(10, 1, commands.BucketType.user)
+    @commands.command(name="firstmessage", aliases=['fm'])
+    async def firstmessage(self, ctx, channel: discord.TextChannel = None):
+        """
+        Shows the first message of the specified channel.
+        """
+        if channel is None:
+            channel = ctx.channel
+        try:
+            message: discord.Message = (await channel.history(limit=1, oldest_first=True).flatten())[0]
+        except (discord.Forbidden, discord.HTTPException):
+            return await ctx.send("I was unable to read message history for {}.".format(channel.mention))
+        em = discord.Embed(description=f"[First Message in **{channel.name}**]({message.jump_url})")
+        em.set_author(name=f"Sent by: {message.author.display_name}", icon_url=message.author.avatar.url)
+        await ctx.send(embed=em)
 
     @checks.requires_roles()
     @commands.cooldown(1200, 1, commands.BucketType.user)

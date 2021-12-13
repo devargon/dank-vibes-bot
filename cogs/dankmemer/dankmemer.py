@@ -1,16 +1,13 @@
-import contextlib
 import time
 import asyncio
 import discord
-from discord import ui
 import operator
 from utils import checks, buttons
 from datetime import datetime, timedelta
 from discord.ext import commands, tasks
 from utils.format import print_exception, short_time
-from .betting import betting
-from utils.context import DVVTcontext
 from utils.buttons import *
+
 
 async def checkmark(message:discord.Message):
     try:
@@ -18,11 +15,13 @@ async def checkmark(message:discord.Message):
     except discord.NotFound:
         return None
 
+
 async def clock(message:discord.Message):
     try:
         await message.add_reaction("⏰")
     except:
         return
+
 
 def emojioutput(truefalse):  # shows the enabled or disabled emoji for 0 or 1 values
     if truefalse == 0:
@@ -32,11 +31,14 @@ def emojioutput(truefalse):  # shows the enabled or disabled emoji for 0 or 1 va
     else:
         return "error"
 
+
 def truefalse(value):  # shows the enabled or disabled emoji for 0 or 1 values
     return value == 1
 
+
 async def crossmark(msg):
     await msg.add_reaction("<:crossmark:841186660662247444>")
+
 
 def numberswitcher(no):
     if no == 1:
@@ -47,6 +49,7 @@ def numberswitcher(no):
         return 1
     else:
         return 0
+
 
 class VoteSetting(discord.ui.Select):
     def __init__(self, client, context, response):
@@ -172,7 +175,7 @@ class dankreminders(discord.ui.View):
             b.disabled = True
         await self.response.edit(view=self)
 
-class DankMemer(betting, commands.Cog, name='dankmemer'):
+class DankMemer(commands.Cog, name='dankmemer'):
     """
     Dank Memer utilities
     """
@@ -234,7 +237,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                     member = self.client.get_user(i)
                     if member is not None:
                         remindersettings = await self.client.pool_pg.fetchval("SELECT method FROM remindersettings WHERE member_id = $1", i)
-                        if remindersettings is True:
+                        if remindersettings == 1:
                             try:
                                 await member.send(msg)
                             except:
@@ -253,7 +256,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                 channel = self.client.get_channel(channel_id)
                 for message in messages:
                     await channel.send(message)
-            await self.client.pool_pg.execute("DELETE FROM dankdrops WHERE guild_id = $1 AND name = $2 AND price = $4 AND time = $4", drop.get('guild_id'), drop.get('name'), drop.get('price'), drop.get('time'))
+                await self.client.pool_pg.execute("DELETE FROM dankdrops WHERE guild_id = $1 AND name = $2 AND price = $3 AND time = $4", drop.get('guild_id'), drop.get('name'), drop.get('price'), drop.get('time'))
         except:
             pass
 
@@ -263,7 +266,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
             await self.client.wait_until_ready()
             if self.client.maintenance.get(self.qualified_name):
                 return
-            results = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where time < $1", round(time.time())) # all reminders that are due for reminding
+            results = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where time < $1", round(time.time()))  # all reminders that are due for reminding
             if len(results) == 0:
                 return
             for result in results:
@@ -272,11 +275,11 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
                     pass
                 elif result.get('remindertype') not in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21]: # if the reminder type is not a valid one
                     pass
-                elif config[result.get('remindertype')] != 1: # activity specific reminder check
+                elif config[result.get('remindertype')] != 1:  # activity specific reminder check
                     pass
-                elif config.get('method') == 0: # chose not to be reminded
+                elif config.get('method') == 0:  # chose not to be reminded
                     pass
-                elif config.get('method') in [1, 2]: # DMs or Mentions
+                elif config.get('method') in [1, 2]:  # DMs or Mentions
                     def message(reminderaction):
                         if reminderaction == 2:
                             return "**claim your daily** <:DVB_calendar:873107952159059991>"
@@ -631,7 +634,7 @@ class DankMemer(betting, commands.Cog, name='dankmemer'):
     async def on_message_edit(self, beforemsg, aftermsg):
         if beforemsg.author.id != 270904126974590976:
             return
-        if len(beforemsg.embeds) < 0 or len(aftermsg.embeds) < 0:
+        if len(beforemsg.embeds) == 0 or len(aftermsg.embeds) == 0:
             return
         beforeembed = beforemsg.embeds[0]
         afterembed = aftermsg.embeds[0]

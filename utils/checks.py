@@ -33,6 +33,9 @@ def requires_roles() -> callable:
         enabled = await ctx.bot.pool_pg.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
         if enabled == True:
             return True
+        print(ctx.command.name)
+        if await ctx.bot.pool_pg.fetchval("SELECT member_id FROM commandaccess WHERE command = $1 AND member_id = $2", get_command_name(ctx.command), ctx.author.id):
+            return True
         roles = await ctx.bot.pool_pg.fetch("SELECT role_id, whitelist FROM rules WHERE guild_id=$1 AND command=$2", ctx.guild.id, get_command_name(ctx.command))
         if ctx.author.guild_permissions.administrator:
             return True
@@ -119,8 +122,6 @@ def is_bav_or_mystic() -> Callable:
     async def predicate(ctx):
         if not ctx.guild:
             raise commands.NoPrivateMessage()
-        if ctx.author.id in [719890992723001354, 542447261658120221]:
-            return True
         if ctx.author.guild_permissions.manage_roles == True:
             return True
         raise ArgumentBaseError(message="You need to be a `mystic` or `bav` or have the required permissions to use this command.")

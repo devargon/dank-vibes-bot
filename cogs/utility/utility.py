@@ -224,7 +224,7 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
         embed.add_field(name='Stats', value="\n".join(value_1), inline=True)
         embed.add_field(name='Versions', value=f"<:python:868806455317393428> `{py_version}`\n<:discordpy:868806486241992724> `{dpy_version}`", inline=True)
         embed.add_field(name='Developers', value=f"{str(self.client.get_user(650647680837484556))}", inline=True)
-        embed.add_field(name="Special Thanks To", value=f"{str(await self.client.fetch_user(727498137232736306))}\n{str(await self.client.fetch_user(321892489470410763))}\n{await self.client.get_user(560251854399733760)}", inline=True)
+        embed.add_field(name="Special Thanks To", value=f"{str(await self.client.fetch_user(727498137232736306))}\n{str(await self.client.fetch_user(321892489470410763))}\n{await self.client.fetch_user(560251854399733760)}", inline=True)
         if ctx.author.id in [650647680837484556, 515725341910892555, 321892489470410763]:
             loop = asyncio.get_event_loop()
             def get_advanced_details():
@@ -466,3 +466,8 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
             await self.client.pool_pg.execute("UPDATE timedrole SET time = $1 WHERE member_id = $2 AND guild_id = $3 AND role_id = $4", finish, user.id, ctx.guild.id, accessrole.id)
         else:
             await self.client.pool_pg.execute("INSERT INTO timedrole VALUES($1, $2, $3, $4)", user.id, ctx.guild.id, accessrole.id, finish)
+
+    @commands.command(name="invite", hidden=True)
+    async def _invite(self, ctx):
+        embed = discord.Embed(title=f"Invite {self.client.user.name}!", description="[Click here to invite me to your server!](https://www.youtube.com/watch?v=9cjS9z0ZKUo)", color=self.client.embed_color)
+        await ctx.send(embed=embed)

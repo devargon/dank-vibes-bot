@@ -52,12 +52,13 @@ class UserDonations(menus.ListPageSource):
 
 
 class DonationLeaderboard(menus.ListPageSource):
-    def __init__(self, entries, title):
+    def __init__(self, entries, title, footer):
         self.title = title
+        self.footer = footer
         super().__init__(entries, per_page=10)
 
     async def format_page(self, menu, entries):
-        embed = discord.Embed(title=self.title, color=menu.ctx.bot.embed_color, timestamp=discord.utils.utcnow())
+        embed = discord.Embed(title=self.title, color=menu.ctx.bot.embed_color, timestamp=discord.utils.utcnow()).set_footer(text=self.footer)
         for entry in entries:
             embed.add_field(name=f"{entry[0]}", value=f"Donations: `{entry[1]}`", inline=False)
         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
@@ -167,13 +168,14 @@ class donations(commands.Cog):
                         member = ctx.guild.get_member(entry.get('user_id')) or entry.get('user_id')
                         value = comma_number(entry.get('value'))
                         donations.append((f"{i+1}. {member}", value))
+                    footer = f"{len(leaderboard)} users have donated, amounting to a total {comma_number(sum([entry.get('value') for entry in leaderboard]))} donated"
                     if len(donations) <= 10:
-                        leaderboard_embed = discord.Embed(title=title, color=self.client.embed_color)
+                        leaderboard_embed = discord.Embed(title=title, color=self.client.embed_color).set_footer(text=footer)
                         for member, value in donations:
                             leaderboard_embed.add_field(name=member, value=f"Donations: `{value}`", inline=False)
                         return await ctx.send(embed=leaderboard_embed)
                     else:
-                        pages = CustomMenu(source=DonationLeaderboard(donations, title), clear_reactions_after=True, timeout=60.0)
+                        pages = CustomMenu(source=DonationLeaderboard(donations, title, footer), clear_reactions_after=True, timeout=60.0)
                         return await pages.start(ctx)
 
     @checks.has_permissions_or_role(administrator=True)

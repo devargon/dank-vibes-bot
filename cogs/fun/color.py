@@ -4,6 +4,17 @@ from colorthief import ColorThief
 from utils import checks
 from io import BytesIO
 from utils.menus import CustomMenu
+from typing import Union
+import re
+from utils import http
+from PIL import UnidentifiedImageError
+
+regex = re.compile(
+        r'^(?:http|ftp)s?://' # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #normal urls
+        r'localhost|)' #localhoar
+        r'(?::\d+)?' # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
 
 class ColorDisplay(menus.ListPageSource):
     def __init__(self, entries, title, avatar):
@@ -28,14 +39,26 @@ class color(commands.Cog):
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="color", aliases=["colour"])
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def color(self, ctx, member: discord.Member = None):
+    async def color(self, ctx, argument:Union[discord.Member, str] = None):
         """
         Gets dominant and matching colors of your profile picture.
         """
-        if member is None:
-            member = ctx.author
-        avatar = await member.display_avatar.with_format('png').read()
-        color_thief = ColorThief(BytesIO(avatar))
+        if argument is None:
+            argument = ctx.author
+            image = await ctx.author.display_avatar.with_format('png').read()
+        elif isinstance(argument, discord.Member):
+            image = await argument.display_avatar.with_format('png').read()
+        elif isinstance(argument, str):
+            if not regex.match(argument):
+                await ctx.send("You provided an invalid image URL.")
+                return
+            image = await http.get(argument, res_method="read")
+        else:
+            return await ctx.send('uhm')
+        try:
+            color_thief = ColorThief(BytesIO(image))
+        except UnidentifiedImageError:
+            return await ctx.send("I could not read the image provided.")
         palette = color_thief.get_palette(color_count=6)
         messagecontents = []
         for color in palette:
@@ -43,6 +66,6 @@ class color(commands.Cog):
             hex_int = int(hexcode, 16)
             hex_int = hex_int + 0x200
             messagecontents.append((f"HEX: `{hexcode}`\nRGB: `{color}`\nINT: `{int(hex_int)}`", f"https://api.alexflipnote.dev/color/image/{hexcode}", int(hex_int)))
-        title = f"{member.name}'s Profile Picture Color"
-        pages = CustomMenu(source=ColorDisplay(messagecontents, title, member.display_avatar.url), clear_reactions_after=True, timeout=60)
+        title = f"{argument.name}'s Profile Picture Color" if isinstance(argument, discord.Member) else "Image dominant colors"
+        pages = CustomMenu(source=ColorDisplay(messagecontents, title, argument.display_avatar.url if isinstance(argument, discord.Member) else argument), clear_reactions_after=True, timeout=60)
         return await pages.start(ctx)

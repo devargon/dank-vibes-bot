@@ -350,9 +350,10 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
         if desc[-1] != '':
             desc.append('')
         position = role.position
-        if position == 0:
+        print(position)
+        if role == ctx.guild.roles[0]:
             str_position=f"{ctx.guild.roles[2].name}\n{ctx.guild.roles[1].name}\nLowest role: **{role.name}**"
-        elif position+1 == len(ctx.guild.roles):
+        elif role == ctx.guild.roles[-1]:
             str_position=f"Highest role: **{role.name}**\n{ctx.guild.roles[-2].name}\n{ctx.guild.roles[-3].name}"
         else:
             str_position=f"{ctx.guild.roles[position-1].name}\n**{role.name}**\n{ctx.guild.roles[position+1].name}"

@@ -507,6 +507,50 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
             pages = CustomMenu(source=Suggestion(suggestions, title), clear_reactions_after=True, timeout=60)
             return await pages.start(ctx)
 
+    @checks.dev()
+    @commands.command(name="mock", aliases=["pretend"])
+    async def mock(self, ctx, channel: Optional[discord.TextChannel], member: discord.Member, *, message: str):
+        """Mock a user.
+
+        This will send a message that looks like someone else sent it
+        """
+        if channel is None:
+            channel = ctx.channel
+            if len(message) > 2000:
+                return await ctx.send("Your message is too long.")
+        webhooks = await channel.webhooks()
+        webhook = discord.utils.get(webhooks, name=self.client.user.name)
+        if webhook is None:
+            try:
+                webhook = await channel.create_webhook(name=self.client.user.name)
+            except discord.Forbidden:
+                try:
+                    await channel.send("I am unable to create a webhook.")
+                except (discord.HTTPException, discord.Forbidden):
+                    return
+                return
+        msg = await webhook.send(message, username=member.display_name, avatar_url=member.display_avatar)
+        await ctx.message.add_reaction("<a:DVB_NyaTrash:919606179590733944>")
+        try:
+            def check(payload):
+                print(payload.message_id == ctx.message.id)
+                print(payload.user_id == ctx.author.id)
+                print(payload.emoji == "<a:DVB_NyaTrash:919606179590733944>")
+                return payload.message_id == ctx.message.id and payload.user_id == ctx.author.id and str(payload.emoji) == "<a:DVB_NyaTrash:919606179590733944>"
+            await self.client.wait_for("raw_reaction_add", check=check, timeout=10)
+        except asyncio.TimeoutError:
+            try:
+                await ctx.message.clear_reaction("<a:DVB_NyaTrash:919606179590733944>")
+                await ctx.message.add_reaction("<:DVB_True:887589686808309791>")
+            except:
+                pass
+        else:
+            try:
+                await ctx.message.delete()
+            except discord.HTTPException:
+                pass
+
+
 
     @checks.base_dev()
     @commands.command(name="devmode")

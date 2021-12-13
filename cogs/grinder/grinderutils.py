@@ -15,8 +15,6 @@ from datetime import datetime
 guildid = 871734809154707467 if os.getenv('state') == '1' else 595457764935991326
 tgrinderroleID = 896052592797417492 if os.getenv('state') == '1' else 827270880182009956
 grinderroleID = 896052612284166204 if os.getenv('state') == '1' else 859494328422367273
-mystic = 719890992723001354
-bav = 542447261658120221
 argon = 650647680837484556
 donochannel = 871737314831908974 if os.getenv('state') == '1' else 862574856846704661
 logchannel = 871737332431216661 if os.getenv('state') == '1' else 896693789312319508
@@ -77,9 +75,9 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         """
         if member is None:
             member = ctx.author
-        if ctx.author.id not in [argon, bav, mystic] and ctx.author.guild_permissions.manage_roles != True:
+        if ctx.author.id not in [argon] and ctx.author.guild_permissions.manage_roles != True:
             member = ctx.author
-        if not (ctx.author.id == argon or ctx.author.guild_permissions.manage_roles==True or discord.utils.get(ctx.author.roles, id=grinderroleID) or discord.utils.get(ctx.author.roles, id=tgrinderroleID) or ctx.author.id in [argon, bav, mystic] ):
+        if not (ctx.author.id == argon or ctx.author.guild_permissions.manage_roles==True or discord.utils.get(ctx.author.roles, id=grinderroleID) or discord.utils.get(ctx.author.roles, id=tgrinderroleID) or ctx.author.id in [argon]):
             return await ctx.send("You need to be a **Grinder**/**Trial Grinder** to use this command.")
         result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
         embed = discord.Embed(color=self.client.embed_color, timestamp=discord.utils.utcnow())
@@ -300,7 +298,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                                   description=f"<a:dv_pointArrowOwO:837656328482062336> The daily grinder requirement has been checked.\n<a:dv_pointArrowOwO:837656328482062336> <#862574856846704661> is now unlocked and you may send the cash to `Dank Vibes Holder#2553`\n<a:dv_pointArrowOwO:837656328482062336> The next requirement check will take place in about <t:{round(time.time()) + 86400}:R> ( i.e between 1:30PM and 3:30PM GMT)",
                                   color=self.client.embed_color)
             embed.set_thumbnail(url="https://cdn.discordapp.com/icons/595457764935991326/a_58b91a8c9e75742d7b423411b0205b2b.gif")
-            embed.set_footer(text="DM/Ping TheMysticLegacy#0001 or Bav#0507 if you have any queries.", icon_url=ctx.guild.icon.url)
+            embed.set_footer(text="DM/Ping Ari#0005 if you have any queries.", icon_url=ctx.guild.icon.url)
             if flags.msg is not None and len(flags.msg) != 0:
                 embed.add_field(name=f"Additional Message from {ctx.author}", value=flags.msg, inline=False)
             success = 0  # gets the grinder list again since the earlier one was popped
