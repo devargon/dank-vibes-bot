@@ -374,8 +374,9 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
             message: discord.Message = (await channel.history(limit=1, oldest_first=True).flatten())[0]
         except (discord.Forbidden, discord.HTTPException):
             return await ctx.send("I was unable to read message history for {}.".format(channel.mention))
-        em = discord.Embed(description=f"[First Message in **{channel.name}**]({message.jump_url})")
-        em.set_author(name=f"Sent by: {message.author.display_name}", icon_url=message.author.avatar.url)
+        em = discord.Embed(description=f"[First Message in **{channel.name}**]({message.jump_url})\n> {message.content[:100] if len(message.content) > 100 else message.content}", color=self.client.embed_color, timestamp=message.created_at)
+        em.set_footer(text="Sent on:")
+        em.set_author(name=f"Sent by: {message.author.display_name}", icon_url=message.author.display_avatar.url)
         await ctx.send(embed=em)
 
     @checks.requires_roles()
