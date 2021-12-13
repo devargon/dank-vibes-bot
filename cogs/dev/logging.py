@@ -1,21 +1,22 @@
 import discord
-from utils import checks
 from discord.ext import commands
-from datetime import datetime
-import aiohttp
+from utils.format import get_command_name
+from time import time
 
-status_emojis = {
-    discord.Status.dnd: "<:status_dnd:840918521918783508>",
-    discord.Status.idle: "<:status_idle:840918469327192096>",
-    discord.Status.online: "<:status_online:840918419246415873>",
-    discord.Status.offline: "<:status_offline:840918448560930867>",
-    discord.Status.invisible: "<:status_offline:840918448560930867>",
-    discord.Status.do_not_disturb: "<:status_dnd:840918521918783508>",
-}
 
 class Logging(commands.Cog):
     def __init__(self, client):
         self.client = client
+
+    @commands.Cog.listener()
+    async def on_command_completion(self, ctx):
+        print('h')
+        command_name = get_command_name(ctx.command)
+        user_id = ctx.author.id
+        timeofexecution = round(time())
+        guild_id = ctx.guild.id if ctx.guild else None
+        message = ctx.message.content
+        await self.client.pool_pg.execute("INSERT INTO commandlog(guild_id, user_id, command, message, time) VALUES ($1, $2, $3, $4, $5)", guild_id, user_id, command_name, message, timeofexecution)
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -31,7 +32,7 @@ class Logging(commands.Cog):
         if len(message.attachments) > 0:
             attachments = []
             for attachment in message.attachments:
-                if attachment.content_type in["image/apng", "image/gif", "image/jpeg", "image/png", "image/webp"]:
+                if attachment.content_type in ["image/apng", "image/gif", "image/jpeg", "image/png", "image/webp"]:
                     if not embed.image:
                         embed.set_image(url=attachment.proxy_url)
                     else:
@@ -43,7 +44,7 @@ class Logging(commands.Cog):
         embed.set_author(name=f"{message.author} ({message.author.id})", icon_url=message.author.display_avatar.url)
         log_channel = self.client.get_channel(889111152561369158)
         webhooks = await log_channel.webhooks()
-        webhook = discord.utils.get(webhooks, name = self.client.user.name)
+        webhook = discord.utils.get(webhooks, name=self.client.user.name)
         if webhook is None:
             try:
                 webhook = await log_channel.create_webhook(name=self.client.user.name)

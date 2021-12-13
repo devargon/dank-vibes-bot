@@ -222,6 +222,8 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
         """
         if channel is None:
             channel = ctx.channel
+        if not (channel.permissions_for(ctx.author).send_messages and channel.permissions_for(ctx.author).view_channel):
+            return await ctx.send("You are not authorized to view/send messages in that channel.")
         if member is None:
             await ctx.send("You need to provide a member or message link.\n**Usage**: `hideping <channel> [member] [message]`")
             return
