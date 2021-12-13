@@ -410,6 +410,8 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
                 ids = [entry.get('channel_id') for entry in ignoredchannels]
                 self.ignoredchannels[guildid] = ids
         rate = self.rate[guildid]
+        if rate == 0 or rate is None:
+            return
         context = await self.client.get_context(message)
         if context.valid is True:
             return
