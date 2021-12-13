@@ -157,17 +157,18 @@ class donations(commands.Cog):
             async with ctx.typing():
                 if users is None:
                     users = 10
-                query = "SELECT user_id, value FROM donations.{} ORDER BY value DESC LIMIT $1".format(f"guild{ctx.guild.id}_{category_name.lower()}")
-                leaderboard = await self.client.pool_pg.fetch(query, users)
+                query = "SELECT user_id, value FROM donations.{} ORDER BY value DESC".format(f"guild{ctx.guild.id}_{category_name.lower()}")
+                leaderboard = await self.client.pool_pg.fetch(query)
                 if len(leaderboard) == 0:
                     return await ctx.send("There are no donations to show in this category.")
                 else:
                     title = f"{ctx.guild.name}'s Donation Leaderboard - {category_name} {get_emoji(category_name)}"
                     donations = []
                     for i, entry in enumerate(leaderboard):
-                        member = ctx.guild.get_member(entry.get('user_id')) or entry.get('user_id')
-                        value = comma_number(entry.get('value'))
-                        donations.append((f"{i+1}. {member}", value))
+                        if i < users:
+                            member = ctx.guild.get_member(entry.get('user_id')) or entry.get('user_id')
+                            value = comma_number(entry.get('value'))
+                            donations.append((f"{i+1}. {member}", value))
                     footer = f"{len(leaderboard)} users have donated, amounting to a total {comma_number(sum([entry.get('value') for entry in leaderboard]))} donated"
                     if len(donations) <= 10:
                         leaderboard_embed = discord.Embed(title=title, color=self.client.embed_color).set_footer(text=footer)
