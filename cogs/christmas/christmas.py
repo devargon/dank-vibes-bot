@@ -658,6 +658,8 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             self.rate[guildid] = rate
             await ctx.send(f"The rate has been set to {rate * 100}%.\n{additional}")
             denominator = 1
+            if rate == 0:
+                return
             now = time.perf_counter()
             while rate < 1:
                 rate *= 10
