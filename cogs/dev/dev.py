@@ -533,9 +533,6 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
         await ctx.message.add_reaction("<a:DVB_NyaTrash:919606179590733944>")
         try:
             def check(payload):
-                print(payload.message_id == ctx.message.id)
-                print(payload.user_id == ctx.author.id)
-                print(payload.emoji == "<a:DVB_NyaTrash:919606179590733944>")
                 return payload.message_id == ctx.message.id and payload.user_id == ctx.author.id and str(payload.emoji) == "<a:DVB_NyaTrash:919606179590733944>"
             await self.client.wait_for("raw_reaction_add", check=check, timeout=10)
         except asyncio.TimeoutError:
