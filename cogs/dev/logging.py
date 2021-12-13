@@ -10,13 +10,13 @@ class Logging(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_completion(self, ctx):
-        print('h')
         command_name = get_command_name(ctx.command)
         user_id = ctx.author.id
         timeofexecution = round(time())
         guild_id = ctx.guild.id if ctx.guild else None
+        channel_id = ctx.channel.id
         message = ctx.message.content
-        await self.client.pool_pg.execute("INSERT INTO commandlog(guild_id, user_id, command, message, time) VALUES ($1, $2, $3, $4, $5)", guild_id, user_id, command_name, message, timeofexecution)
+        await self.client.pool_pg.execute("INSERT INTO commandlog(guild_id, channel_id, user_id, command, message, time) VALUES ($1, $2, $3, $4, $5, $6)", guild_id, channel_id, user_id, command_name, message, timeofexecution)
 
     @commands.Cog.listener()
     async def on_message(self, message):
