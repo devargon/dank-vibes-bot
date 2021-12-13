@@ -1,14 +1,17 @@
 import discord
-from discord.ext import commands, menus, tasks
+from discord.ext import commands, menus
+
 from utils import checks
-from utils.format import human_join
 from utils.menus import CustomMenu
-from typing import Optional
-import random
-import time
-import operator
+from utils.format import human_join
+
 import os
+import time
+import random
 import asyncio
+import operator
+from typing import Optional
+
 from .removingaccess import RemovingAccess
 
 modchannel = 743174564778868796 if os.getenv('state') == '0' else 871737314831908974
@@ -371,6 +374,8 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
         """
         Main event handler for christmas games.
         """
+        if self.client.maintenance.get(self.qualified_name):
+            return
         if message.author.bot:
             return
         guildid = str(message.guild.id)
