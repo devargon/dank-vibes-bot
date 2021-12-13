@@ -674,7 +674,6 @@ class DankMemer(commands.Cog, name='dankmemer'):
                     return False
             return True
         if not check_before_view():
-            print('did not fulfill have not interacted with stream')
             def check_start_not_stream():
                 for button in beforeview.children:
                     if not isinstance(button, discord.ui.Button):
@@ -693,7 +692,6 @@ class DankMemer(commands.Cog, name='dankmemer'):
             def check_start_selecting_stream():
                 for button in beforeview.children:
                     if isinstance(button, discord.ui.Select):
-                        print(button.placeholder.lower())
                         if button.placeholder.lower() == "select a game":
                             pass
                     elif isinstance(button, discord.ui.Button):
