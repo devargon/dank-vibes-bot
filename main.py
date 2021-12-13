@@ -166,7 +166,7 @@ class dvvt(commands.AutoShardedBot):
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS timedrole(member_id bigint, guild_id bigint, role_id bigint, time bigint)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS viprolemessages(guild_id bigint, colors bigint, vipcolors bigint, boostgaw bigint, vipheistping bigint)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS votecount(member_id bigint PRIMARY KEY, count integer)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS commandlog(guild_id bigint, user_id bigint, command text, message text, time bigint)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS commandlog(guild_id bigint, channel_id bigint, user_id bigint, command text, message text, time bigint)")
                 await self.pool_pg.execute("CREATE SCHEMA IF NOT EXISTS donations")
         print("Bot is ready")
 
