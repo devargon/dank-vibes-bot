@@ -367,6 +367,22 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
         await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason) VALUES($1, $2, $3, $4, $5, $6)", member.id, ctx.guild.id, new_name, member_name, round(time.time()) + 180, f"[Scrambled nickname]({ctx.message.jump_url})")
         await ctx.send(f"{member}'s name is now {new_name}!\n{member.mention}, your nickname/username has been scrambled by **{ctx.author.name}** and it is frozen for 3 minutes. It will automatically revert to your previous nickname/username after. ")
 
+    @commands.cooldown(10, 1, commands.BucketType.user)
+    @commands.command(name="firstmessage", aliases=['fm'])
+    async def firstmessage(self, ctx, channel: discord.TextChannel = None):
+        """
+        Shows the first message of the specified channel.
+        """
+        if channel is None:
+            channel = ctx.channel
+        try:
+            message: discord.Message = (await channel.history(limit=1, oldest_first=True).flatten())[0]
+        except (discord.Forbidden, discord.HTTPException):
+            return await ctx.send("I was unable to read message history for {}.".format(channel.mention))
+        em = discord.Embed(description=f"[First Message in **{channel.name}**]({message.jump_url})")
+        em.set_author(name=f"Sent by: {message.author.display_name}", icon_url=message.author.avatar.url)
+        await ctx.send(embed=em)
+
     @checks.requires_roles()
     @commands.cooldown(1200, 1, commands.BucketType.user)
     @commands.command(name="chatchart")
