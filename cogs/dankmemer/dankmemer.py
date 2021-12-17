@@ -972,7 +972,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
             embed.add_field(name=drop.get("item"), value=f"Cost: {drop.get('price')}\nDrop Time: <t:{drop.get('time')}>")
         await ctx.send(embed=embed)
 
-    @checks.admoon()
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="trendinggame")
     async def trendinggame(self, ctx, *, game: str = None):
         """
