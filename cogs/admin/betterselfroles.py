@@ -387,6 +387,7 @@ class BetterSelfroles(commands.Cog):
             if len(selfrolemessages) == 0:
                 self.selfroleviews_added = True
                 return
+            self.client.add_view(christmasroles())
             if selfrolemessages.get('age'):
                 self.client.add_view(age())
             if selfrolemessages.get('gender'):
