@@ -189,9 +189,9 @@ class Game3FirstToClick(discord.ui.View):
 
 
 class ChooseCurrencyPrize(discord.ui.View):
-    def __init__(self, member):
+    def __init__(self, member, prizes):
         self.member = member
-        self.prizes = random.choices([["<:DankMemer:898501160992911380>", "Dank Memer"], ["<:currency:898494174557515826>", "Mudae"], ["<:TT_karutaOwO:913784526268932156>", "Karuta"], ["<:OwO:898501205360271380>", "OwO"], ["<:Pokemon:898501263849816064>", "Pokemon Bots"]], k=3)
+        self.prizes = prizes
         self.prize = None
         self.response = None
         super().__init__(timeout=15.0)
@@ -199,6 +199,10 @@ class ChooseCurrencyPrize(discord.ui.View):
         async def manage_prize(label):
             self.prize = label
             for b in self.children:
+                if b.label == label:
+                    b.style = discord.ButtonStyle.green
+                else:
+                    b.style = discord.ButtonStyle.grey
                 b.disabled = True
             try:
                 await self.response.edit(view=self)
@@ -446,7 +450,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             candyclaims = sorted(gameview.candyclaims.items(), key=operator.itemgetter(1), reverse=True)
             winner = candyclaims[0][0]
             selected_prizes = random.choices(something, weights=weights, k=3)
-            while selected_prizes[0] == selected_prizes[1] or selected_prizes[1] == selected_prizes[2]:
+            while selected_prizes[0] == selected_prizes[1] or selected_prizes[1] == selected_prizes[2] or selected_prizes[0] == selected_prizes[2]:
                 selected_prizes = random.choices(something, weights=weights, k=3)
             prizeview = ChoosePrize(selected_prizes, winner)
             prizeview.response = await message.channel.send(f"{winner.mention} You've won by collecting the highest number of candies (`{candyclaims[0][1]}`) among the other {len(candyclaims)-1} participants!\nChoose a prize below to redeem.", view=prizeview)
@@ -476,7 +480,10 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
                     await gameview.response.reply(embed=embed)
                 except:
                     await message.channel.send(embed=embed)
-                prizeview = ChooseCurrencyPrize(winner)
+                prizes = random.choices([["<:DankMemer:898501160992911380>", "Dank Memer"], ["<:currency:898494174557515826>", "Mudae"], ["<:TT_karutaOwO:913784526268932156>", "Karuta"], ["<:OwO:898501205360271380>", "OwO"], ["<:Pokemon:898501263849816064>", "Pokemon Bots"]], k=3)
+                while prizes[0] == prizes[1] or prizes[1] == prizes[2] or prizes[0] == prizes[2]:
+                    prizes = random.choices([["<:DankMemer:898501160992911380>", "Dank Memer"], ["<:currency:898494174557515826>", "Mudae"], ["<:TT_karutaOwO:913784526268932156>", "Karuta"], ["<:OwO:898501205360271380>", "OwO"], ["<:Pokemon:898501263849816064>", "Pokemon Bots"]], k=3)
+                prizeview = ChooseCurrencyPrize(winner, prizes)
                 prizeview.response = await gameview.response.reply(f"{winner.mention} You've won by hitting the Grinch with the most snowballs!\nChoose a prize below.", view=prizeview)
                 await prizeview.wait()
                 prize = prizeview.prize
