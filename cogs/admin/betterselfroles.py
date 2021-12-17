@@ -9,6 +9,34 @@ import json
 from utils.format import ordinal
 from utils.buttons import confirm
 
+class christmasroles(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        roles = [914853260333039636, 914853268444839986, 914853279719112724, 914897043259015168, 914897056991162398]
+        emojis = ["<:tree:921328883595358218>", "<:berr:921328954277781544>", "<:breadman:921329000964575262>", "<:gip:921329024318464012>", "<:frost:921329059387027496>"]
+        ids = ["cr:tree", "cr:berr", "cr:breadman", "cr:gip", "cr:frost"]
+        class somebutton(discord.ui.Button):
+            async def callback(self, interaction: discord.Interaction):
+                index = emojis.index(str(self.emoji))
+                role = interaction.guild.get_role(roles[index])
+                for count, item in enumerate(roles):
+                    if count == index:
+                        pass
+                    else:
+                        targetremove = interaction.guild.get_role(item)
+                        if targetremove in interaction.user.roles:
+                            await interaction.user.remove_roles(targetremove, reason="Selfrole")
+                if role not in interaction.user.roles:
+                    await interaction.user.add_roles(role, reason="Selfrole")
+                    await interaction.response.send_message(f"**Ho ho ho!**\nThe role **{role.name}** has been added to you.", ephemeral=True)
+                else:
+                    await interaction.user.remove_roles(role, reason="Selfrole")
+                    await interaction.response.send_message(f"**Ho ho ho!**\nThe role **{role.name}** has been removed from you.", ephemeral=True)
+
+        for emoji in emojis:
+            self.add_item(somebutton(emoji=discord.PartialEmoji.from_str(emoji), style=discord.ButtonStyle.grey, custom_id=ids[emojis.index(emoji)]))
+
+
 class age(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
