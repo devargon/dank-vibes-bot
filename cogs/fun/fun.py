@@ -381,7 +381,7 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
 
     @checks.requires_roles()
     @commands.cooldown(1200, 1, commands.BucketType.user)
-    @commands.command(name="chatchart")
+    @commands.command(name="chatchart", aliases=['cc'])
     async def chatchart(self, ctx, channel: Union[discord.TextChannel, str] = None):
         """
         Shows the percentage of messages sent by various members.
