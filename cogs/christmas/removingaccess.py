@@ -21,7 +21,7 @@ class RemovingAccess(commands.Cog):
                 member = f"{member.mention} ({member.id})"
             else:
                 member = f"{perk.get('member_id')}"
-            await self.client.get_channel(modchannel).send(f"{member}'s **{perk.get('perk')} is over.")
+            await self.client.get_channel(modchannel).send(f"{member}'s **{perk.get('perk')}** is over.")
             await self.client.pool_pg.execute("DELETE FROM perkremoval WHERE until = $1 AND member_id = $2 AND perk = $3", perk.get('until'), perk.get('member_id'), perk.get('perk'))
 
     @tasks.loop(seconds=30.0)
@@ -35,7 +35,7 @@ class RemovingAccess(commands.Cog):
                     member = f"{member.mention} ({member.id})"
                 else:
                     member = f"{commandperk.get('member_id')}"
-                await self.client.get_channel(modchannel).send(f"{member}'s **{commandperk.get('perk')} is over.")
+                await self.client.get_channel(modchannel).send(f"{member}'s **{commandperk.get('command')}** is over.\n*Just tracking, no need to do anything about this*")
                 await self.client.pool_pg.execute("DELETE FROM commandaccess WHERE until = $1 AND member_id = $2 AND command = $3", commandperk.get('until'), commandperk.get('member_id'), commandperk.get('command'))
         except:
             pass
