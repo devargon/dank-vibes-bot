@@ -1,10 +1,9 @@
 import asyncio
 import difflib
 import operator
-from utils.format import print_exception, comma_number
+from utils.format import comma_number
 import discord
 from discord.ext import commands
-from utils.context import DVVTcontext
 import random
 from discord.ext import menus
 from utils import checks
@@ -355,30 +354,58 @@ class ItemGames(commands.Cog):
         Shows the leaderboard for a certain item!
         """
         if item is None:
-            return await ctx.send("You need to specify the item you want to know about.")
-        itemname = await self.get_item_name(item)
-        if itemname is None:
-            return await ctx.send(f"There is no item named `{item}`.")
-        async with ctx.typing():
-            query = f"SELECT user_id, {itemname} FROM inventories WHERE {itemname} IS NOT null and {itemname} != 0 ORDER BY {itemname} DESC LIMIT 10"
-            result = await self.client.pool_pg.fetch(query)
-            if result is None:
-                return await ctx.send("An error occured while trying to get the data for this item.")
-            if len(result) == 0:
-                return await ctx.send(f"There are no members who've gotten a {itemname} yet..")
-            itemdetails = await self.client.pool_pg.fetchrow("SELECT fullname, image FROM iteminfo WHERE name = $1", itemname)
-            if itemdetails is None:
-                return await ctx.send("An error occured while trying to get the data for this item.")
-            title = f"Item Leaderboard for {itemdetails.get('fullname') or item} 🎖"
+            all_items = await self.client.pool_pg.fetch("SELECT name FROM iteminfo")
+            print(all_items)
+            all_items = [item.get('name') for item in all_items]
+            all_inventories = await self.client.pool_pg.fetch("SELECT * FROM inventories")
+            invs = {}
+            for inv in all_inventories:
+                totalitemcount = 0
+                for item in all_items:
+                    totalitemcount += inv.get(item) or 0
+                invs[inv.get('user_id')] = totalitemcount
+            sorted_invs = sorted(invs.items(), key=lambda x: x[1], reverse=True)
+            sorted_invs = sorted_invs[:10]
+            finalresult = []
+            for i in sorted_invs:
+                user = self.client.get_user(i[0])
+                if user is None:
+                    user = i[0]
+                finalresult.append((user, i[1]))
+            itemname = "item"
+            title = f"Total Inventory Leaderboard"
             embed = discord.Embed(title=title, color=self.client.embed_color)
             embed.set_author(name="Dank Vibes")
-            embed.set_thumbnail(url=itemdetails.get('image'))
-            embed.set_footer(text="Use dv.inv info [item] to know more about an item.")
-
-            for i in range(len(result)):
-                user = self.client.get_user(result[i].get('user_id'))
-                if user is None:
-                    user = result[i].get('user_id')
-                count = result[i].get(f'{itemname}')
-                embed.add_field(name=f"{i + 1}. {user} {'🥇' if i == 0 else '🥈' if i == 1 else '🥉' if i == 2 else ''}", value=f"{plural(count):{itemname}}", inline=False)
-            await ctx.send(embed=embed)
+            embed.set_footer(text="Use dv.inv ilb [item] to see the leaderboard for an item.")
+        else:
+            itemname = await self.get_item_name(item)
+            if itemname is None:
+                return await ctx.send(f"There is no item named `{item}`.")
+            async with ctx.typing():
+                query = f"SELECT user_id, {itemname} FROM inventories WHERE {itemname} IS NOT null and {itemname} != 0 ORDER BY {itemname} DESC LIMIT 10"
+                result = await self.client.pool_pg.fetch(query)
+                if result is None:
+                    return await ctx.send("An error occured while trying to get the data for this item.")
+                if len(result) == 0:
+                    return await ctx.send(f"There are no members who've gotten a {itemname} yet..")
+                itemdetails = await self.client.pool_pg.fetchrow("SELECT fullname, image FROM iteminfo WHERE name = $1", itemname)
+                if itemdetails is None:
+                    return await ctx.send("An error occured while trying to get the data for this item.")
+                finalresult = []
+                for user in result:
+                    user_id = user.get('user_id')
+                    user_name = self.client.get_user(user_id)
+                    if user_name is None:
+                        user_name = user_id
+                    user_itemcount = user.get(itemname)
+                    finalresult.append((user_name, user_itemcount))
+                title = f"Item Leaderboard for {itemdetails.get('fullname') or item} 🎖"
+                embed = discord.Embed(title=title, color=self.client.embed_color)
+                embed.set_author(name="Dank Vibes")
+                embed.set_thumbnail(url=itemdetails.get('image'))
+                embed.set_footer(text="Use dv.inv info [item] to know more about an item.")
+        for i, result in enumerate(finalresult):
+            user = result[0]
+            count = result[1]
+            embed.add_field(name=f"{i + 1}. {user} {'🥇' if i == 0 else '🥈' if i == 1 else '🥉' if i == 2 else ''}", value=f"{comma_number(count)} {itemname}s", inline=False)
+        await ctx.send(embed=embed)
