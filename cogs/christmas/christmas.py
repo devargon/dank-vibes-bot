@@ -493,7 +493,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
 
         elif game == 2:
             item_names = await self.client.pool_pg.fetch("SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = $1", 'inventories')
-            items = [i.get('column_name') for i in item_names if i.get('column_name') != 'user_id']
+            items = [i.get('column_name') for i in item_names if i.get('column_name') != 'user_id' and i.get('column_name') != "skull"]
             chosen_item = random.choice(items)
             itemdata = await self.client.pool_pg.fetchrow("SELECT * FROM iteminfo WHERE name = $1", chosen_item)
             if itemdata is None:
