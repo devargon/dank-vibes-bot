@@ -330,47 +330,47 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
 
         elif prize == "1x/2x role multiplier":
             await message.channel.send("You chose the **1x/2x role multiplier**!\nMessages you sent will have an additional multiplier in AmariBot for 2 days. This perk will be given to you as soon as possible.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **1x/2x role multiplier**")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **1x/2x role multiplier**\n{message.jump_url}")
             await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "Access to #reaction-logs":
             await message.channel.send("You chose the **Access to #reaction-logs**!\nYou will be given access to <#847710145001029672> as soon as possible.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to #reaction-logs**")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to #reaction-logs**\n{message.jump_url}")
             await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "Access to #dyno-message-logs":
             await message.channel.send("You chose the **Access to #dyno-message-logs**!\nYou will be given access to <#880990535282724926> as soon as possible.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to #dyno-message-logs**")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to #dyno-message-logs**\n{message.jump_url}")
             await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "Join a surprise heist":
             await message.channel.send("You chose the **Join a surprise heist**!\nFurther details will be given on how you'll be able to access the surprise heists.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Join a surprise heist**")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Join a surprise heist**\n{message.jump_url}")
             await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "Use slash commands":
             await message.channel.send("You chose the **Use slash commands**!You will be able to use bots' Slash Commands for 2 days. This access will be given to you as soon as possible.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Use slash commands**")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Use slash commands**\n{message.jump_url}")
             await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "Access to `dv.dm`":
             await message.channel.send("You chose the **Access to `dv.dm`**!\nActing like a messenger, Dank Vibes Bot anonymously will DM your target on your behalf. You can do so for two days!")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `dv.dm`**\n*Sent for tracking purposes*")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `dv.dm`**\n*Sent for tracking purposes*\n{message.jump_url}")
             await self.client.pool_pg.execute("INSERT INTO commandaccess VALUES($1, $2, $3)", member.id, "dm", round(time.time()) + 172800)
 
         elif prize == "Access to `-paint`":
             await message.channel.send("You chose the **Access to `-paint`**!\nYou will be able to make other peoples' color roles change for a short period of time! This access will be given to you as soon as possible.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `-paint`**")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `-paint`**\n{message.jump_url}")
             await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "Use Color roles":
             await message.channel.send("You chose the **Use Color roles**!\nYou will be able to grab exclusive color roles in <#641497978112180235>.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Use Color roles**")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Use Color roles**\n{message.jump_url}")
             await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "Access to `dv.es`":
             await message.channel.send("You chose the **Access to `dv.es`**!\nYou will be able to see what a user's message was before they edited it for two days!")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `dv.es`**\n*Sent for tracking purposes*")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `dv.es`**\n*Sent for tracking purposes*\n{message.jump_url}")
             await self.client.pool_pg.execute("INSERT INTO commandaccess VALUES($1, $2, $3)", member.id, "editsnipe", round(time.time()) + 172800)
 
     @commands.Cog.listener()
