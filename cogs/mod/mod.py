@@ -350,7 +350,6 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
         if desc[-1] != '':
             desc.append('')
         position = role.position
-        print(position)
         if role == ctx.guild.roles[0]:
             str_position=f"{ctx.guild.roles[2].name}\n{ctx.guild.roles[1].name}\nLowest role: **{role.name}**"
         elif role == ctx.guild.roles[-1]:

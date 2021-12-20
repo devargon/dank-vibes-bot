@@ -355,7 +355,6 @@ class ItemGames(commands.Cog):
         """
         if item is None:
             all_items = await self.client.pool_pg.fetch("SELECT name FROM iteminfo")
-            print(all_items)
             all_items = [item.get('name') for item in all_items]
             all_inventories = await self.client.pool_pg.fetch("SELECT * FROM inventories")
             invs = {}
