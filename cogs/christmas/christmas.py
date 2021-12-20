@@ -459,7 +459,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
 
         elif game == 1:
             gameview = Game2Grinch()
-            embed = discord.Embed(title="Help! The Grinch is coming to attempt to distrupt the Christmas celebrations!", description=f"⛄⛄⛄\n<:DVB_Blank:918464127779876924><:DVB_Grinch:918461400039432254><:DVB_Blank:918464127779876924>\n\nClick on the correct snowball facing the Grinch to hit him with it!", color=self.client.embed_color).set_thumbnail(url="https://cdn.discordapp.com/attachments/871737314831908974/918476839255699456/unknown.png")
+            embed = discord.Embed(title="Help! The Grinch is coming to attempt to disrupt the Christmas celebrations!", description=f"⛄⛄⛄\n<:DVB_Blank:918464127779876924><:DVB_Grinch:918461400039432254><:DVB_Blank:918464127779876924>\n\nClick on the correct snowball facing the Grinch to hit him with it!", color=self.client.embed_color).set_thumbnail(url="https://cdn.discordapp.com/attachments/871737314831908974/918476839255699456/unknown.png")
             gameview.response = await message.channel.send("A new event is happening!", embed=embed)
             await asyncio.sleep(2.0)
             await gameview.response.edit(view=gameview)
