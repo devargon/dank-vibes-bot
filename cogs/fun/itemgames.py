@@ -15,15 +15,16 @@ import asyncio
 from io import BytesIO
 
 
-class ItemLeaderboard(menus.ListPageSource):
-    def __init__(self, entries, title):
+class DisplayItems(menus.ListPageSource):
+    def __init__(self, entries, title, description):
         self.title = title
-        super().__init__(entries, per_page=10)
+        self.description = description
+        super().__init__(entries, per_page=7)
 
     async def format_page(self, menu, entries):
-        embed = discord.Embed(title=self.title, color=menu.ctx.bot.embed_color, timestamp=discord.utils.utcnow())
+        embed = discord.Embed(title=self.title, description=self.description, color=menu.ctx.bot.embed_color, timestamp=discord.utils.utcnow())
         for entry in entries:
-            embed.add_field(name=f"{entry[0]}", value=f"**⏣ {comma_number(entry[1])}**", inline=False)
+            embed.add_field(name=entry[0], value=entry[1], inline=True)
         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return embed
 
@@ -309,11 +310,13 @@ class ItemGames(commands.Cog):
         else:
             embed = discord.Embed(title="Items you can get", description=f"Here are all the items you can get. There are {count} of them!", color=self.client.embed_color)
             items = await self.client.pool_pg.fetch("SELECT name, fullname, emoji, description FROM iteminfo")
+            results = []
             for item in items:
                 query = "SELECT SUM({}) FROM inventories".format(item.get('name'))
                 in_circulation = await self.client.pool_pg.fetchval(query)
-                embed.add_field(name=f"{item.get('emoji')} {item.get('fullname')}", value=f"{item.get('description')}\nIn circulation: `{comma_number(in_circulation)}`", inline=False)
-        await ctx.send(embed=embed)
+                results.append((f"{item.get('emoji')} {item.get('fullname')}", f"{item.get('description')}\nIn circulation: `{comma_number(in_circulation or 0)}`"))
+            pages = CustomMenu(source=DisplayItems(results, "Items you can get", f"Here are all the items you can get. There are {count} of them!"), clear_reactions_after=True, timeout=30)
+            return await pages.start(ctx)
 
     @inventory.command(name="info", aliases=['item'])
     async def item_info(self, ctx, item: str = None):
