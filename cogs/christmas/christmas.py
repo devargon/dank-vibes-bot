@@ -382,6 +382,8 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             return
         if message.author.bot:
             return
+        if not message.guild:
+            return
         guildid = str(message.guild.id)
         """
         Caching the rate for the guild.
@@ -497,7 +499,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             chosen_item = random.choice(items)
             itemdata = await self.client.pool_pg.fetchrow("SELECT * FROM iteminfo WHERE name = $1", chosen_item)
             if itemdata is None:
-                return await message.channel.send("An error occured while trying to get the data for an item.")
+                return await message.channel.send("An error occured while trying to get the data for an item.\n{}".format(chosen_item))
             name = itemdata.get('fullname')
             emoji = itemdata.get('emoji')
             gameview = Game3FirstToClick(emoji)
