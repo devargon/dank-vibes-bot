@@ -345,7 +345,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
                 await um.reply(f"nvm please do something about it, something went fucking wrong")
                 await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
-        elif prize == "1x/2x role multiplier":
+        elif prize == "1x role multiplier":
             um = await message.channel.send("You chose the **1x/2x role multiplier**!\nMessages you sent will now have an additional multiplier in AmariBot for 2 days.")
             await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **1x/2x role multiplier**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
             try:
