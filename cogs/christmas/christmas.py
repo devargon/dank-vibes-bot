@@ -533,7 +533,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
                 prize = prizeview.prize
                 if prize is not None:
                     await message.channel.send(f"You chose to receive bot currency for **{prize}**. Your prize will be given to you as soon as possible!")
-                    await self.client.get_channel(modchannel).send(f"{winner.mention} ({winner.id}) has won **{prize}** bot currency\n{message.jump_url}")
+                    await self.client.get_channel(payoutchan).send(f"{winner.mention} ({winner.id}) has won **{prize}** bot currency\n{message.jump_url}")
 
         elif game == 2:
             item_names = await self.client.pool_pg.fetch("SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = $1", 'inventories')
