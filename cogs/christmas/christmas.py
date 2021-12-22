@@ -15,6 +15,7 @@ from typing import Optional
 from .removingaccess import RemovingAccess
 
 modchannel = 743174564778868796 if os.getenv('state') == '0' else 871737314831908974
+payoutchan = 922919229399892059 if os.getenv('state') == '0' else 871737314831908974
 
 gen2access = 922880129112358972 if os.getenv('state') == '0' else 923199078697947136
 pvcaccess = 922879016262856744 if os.getenv('state') == '0' else 923199079733952522
