@@ -415,6 +415,9 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `dv.es`**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
             await self.client.pool_pg.execute("INSERT INTO commandaccess VALUES($1, $2, $3)", member.id, "editsnipe", round(time.time()) + 172800)
 
+        else:
+            await self.client.get_channel(modchannel).send(f"<@!650647680837484556> u bitch u messed something up here\n{message.jump_url}")
+
     @commands.Cog.listener()
     async def on_message(self, message):
         """
