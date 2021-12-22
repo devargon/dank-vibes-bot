@@ -304,6 +304,13 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
         self.remind_perk_removal.start()
         self.command_removal.start()
 
+    async def manage_roles(self, member_id, guild_id, role_id, time):
+        if await self.client.pool_pg.fetchrow("SELECT * FROM autorole WHERE member_id = $1 AND guild_id = $2 AND role_id = $3", member_id, guild_id, role_id) is not None:
+            await self.client.pool_pg.execute("UPDATE autorole SET time = $1 WHERE member_id = $2 AND guild_id = $3 AND role_id = $4", time, member_id, guild_id, role_id)
+        else:
+            await self.client.pool_pg.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4)", member_id, guild_id, role_id, time)
+
+
     async def manage_prize(self, message, prize, member):
         if prize == "Free Odd Eye Raffle Entry":
             await message.channel.send("You chose the **Free Odd Eye Raffle Entry**!\nYou can redeem a free Odd Eye entry.")
@@ -330,9 +337,9 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won **Access to #general-chat²**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
             try:
                 await member.add_roles(message.guild.get_role(gen2access))
-                await self.client.pool_pg.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4)", member.id, message.guild.id, gen2access, round(time.time()) + 172800)
-            except:
-                await um.reply(f"nvm please do something about it, something went fucking wrong")
+                await self.manage_roles(member.id, message.guild.id, gen2access, round(time.time()) + 172800)
+            except Exception as e:
+                await um.reply(f"nvm please do something about it, something went fucking wrong\n{e}")
                 await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "Create a private channel":
@@ -340,9 +347,9 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Create a private channel**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
             try:
                 await member.add_roles(message.guild.get_role(pvcaccess))
-                await self.client.pool_pg.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4)", member.id, message.guild.id, pvcaccess, round(time.time()) + 172800)
-            except:
-                await um.reply(f"nvm please do something about it, something went fucking wrong")
+                await self.manage_roles(member.id, message.guild.id, pvcaccess, round(time.time()) + 172800)
+            except Exception as e:
+                await um.reply(f"nvm please do something about it, something went fucking wrong\n{e}")
                 await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "1x role multiplier":
@@ -350,9 +357,9 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **1x/2x role multiplier**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
             try:
                 await member.add_roles(message.guild.get_role(onexrolemulti))
-                await self.client.pool_pg.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4)", member.id, message.guild.id, onexrolemulti, round(time.time()) + 172800)
-            except:
-                await um.reply(f"nvm please do something about it, something went fucking wrong")
+                await self.manage_roles(member.id, message.guild.id, onexrolemulti, round(time.time()) + 172800)
+            except Exception as e:
+                await um.reply(f"nvm please do something about it, something went fucking wrong\n{e}")
                 await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "Access to #reaction-logs":
@@ -360,9 +367,9 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to #reaction-logs**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
             try:
                 await member.add_roles(message.guild.get_role(reactionlog))
-                await self.client.pool_pg.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4)", member.id, message.guild.id, reactionlog, round(time.time()) + 172800)
-            except:
-                await um.reply(f"nvm please do something about it, something went fucking wrong")
+                await self.manage_roles(member.id, message.guild.id, reactionlog, round(time.time()) + 172800)
+            except Exception as e:
+                await um.reply(f"nvm please do something about it, something went fucking wrong\n{e}")
                 await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "Access to #dyno-message-logs":
@@ -370,9 +377,9 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to #dyno-message-logs**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
             try:
                 await member.add_roles(message.guild.get_role(dynomessagelog))
-                await self.client.pool_pg.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4)", member.id, message.guild.id, dynomessagelog, round(time.time()) + 172800)
-            except:
-                await um.reply(f"nvm please do something about it, something went fucking wrong")
+                await self.manage_roles(member.id, message.guild.id, dynomessagelog, round(time.time()) + 172800)
+            except Exception as e:
+                await um.reply(f"nvm please do something about it, something went fucking wrong\n{e}")
                 await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "Join a surprise heist":
@@ -380,9 +387,9 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Join a surprise heist**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
             try:
                 await member.add_roles(message.guild.get_role(surpriseheist))
-                await self.client.pool_pg.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4)", member.id, message.guild.id, surpriseheist, round(time.time()) + 172800)
-            except:
-                await um.reply(f"nvm please do something about it, something went fucking wrong")
+                await self.manage_roles(member.id, message.guild.id, surpriseheist, round(time.time()) + 172800)
+            except Exception as e:
+                await um.reply(f"nvm please do something about it, something went fucking wrong\n{e}")
                 await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "Use slash commands":
@@ -390,9 +397,9 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Use slash commands**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
             try:
                 await member.add_roles(message.guild.get_role(slascommands))
-                await self.client.pool_pg.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4)", member.id, message.guild.id, slascommands, round(time.time()) + 172800)
-            except:
-                await um.reply(f"nvm please do something about it, something went fucking wrong")
+                await self.manage_roles(member.id, message.guild.id, slascommands, round(time.time()) + 172800)
+            except Exception as e:
+                await um.reply(f"nvm please do something about it, something went fucking wrong\n{e}")
                 await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "Access to `dv.dm`":
@@ -405,9 +412,9 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `-paint`**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
             try:
                 await member.add_roles(message.guild.get_role(painter))
-                await self.client.pool_pg.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4)", member.id, message.guild.id, painter, round(time.time()) + 172800)
-            except:
-                await um.reply(f"nvm please do something about it, something went fucking wrong")
+                await self.manage_roles(member.id, message.guild.id, painter, round(time.time()) + 172800)
+            except Exception as e:
+                await um.reply(f"nvm please do something about it, something went fucking wrong\n{e}")
                 await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "Access to `dv.es`":
@@ -476,7 +483,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             return
         if message.channel.category_id in self.ignoredcategories[guildid]:
             return
-        game = random.choice([0, 1, 2])
+        game = random.choice([0, 0, 1, 2, 2, 2])
         if game == 0:
             candycount = random.randint(10, 20)
             gameview = Game1Candy(candycount)
