@@ -16,12 +16,23 @@ from .removingaccess import RemovingAccess
 
 modchannel = 743174564778868796 if os.getenv('state') == '0' else 871737314831908974
 
-something = ["Custom Role", "Free Odd Eye Raffle Entry", "+1 Amari Level", "+2 Amari Level", "+3 Amari Level",
-             "Access to reaction snipe", "Access to #general-spam (25x/50x multi)", "Create a private channel",
-             "1x/2x role multiplier", "Access to #reaction-logs", "Access to #dyno-message-logs",
-             "Join a surprise heist", "Use slash commands", "Access to `dv.dm`", "Access to `-paint`",
-             "Use Color roles", "Access to `dv.es`"]
-weights = [1, 2, 2, 2, 1, 3, 2, 2, 2, 3, 3, 3, 2, 3, 3, 3, 3, ]
+gen2access = 922880129112358972 if os.getenv('state') == '0' else 923199078697947136
+pvcaccess = 922879016262856744 if os.getenv('state') == '0' else 923199079733952522
+onexrolemulti = 922878848448745482 if os.getenv('state') == '0' else 923199080564396072
+reactionlog = 922879055169200128 if os.getenv('state') == '0' else 923199081495547954
+dynomessagelog = 922879304415727646 if os.getenv('state') == '0' else 923199082346987530
+surpriseheist = 922878813195608066 if os.getenv('state') == '0' else 923199083156496454
+slascommands = 922878891494879233 if os.getenv('state') == '0' else 923199084012130344
+painter = 922878709189476423 if os.getenv('state') == '0' else 923199084582547477
+
+something = ["Free Odd Eye Raffle Entry", "+1 Amari Level", "+2 Amari Level", "+3 Amari Level",
+             "Access to reaction snipe", "Access to #general-chat²", "Create a private channel",
+             "1x role multiplier", "Access to #reaction-logs", "Access to #dyno-message-logs",
+             "Join a surprise heist", "Use slash commands", "Access to `dv.dm`", "Access to `-paint`", "Access to `dv.es`"]
+weights = [1, 2, 2, 1,
+           3, 2, 1,
+           2, 3, 3,
+           3, 2, 3, 3, 3]
 
 
 def format_channel(list_of_channels, split: Optional[bool] = False):
@@ -293,14 +304,9 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
         self.command_removal.start()
 
     async def manage_prize(self, message, prize, member):
-        if prize == "Custom Role":
-            await message.channel.send("You chose the **Custom Role**!\nYou will be able to keep this Custom Role for 2 days. Please wait until an admin DMs you with more information.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a custom role for 2 days\n{message.jump_url}")
-            await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, "Custom Role Perk", round(time.time()) + 172800)
-
-        elif prize == "Free Odd Eye Raffle Entry":
+        if prize == "Free Odd Eye Raffle Entry":
             await message.channel.send("You chose the **Free Odd Eye Raffle Entry**!\nYou can redeem a free Odd Eye entry.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) can get a free odd eye raffle entry.\n{message.jump_url}")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) can **get a free odd eye raffle entry**.\n{message.jump_url}")
 
         elif prize == "+1 Amari Level":
             await message.channel.send("You chose the **+1 Amari Level**!\nYour extra level will be added to you as soon as possible.")
@@ -318,59 +324,94 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             await message.channel.send("You chose the **Access to reaction snipe**!\nYou can start using `dv.rs` until your access is automatically removed in 2 days.")
             await self.client.pool_pg.execute("INSERT INTO commandaccess(member_id, command, until) VALUES($1, $2, $3)", member.id, "reactionsnipe", round(time.time()) + 172800)
 
-        elif prize == "Access to #general-spam (25x/50x multi)":
-            await message.channel.send("You chose the **Access to #general-spam (25x/50x multi)**!\nYour access to the channel will be given as soon as possible.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won **Access to #general-spam\n{message.jump_url}")
-            await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
+        elif prize == "Access to #general-chat²":
+            um = await message.channel.send("You chose the **Access to #general-chat²**!\nYou should now have access to <#799502681068404737> for 2 days!")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won **Access to #general-chat²**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
+            try:
+                await member.add_roles(message.guild.get_role(gen2access))
+                await self.client.pool_pg.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4)", member.id, message.guild.id, gen2access, round(time.time()) + 172800)
+            except:
+                await um.reply(f"nvm please do something about it, something went fucking wrong")
+                await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "Create a private channel":
-            await message.channel.send("You chose the **Create a private channel**!\nYou will be given access to create a private channel in <#763458133116059680> as soon as possible.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Create a private channel**\n{message.jump_url}")
-            await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
+            um = await message.channel.send("You chose the **Create a private channel**!\nYou should now have access to create a private channel in <#763458133116059680> for two days.")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Create a private channel**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
+            try:
+                await member.add_roles(message.guild.get_role(pvcaccess))
+                await self.client.pool_pg.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4)", member.id, message.guild.id, pvcaccess, round(time.time()) + 172800)
+            except:
+                await um.reply(f"nvm please do something about it, something went fucking wrong")
+                await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "1x/2x role multiplier":
-            await message.channel.send("You chose the **1x/2x role multiplier**!\nMessages you sent will have an additional multiplier in AmariBot for 2 days. This perk will be given to you as soon as possible.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **1x/2x role multiplier**\n{message.jump_url}")
-            await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
+            um = await message.channel.send("You chose the **1x/2x role multiplier**!\nMessages you sent will now have an additional multiplier in AmariBot for 2 days.")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **1x/2x role multiplier**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
+            try:
+                await member.add_roles(message.guild.get_role(onexrolemulti))
+                await self.client.pool_pg.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4)", member.id, message.guild.id, onexrolemulti, round(time.time()) + 172800)
+            except:
+                await um.reply(f"nvm please do something about it, something went fucking wrong")
+                await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "Access to #reaction-logs":
-            await message.channel.send("You chose the **Access to #reaction-logs**!\nYou will be given access to <#847710145001029672> as soon as possible.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to #reaction-logs**\n{message.jump_url}")
-            await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
+            um = await message.channel.send("You chose the **Access to #reaction-logs**!\nYou should now have access to <#847710145001029672> for 2 days!")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to #reaction-logs**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
+            try:
+                await member.add_roles(message.guild.get_role(reactionlog))
+                await self.client.pool_pg.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4)", member.id, message.guild.id, reactionlog, round(time.time()) + 172800)
+            except:
+                await um.reply(f"nvm please do something about it, something went fucking wrong")
+                await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "Access to #dyno-message-logs":
-            await message.channel.send("You chose the **Access to #dyno-message-logs**!\nYou will be given access to <#880990535282724926> as soon as possible.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to #dyno-message-logs**\n{message.jump_url}")
-            await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
+            um = await message.channel.send("You chose the **Access to #dyno-message-logs**!\nYou should now have access to <#880990535282724926> for two days!")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to #dyno-message-logs**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
+            try:
+                await member.add_roles(message.guild.get_role(dynomessagelog))
+                await self.client.pool_pg.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4)", member.id, message.guild.id, dynomessagelog, round(time.time()) + 172800)
+            except:
+                await um.reply(f"nvm please do something about it, something went fucking wrong")
+                await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "Join a surprise heist":
-            await message.channel.send("You chose the **Join a surprise heist**!\nFurther details will be given on how you'll be able to access the surprise heists.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Join a surprise heist**\n{message.jump_url}")
-            await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
+            um = await message.channel.send("You chose the **Join a surprise heist**!\nFurther details will be given on how you'll be able to access the surprise heists, when they take place within the next 2 days.")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Join a surprise heist**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
+            try:
+                await member.add_roles(message.guild.get_role(surpriseheist))
+                await self.client.pool_pg.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4)", member.id, message.guild.id, surpriseheist, round(time.time()) + 172800)
+            except:
+                await um.reply(f"nvm please do something about it, something went fucking wrong")
+                await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "Use slash commands":
-            await message.channel.send("You chose the **Use slash commands**!You will be able to use bots' Slash Commands for 2 days. This access will be given to you as soon as possible.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Use slash commands**\n{message.jump_url}")
-            await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
+            um = await message.channel.send("You chose the **Use slash commands**!\nYou will be able to use bots' various Slash Commands for 2 days.")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Use slash commands**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
+            try:
+                await member.add_roles(message.guild.get_role(slascommands))
+                await self.client.pool_pg.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4)", member.id, message.guild.id, slascommands, round(time.time()) + 172800)
+            except:
+                await um.reply(f"nvm please do something about it, something went fucking wrong")
+                await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "Access to `dv.dm`":
             await message.channel.send("You chose the **Access to `dv.dm`**!\nActing like a messenger, Dank Vibes Bot anonymously will DM your target on your behalf. You can do so for two days!")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `dv.dm`**\n*Sent for tracking purposes*\n{message.jump_url}")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `dv.dm`**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
             await self.client.pool_pg.execute("INSERT INTO commandaccess VALUES($1, $2, $3)", member.id, "dm", round(time.time()) + 172800)
 
         elif prize == "Access to `-paint`":
-            await message.channel.send("You chose the **Access to `-paint`**!\nYou will be able to make other peoples' color roles change for a short period of time! This access will be given to you as soon as possible.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `-paint`**\n{message.jump_url}")
-            await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
-
-        elif prize == "Use Color roles":
-            await message.channel.send("You chose the **Use Color roles**!\nYou will be able to grab exclusive color roles in <#641497978112180235>.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Use Color roles**\n{message.jump_url}")
-            await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
+            um = await message.channel.send("You chose the **Access to `-paint`**!\nYou will be able to make other peoples' color roles change for a short period of time! This access will be given to you as soon as possible.")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `-paint`**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
+            try:
+                await member.add_roles(message.guild.get_role(painter))
+                await self.client.pool_pg.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4)", member.id, message.guild.id, painter, round(time.time()) + 172800)
+            except:
+                await um.reply(f"nvm please do something about it, something went fucking wrong")
+                await self.client.pool_pg.execute("INSERT INTO perkremoval VALUES($1, $2, $3)", member.id, prize, round(time.time()) + 172800)
 
         elif prize == "Access to `dv.es`":
             await message.channel.send("You chose the **Access to `dv.es`**!\nYou will be able to see what a user's message was before they edited it for two days!")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `dv.es`**\n*Sent for tracking purposes*\n{message.jump_url}")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `dv.es`**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
             await self.client.pool_pg.execute("INSERT INTO commandaccess VALUES($1, $2, $3)", member.id, "editsnipe", round(time.time()) + 172800)
 
     @commands.Cog.listener()
@@ -482,9 +523,9 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
                     await gameview.response.reply(embed=embed)
                 except:
                     await message.channel.send(embed=embed)
-                prizes = random.choices([["<:DankMemer:898501160992911380>", "Dank Memer"], ["<:currency:898494174557515826>", "Mudae"], ["<:TT_karutaOwO:913784526268932156>", "Karuta"], ["<:OwO:898501205360271380>", "OwO"], ["<:Pokemon:898501263849816064>", "Pokemon Bots"]], k=3)
+                prizes = random.choices([["<:DankMemer:898501160992911380>", "⏣ 100,000 (Dank Memer)"], ["<:currency:898494174557515826>", "5000 kakera (Mudae)"], ["<:TT_karutaOwO:913784526268932156>", "1 Ticket (Karuta)"], ["<:OwO:898501205360271380>", "50,000 Cowoncy (OwO)"]], k=3)
                 while prizes[0] == prizes[1] or prizes[1] == prizes[2] or prizes[0] == prizes[2]:
-                    prizes = random.choices([["<:DankMemer:898501160992911380>", "Dank Memer"], ["<:currency:898494174557515826>", "Mudae"], ["<:TT_karutaOwO:913784526268932156>", "Karuta"], ["<:OwO:898501205360271380>", "OwO"], ["<:Pokemon:898501263849816064>", "Pokemon Bots"]], k=3)
+                    prizes = random.choices([["<:DankMemer:898501160992911380>", "⏣ 100,000 (Dank Memer)"], ["<:currency:898494174557515826>", "5000 kakera (Mudae)"], ["<:TT_karutaOwO:913784526268932156>", "1 Ticket (Karuta)"], ["<:OwO:898501205360271380>", "50,000 Cowoncy (OwO)"]], k=3)
                 prizeview = ChooseCurrencyPrize(winner, prizes)
                 prizeview.response = await gameview.response.reply(f"{winner.mention} You've won by hitting the Grinch with the most snowballs!\nChoose a prize below.", view=prizeview)
                 await prizeview.wait()
