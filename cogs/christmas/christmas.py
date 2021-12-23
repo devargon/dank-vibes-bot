@@ -333,20 +333,20 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
         if prize is None:
             return
         if prize == "Free Blob Raffle Entry":
-            await message.channel.send("<:status_dnd:840918521918783508> You chose the **Free Blob Raffle Entry**!\nYou can redeem a free Odd Eye entry.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) can **get a free blob raffle entry**.\n{message.jump_url}")
+            await message.channel.send("You chose the **Free Blob Raffle Entry**!\nYou can redeem a free Odd Eye entry.")
+            await self.client.get_channel(modchannel).send(f"<:status_dnd:840918521918783508> {member.mention} ({member.id}) can **get a free blob raffle entry**.\n{message.jump_url}")
 
         elif prize == "+1 Amari Level":
-            await message.channel.send("<:status_dnd:840918521918783508> You chose the **+1 Amari Level**!\nYour extra level will be added to you as soon as possible.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won **+1 Amari Level**.\n{message.jump_url}")
+            await message.channel.send("You chose the **+1 Amari Level**!\nYour extra level will be added to you as soon as possible.")
+            await self.client.get_channel(modchannel).send(f"<:status_dnd:840918521918783508> {member.mention} ({member.id}) has won **+1 Amari Level**.\n{message.jump_url}")
 
         elif prize == "+2 Amari Level":
-            await message.channel.send("<:status_dnd:840918521918783508> You chose the **+2 Amari Level**!\nYour extra level will be added to you as soon as possible.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won **+2 Amari Level**\n{message.jump_url}")
+            await message.channel.send("You chose the **+2 Amari Level**!\nYour extra level will be added to you as soon as possible.")
+            await self.client.get_channel(modchannel).send(f"<:status_dnd:840918521918783508> {member.mention} ({member.id}) has won **+2 Amari Level**\n{message.jump_url}")
 
         elif prize == "+3 Amari Level":
-            await message.channel.send("<:status_dnd:840918521918783508> You chose the **+3 Amari Level**!\nYour extra level will be added to you as soon as possible.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **+3 Amari Level**\n{message.jump_url}")
+            await message.channel.send("You chose the **+3 Amari Level**!\nYour extra level will be added to you as soon as possible.")
+            await self.client.get_channel(modchannel).send(f"<:status_dnd:840918521918783508> {member.mention} ({member.id}) has won a **+3 Amari Level**\n{message.jump_url}")
 
         elif prize == "Access to reaction snipe":
             await message.channel.send("You chose the **Access to reaction snipe**!\nYou can start using `dv.rs` until your access is automatically removed in 2 days.")
