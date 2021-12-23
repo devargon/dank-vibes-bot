@@ -312,19 +312,18 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        print('hm')
         if payload.user_id == self.client.user.id:
-            return print('reactor is bot')
+            return
         if payload.guild_id is None:
-            return print('not guild')
+            return
         if not ("check" or "tick" in payload.emoji.name):
-            return print('check or tick not in payload emoji name')
+            return
         if payload.channel_id not in [modchannel, payoutchan]:
-            return print('channel not in mod or payout')
+            return
         message = await self.client.get_channel(payload.channel_id).fetch_message(payload.message_id)
         content = message.content
         if message.author.id != self.client.user.id:
-            return print('message author is not bot')
+            return
         if "<:status_dnd:840918521918783508>" in content:
             content = content.replace("<:status_dnd:840918521918783508>", "<:status_online:840918419246415873>")
             await message.edit(content=content)
