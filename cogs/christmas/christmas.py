@@ -310,22 +310,41 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
         else:
             await self.client.pool_pg.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4)", member_id, guild_id, role_id, time)
 
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        print('hm')
+        if payload.user_id == self.client.user.id:
+            return print('reactor is bot')
+        if payload.guild_id is None:
+            return print('not guild')
+        if not ("check" or "tick" in payload.emoji.name):
+            return print('check or tick not in payload emoji name')
+        if payload.channel_id not in [modchannel, payoutchan]:
+            return print('channel not in mod or payout')
+        message = await self.client.get_channel(payload.channel_id).fetch_message(payload.message_id)
+        content = message.content
+        if message.author.id != self.client.user.id:
+            return print('message author is not bot')
+        if "<:status_dnd:840918521918783508>" in content:
+            content = content.replace("<:status_dnd:840918521918783508>", "<:status_online:840918419246415873>")
+            await message.edit(content=content)
+
 
     async def manage_prize(self, message, prize, member):
         if prize == "Free Blob Raffle Entry":
-            await message.channel.send("You chose the **Free Blob Raffle Entry**!\nYou can redeem a free Odd Eye entry.")
+            await message.channel.send("<:status_dnd:840918521918783508> You chose the **Free Blob Raffle Entry**!\nYou can redeem a free Odd Eye entry.")
             await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) can **get a free blob raffle entry**.\n{message.jump_url}")
 
         elif prize == "+1 Amari Level":
-            await message.channel.send("You chose the **+1 Amari Level**!\nYour extra level will be added to you as soon as possible.")
+            await message.channel.send("<:status_dnd:840918521918783508> You chose the **+1 Amari Level**!\nYour extra level will be added to you as soon as possible.")
             await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won **+1 Amari Level**.\n{message.jump_url}")
 
         elif prize == "+2 Amari Level":
-            await message.channel.send("You chose the **+2 Amari Level**!\nYour extra level will be added to you as soon as possible.")
+            await message.channel.send("<:status_dnd:840918521918783508> You chose the **+2 Amari Level**!\nYour extra level will be added to you as soon as possible.")
             await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won **+2 Amari Level**\n{message.jump_url}")
 
         elif prize == "+3 Amari Level":
-            await message.channel.send("You chose the **+3 Amari Level**!\nYour extra level will be added to you as soon as possible.")
+            await message.channel.send("<:status_dnd:840918521918783508> You chose the **+3 Amari Level**!\nYour extra level will be added to you as soon as possible.")
             await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **+3 Amari Level**\n{message.jump_url}")
 
         elif prize == "Access to reaction snipe":
@@ -334,7 +353,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
 
         elif prize == "Access to #general-chat²":
             um = await message.channel.send("You chose the **Access to #general-chat²**!\nYou should now have access to <#799502681068404737> for 2 days!")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won **Access to #general-chat²**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
+            await self.client.get_channel(modchannel).send(f"<:status_online:840918419246415873> {member.mention} ({member.id}) has won **Access to #general-chat²**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
             try:
                 await member.add_roles(message.guild.get_role(gen2access))
                 await self.manage_roles(member.id, message.guild.id, gen2access, round(time.time()) + 172800)
@@ -344,7 +363,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
 
         elif prize == "Create a private channel":
             um = await message.channel.send("You chose the **Create a private channel**!\nYou should now have access to create a private channel in <#763458133116059680> for two days.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Create a private channel**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
+            await self.client.get_channel(modchannel).send(f"<:status_online:840918419246415873> {member.mention} ({member.id}) has won a **Create a private channel**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
             try:
                 await member.add_roles(message.guild.get_role(pvcaccess))
                 await self.manage_roles(member.id, message.guild.id, pvcaccess, round(time.time()) + 172800)
@@ -354,7 +373,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
 
         elif prize == "1x role multiplier":
             um = await message.channel.send("You chose the **1x role multiplier**!\nMessages you sent will now have an additional 1x multiplier in AmariBot for 2 days.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **1x/2x role multiplier**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
+            await self.client.get_channel(modchannel).send(f"<:status_online:840918419246415873> {member.mention} ({member.id}) has won a **1x/2x role multiplier**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
             try:
                 await member.add_roles(message.guild.get_role(onexrolemulti))
                 await self.manage_roles(member.id, message.guild.id, onexrolemulti, round(time.time()) + 172800)
@@ -364,7 +383,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
 
         elif prize == "Access to #reaction-logs":
             um = await message.channel.send("You chose the **Access to #reaction-logs**!\nYou should now have access to <#847710145001029672> for 2 days!")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to #reaction-logs**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
+            await self.client.get_channel(modchannel).send(f"<:status_online:840918419246415873> {member.mention} ({member.id}) has won a **Access to #reaction-logs**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
             try:
                 await member.add_roles(message.guild.get_role(reactionlog))
                 await self.manage_roles(member.id, message.guild.id, reactionlog, round(time.time()) + 172800)
@@ -374,7 +393,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
 
         elif prize == "Access to #dyno-message-logs":
             um = await message.channel.send("You chose the **Access to #dyno-message-logs**!\nYou should now have access to <#880990535282724926> for two days!")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to #dyno-message-logs**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
+            await self.client.get_channel(modchannel).send(f"<:status_online:840918419246415873> {member.mention} ({member.id}) has won a **Access to #dyno-message-logs**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
             try:
                 await member.add_roles(message.guild.get_role(dynomessagelog))
                 await self.manage_roles(member.id, message.guild.id, dynomessagelog, round(time.time()) + 172800)
@@ -384,7 +403,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
 
         elif prize == "Join a surprise heist":
             um = await message.channel.send("You chose the **Join a surprise heist**!\nFurther details will be given on how you'll be able to access the surprise heists, when they take place within the next 2 days.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Join a surprise heist**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
+            await self.client.get_channel(modchannel).send(f"<:status_online:840918419246415873> {member.mention} ({member.id}) has won a **Join a surprise heist**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
             try:
                 await member.add_roles(message.guild.get_role(surpriseheist))
                 await self.manage_roles(member.id, message.guild.id, surpriseheist, round(time.time()) + 172800)
@@ -394,7 +413,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
 
         elif prize == "Use slash commands":
             um = await message.channel.send("You chose the **Use slash commands**!\nYou will be able to use bots' various Slash Commands for 2 days.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Use slash commands**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
+            await self.client.get_channel(modchannel).send(f"<:status_online:840918419246415873> {member.mention} ({member.id}) has won a **Use slash commands**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
             try:
                 await member.add_roles(message.guild.get_role(slascommands))
                 await self.manage_roles(member.id, message.guild.id, slascommands, round(time.time()) + 172800)
@@ -404,12 +423,12 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
 
         elif prize == "Access to `dv.dm`":
             await message.channel.send("You chose the **Access to `dv.dm`**!\nActing like a messenger, Dank Vibes Bot anonymously will DM your target on your behalf. You can do so for two days!")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `dv.dm`**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
+            await self.client.get_channel(modchannel).send(f"<:status_online:840918419246415873> {member.mention} ({member.id}) has won a **Access to `dv.dm`**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
             await self.client.pool_pg.execute("INSERT INTO commandaccess VALUES($1, $2, $3)", member.id, "dm", round(time.time()) + 172800)
 
         elif prize == "Access to `-paint`":
             um = await message.channel.send("You chose the **Access to `-paint`**!\nYou will be able to make other peoples' color roles change for a short period of time! This access will be given to you as soon as possible.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `-paint`**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
+            await self.client.get_channel(modchannel).send(f"<:status_online:840918419246415873> {member.mention} ({member.id}) has won a **Access to `-paint`**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
             try:
                 await member.add_roles(message.guild.get_role(painter))
                 await self.manage_roles(member.id, message.guild.id, painter, round(time.time()) + 172800)
@@ -419,7 +438,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
 
         elif prize == "Access to `dv.es`":
             await message.channel.send("You chose the **Access to `dv.es`**!\nYou will be able to see what a user's message was before they edited it for two days!")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) has won a **Access to `dv.es`**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
+            await self.client.get_channel(modchannel).send(f"<:status_online:840918419246415873> {member.mention} ({member.id}) has won a **Access to `dv.es`**\n*This message was sent for tracking purposes, there's no need to do anything*\n{message.jump_url}")
             await self.client.pool_pg.execute("INSERT INTO commandaccess VALUES($1, $2, $3)", member.id, "editsnipe", round(time.time()) + 172800)
 
         else:
@@ -473,6 +492,8 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
         context = await self.client.get_context(message)
         if context.valid is True:
             return
+        if message.channel.id == 608498967474601995:
+            rate = rate * 1.5
         denominator = 1
         while rate < 1:
             rate *= 10
@@ -483,7 +504,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             return
         if message.channel.category_id in self.ignoredcategories[guildid]:
             return
-        game = random.choice([0, 0, 1, 2, 2, 2])
+        game = random.choice([0, 0, 0, 1, 2, 2, 2, 2, 2, 2])
         if game == 0:
             candycount = random.randint(10, 20)
             gameview = Game1Candy(candycount)
@@ -543,7 +564,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
                 prize = prizeview.prize
                 if prize is not None:
                     await message.channel.send(f"You chose to receive bot currency for **{prize}**. Your prize will be given to you as soon as possible!")
-                    await self.client.get_channel(payoutchan).send(f"{winner.mention} ({winner.id}) has won **{prize}** bot currency\n{message.jump_url}")
+                    await self.client.get_channel(payoutchan).send(f"<:status_dnd:840918521918783508> {winner.mention} ({winner.id}) has won **{prize}** bot currency\n{message.jump_url}")
 
         elif game == 2:
             item_names = await self.client.pool_pg.fetch("SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = $1", 'inventories')
