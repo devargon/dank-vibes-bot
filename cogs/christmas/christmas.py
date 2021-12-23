@@ -26,7 +26,7 @@ surpriseheist = 922878813195608066 if os.getenv('state') == '0' else 92319908315
 slascommands = 922878891494879233 if os.getenv('state') == '0' else 923199084012130344
 painter = 922878709189476423 if os.getenv('state') == '0' else 923199084582547477
 
-something = ["Free Odd Eye Raffle Entry", "+1 Amari Level", "+2 Amari Level", "+3 Amari Level",
+something = ["Free Blob Raffle Entry", "+1 Amari Level", "+2 Amari Level", "+3 Amari Level",
              "Access to reaction snipe", "Access to #general-chat²", "Create a private channel",
              "1x role multiplier", "Access to #reaction-logs", "Access to #dyno-message-logs",
              "Join a surprise heist", "Use slash commands", "Access to `dv.dm`", "Access to `-paint`", "Access to `dv.es`"]
@@ -312,9 +312,9 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
 
 
     async def manage_prize(self, message, prize, member):
-        if prize == "Free Odd Eye Raffle Entry":
-            await message.channel.send("You chose the **Free Odd Eye Raffle Entry**!\nYou can redeem a free Odd Eye entry.")
-            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) can **get a free odd eye raffle entry**.\n{message.jump_url}")
+        if prize == "Free Blob Raffle Entry":
+            await message.channel.send("You chose the **Free Blob Raffle Entry**!\nYou can redeem a free Odd Eye entry.")
+            await self.client.get_channel(modchannel).send(f"{member.mention} ({member.id}) can **get a free blob raffle entry**.\n{message.jump_url}")
 
         elif prize == "+1 Amari Level":
             await message.channel.send("You chose the **+1 Amari Level**!\nYour extra level will be added to you as soon as possible.")
