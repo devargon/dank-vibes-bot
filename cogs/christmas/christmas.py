@@ -4,7 +4,6 @@ from discord.ext import commands, menus
 from utils import checks
 from utils.menus import CustomMenu
 from utils.format import human_join
-from utils.time import short_humanize_timedelta
 
 import os
 import time
