@@ -60,15 +60,16 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
         Sends a message showing the 5 self roles which can be gotten via buttons.
         To highlight a role in green, use `--roles the **full names** of the roles` separated in commas. They are not case sensitive.
         """
-        roleids = [895815546292035625, 895815588289581096, 895815773208051763, 895815799812521994, 895815832465190933] if os.getenv('state') == '1' else [859493857061503008, 758174135276142593, 758174643814793276, 680131933778346011, 713477937130766396]#[895815546292035625, 895815588289581096, 895815773208051763, 895815799812521994, 895815832465190933]
+        roleids = [895815546292035625, 895815588289581096, 895815773208051763, 895815799812521994, 895815832465190933, 923885874662502451] if os.getenv('state') == '1' else [859493857061503008, 758174135276142593, 758174643814793276, 680131933778346011, 713477937130766396, 846254068434206740]#[895815546292035625, 895815588289581096, 895815773208051763, 895815799812521994, 895815832465190933]
         role1 = ctx.guild.get_role(roleids[0])
         role2 = ctx.guild.get_role(roleids[1])
         role3 = ctx.guild.get_role(roleids[2])
         role4 = ctx.guild.get_role(roleids[3])
         role5 = ctx.guild.get_role(roleids[4])
-        if role1 == None or role2 == None or role3 == None or role4 == None or role5 == None:
+        role6 = ctx.guild.get_role(roleids[5])
+        if role1 == None or role2 == None or role3 == None or role4 == None or role5 == None or role6 == None:
             return await ctx.send("1 or more roles in this command is/are declared as invalid, hence the command cannot proceed.")
-        roles = [role1, role2, role3, role4, role5]
+        roles = [role1, role2, role3, role4, role5, role6]
         hlroles = None
         if channel is None:
             channel = ctx.channel
@@ -83,7 +84,7 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
                 self.result = None
                 self.client = client
                 super().__init__(timeout=timeout)
-                emojis = ["<a:dv_wStarOwO:837787067303198750>", "<a:dv_wHeartsOwO:837787079320666138>", "<a:dv_wSparklesOwO:837782054782632006>", "<a:dv_wpinkHeartOwO:837781949337960467>", "<:dv_wFlowerOwO:837700860511256627>"]
+                emojis = ["<a:dv_wStarOwO:837787067303198750>", "<a:dv_wHeartsOwO:837787079320666138>", "<a:dv_wSparklesOwO:837782054782632006>", "<a:dv_wpinkHeartOwO:837781949337960467>", "<:dv_wFlowerOwO:837700860511256627>", "<:dv_wRainbowOwO:837700739836674078>"]
                 rolenames = []
                 for role in roles:
                     rolenames.append(role.name)
