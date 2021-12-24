@@ -969,7 +969,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
             return await ctx.send("No drops are currently set.")
         embed = discord.Embed(title="Dank Memer Drops", color=discord.Color.blue())
         for drop in drops:
-            embed.add_field(name=drop.get("item"), value=f"Cost: {drop.get('price')}\nDrop Time: <t:{drop.get('time')}>")
+            embed.add_field(name=drop.get("name"), value=f"Cost: {drop.get('price')}\nDrop Time: <t:{drop.get('time')}>")
         await ctx.send(embed=embed)
 
     @checks.has_permissions_or_role(manage_roles=True)
