@@ -26,11 +26,11 @@ surpriseheist = 922878813195608066 if os.getenv('state') == '0' else 92319908315
 slascommands = 922878891494879233 if os.getenv('state') == '0' else 923199084012130344
 painter = 922878709189476423 if os.getenv('state') == '0' else 923199084582547477
 
-something = ["Free Blob Raffle Entry", "+1 Amari Level", "+2 Amari Level", "+3 Amari Level",
+something = ["+1 Amari Level", "+2 Amari Level", "+3 Amari Level",
              "Access to reaction snipe", "Access to #general-chat²", "Create a private channel",
              "1x role multiplier", "Access to #reaction-logs", "Access to #dyno-message-logs",
              "Join a surprise heist", "Use slash commands", "Access to `dv.dm`", "Access to `-paint`", "Access to `dv.es`"]
-weights = [1, 2, 2, 1,
+weights = [2, 2, 1,
            3, 2, 1,
            2, 3, 3,
            3, 2, 3, 3, 3]
@@ -505,7 +505,7 @@ class Christmas(RemovingAccess, commands.Cog, name="christmas"):
             return
         if message.channel.category_id in self.ignoredcategories[guildid]:
             return
-        game = random.choice([0, 0, 0, 1, 2, 2, 2, 2, 2, 2])
+        game = random.choice([0, 0, 0, 2, 2, 2, 2, 2, 2, 2])
         if game == 0:
             candycount = random.randint(10, 20)
             gameview = Game1Candy(candycount)
