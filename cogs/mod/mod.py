@@ -73,7 +73,7 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
                     await self.client.wait_for('message', check=lambda m: m.channel.id == channel.id and m.author.id == member_who_opened.id, timeout=60)
                 except:
                     if isinstance(self.client.get_channel(channel.id), discord.TextChannel):
-                        await channel.send(f"Hey {member_who_opened}, ask your question here and a Moderator will be here to assist you as soon as possible! {member_who_opened.mention}")
+                        await channel.send(f"Hey {member_who_opened.name}, ask your question here and a Moderator will be here to assist you as soon as possible! {member_who_opened.mention}")
                 else:
                     print('member responded to ticket')
 
