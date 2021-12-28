@@ -55,7 +55,8 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
 
     @commands.Cog.listener()
     async def on_guild_channel_create(self, channel):
-        CatId = 608506105835814933 if channel.guild.id == 607908726590989898 else 925352977890410557
+        print('channel was created')
+        CatId = 608506105835814933 if channel.guild.id == 595457764935991326 else 925352977890410557
         if channel.category.id == CatId:
             try:
                 ticketmessage = await self.client.wait_for('message', check=lambda m: m.channel.id == channel.id and len(m.mentions) > 0, timeout=60)
