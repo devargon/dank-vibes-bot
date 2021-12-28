@@ -62,7 +62,10 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
             except asyncio.TimeoutError:
                 if isinstance(self.client.get_channel(channel.id), discord.TextChannel):
                     await channel.send("I did not detect ticket tool's message")
-                return
+                    return
+                else:
+                    return print('no ticket tool message/no message mentions')
+
             else:
                 member_who_opened = ticketmessage.mentions[0]
                 try:
@@ -70,6 +73,8 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
                 except:
                     if isinstance(self.client.get_channel(channel.id), discord.TextChannel):
                         await channel.send(f"Hey {member_who_opened}, ask your question here and a Moderator will be here to assist you as soon as possible! {member_who_opened.mention}")
+                else:
+                    print('member responded to ticket')
 
         else:
             return print('cHANNEL CATEGORY NOT MATch')
