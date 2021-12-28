@@ -55,30 +55,21 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
 
     @commands.Cog.listener()
     async def on_guild_channel_create(self, channel):
-        print('channel was created')
         CatId = 608506105835814933 if channel.guild.id == 595457764935991326 else 925352977890410557
         if channel.category.id == CatId:
             try:
                 ticketmessage = await self.client.wait_for('message', check=lambda m: m.channel.id == channel.id and len(m.mentions) > 0, timeout=60)
             except asyncio.TimeoutError:
                 if isinstance(self.client.get_channel(channel.id), discord.TextChannel):
-                    await channel.send("I did not detect ticket tool's message")
                     return
-                else:
-                    return print('no ticket tool message/no message mentions')
 
             else:
                 member_who_opened = ticketmessage.mentions[0]
                 try:
-                    await self.client.wait_for('message', check=lambda m: m.channel.id == channel.id and m.author.id == member_who_opened.id, timeout=60)
+                    await self.client.wait_for('message', check=lambda m: m.channel.id == channel.id and m.author.id == member_who_opened.id, timeout=300)
                 except:
                     if isinstance(self.client.get_channel(channel.id), discord.TextChannel):
                         await channel.send(f"Hey {member_who_opened.name}, ask your question here and a Moderator will be here to assist you as soon as possible! {member_who_opened.mention}")
-                else:
-                    print('member responded to ticket')
-
-        else:
-            return print('cHANNEL CATEGORY NOT MATch')
 
 
 
