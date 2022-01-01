@@ -200,11 +200,11 @@ class VoteTracker(commands.Cog, name='votetracker'):
             await self.client.pool_pg.execute("INSERT INTO roleremove VALUES($1, $2, $3)", userid, timetoremind, timetoremove)
         else:
             await self.client.pool_pg.execute("UPDATE roleremove SET rmtime = $1, roletime = $2 WHERE member_id = $3", timetoremind, timetoremove, userid)
-        existing_remove = await self.client.pool_pg.fetchrow("SELECT * FROM timedrole WHERE member_id = $1 and role_id = $2", userid, vdanksterid)
+        existing_remove = await self.client.pool_pg.fetchrow("SELECT * FROM autorole WHERE member_id = $1 and role_id = $2", userid, vdanksterid)
         if existing_remove is None:
-            await self.client.pool_pg.execute("INSERT INTO timedrole VALUES($1, $2, $3, $4)", userid, guildid, vdanksterid, timetoremove)
+            await self.client.pool_pg.execute("INSERT INTO autorole VALUES($1, $2, $3, $4)", userid, guildid, vdanksterid, timetoremove)
         else:
-            await self.client.pool_pg.execute("UPDATE timedrole SET time = $1 WHERE member_id = $2 and role_id = $3", timetoremove, userid, vdanksterid)
+            await self.client.pool_pg.execute("UPDATE autorole SET time = $1 WHERE member_id = $2 and role_id = $3", timetoremove, userid, vdanksterid)
         milestones = await self.client.pool_pg.fetch("SELECT * FROM milestones")
         if len(milestones) != 0:
             for milestone in milestones:
