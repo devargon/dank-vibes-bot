@@ -127,7 +127,7 @@ class dvvt(commands.AutoShardedBot):
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS dmrequests(id serial, member_id bigint, target_id bigint, dmcontent text, messageid bigint)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS dmrequestslog(id bigint, member_id bigint, target_id bigint, approver_id bigint, dmcontent text, status integer)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS dumbfightlog(invoker_id bigint, target_id bigint, did_win integer)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS freezenick(id serial, user_id bigint, guild_id bigint, nickname text, old_nickname text, time bigint, reason text)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS freezenick(id serial, user_id bigint, guild_id bigint, nickname text, old_nickname text, time bigint, reason text, responsible_moderator bigint)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS grinderdata(user_id bigint PRIMARY KEY, today bigint, past_week bigint, last_week bigint, past_month bigint, all_time bigint, last_dono_time bigint, last_dono_msg text)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS giveaways(guild_id bigint, channel_id bigint, message_id bigint, time bigint, name text, host_id bigint, winners integer)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS giveawayentrants(message_id bigint, user_id bigint)")
@@ -166,7 +166,7 @@ class dvvt(commands.AutoShardedBot):
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS viprolemessages(guild_id bigint, colors bigint, vipcolors bigint, boostgaw bigint, vipheistping bigint)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS votecount(member_id bigint PRIMARY KEY, count integer)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS commandlog(guild_id bigint, channel_id bigint, user_id bigint, command text, message text, time bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS timedunlock(guild_id bigint, channel_id bigint, time bigint)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS timedunlock(guild_id bigint, channel_id bigint, time bigint, responsible_moderator bigint)")
                 await self.pool_pg.execute("CREATE SCHEMA IF NOT EXISTS donations")
         print("Bot is ready")
 

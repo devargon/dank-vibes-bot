@@ -272,7 +272,7 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
             return await ctx.send(f"I encountered an error while trying to freeze {member}'s nickname. It could be due to role hierachy or missing permissions.")
         else:
             timetounfreeze = 9223372036854775807
-            await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason) VALUES($1, $2, $3, $4, $5, $6)", member.id, ctx.guild.id, nickname, old_nick, timetounfreeze, f"Freezenick command invoked by {ctx.author}")
+            await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", member.id, ctx.guild.id, nickname, old_nick, timetounfreeze, f"Invoked via freezenick command", ctx.author.id)
             return await ctx.send(f"{member.mention}'s nickname is now frozen to `{nickname}`.")
 
     @checks.has_permissions_or_role(administrator=True)
@@ -287,9 +287,12 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
         for entry in result:
             member = self.client.get_user(entry.get('user_id'))
             name = f"{entry.get('id')}. {member} ({member.id})" if member is not None else f"{entry.get('id')}. {entry.get('user_id')}"
-            details = f"Frozen nickname: {entry.get('nickname')}\n"
-            details += f"Reason: {entry.get('reason')}\n"
-            details += f"Unfrozen: <t:{entry.get('time')}:R>\n" if entry.get('time') != 9223372036854775807 else 'Until: Eternity\n'
+            details = f"**Frozen nickname:** {entry.get('nickname')}\n"
+            details += f"**Reason:** {entry.get('reason')}\n"
+            details += f"**Unfrozen:** <t:{entry.get('time')}:R>\n" if entry.get('time') != 9223372036854775807 else 'Until: Eternity\n'
+            responsible_moderator = entry.get('responsible_moderator')
+            responsible_moderator = self.client.get_user(responsible_moderator) if responsible_moderator is not None else responsible_moderator
+            details += f"**Responsible Moderator:** {responsible_moderator} ({responsible_moderator.mention})" if responsible_moderator is not None else 'Responsible Moderator: None'
             frozennicknames.append((name, details))
         if len(frozennicknames) <= 10:
             embed = discord.Embed(title=title, color=self.client.embed_color, timestamp=discord.utils.utcnow())
