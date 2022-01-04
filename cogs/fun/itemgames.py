@@ -209,7 +209,7 @@ class ItemGames(commands.Cog):
         await ctx.send(embed=embed)
 
     @checks.has_permissions_or_role(administrator=True)
-    @inventory.command(name="give", aliases=["g", 'share'])
+    @commands.command(name="give", aliases=["g", 'share', 'trade'])
     async def item_give(self, ctx, member: discord.Member = None, item: str = None, num: int = None):
         """
         Share some of your items with someone! During events, this command may not work for certain items.
@@ -221,7 +221,6 @@ class ItemGames(commands.Cog):
         itemname = await self.get_item_name(item)
         if itemname is None:
             return await ctx.send(f"There is no item names `{item}`.")
-        return await ctx.send(f"You are not allowed to share **{itemname}**s; Sharing is disabled for the duration of Dank Vibes' Winter Celeb.")
         if member == ctx.author:
             details = await self.client.pool_pg.fetchrow("SELECT image FROM iteminfo WHERE name=$1", itemname)
             member_avatar = await member.display_avatar.with_format('png').read()
