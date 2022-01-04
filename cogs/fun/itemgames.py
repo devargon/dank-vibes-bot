@@ -209,7 +209,7 @@ class ItemGames(commands.Cog):
         await ctx.send(embed=embed)
 
     @checks.has_permissions_or_role(administrator=True)
-    @commands.command(name="give", aliases=["g", 'share', 'trade'])
+    @commands.command(name="give", aliases=['share', 'trade'])
     async def item_give(self, ctx, member: discord.Member = None, item: str = None, num: int = None):
         """
         Share some of your items with someone! During events, this command may not work for certain items.
