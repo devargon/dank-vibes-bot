@@ -3,6 +3,7 @@ from discord.ext import commands
 from .freezenick import Freezenick
 from .verification import Verification
 from .timedrole import timedrole
+from .timedunlock import TimedUnlock
 from abc import ABC
 import os
 from utils import checks
@@ -36,7 +37,7 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
     """
     pass
 
-class AutoMod(timedrole, Verification, Freezenick, commands.Cog):
+class AutoMod(timedrole, TimedUnlock, Verification, Freezenick, commands.Cog):
     """
     This file is just a placeholder for the various automod functions/modules.
     """
@@ -45,6 +46,7 @@ class AutoMod(timedrole, Verification, Freezenick, commands.Cog):
         self.freezenick.start()
         self.check_verification.start()
         self.timedrole.start()
+        self.unlock.start()
         self.verifyview = False
 
     @commands.Cog.listener()
@@ -57,6 +59,7 @@ class AutoMod(timedrole, Verification, Freezenick, commands.Cog):
         self.freezenick.stop()
         self.check_verification.stop()
         self.timedrole.stop()
+        self.unlock.start()
 
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="verify")
