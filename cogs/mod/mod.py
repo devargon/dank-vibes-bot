@@ -1,21 +1,19 @@
-import time
 import discord
-import datetime
-import asyncio
 from discord.ext import commands, menus
-from utils import checks
-from utils.format import text_to_file, stringtime_duration
+
 from .lockdown import lockdown
 from .censor import censor
-from utils.buttons import *
 from .browser_screenshot import BrowserScreenshot
-from selenium import webdriver
-from collections import Counter
+from .disboard import DisboardAutoLock
+
+from utils import checks
+from utils.buttons import *
+from utils.format import text_to_file, stringtime_duration
+
 import os
-from utils.time import humanize_timedelta
-import time
-from utils.converters import BetterRoles
+from selenium import webdriver
 from fuzzywuzzy import process
+from collections import Counter
 from utils.menus import CustomMenu
 
 class FrozenNicknames(menus.ListPageSource):
@@ -30,7 +28,7 @@ class FrozenNicknames(menus.ListPageSource):
         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return embed
 
-class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
+class Mod(DisboardAutoLock, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
     """
     Mod commands
     """
