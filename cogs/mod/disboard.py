@@ -14,14 +14,14 @@ class DisboardAutoLock(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         if not message.author.bot:
-            return print('message author is not bot')
+            return
         if not message.author.id == disboard_bot:
-            return print('message author is not disboard')
+            return
         if not len(message.embeds) > 0:
-            return print('message has no embeds')
+            return
         embed = message.embeds[0]
         if not embed.description:
-            return print('embed has no description')
+            return
         dischannel = self.client.get_channel(disboard_channel)
         overwrite = dischannel.overwrites_for(message.guild.default_role)
         if overwrite.send_messages != False:
