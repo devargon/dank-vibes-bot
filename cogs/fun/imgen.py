@@ -1,3 +1,5 @@
+import random
+
 import discord
 from discord.ext import commands
 from utils import checks
@@ -224,3 +226,13 @@ class imgen(commands.Cog):
         image = await self.alex_api.what(avatar)
         image_bytes = await image.read()
         await ctx.send(file=discord.File(fp=image_bytes, filename="WHAT.png"))
+
+    @commands.command(name="spam")
+    async def spam(self, ctx):
+        imageint = random.randint(1, 74)
+        allspams = os.listdir(f'assets/spams')
+        image = None
+        for file in allspams:
+            if str(imageint) in file:
+                image = file
+        await ctx.send(file=discord.File(f"assets/spams/{image}"))
