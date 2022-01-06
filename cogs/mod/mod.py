@@ -328,7 +328,10 @@ class Mod(DisboardAutoLock, censor, BrowserScreenshot, lockdown, commands.Cog, n
             channel = ctx.channel
         if duration > 21600:
             return await ctx.send("A channel's slowmode cannot be longer than 6 hours.")
-        await channel.edit(slowmode_delay=duration)
+        try:
+            await channel.edit(slowmode_delay=duration)
+        except discord.Forbidden:
+            return await ctx.send(f"I don't have permission to {channel.mention}'s slowmode.")
         if duration > 0:
             await ctx.send(f"{channel.mention}'s slowmode has been set to **{humanize_timedelta(seconds=duration)}.**")
         else:
