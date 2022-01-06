@@ -229,6 +229,9 @@ class imgen(commands.Cog):
 
     @commands.command(name="spam")
     async def spam(self, ctx):
+        """
+        Bless yourself with these sacred images of spam. 🙏
+        """
         imageint = random.randint(1, 74)
         allspams = os.listdir(f'assets/spams')
         image = None
