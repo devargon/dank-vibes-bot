@@ -114,6 +114,7 @@ class nicknames(commands.Cog):
             self.persistent_views_added = True
 
     @checks.is_not_blacklisted()
+    @commands.cooldown(60, 1, commands.BucketType.user)
     @commands.command(name="nick", aliases = ["requestnick", "setnick"])
     @checks.not_in_gen()
     async def setnick(self, ctx, *, nickname = None):
