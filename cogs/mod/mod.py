@@ -9,7 +9,9 @@ from .disboard import DisboardAutoLock
 from utils import checks
 from utils.buttons import *
 from utils.format import text_to_file, stringtime_duration, ordinal
+from utils.time import humanize_timedelta
 from utils.menus import CustomMenu
+from utils.converters import BetterTimeConverter
 
 import os
 from selenium import webdriver
@@ -316,6 +318,24 @@ class Mod(DisboardAutoLock, censor, BrowserScreenshot, lockdown, commands.Cog, n
                 if ratio >= 75:
                     role_to_return = discord.utils.get(ctx.guild.roles, id=roles_and_aliases[name])
                     return role_to_return
+
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.command(name='slowmode', aliases=['sm'])
+    async def slowmode(self, ctx, channel: Optional[discord.TextChannel] = None, duration: BetterTimeConverter = None):
+        if duration is None:
+            duration = 0
+        if channel is None:
+            channel = ctx.channel
+        if duration > 21600:
+            return await ctx.send("A channel's slowmode cannot be longer than 6 hours.")
+        await channel.edit(slowmode_delay=duration)
+        if duration > 0:
+            await ctx.send(f"{channel.mention}'s slowmode has been set to **{humanize_timedelta(seconds=duration)}.**")
+        else:
+            await ctx.send(f"{channel.mention}'s slowmode has been removed.")
+
+
+
 
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="roleinfo", aliases=['ri'])
