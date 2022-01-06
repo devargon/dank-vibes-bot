@@ -394,5 +394,53 @@ class giveaways(commands.Cog):
                 pages = CustomMenu(source=GiveawayList(giveaway_list, embed.title), clear_reactions_after=True, timeout=60)
                 return await pages.start(ctx)
 
+    @checks.has_permissions_or_role(administrator=True)
+    @giveaway.command(name='gw')
+    async def giveaway_gw(self, ctx, *, text = None):
+        if os.getenv('state') == '0':
+            if ctx.channel.id not in [701771740912549938, 626704430468825089, 630587061665267713, 616007729718231161]:
+                return await ctx.send("You cannot use this command in this channel! �")
+        if text is None:
+            text = "React to the giveaway above ♡"
+        emojis = ["<a:dv_pikaWaveOwO:837712214935732265>"]
+        emoji = random.choice(emojis)
+        await ctx.send(f"{emoji} **<@&758175760909074432>** {emoji}\n{text}", allowed_mentions=discord.AllowedMentions(everyone=False, users=False, roles=True))
+
+    @checks.has_permissions_or_role(administrator=True)
+    @giveaway.command(name='elite')
+    async def giveaway_elite(self, ctx, *, text=None):
+        if os.getenv('state') == '0':
+            if ctx.channel.id not in [741254464303923220, 626704430468825089, 630587061665267713, 616007729718231161]:
+                return await ctx.send("You cannot use this command in this channel! �")
+        if text is None:
+            text = "React to the Elite giveaway above ♡"
+        emojis = ["<a:dv_pikaWaveOwO:837712214935732265>"]
+        emoji = random.choice(emojis)
+        await ctx.send(f"{emoji} **<@&758174135276142593>** {emoji}\n{text}", allowed_mentions=discord.AllowedMentions(everyone=False, users=False, roles=True))
+
+    @checks.has_permissions_or_role(administrator=True)
+    @giveaway.command(name='booster')
+    async def giveaway_booster(self, ctx, *, text = None):
+        if os.getenv('state') == '0':
+            if ctx.channel.id not in [701771740912549938, 626704430468825089, 741254464303923220]:
+                return await ctx.send("You cannot use this command in this channel! �")
+        if text is None:
+            text = "React to the Booster giveaway above ♡"
+        emojis = ["<a:dv_pikaWaveOwO:837712214935732265>"]
+        emoji = random.choice(emojis)
+        await ctx.send(f"{emoji} **<@&758175760909074432>** {emoji}\n{text}", allowed_mentions=discord.AllowedMentions(everyone=False, users=False, roles=True))
+
+    @checks.has_permissions_or_role(administrator=True)
+    @giveaway.command(name='nitro')
+    async def giveaway_nitro(self, ctx, *, text=None):
+        if os.getenv('state') == '0':
+            if ctx.channel.id not in [650244237744537630, 630587061665267713, 616007729718231161]:
+                return await ctx.send("You cannot use this command in this channel! �")
+        if text is None:
+            text = "React to the Nitro giveaway above ♡"
+        emojis = ["<a:dv_pikaWaveOwO:837712214935732265>"]
+        emoji = random.choice(emojis)
+        await ctx.send(f"{emoji} **<@&758175760909074432>** {emoji}\n{text}",
+                       allowed_mentions=discord.AllowedMentions(everyone=False, users=False, roles=True))
     def cog_unload(self):
         self.end_giveaways.stop()
