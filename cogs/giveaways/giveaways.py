@@ -396,6 +396,7 @@ class giveaways(commands.Cog):
                 return await pages.start(ctx)
 
     @checks.has_permissions_or_role(administrator=True)
+    @commands.cooldown(240, 1, commands.BucketType.guild)
     @giveaway.command(name='gw')
     async def giveaway_gw(self, ctx, *, text = None):
         if os.getenv('state') == '0':
@@ -408,6 +409,7 @@ class giveaways(commands.Cog):
         await ctx.send(f"{emoji} **<@&758175760909074432>** {emoji}\n{text}", allowed_mentions=discord.AllowedMentions(everyone=False, users=False, roles=True))
 
     @checks.has_permissions_or_role(administrator=True)
+    @commands.cooldown(240, 1, commands.BucketType.guild)
     @giveaway.command(name='elite')
     async def giveaway_elite(self, ctx, *, text=None):
         if os.getenv('state') == '0':
@@ -420,6 +422,7 @@ class giveaways(commands.Cog):
         await ctx.send(f"{emoji} **<@&758174135276142593>** {emoji}\n{text}", allowed_mentions=discord.AllowedMentions(everyone=False, users=False, roles=True))
 
     @checks.has_permissions_or_role(administrator=True)
+    @commands.cooldown(240, 1, commands.BucketType.guild)
     @giveaway.command(name='booster')
     async def giveaway_booster(self, ctx, *, text = None):
         if os.getenv('state') == '0':
@@ -432,6 +435,7 @@ class giveaways(commands.Cog):
         await ctx.send(f"{emoji} **<@&662876587687018507>** {emoji}\n{text}", allowed_mentions=discord.AllowedMentions(everyone=False, users=False, roles=True))
 
     @checks.has_permissions_or_role(administrator=True)
+    @commands.cooldown(240, 1, commands.BucketType.guild)
     @giveaway.command(name='nitro')
     async def giveaway_nitro(self, ctx, *, text=None):
         if os.getenv('state') == '0':
