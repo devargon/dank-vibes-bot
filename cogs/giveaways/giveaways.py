@@ -368,7 +368,7 @@ class giveaways(commands.Cog):
         """
         Lists active giveaways.
         """
-        giveaways = await self.client.pool_pg.fetch("SELECT * FROM giveaways WHERE guild_id=$1", ctx.guild.id)
+        giveaways = await self.client.pool_pg.fetch("SELECT * FROM giveaways WHERE guild_id=$1 AND active = $2", ctx.guild.id, False)
         embed = discord.Embed(title="All giveaways", color=self.client.embed_color)
         if len(giveaways) == 0:
             embed.description = "There are no active giveaways."
@@ -376,6 +376,7 @@ class giveaways(commands.Cog):
         else:
             giveaway_list = []
             for index, giveaway in enumerate(giveaways):
+                print(giveaway.get('active'))
                 channel = ctx.guild.get_channel(giveaway.get('channel_id'))
                 if channel is None:
                     channel = "Unknown channel"
@@ -402,7 +403,7 @@ class giveaways(commands.Cog):
                 return await ctx.send("You cannot use this command in this channel! �")
         if text is None:
             text = "React to the giveaway above ♡"
-        emojis = ["<a:dv_pikaWaveOwO:837712214935732265>"]
+        emojis = ['<a:dv_aBCNodOwO:837756826564952096>', '<a:dv_bunbunDanceOwO:837749889496514570>', '<a:dv_aHeartsWaveOwO:837741729321844847>', '<a:dv_aPinkOwO:837756828866707497>', '<a:dv_aWiggleOwO:837756830053695560>', '<a:dv_bunbunDanceOwO:837764938734108693>', '<a:dv_pandaMadOwO:837772023110303834>', '<a:dv_foxCuddlesOwO:837744615499104266>', '<a:dv_nekoWaveOwO:837756827255963718>', '<a:dv_pandaHeartsOwO:837769010691047485>', '<a:dv_pandaLoveOwO:837769036333973555>', '<a:dv_pandaExcitedOwO:837772105822502912>', '<a:dv_panHeartsOwO:837712562434342952>', '<a:dv_pikaWaveOwO:837712214935732265>', '<a:dv_qbFlowerOwO:837773808269525052>', '<a:dv_qbThumbsupOwO:837666232811257907>', '<a:dv_squirrelBodyRollOwO:837726627160129558>', '<a:dv_squirrelHappyOwO:837711561338519572>', '<a:dv_wButterflyOwO:837787067912159233>', '<a:dv_wScribbleHeartOwO:837782023631798302>', '<a:dv_wYellowMoonOwO:837787073066303551>', '<a:dv_wpinkHeartOwO:837781949337960467>', '<a:dv_wRainbowHeartOwO:837787078171033660>']
         emoji = random.choice(emojis)
         await ctx.send(f"{emoji} **<@&758175760909074432>** {emoji}\n{text}", allowed_mentions=discord.AllowedMentions(everyone=False, users=False, roles=True))
 
@@ -414,7 +415,7 @@ class giveaways(commands.Cog):
                 return await ctx.send("You cannot use this command in this channel! �")
         if text is None:
             text = "React to the Elite giveaway above ♡"
-        emojis = ["<a:dv_pikaWaveOwO:837712214935732265>"]
+        emojis = ['<a:dv_aBCNodOwO:837756826564952096>', '<a:dv_bunbunDanceOwO:837749889496514570>', '<a:dv_aHeartsWaveOwO:837741729321844847>', '<a:dv_aPinkOwO:837756828866707497>', '<a:dv_aWiggleOwO:837756830053695560>', '<a:dv_bunbunDanceOwO:837764938734108693>', '<a:dv_pandaMadOwO:837772023110303834>', '<a:dv_foxCuddlesOwO:837744615499104266>', '<a:dv_nekoWaveOwO:837756827255963718>', '<a:dv_pandaHeartsOwO:837769010691047485>', '<a:dv_pandaLoveOwO:837769036333973555>', '<a:dv_pandaExcitedOwO:837772105822502912>', '<a:dv_panHeartsOwO:837712562434342952>', '<a:dv_pikaWaveOwO:837712214935732265>', '<a:dv_qbFlowerOwO:837773808269525052>', '<a:dv_qbThumbsupOwO:837666232811257907>', '<a:dv_squirrelBodyRollOwO:837726627160129558>', '<a:dv_squirrelHappyOwO:837711561338519572>', '<a:dv_wButterflyOwO:837787067912159233>', '<a:dv_wScribbleHeartOwO:837782023631798302>', '<a:dv_wYellowMoonOwO:837787073066303551>', '<a:dv_wpinkHeartOwO:837781949337960467>', '<a:dv_wRainbowHeartOwO:837787078171033660>']
         emoji = random.choice(emojis)
         await ctx.send(f"{emoji} **<@&758174135276142593>** {emoji}\n{text}", allowed_mentions=discord.AllowedMentions(everyone=False, users=False, roles=True))
 
@@ -426,9 +427,9 @@ class giveaways(commands.Cog):
                 return await ctx.send("You cannot use this command in this channel! �")
         if text is None:
             text = "React to the Booster giveaway above ♡"
-        emojis = ["<a:dv_pikaWaveOwO:837712214935732265>"]
+        emojis = ['<a:dv_aBCNodOwO:837756826564952096>', '<a:dv_bunbunDanceOwO:837749889496514570>', '<a:dv_aHeartsWaveOwO:837741729321844847>', '<a:dv_aPinkOwO:837756828866707497>', '<a:dv_aWiggleOwO:837756830053695560>', '<a:dv_bunbunDanceOwO:837764938734108693>', '<a:dv_pandaMadOwO:837772023110303834>', '<a:dv_foxCuddlesOwO:837744615499104266>', '<a:dv_nekoWaveOwO:837756827255963718>', '<a:dv_pandaHeartsOwO:837769010691047485>', '<a:dv_pandaLoveOwO:837769036333973555>', '<a:dv_pandaExcitedOwO:837772105822502912>', '<a:dv_panHeartsOwO:837712562434342952>', '<a:dv_pikaWaveOwO:837712214935732265>', '<a:dv_qbFlowerOwO:837773808269525052>', '<a:dv_qbThumbsupOwO:837666232811257907>', '<a:dv_squirrelBodyRollOwO:837726627160129558>', '<a:dv_squirrelHappyOwO:837711561338519572>', '<a:dv_wButterflyOwO:837787067912159233>', '<a:dv_wScribbleHeartOwO:837782023631798302>', '<a:dv_wYellowMoonOwO:837787073066303551>', '<a:dv_wpinkHeartOwO:837781949337960467>', '<a:dv_wRainbowHeartOwO:837787078171033660>']
         emoji = random.choice(emojis)
-        await ctx.send(f"{emoji} **<@&758175760909074432>** {emoji}\n{text}", allowed_mentions=discord.AllowedMentions(everyone=False, users=False, roles=True))
+        await ctx.send(f"{emoji} **<@&662876587687018507>** {emoji}\n{text}", allowed_mentions=discord.AllowedMentions(everyone=False, users=False, roles=True))
 
     @checks.has_permissions_or_role(administrator=True)
     @giveaway.command(name='nitro')
@@ -438,9 +439,9 @@ class giveaways(commands.Cog):
                 return await ctx.send("You cannot use this command in this channel! �")
         if text is None:
             text = "React to the Nitro giveaway above ♡"
-        emojis = ["<a:dv_pikaWaveOwO:837712214935732265>"]
+        emojis = ['<a:dv_aBCNodOwO:837756826564952096>', '<a:dv_bunbunDanceOwO:837749889496514570>', '<a:dv_aHeartsWaveOwO:837741729321844847>', '<a:dv_aPinkOwO:837756828866707497>', '<a:dv_aWiggleOwO:837756830053695560>', '<a:dv_bunbunDanceOwO:837764938734108693>', '<a:dv_pandaMadOwO:837772023110303834>', '<a:dv_foxCuddlesOwO:837744615499104266>', '<a:dv_nekoWaveOwO:837756827255963718>', '<a:dv_pandaHeartsOwO:837769010691047485>', '<a:dv_pandaLoveOwO:837769036333973555>', '<a:dv_pandaExcitedOwO:837772105822502912>', '<a:dv_panHeartsOwO:837712562434342952>', '<a:dv_pikaWaveOwO:837712214935732265>', '<a:dv_qbFlowerOwO:837773808269525052>', '<a:dv_qbThumbsupOwO:837666232811257907>', '<a:dv_squirrelBodyRollOwO:837726627160129558>', '<a:dv_squirrelHappyOwO:837711561338519572>', '<a:dv_wButterflyOwO:837787067912159233>', '<a:dv_wScribbleHeartOwO:837782023631798302>', '<a:dv_wYellowMoonOwO:837787073066303551>', '<a:dv_wpinkHeartOwO:837781949337960467>', '<a:dv_wRainbowHeartOwO:837787078171033660>']
         emoji = random.choice(emojis)
-        await ctx.send(f"{emoji} **<@&758175760909074432>** {emoji}\n{text}",
+        await ctx.send(f"{emoji} **<@&685233344136609812>** {emoji}\n{text}",
                        allowed_mentions=discord.AllowedMentions(everyone=False, users=False, roles=True))
     def cog_unload(self):
         self.end_giveaways.stop()
