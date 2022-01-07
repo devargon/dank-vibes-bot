@@ -342,6 +342,64 @@ class games(commands.Cog):
                 else:
                     authornick = authornickmsg.content
 
+        class AgreeToNames(discord.ui.View):
+            def __init__(self, user1, user1nick, user2, user2nick):
+                self.user1 = user1
+                self.user1nick = user1nick
+                self.user2 = user2
+                self.user2nick = user2nick
+                self.agree = 0
+                self.response = None
+                super().__init__(timeout=30.0)
+                async def update_agree(interaction: discord.Interaction, button: discord.ui.Button):
+                    print(self.agree)
+                    if self.children.index(button) == 0:
+                        print('first button')
+                        if interaction.user.id != self.user1.id:
+                            await interaction.response.send_message("Agree to the nickname given to you, not this one.", ephemeral=True)
+                            return
+                        button.style, button.label, button.disabled, button.emoji = discord.ButtonStyle.green, f"{self.user1.name}'s nick: {self.user1nick}", True, discord.PartialEmoji.from_str("<:DVB_True:887589686808309791>")
+                        self.agree = self.agree + 1
+                    else:
+                        print('second button')
+                        if interaction.user.id != self.user2.id:
+                            await interaction.response.send_message("Agree to the nickname given to you, not this one.", ephemeral=True)
+                            return
+                        button.style, button.label, button.disabled, button.emoji = discord.ButtonStyle.green, f"{self.user2.name}'s nick: {self.user2nick}", True, discord.PartialEmoji.from_str("<:DVB_True:887589686808309791>")
+                        self.agree = self.agree + 1
+                    if self.agree == 2:
+                        for b in self.children:
+                            b.disabled = True
+                    await self.response.edit(view=self)
+                    if self.agree == 2:
+                        self.stop()
+
+                class button0(discord.ui.Button):
+                    async def callback(self, interaction: discord.Interaction):
+                        await update_agree(interaction, self)
+                self.add_item(button0(label=f"{self.user1.name}'s nick: {self.user1nick}", style=discord.ButtonStyle.red))
+                self.add_item(button0(label=f"{self.user2.name}'s nick: {self.user2nick}", style=discord.ButtonStyle.red))
+
+            async def on_timeout(self) -> None:
+                for b in self.children:
+                    b.disabled = True
+                await self.response.edit(view=self)
+                self.stop()
+
+        if duration is not None:
+            view = AgreeToNames(ctx.author, authornick, member, membernick)
+            view.response = await ctx.send(f"Agree to the nickname given to you by pressing the button with your name. {ctx.author.mention}{member.mention}", view=view)
+            await view.wait()
+            if view.agree != 2:
+                await view.response.reply("This nickbet has been cancelled as both of you have not agreed to the given nicknames.")
+                with contextlib.suppress(ValueError):
+                    self.nickbets.remove(member.id)
+                    self.nickbets.remove(ctx.author.id)
+                ctx.command.reset_cooldown(ctx)
+                return
+
+
+
         class pickACoin(discord.ui.View):
             def __init__(self, ctx: DVVTcontext, target):
                 self.response = None
