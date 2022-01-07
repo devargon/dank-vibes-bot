@@ -40,7 +40,7 @@ class UserDonations(menus.ListPageSource):
 
     async def format_page(self, menu, page):
         embed = discord.Embed(color=menu.ctx.bot.embed_color, title=self.title, timestamp=discord.utils.utcnow())
-        embed.set_author(name=self.author.display_name, icon_url=self.author.avatar.url)
+        embed.set_author(name=self.author.display_name, icon_url=self.author.display_avatar.url)
         desc = ""
         for entry in page:
             if page[-1] == entry:
@@ -206,7 +206,7 @@ class donations(commands.Cog):
                         else:
                             desc += f"<:ReplyCont:871807889587707976> {format_donation(donation)}\n"
                     embed = discord.Embed(title=title, description=desc, color=self.client.embed_color, timestamp=discord.utils.utcnow())
-                    embed.set_author(name=member.display_name, icon_url=member.avatar.url)
+                    embed.set_author(name=member.display_name, icon_url=member.display_avatar.url)
                     return await ctx.send(embed=embed)
                 else:
                     pages = CustomMenu(source=UserDonations(donations, title, member), clear_reactions_after=True, timeout=60)
@@ -240,7 +240,7 @@ class donations(commands.Cog):
                         else:
                             desc += f"<:ReplyCont:871807889587707976> {format_donation(donation)}\n"
                     embed = discord.Embed(title=title, description=desc, color=self.client.embed_color, timestamp=discord.utils.utcnow())
-                    embed.set_author(name=member.display_name, icon_url=member.avatar.url)
+                    embed.set_author(name=member.display_name, icon_url=member.display_avatar.url)
                     return await ctx.send(embed=embed)
                 else:
                     pages = CustomMenu(source=UserDonations(donations, title, member), clear_reactions_after=True, timeout=60)
