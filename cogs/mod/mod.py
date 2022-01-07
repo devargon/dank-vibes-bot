@@ -18,15 +18,17 @@ from selenium import webdriver
 from fuzzywuzzy import process
 from collections import Counter
 
+
 class FrozenNicknames(menus.ListPageSource):
-    def __init__(self, entries, title):
+    def __init__(self, entries, title, inline):
         self.title = title
+        self.inline = inline
         super().__init__(entries, per_page=10)
 
     async def format_page(self, menu, entries):
         embed = discord.Embed(title=self.title, color=menu.ctx.bot.embed_color, timestamp=discord.utils.utcnow())
         for entry in entries:
-            embed.add_field(name=f"{entry[0]}", value=entry[1], inline=False)
+            embed.add_field(name=f"{entry[0]}", value=entry[1], inline=self.inline)
         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return embed
 
@@ -279,7 +281,7 @@ class Mod(DisboardAutoLock, censor, BrowserScreenshot, lockdown, commands.Cog, n
                 embed.add_field(name=suggestion[0], value=suggestion[1], inline=False)
             return await ctx.send(embed=embed)
         else:
-            pages = CustomMenu(source=FrozenNicknames(frozennicknames, title), clear_reactions_after=True, timeout=60)
+            pages = CustomMenu(source=FrozenNicknames(frozennicknames, title, False), clear_reactions_after=True, timeout=60)
             return await pages.start(ctx)
 
     @checks.has_permissions_or_role(administrator=True)
@@ -388,3 +390,37 @@ class Mod(DisboardAutoLock, censor, BrowserScreenshot, lockdown, commands.Cog, n
         embed.add_field(name=f"Positon ({strposition})", value=str_position, inline=False)
         embed.set_footer(text=f"Role ID: {role.id}")
         await ctx.send(embed=embed)
+
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.command(name="names")
+    async def names(self, ctx, *, member: discord.User = None):
+        if member is None:
+            return await ctx.send("You need to specify a user.")
+        names = await self.client.pool_pg.fetch("SELECT * FROM name_changes WHERE user_id = $1", member.id)
+        if len(names) == 0:
+            return await ctx.send(f"There has been no name changes recorded for {member}.\nName changes are only recorded starting from x Jan 2022.")
+        buffer = []
+        for nameentry in names:
+            name = nameentry.get('name')
+            time = f"<:Reply:871808167011549244> <t:{nameentry.get('time')}>"
+            buffer.append((name, time))
+        pages = CustomMenu(source=FrozenNicknames(buffer, f"{member.name}'s past names", True), clear_reactions_after=True, timeout=60)
+        return await pages.start(ctx)
+
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.command(name="nicknames")
+    async def nicknames(self, ctx, *, member: discord.Member = None):
+        if member is None:
+            return await ctx.send("You need to specify a user.")
+        nicknames = await self.client.pool_pg.fetch("SELECT * FROM nickname_changes WHERE member_id = $1", member.id)
+        if len(nicknames) == 0:
+            return await ctx.send(f"There has been no nickname changes recorded for {member}.\nNickname changes are only recorded starting from x Jan 2022.")
+        buffer = []
+        for nicknameentry in nicknames:
+            nickname = nicknameentry.get('nickname')
+            time = f"<:Reply:871808167011549244> <t:{nicknameentry.get('time')}>"
+            buffer.append((nickname, time))
+        pages = CustomMenu(source=FrozenNicknames(buffer, f"{member.name}'s past nicknames", True), clear_reactions_after=True, timeout=60)
+        return await pages.start(ctx)
+
+

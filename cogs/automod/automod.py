@@ -4,6 +4,7 @@ from .freezenick import Freezenick
 from .verification import Verification
 from .timedrole import timedrole
 from .timedunlock import TimedUnlock
+from .namelog import NameLogging
 from abc import ABC
 import os
 from utils import checks
@@ -37,7 +38,7 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
     """
     pass
 
-class AutoMod(timedrole, TimedUnlock, Verification, Freezenick, commands.Cog):
+class AutoMod(NameLogging, timedrole, TimedUnlock, Verification, Freezenick, commands.Cog):
     """
     This file is just a placeholder for the various automod functions/modules.
     """
