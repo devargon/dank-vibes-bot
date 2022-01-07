@@ -409,6 +409,7 @@ class games(commands.Cog):
 
             @discord.ui.button(label="Heads", emoji=discord.PartialEmoji.from_str("<:DVB_CoinHead:905400213785690172>"))
             async def yes(self, button: discord.ui.Button, interaction: discord.Interaction):
+                button.style = discord.ButtonStyle.green
                 self.returning_value = True
                 for b in self.children:
                     b.disabled = True
@@ -417,6 +418,7 @@ class games(commands.Cog):
 
             @discord.ui.button(label="Tails", emoji=discord.PartialEmoji.from_str("<:DVB_CoinTail:905400213676638279>"))
             async def no(self, button: discord.ui.Button, interaction: discord.Interaction):
+                button.style = discord.ButtonStyle.green
                 self.returning_value = False
                 for b in self.children:
                     b.disabled = True
