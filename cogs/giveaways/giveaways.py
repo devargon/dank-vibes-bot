@@ -369,6 +369,7 @@ class giveaways(commands.Cog):
         Lists active giveaways.
         """
         giveaways = await self.client.pool_pg.fetch("SELECT * FROM giveaways WHERE guild_id=$1 AND active = $2", ctx.guild.id, False)
+        giveaways = [giveaways for giveaway in giveaways if giveaway.get('active') is True]
         embed = discord.Embed(title="All giveaways", color=self.client.embed_color)
         if len(giveaways) == 0:
             embed.description = "There are no active giveaways."
@@ -376,7 +377,6 @@ class giveaways(commands.Cog):
         else:
             giveaway_list = []
             for index, giveaway in enumerate(giveaways):
-                print(giveaway.get('active'))
                 channel = ctx.guild.get_channel(giveaway.get('channel_id'))
                 if channel is None:
                     channel = "Unknown channel"
