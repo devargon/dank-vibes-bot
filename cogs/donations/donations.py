@@ -23,6 +23,10 @@ def get_emoji(category):
         emoji = "<:DVB_PokeTwo:915096051441082421> "
     elif "wicked" == name:
         emoji = "<:DVB_Wicked:914575135044939786> "
+    elif "dank" == name:
+        emoji = "<:DVB_DankMemer:929402679258648596>"
+    elif "pokemon" == name:
+        emoji = "<:DVB_Pokemon:929402811500855316>"
     else:
         emoji = ""
     return emoji

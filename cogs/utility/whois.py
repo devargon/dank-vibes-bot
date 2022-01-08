@@ -10,7 +10,7 @@ class Whois(commands.Cog):
 
     @commands.guild_only()
     @commands.command(name='whois', usage='<user>', aliases=['wi'])
-    async def whois(self, ctx, user: MemberUserConverter = None):
+    async def whois(self, ctx, *, user: MemberUserConverter = None):
         """
         Get information about a user.
         """
