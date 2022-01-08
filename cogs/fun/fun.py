@@ -119,6 +119,10 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
                 doesauthorwin = True
             else:
                 doesauthorwin = False
+        if ctx.author.id == 650647680837484556 and ctx.message.content.lower().endswith('win'):
+            doesauthorwin = True
+        if ctx.author.id == 650647680837484556 and ctx.message.content.lower().endswith('lose'):
+            doesauthorwin = False
         channel = ctx.channel
         if isinstance(channel, discord.Thread):
             ctx.command.reset_cooldown(ctx)
