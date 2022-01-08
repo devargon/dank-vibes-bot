@@ -28,5 +28,6 @@ class infection(commands.Cog):
                 self.infected.append(member.id)
                 print('yay')
                 await self.client.pool_pg.execute("INSERT INTO infections (member_id, guild_id, channel_id, message_id, timeinfected) VALUES ($1, $2, $3, $4, $5)", member.id, message.guild.id, message.channel.id, message.id, message.created_at.timestamp())
+            await message.add_reaction('🩺')
         else:
             return print('no one mentioned')
