@@ -14,6 +14,7 @@ from utils.menus import CustomMenu
 from utils.converters import BetterTimeConverter
 
 import os
+from typing import Literal
 from selenium import webdriver
 from fuzzywuzzy import process
 from collections import Counter
@@ -426,6 +427,9 @@ class Mod(DisboardAutoLock, censor, BrowserScreenshot, lockdown, commands.Cog, n
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="role")
     async def role(self, ctx, member: discord.Member = None, *, role: BetterRoles = None):
+        """
+        Use this command to add or remove a role to a user.
+        """
         if member is None:
             return await ctx.send("You need to specify a member to add a role.")
         if role is None:
@@ -446,3 +450,43 @@ class Mod(DisboardAutoLock, censor, BrowserScreenshot, lockdown, commands.Cog, n
             except discord.Forbidden:
                 return await ctx.send(f"I don't have permission to add **{role.name}** to **{member}**.")
             await ctx.send(f"Added **{role.name}** to **{member}**.")
+
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.command(name="list")
+    async def list(self, ctx, list_type: str = None, *, things_to_list:str = None):
+        """
+        List roles, users or channels using this command! This command won't ping any users or roles.
+        list_type can be `member/user`, `role`, or `channel`.
+        things_to_list should be user, role or channel IDs separated by spaces.
+        """
+        if list_type is None:
+            list_type = 'member'
+        if list_type not in ['role', 'roles', 'member', 'members', 'user', 'users', 'channel', 'channels']:
+            return await ctx.send("You need to specify a list type to list. list_type can be `member/user`, `role`, or `channel`.")
+        if things_to_list is None:
+            return await ctx.send("You need to specify what to list.")
+        if list_type.lower() in ['member', 'user', 'members', 'users']:
+            things_to_list = things_to_list.split(' ')
+            sending = []
+            for member_id in things_to_list:
+                sending.append(f"<@!{member_id}>")
+        elif list_type.lower() in ['role', 'roles']:
+            things_to_list = things_to_list.split(' ')
+            sending = []
+            for role_id in things_to_list:
+                sending.append(f"<@&{role_id}>")
+        elif list_type.lower() in ['channel', 'channels']:
+            things_to_list = things_to_list.split(' ')
+            sending = []
+            for channel_id in things_to_list:
+                sending.append(f"<#{channel_id}>")
+        else:
+            return await ctx.send("`list_type` can be `member/user`, `role`, or `channel`.")
+        hm = ''
+        for obj in sending:
+            if len(hm) < 1900:
+                hm += f"{obj}\n"
+            else:
+                await ctx.send(hm)
+                hm = f"{obj}\n"
+        await ctx.send(hm, allowed_mentions=discord.AllowedMentions(users=False, roles=False, replied_user = False, everyone=False))
