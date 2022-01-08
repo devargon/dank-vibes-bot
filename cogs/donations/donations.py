@@ -8,7 +8,7 @@ from utils.format import comma_number
 from utils.converters import BetterInt
 from utils import checks
 from time import time
-
+import asyncpg
 def get_emoji(category):
     name = category.lower().strip()
     if "owo" == name:
@@ -247,6 +247,34 @@ class donations(commands.Cog):
                     return await pages.start(ctx)
 
     @checks.has_permissions_or_role(administrator=True)
+    @commands.command(name="resetdonations")
+    async def resetdonations(self, ctx, category_name: str = None):
+        """
+        Reset the donations of a category. This action cannot be undone!!
+        """
+        if category_name is None:
+            return await ctx.send("Please specify a category.")
+        real_name = await self.client.pool_pg.fetchval("SELECT category_name FROM donation_categories WHERE guild_id = $1 AND lower(category_name) = $2", ctx.guild.id, category_name.lower())
+        if not real_name:
+            return await ctx.send(f"A category with the name `{category_name}` does not exist.")
+        confirmview = confirm(ctx, self.client, 10.0)
+        confirmview.response = await ctx.send(f"Are you sure you want to reset the donations of the `{real_name}` category?", view=confirmview)
+        await confirmview.wait()
+        if confirmview.returning_value is not True:
+            await confirmview.response.edit("right, no changes made.")
+            return
+        anotherconfirmview = confirm(ctx, self.client, 10.0)
+        anotherconfirmview.response = await ctx.send(f"Are you **REALLY REALLY SURE** you want to reset the donations of the `{real_name}` category? You can't recover them after they're deleted!", view=anotherconfirmview)
+        await anotherconfirmview.wait()
+        if anotherconfirmview.returning_value is not True:
+            await anotherconfirmview.response.edit("right, no changes made.")
+            return
+        query = "DELETE FROM donations.{} WHERE value >= 0".format(f"guild{ctx.guild.id}_{real_name.lower()}")
+        await self.client.pool_pg.execute(query)
+        await ctx.send(f"The donations of the category `{real_name}` has been reset.")
+
+
+    @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="adddonations", aliases=["ad"])
     async def adddonations(self, ctx, member:discord.Member = None, amount: BetterInt = None, *, category_name: str = None):
         """
@@ -324,3 +352,26 @@ class donations(commands.Cog):
         embed.set_author(name="Success!", icon_url="https://cdn.discordapp.com/emojis/575412409737543694.gif?size=96")
         embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
         return await ctx.send(embed=embed)
+
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.command(name="wicked", aliases=["azumi"])
+    async def wicked(self, ctx):
+        await ctx.message.delete()
+        async with ctx.typing():
+            try:
+                query = "SELECT * FROM donations.{}".format(f"guild{ctx.guild.id}_weeklydank")
+                results = await self.client.pool_pg.fetch("SELECT * FROM donations.{} LIMIT 10".format(f"guild{ctx.guild.id}_dank"))
+            except asyncpg.exceptions.UndefinedTableError:
+                return await ctx.send("This command requires having a donation category called `dank` to work.")
+            if not results:
+                return await ctx.send("There are no donations to show for the `dank` category.")
+            hm = ['🥇', '🥈', '🥉', '🏅', '🏅', '🏅', '🏅', '🏅', '🏅', '🏅']
+            um = []
+            for index, entry in enumerate(results):
+                member = ctx.guild.get_member(entry.get('user_id')) or entry.get('user_id')
+                value = comma_number(entry.get('value'))
+                um.append((f"{hm[index]} **{member}** [[{value}]](https://www.youtube.com/watch?v=dQw4w9WgXcQ)"))
+            embed = discord.Embed(title="Weekly Dank Memer Donations!", description="\n".join(um), color=self.client.embed_color).set_thumbnail(url="https://media.discordapp.net/attachments/767148393839329290/898670660174376960/DORY_STINKY_16.png")
+            embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
+            return await ctx.send(embed=embed)
+
