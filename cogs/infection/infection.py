@@ -14,20 +14,19 @@ class infection(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot:
-            return print('author is bot')
+            return
         if type(self.infected) is not list:
-            return print('infected not loaded')
+            return
         if message.author.id not in self.infected:
-            return print('author not infected')
+            return
         if len(message.mentions) > 0:
             for member in message.mentions:
                 if member.id == self.client.user.id:
-                    return print('user is own')
+                    return
                 if member.id in self.infected:
-                    return print('user is alreadyinfected')
+                    return
                 self.infected.append(member.id)
-                print('yay')
                 await self.client.pool_pg.execute("INSERT INTO infections (member_id, guild_id, channel_id, message_id, timeinfected) VALUES ($1, $2, $3, $4, $5)", member.id, message.guild.id, message.channel.id, message.id, message.created_at.timestamp())
             await message.add_reaction('🩺')
         else:
-            return print('no one mentioned')
+            return

@@ -352,16 +352,13 @@ class games(commands.Cog):
                 self.response = None
                 super().__init__(timeout=30.0)
                 async def update_agree(interaction: discord.Interaction, button: discord.ui.Button):
-                    print(self.agree)
                     if self.children.index(button) == 0:
-                        print('first button')
                         if interaction.user.id != self.user1.id:
                             await interaction.response.send_message("Agree to the nickname given to you, not this one.", ephemeral=True)
                             return
                         button.style, button.label, button.disabled, button.emoji = discord.ButtonStyle.green, f"{self.user1.name}'s nick: {self.user1nick}", True, discord.PartialEmoji.from_str("<:DVB_True:887589686808309791>")
                         self.agree = self.agree + 1
                     else:
-                        print('second button')
                         if interaction.user.id != self.user2.id:
                             await interaction.response.send_message("Agree to the nickname given to you, not this one.", ephemeral=True)
                             return
