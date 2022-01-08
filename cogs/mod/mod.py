@@ -5,6 +5,7 @@ from .lockdown import lockdown
 from .censor import censor
 from .browser_screenshot import BrowserScreenshot
 from .disboard import DisboardAutoLock
+from .sticky import Sticky
 
 from utils import checks
 from utils.buttons import *
