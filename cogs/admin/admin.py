@@ -1,10 +1,6 @@
-import asyncio
-import discord
 from abc import ABC
-from datetime import datetime
-from discord.ext import commands, menus
+from discord.ext import menus
 from .serverrule import ServerRule
-from .sticky import Sticky
 from .joining import Joining
 from .betterselfroles import BetterSelfroles
 from utils import checks
@@ -29,7 +25,7 @@ class Blacklist(menus.ListPageSource):
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
 
-class Admin(BetterSelfroles, Joining, Sticky, ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass):
+class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass):
     """
     Server Commands
     """
