@@ -50,7 +50,7 @@ class DisboardAutoLock(commands.Cog):
             else:
                 await self.client.pool_pg.execute("INSERT INTO timedunlock (guild_id, channel_id, time, responsible_moderator) VALUES ($1, $2, $3, $4)", message.guild.id, disboard_channel, timetobump, self.client.user.id)
         else:
-            print('channel already locked')
+            return
 
 
 
