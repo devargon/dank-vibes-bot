@@ -213,7 +213,7 @@ class games(commands.Cog):
             return await ctx.send(f"{member} is currently blacklisted from using the bot. You cannot have a nick bet with them.")
         if member.bot:
             ctx.command.reset_cooldown(ctx)
-            return await ctx.send(f"🤖 **{member}**: `I'll rather have a nick bet with {random.choice([botacc for botacc in ctx.guild.members if botacc.bot])}.`")
+            return await ctx.send(f"🤖 **{member}**: `no`")
         if duration is not None:
             duration = stringtime_duration(duration)
             if duration is None:
