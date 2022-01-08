@@ -351,22 +351,40 @@ class BetterSelfroles(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print('um')
+        selfrolemessages = await self.client.pool_pg.fetchrow("SELECT age, gender, location, minigames, event_pings, dank_pings, server_pings, bot_roles, random_color, colors, specialcolors, boostping, vipheist FROM selfrolemessages WHERE guild_id = $1", 595457764935991326)
+        categories = ['age', 'gender', 'location', 'minigames', 'event_pings', 'dank_pings', 'server_pings', 'bot_roles', 'random_color', 'colors', 'specialcolors', 'boostping', 'vipheist']
+        if selfrolemessages == None:
+            return
         if not self.selfroleviews_added:
-            print('noooo')
-            self.client.add_view(age())
-            self.client.add_view(gender())
-            self.client.add_view(location())
-            self.client.add_view(minigames())
-            self.client.add_view(event_pings())
-            self.client.add_view(dank_pings())
-            self.client.add_view(server_pings())
-            self.client.add_view(bot_roles())
-            self.client.add_view(random_color())
-            self.client.add_view(colors())
-            self.client.add_view(specialcolors())
-            self.client.add_view(BoostPing())
-            self.client.add_view(VIPHeist())
+            if len(selfrolemessages) == 0:
+                self.selfroleviews_added = True
+                return
+            if selfrolemessages.get('age'):
+                self.client.add_view(age())
+            if selfrolemessages.get('gender'):
+                self.client.add_view(gender(), message_id=selfrolemessages.get('gender'))
+            if selfrolemessages.get('location'):
+                self.client.add_view(location(), message_id=selfrolemessages.get('location'))
+            if selfrolemessages.get('minigames'):
+                self.client.add_view(minigames(), message_id=selfrolemessages.get('minigames'))
+            if selfrolemessages.get('event_pings'):
+                self.client.add_view(event_pings(), message_id=selfrolemessages.get('event_pings'))
+            if selfrolemessages.get('dank_pings'):
+                self.client.add_view(dank_pings(), message_id=selfrolemessages.get('dank_pings'))
+            if selfrolemessages.get('server_pings'):
+                self.client.add_view(server_pings(), message_id=selfrolemessages.get('server_pings'))
+            if selfrolemessages.get('bot_roles'):
+                self.client.add_view(bot_roles(), message_id=selfrolemessages.get('bot_roles'))
+            if selfrolemessages.get('random_color'):
+                self.client.add_view(random_color())
+            if selfrolemessages.get('colors'):
+                self.client.add_view(colors(), message_id=selfrolemessages.get('colors'))
+            if selfrolemessages.get('specialcolors'):
+                self.client.add_view(specialcolors(), message_id=selfrolemessages.get('specialcolors'))
+            if selfrolemessages.get('boostping'):
+                self.client.add_view(BoostPing(), message_id=selfrolemessages.get('boostping'))
+            if selfrolemessages.get('vipheist'):
+                self.client.add_view(VIPHeist(), message_id=selfrolemessages.get('vipheist'))
             self.selfroleviews_added = True
 
     @checks.has_permissions_or_role(administrator=True)
