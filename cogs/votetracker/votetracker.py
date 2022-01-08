@@ -138,7 +138,9 @@ class VoteTracker(commands.Cog, name='votetracker'):
             votecount = await self.client.pool_pg.fetch("SELECT * FROM votecount ORDER BY count DESC LIMIT 10")  # gets top 10 voters
             leaderboard = []
             guild = self.client.get_guild(guildid)
-            channel = self.client.get_channel(channelid)
+            channel = guild.get_channel(channelid)
+            if channel is None:
+                return
             for voter in votecount:
                 member = guild.get_member(voter.get('member_id'))
                 name = member.display_name.replace("[AFK] ", "") if member is not None else str(voter.get('member_id'))  # shows user id if the user left the server
