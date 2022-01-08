@@ -25,6 +25,8 @@ class confirm(discord.ui.View):
     async def yes(self, button: discord.ui.Button, interaction: discord.Interaction):
         self.returning_value = True
         for b in self.children:
+            if b != button:
+                b.style = discord.ButtonStyle.grey
             b.disabled = True
         await self.response.edit(view=self)
         self.stop()
@@ -33,6 +35,8 @@ class confirm(discord.ui.View):
     async def no(self, button: discord.ui.Button, interaction: discord.Interaction):
         self.returning_value = False
         for b in self.children:
+            if b != button:
+                b.style = discord.ButtonStyle.grey
             b.disabled = True
         await self.response.edit(view=self)
         self.stop()

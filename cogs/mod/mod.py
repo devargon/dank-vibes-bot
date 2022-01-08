@@ -1,36 +1,39 @@
-import time
 import discord
-import datetime
-import asyncio
 from discord.ext import commands, menus
-from utils import checks
-from utils.format import text_to_file, stringtime_duration
+
 from .lockdown import lockdown
 from .censor import censor
-from utils.buttons import *
 from .browser_screenshot import BrowserScreenshot
-from selenium import webdriver
-from collections import Counter
-import os
+from .disboard import DisboardAutoLock
+
+from utils import checks
+from utils.buttons import *
+from utils.format import text_to_file, stringtime_duration, ordinal
 from utils.time import humanize_timedelta
-import time
-from utils.converters import BetterRoles
-from fuzzywuzzy import process
 from utils.menus import CustomMenu
+from utils.converters import BetterTimeConverter
+
+import os
+from typing import Literal
+from selenium import webdriver
+from fuzzywuzzy import process
+from collections import Counter
+
 
 class FrozenNicknames(menus.ListPageSource):
-    def __init__(self, entries, title):
+    def __init__(self, entries, title, inline):
         self.title = title
+        self.inline = inline
         super().__init__(entries, per_page=10)
 
     async def format_page(self, menu, entries):
         embed = discord.Embed(title=self.title, color=menu.ctx.bot.embed_color, timestamp=discord.utils.utcnow())
         for entry in entries:
-            embed.add_field(name=f"{entry[0]}", value=entry[1], inline=False)
+            embed.add_field(name=f"{entry[0]}", value=entry[1], inline=self.inline)
         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return embed
 
-class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
+class Mod(DisboardAutoLock, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
     """
     Mod commands
     """
@@ -161,27 +164,6 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
             else:
                 await ctx.send(embed=discord.Embed(title=f"Raw content of message with ID {message_id} in {channel}", description=f"```\n{content}\n```", color = self.client.embed_color))
 
-    @checks.has_permissions_or_role(administrator=True)
-    @commands.command(name='karutaeventinfo', aliases=['kei'])
-    async def karutaeventinfo(self, ctx):
-        embed = discord.Embed(title="Dank Vibes Bot's Karuta Halloween Event!", description="From **__24/10, 0.00 EST to 31/10, 0.00 EST__**, zombies will be spawned by me in these channels:\n> <#823597687940841482>\n> <#881149732628623390>\n> <#847375281399791616>\nYour **goal** is to collect as many skulls 💀 as possible by **defeating the zombie hordes**. \n\nThe top 3 players with the **most skulls collected 💀** will win certain prizes!\n\nMore information is in <#901402571862843392>.", color=self.client.embed_color)
-        embed.set_author(name=f"{ctx.guild.name}'s Karuta Zombie Halloween Event", url=ctx.guild.icon.url)
-        embed.add_field(name="How do I kill the zombies?", value="I'll tell you which button/emoji to click'. The button that **matches** <:DVB_True:887589686808309791> the emoji shown on the message is the correct button.\n\n**Every time** you press the button, you'll kill a zombie! The buttons wll shuffle once in a while, so be careful not to press the wrong button.", inline=False)
-        embed.add_field(name="How can I die?", value="If you press the wrong button, the zombies will kill you instead.", inline=True)
-        embed.add_field(name="What happens if I die?", value="If you die, you **can't** fight the zombies. You will **not receive** any skulls as you aren't alive to collect them, even had killed some zombies.", inline=True)
-        embed.set_thumbnail(url="https://cdn.nogra.me/core/zombie.gif")
-        embed.set_image(url="https://cdn.nogra.me/dankvibes/karuta_win.gif")
-        if ctx.message.reference:
-            partial = ctx.channel.get_partial_message(ctx.message.reference.message_id)
-            try:
-                await partial.reply(embed=embed)
-            except:
-                pass
-            else:
-                return
-        await ctx.send(embed=embed)
-
-
     @commands.command(name="memberpvc", brief = "Checks the private channels that a member has access to", description = "Checks the private channels that a member has access to", aliases = ["pvcmember"])
     @commands.has_guild_permissions(manage_roles=True)
     async def memberpvc(self, ctx, member:discord.Member = None):
@@ -272,7 +254,7 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
             return await ctx.send(f"I encountered an error while trying to freeze {member}'s nickname. It could be due to role hierachy or missing permissions.")
         else:
             timetounfreeze = 9223372036854775807
-            await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason) VALUES($1, $2, $3, $4, $5, $6)", member.id, ctx.guild.id, nickname, old_nick, timetounfreeze, f"Freezenick command invoked by {ctx.author}")
+            await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", member.id, ctx.guild.id, nickname, old_nick, timetounfreeze, f"Invoked via freezenick command", ctx.author.id)
             return await ctx.send(f"{member.mention}'s nickname is now frozen to `{nickname}`.")
 
     @checks.has_permissions_or_role(administrator=True)
@@ -287,9 +269,12 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
         for entry in result:
             member = self.client.get_user(entry.get('user_id'))
             name = f"{entry.get('id')}. {member} ({member.id})" if member is not None else f"{entry.get('id')}. {entry.get('user_id')}"
-            details = f"Frozen nickname: {entry.get('nickname')}\n"
-            details += f"Reason: {entry.get('reason')}\n"
-            details += f"Unfrozen: <t:{entry.get('time')}:R>\n" if entry.get('time') != 9223372036854775807 else 'Until: Eternity\n'
+            details = f"**Frozen nickname:** {entry.get('nickname')}\n"
+            details += f"**Reason:** {entry.get('reason')}\n"
+            details += f"**Unfrozen:** <t:{entry.get('time')}:R>\n" if entry.get('time') != 9223372036854775807 else 'Until: Eternity\n'
+            responsible_moderator = entry.get('responsible_moderator')
+            responsible_moderator = self.client.get_user(responsible_moderator) if responsible_moderator is not None else responsible_moderator
+            details += f"**Responsible Moderator:** {responsible_moderator} ({responsible_moderator.mention})" if responsible_moderator is not None else 'Responsible Moderator: None'
             frozennicknames.append((name, details))
         if len(frozennicknames) <= 10:
             embed = discord.Embed(title=title, color=self.client.embed_color, timestamp=discord.utils.utcnow())
@@ -297,7 +282,7 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
                 embed.add_field(name=suggestion[0], value=suggestion[1], inline=False)
             return await ctx.send(embed=embed)
         else:
-            pages = CustomMenu(source=FrozenNicknames(frozennicknames, title), clear_reactions_after=True, timeout=60)
+            pages = CustomMenu(source=FrozenNicknames(frozennicknames, title, False), clear_reactions_after=True, timeout=60)
             return await pages.start(ctx)
 
     @checks.has_permissions_or_role(administrator=True)
@@ -338,6 +323,27 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
                     return role_to_return
 
     @checks.has_permissions_or_role(administrator=True)
+    @commands.command(name='slowmode', aliases=['sm'])
+    async def slowmode(self, ctx, channel: Optional[discord.TextChannel] = None, duration: BetterTimeConverter = None):
+        if duration is None:
+            duration = 0
+        if channel is None:
+            channel = ctx.channel
+        if duration > 21600:
+            return await ctx.send("A channel's slowmode cannot be longer than 6 hours.")
+        try:
+            await channel.edit(slowmode_delay=duration)
+        except discord.Forbidden:
+            return await ctx.send(f"I don't have permission to {channel.mention}'s slowmode.")
+        if duration > 0:
+            await ctx.send(f"{channel.mention}'s slowmode has been set to **{humanize_timedelta(seconds=duration)}.**")
+        else:
+            await ctx.send(f"{channel.mention}'s slowmode has been removed.")
+
+
+
+
+    @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="roleinfo", aliases=['ri'])
     async def roleinfo(self, ctx, *, role: BetterRoles = None):
         if role is None:
@@ -373,14 +379,114 @@ class Mod(censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
                 desc.append(f"⚠️This role is managed by the integration {discIntegration.name} ({discIntegration.id}.")
         if desc[-1] != '':
             desc.append('')
-        position = role.position
+        position = ctx.guild.roles.index(role)
+        strposition = f"{ordinal(len(ctx.guild.roles) - position)} of {len(ctx.guild.roles)} roles"
         if role == ctx.guild.roles[0]:
             str_position=f"{ctx.guild.roles[2].name}\n{ctx.guild.roles[1].name}\nLowest role: **{role.name}**"
         elif role == ctx.guild.roles[-1]:
             str_position=f"Highest role: **{role.name}**\n{ctx.guild.roles[-2].name}\n{ctx.guild.roles[-3].name}"
         else:
-            str_position=f"{ctx.guild.roles[position-1].name}\n**{role.name}**\n{ctx.guild.roles[position+1].name}"
+            str_position=f"{ctx.guild.roles[position+1].name}\n**{role.name}**\n{ctx.guild.roles[position-1].name}"
         embed = discord.Embed(title=f"Role Info for {rolename}", description='\n'.join(desc), color=role.color)
-        embed.add_field(name="Positon", value=str_position, inline=False)
+        embed.add_field(name=f"Positon ({strposition})", value=str_position, inline=False)
         embed.set_footer(text=f"Role ID: {role.id}")
         await ctx.send(embed=embed)
+
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.command(name="names")
+    async def names(self, ctx, *, member: discord.User = None):
+        if member is None:
+            return await ctx.send("You need to specify a user.")
+        names = await self.client.pool_pg.fetch("SELECT * FROM name_changes WHERE user_id = $1", member.id)
+        if len(names) == 0:
+            return await ctx.send(f"There has been no name changes recorded for {member}.\nName changes are only recorded starting from x Jan 2022.")
+        buffer = []
+        for nameentry in names:
+            name = nameentry.get('name')
+            time = f"<:Reply:871808167011549244> <t:{nameentry.get('time')}>"
+            buffer.append((name, time))
+        pages = CustomMenu(source=FrozenNicknames(buffer, f"{member.name}'s past names", True), clear_reactions_after=True, timeout=60)
+        return await pages.start(ctx)
+
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.command(name="nicknames")
+    async def nicknames(self, ctx, *, member: discord.Member = None):
+        if member is None:
+            return await ctx.send("You need to specify a user.")
+        nicknames = await self.client.pool_pg.fetch("SELECT * FROM nickname_changes WHERE member_id = $1", member.id)
+        if len(nicknames) == 0:
+            return await ctx.send(f"There has been no nickname changes recorded for {member}.\nNickname changes are only recorded starting from x Jan 2022.")
+        buffer = []
+        for nicknameentry in nicknames:
+            nickname = nicknameentry.get('nickname')
+            time = f"<:Reply:871808167011549244> <t:{nicknameentry.get('time')}>"
+            buffer.append((nickname, time))
+        pages = CustomMenu(source=FrozenNicknames(buffer, f"{member.name}'s past nicknames", True), clear_reactions_after=True, timeout=60)
+        return await pages.start(ctx)
+
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.command(name="role")
+    async def role(self, ctx, member: discord.Member = None, *, role: BetterRoles = None):
+        """
+        Use this command to add or remove a role to a user.
+        """
+        if member is None:
+            return await ctx.send("You need to specify a member to add a role.")
+        if role is None:
+            return await ctx.send(f"You need to specify a role to add to {member}.")
+        if not role.is_assignable():
+            return await ctx.send(f"You cannot add **{role.name}** to **{member}**; this may be as the role is an integration, the role of another bot, guild default roles (like `@everyone`, Booster role), or that the role is higher than my highest role.")
+        if role >= ctx.author.top_role:
+            return await ctx.send(f"You cannot add **{role.name}** to **{member}** as the role is higher than or the same as your own highest role.")
+        if role in member.roles:
+            try:
+                await member.remove_roles(role, reason=f"Requested by {ctx.author} ({ctx.author.id})")
+            except discord.Forbidden:
+                return await ctx.send(f"I don't have permission to remove **{role.name}** from **{member}**.")
+            await ctx.send(f"Removed **{role.name}** from **{member}**.")
+        else:
+            try:
+                await member.add_roles(role, reason=f"Requested by {ctx.author} ({ctx.author.id})")
+            except discord.Forbidden:
+                return await ctx.send(f"I don't have permission to add **{role.name}** to **{member}**.")
+            await ctx.send(f"Added **{role.name}** to **{member}**.")
+
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.command(name="list")
+    async def list(self, ctx, list_type: str = None, *, things_to_list:str = None):
+        """
+        List roles, users or channels using this command! This command won't ping any users or roles.
+        list_type can be `member/user`, `role`, or `channel`.
+        things_to_list should be user, role or channel IDs separated by spaces.
+        """
+        if list_type is None:
+            list_type = 'member'
+        if list_type not in ['role', 'roles', 'member', 'members', 'user', 'users', 'channel', 'channels']:
+            return await ctx.send("You need to specify a list type to list. list_type can be `member/user`, `role`, or `channel`.")
+        if things_to_list is None:
+            return await ctx.send("You need to specify what to list.")
+        if list_type.lower() in ['member', 'user', 'members', 'users']:
+            things_to_list = things_to_list.split(' ')
+            sending = []
+            for member_id in things_to_list:
+                sending.append(f"<@!{member_id}>")
+        elif list_type.lower() in ['role', 'roles']:
+            things_to_list = things_to_list.split(' ')
+            sending = []
+            for role_id in things_to_list:
+                sending.append(f"<@&{role_id}>")
+        elif list_type.lower() in ['channel', 'channels']:
+            things_to_list = things_to_list.split(' ')
+            sending = []
+            for channel_id in things_to_list:
+                sending.append(f"<#{channel_id}>")
+        else:
+            return await ctx.send("`list_type` can be `member/user`, `role`, or `channel`.")
+        hm = ''
+        for obj in sending:
+            if len(hm) < 1900:
+                hm += f"{obj}\n"
+            else:
+                await ctx.send(hm)
+                hm = f"{obj}\n"
+        await ctx.send(hm, allowed_mentions=discord.AllowedMentions(users=False, roles=False, replied_user = False, everyone=False))

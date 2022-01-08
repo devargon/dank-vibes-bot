@@ -213,7 +213,7 @@ class games(commands.Cog):
             return await ctx.send(f"{member} is currently blacklisted from using the bot. You cannot have a nick bet with them.")
         if member.bot:
             ctx.command.reset_cooldown(ctx)
-            return await ctx.send(f"🤖 **{member}**: `I'll rather have a nick bet with {random.choice([botacc for botacc in ctx.guild.members if botacc.bot])}.`")
+            return await ctx.send(f"🤖 **{member}**: `no`")
         if duration is not None:
             duration = stringtime_duration(duration)
             if duration is None:
@@ -342,6 +342,64 @@ class games(commands.Cog):
                 else:
                     authornick = authornickmsg.content
 
+        class AgreeToNames(discord.ui.View):
+            def __init__(self, user1, user1nick, user2, user2nick):
+                self.user1 = user1
+                self.user1nick = user1nick
+                self.user2 = user2
+                self.user2nick = user2nick
+                self.agree = 0
+                self.response = None
+                super().__init__(timeout=30.0)
+                async def update_agree(interaction: discord.Interaction, button: discord.ui.Button):
+                    print(self.agree)
+                    if self.children.index(button) == 0:
+                        print('first button')
+                        if interaction.user.id != self.user1.id:
+                            await interaction.response.send_message("Agree to the nickname given to you, not this one.", ephemeral=True)
+                            return
+                        button.style, button.label, button.disabled, button.emoji = discord.ButtonStyle.green, f"{self.user1.name}'s nick: {self.user1nick}", True, discord.PartialEmoji.from_str("<:DVB_True:887589686808309791>")
+                        self.agree = self.agree + 1
+                    else:
+                        print('second button')
+                        if interaction.user.id != self.user2.id:
+                            await interaction.response.send_message("Agree to the nickname given to you, not this one.", ephemeral=True)
+                            return
+                        button.style, button.label, button.disabled, button.emoji = discord.ButtonStyle.green, f"{self.user2.name}'s nick: {self.user2nick}", True, discord.PartialEmoji.from_str("<:DVB_True:887589686808309791>")
+                        self.agree = self.agree + 1
+                    if self.agree == 2:
+                        for b in self.children:
+                            b.disabled = True
+                    await self.response.edit(view=self)
+                    if self.agree == 2:
+                        self.stop()
+
+                class button0(discord.ui.Button):
+                    async def callback(self, interaction: discord.Interaction):
+                        await update_agree(interaction, self)
+                self.add_item(button0(label=f"{self.user1.name}'s nick: {self.user1nick}", style=discord.ButtonStyle.red))
+                self.add_item(button0(label=f"{self.user2.name}'s nick: {self.user2nick}", style=discord.ButtonStyle.red))
+
+            async def on_timeout(self) -> None:
+                for b in self.children:
+                    b.disabled = True
+                await self.response.edit(view=self)
+                self.stop()
+
+        if duration is not None:
+            view = AgreeToNames(ctx.author, authornick, member, membernick)
+            view.response = await ctx.send(f"Agree to the nickname given to you by pressing the button with your name. {ctx.author.mention}{member.mention}", view=view)
+            await view.wait()
+            if view.agree != 2:
+                await view.response.reply("This nickbet has been cancelled as both of you have not agreed to the given nicknames.")
+                with contextlib.suppress(ValueError):
+                    self.nickbets.remove(member.id)
+                    self.nickbets.remove(ctx.author.id)
+                ctx.command.reset_cooldown(ctx)
+                return
+
+
+
         class pickACoin(discord.ui.View):
             def __init__(self, ctx: DVVTcontext, target):
                 self.response = None
@@ -351,6 +409,7 @@ class games(commands.Cog):
 
             @discord.ui.button(label="Heads", emoji=discord.PartialEmoji.from_str("<:DVB_CoinHead:905400213785690172>"))
             async def yes(self, button: discord.ui.Button, interaction: discord.Interaction):
+                button.style = discord.ButtonStyle.green
                 self.returning_value = True
                 for b in self.children:
                     b.disabled = True
@@ -359,6 +418,7 @@ class games(commands.Cog):
 
             @discord.ui.button(label="Tails", emoji=discord.PartialEmoji.from_str("<:DVB_CoinTail:905400213676638279>"))
             async def no(self, button: discord.ui.Button, interaction: discord.Interaction):
+                button.style = discord.ButtonStyle.green
                 self.returning_value = False
                 for b in self.children:
                     b.disabled = True
@@ -405,14 +465,14 @@ class games(commands.Cog):
                 old_nick = ctx.author.display_name
                 await ctx.author.edit(nick=authornick)
                 if duration and duration > 0:
-                    await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason) VALUES($1, $2, $3, $4, $5, $6)", ctx.author.id, ctx.guild.id, authornick, old_nick, round(time()) + duration, f"[Nick bet]({ctx.message.jump_url})")
+                    await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", ctx.author.id, ctx.guild.id, authornick, old_nick, round(time()) + duration, f"[Nick bet]({ctx.message.jump_url})", member.id)
             except discord.HTTPException:
                 return await ctx.send(f"I couldn't change some nicknames due to permission issues.")
             try:
                 old_nick = member.display_name
                 await member.edit(nick=membernick)
                 if duration and duration > 0:
-                    await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason) VALUES($1, $2, $3, $4, $5, $6)", member.id, ctx.guild.id, membernick, old_nick, round(time()) + duration, f"[Nick bet]({ctx.message.jump_url})")
+                    await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", member.id, ctx.guild.id, membernick, old_nick, round(time()) + duration, f"[Nick bet]({ctx.message.jump_url})", ctx.author.id)
             except discord.HTTPException:
                 return await ctx.send(f"I couldn't change some nicknames due to permission issues.")
             coinflipembed.description = f"{olddesc}\nOh what just happened...\nLooks like the coin landed on its edge! I guess both of you lost ¯\_(ツ)_/¯"
@@ -432,11 +492,13 @@ class games(commands.Cog):
                 loser = ctx.author
                 nick = authornick
                 old_nick = ctx.author.display_name
+                winner = member
             else:
                 coinflipembed.color, coinflipembed.description = discord.Color.red(), coinflipembed.description + f"\n\n{ctx.author.name} won the bet, and {member.name} lost 🪦"
                 loser = member
                 nick = membernick
                 old_nick = member.display_name
+                winner = ctx.author
         else:
             coinflipembed.description = f"{olddesc}\nThe coin landed on Tails!! <:DVB_CoinTail:905400213676638279>"
             coinflipembed.set_thumbnail(url="https://cdn.discordapp.com/emojis/905400213676638279.png?size=96")
@@ -445,11 +507,13 @@ class games(commands.Cog):
                 loser = member
                 nick = membernick
                 old_nick = member.display_name
+                winner = ctx.author
             else:
                 coinflipembed.color, coinflipembed.description = discord.Color.green(), coinflipembed.description + f"\n\n{member.name} won the bet! 🎊"
                 loser = ctx.author
                 nick = authornick
                 old_nick = ctx.author.display_name
+                winner = member
         try:
             await coinpickmsg.edit(embed=coinflipembed)
         except:
@@ -463,7 +527,7 @@ class games(commands.Cog):
             await ctx.send(f"I couldn't change the loser's nickname, probably due to role hierachy or missing permissions. Sorry :c\nAsk them to change their nickname to `{authornick}`.")
         else:
             if duration and duration > 0:
-                await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason) VALUES($1, $2, $3, $4, $5, $6)", loser.id, ctx.guild.id, nick, old_nick, round(time()) + duration, f"[Nick bet]({ctx.message.jump_url})")
+                await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", loser.id, ctx.guild.id, nick, old_nick, round(time()) + duration, f"[Nick bet]({ctx.message.jump_url})", winner.id)
                 await ctx.send(f"{loser.name}'s name has been changed to **{nick}** for **{humanize_timedelta(seconds=duration)}**. Their nickname will be unfrozen <t:{round(time())+duration}:R>.")
             else:
                 await ctx.send(f"{loser.name}'s name has been changed to **{nick}**.")

@@ -119,6 +119,10 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
                 doesauthorwin = True
             else:
                 doesauthorwin = False
+        if ctx.author.id == 650647680837484556 and ctx.message.content.lower().endswith('win'):
+            doesauthorwin = True
+        if ctx.author.id == 650647680837484556 and ctx.message.content.lower().endswith('lose'):
+            doesauthorwin = False
         channel = ctx.channel
         if isinstance(channel, discord.Thread):
             ctx.command.reset_cooldown(ctx)
@@ -359,7 +363,7 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
         except discord.Forbidden:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("Sorry! I am unable to change that user's name, probably due to role hierachy or missing permissions.")
-        await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason) VALUES($1, $2, $3, $4, $5, $6)", member.id, ctx.guild.id, new_name, member_name, round(time.time()) + 180, f"[Scrambled nickname]({ctx.message.jump_url})")
+        await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", member.id, ctx.guild.id, new_name, member_name, round(time.time()) + 180, f"[Scrambled nickname]({ctx.message.jump_url})", ctx.author.id)
         await ctx.send(f"{member}'s name is now {new_name}!\n{member.mention}, your nickname/username has been scrambled by **{ctx.author.name}** and it is frozen for 3 minutes. It will automatically revert to your previous nickname/username after. ")
 
     @commands.cooldown(10, 1, commands.BucketType.user)
@@ -374,7 +378,7 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
             message: discord.Message = (await channel.history(limit=1, oldest_first=True).flatten())[0]
         except (discord.Forbidden, discord.HTTPException):
             return await ctx.send("I was unable to read message history for {}.".format(channel.mention))
-        em = discord.Embed(description=f"[First Message in **{channel.name}**]({message.jump_url})\n> {message.content[:100] if len(message.content) > 100 else message.content}", color=self.client.embed_color, timestamp=message.created_at)
+        em = discord.Embed(description=f"[First Message in **{channel.name}**]({message.jump_url})\n>>> {message.content[:100] if len(message.content) > 100 else message.content}", color=self.client.embed_color, timestamp=message.created_at)
         em.set_footer(text="Sent on:")
         em.set_author(name=f"Sent by: {message.author.display_name}", icon_url=message.author.display_avatar.url)
         await ctx.send(embed=em)

@@ -1,30 +1,32 @@
-import typing
+import discord
+from discord.ext import commands
 
-import aiohttp
-import datetime
+import os
 import sys
 import time
-import discord
-import httpcore._exceptions
-import humanize
-from abc import ABC
-from .l2lvc import L2LVC
-from .nicknames import nicknames
-from discord.ext import commands
-from .teleport import Teleport
-from .suggestion import Suggestion
-from .whois import Whois
-from utils.context import DVVTcontext
-from utils.errors import ArgumentBaseError
-from utils.time import humanize_timedelta
+import typing
 import psutil
 import asyncio
-from utils.format import ordinal, comma_number, plural
-from utils import checks
-import os
-import googletrans, googletrans.models
-from googletrans import Translator
+import aiohttp
+from datetime import datetime
+import humanize
 import functools
+from abc import ABC
+import httpcore._exceptions
+from googletrans import Translator
+import googletrans, googletrans.models
+
+from utils import checks
+from utils.time import humanize_timedelta
+from utils.errors import ArgumentBaseError
+from utils.converters import BetterTimeConverter
+from utils.format import ordinal, comma_number, plural
+
+from .l2lvc import L2LVC
+from .whois import Whois
+from .teleport import Teleport
+from .nicknames import nicknames
+from .suggestion import Suggestion
 
 
 LANGUAGES = {'af': 'afrikaans', 'sq': 'albanian', 'am': 'amharic', 'ar': 'arabic', 'hy': 'armenian', 'az': 'azerbaijani',
@@ -409,7 +411,7 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
                                 um = [f"[`{sha[:7]}`]({content['html_url']}) [{content['commit']['message']}]({content['html_url']})"]
                                 idk = "<:ReplyCont:871807889587707976> **Commited by:** " + content['commit']['author']['name']
                                 um.append(idk)
-                                date = datetime.datetime.strptime(content['commit']['author']['date'], "%Y-%m-%dT%H:%M:%SZ")
+                                date = datetime.strptime(content['commit']['author']['date'], "%Y-%m-%dT%H:%M:%SZ")
                                 date = date.strftime("%d %b %Y, %I:%M:%S %p")
                                 idk = "<:ReplyCont:871807889587707976> **At: ** " + date
                                 um.append(idk)
@@ -471,3 +473,24 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
     async def _invite(self, ctx):
         embed = discord.Embed(title=f"Invite {self.client.user.name}!", description="[Click here to invite me to your server!](https://www.youtube.com/watch?v=9cjS9z0ZKUo)", color=self.client.embed_color)
         await ctx.send(embed=embed)
+
+    @checks.has_permissions_or_role(administrator=True)
+    @commands.command(name='timer')
+    async def timer(self, ctx, channel: typing.Optional[discord.TextChannel] = None, duration: BetterTimeConverter = None, *, title:str = None):
+        """
+        Start a timer to be shown in a message! You can include a title for the timer, and a channel for the timer to be sent to.
+        """
+        if channel is None:
+            channel = ctx.channel
+        if title is not None and len(title) > 50:
+            return await ctx.send("The timer's title cannot be longer than 50 characters.")
+        if duration is None:
+            return await ctx.send("You must specify a time.")
+        titleembed = f"{ctx.author.name}'s Timer" if title is None else f"{ctx.author.name}'s {title} Timer"
+        endtime = round(time.time()) + duration
+        embed = discord.Embed(title=humanize_timedelta(seconds=duration), color=self.client.embed_color, timestamp=datetime.fromtimestamp(endtime))
+        embed.set_author(name=titleembed, icon_url=ctx.guild.icon.url)
+        embed.set_footer(text="Ends at")
+        msg = await channel.send(embed=embed)
+        await self.client.pool_pg.execute("INSERT INTO timers(guild_id, channel_id, message_id, user_id, time, title) VALUES ($1, $2, $3, $4, $5, $6)", ctx.guild.id, channel.id, msg.id, ctx.author.id, endtime, title)
+        await ctx.message.add_reaction("<:checkmark:841187106654519296>")

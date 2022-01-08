@@ -20,7 +20,7 @@ donochannel = 871737314831908974 if os.getenv('state') == '1' else 8625748568467
 logchannel = 871737332431216661 if os.getenv('state') == '1' else 896693789312319508
 holder = 827080569501777942 if os.getenv('state') == '1' else 798238834340528149
 grinderlogID = 896068443093229579 if os.getenv('state') == '1' else 862433139921911809
-webhook_url = 'https://canary.discord.com/api/webhooks/896095030970818622/kI5DdgTRxbfkDS-xdoULPpDqan1nDpRexe6g8D4K5c-Dw5Rn-RLKyUBRCkesLhBwgO_p' if os.getenv('state') == '1' else 'https://ptb.discord.com/api/webhooks/896106637541142558/mQ6wq5MvdoywSAuGlOrMCZIf068y5Ao73B9kOdyT16UBCp2m9A7vQRQThtHvbmP4a_mT'
+webhook_url = 'https://canary.discord.com/api/webhooks/896095030970818622/kI5DdgTRxbfkDS-xdoULPpDqan1nDpRexe6g8D4K5c-Dw5Rn-RLKyUBRCkesLhBwgO_p' if os.getenv('state') == '1' else 'https://discord.com/api/webhooks/922933444370104330/DxlVMQ7rxdk__R6Ej8SPWpaTXWprKcUVb606Hfo91PvFnA-5xXdMi3RuyQdIngZdU3Rf'
 
 class MessageFlag(commands.FlagConverter, case_insensitive = True, delimiter = ' ', prefix='--'):
     msg : Optional[str]

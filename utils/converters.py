@@ -3,7 +3,7 @@ from .time import parse_timedelta
 from datetime import timedelta
 from discord.ext import commands
 from utils.errors import ArgumentBaseError, DefaultRoleError, IntegratedRoleError, InvalidDatabase, RoleNotFound, UserNotFound
-from utils.format import stringnum_toint
+from utils.format import stringnum_toint, stringtime_duration
 
 class TimedeltaConverter(commands.Converter):
     def __init__(self, *, minimum=None, maximum=None, allowed_units=None, default_units=None):
@@ -110,3 +110,13 @@ class BetterInt(commands.Converter):
         if number is None:
             raise ArgumentBaseError(message="There was a problem converting your requested sum to a number. You might have input an incorrect number.")
         return number
+
+class BetterTimeConverter(commands.Converter):
+    async def convert(self, ctx, argument:str):
+        try:
+            time: int = stringtime_duration(argument)
+        except Exception as e:
+            raise e
+        if time is None:
+            raise ArgumentBaseError(message="You have inputted an invalid time.")
+        return time
