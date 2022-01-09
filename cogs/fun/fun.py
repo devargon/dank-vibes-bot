@@ -521,7 +521,7 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
 
 
         covidinfectors = await self.client.pool_pg.fetch("SELECT * FROM infections ORDER BY infectioncase DESC")
-        um = f"**Description**\nCoviDVBot, also known as **Co**rona**vi**rus **D**isease of Dank Vibes **Bot**, is a coronavirus that emerged in January 2022. CoviDVBot is not known to cause any side effects to a user. It first originated from a bot called {self.client.user}, before evolving and being able to infect humans. (Patient Zero is Argon#0002)\nCoviDVBot is spread through interacting with other humans, especially via mentioning someone.\nThere is no known cure for CoviDVBot, hence once infected, the disease will stay with the user for eternity."
+        um = f"CoviDVBot, also known as **Co**rona**vi**rus **D**isease of Dank Vibes **Bot**, is a coronavirus that emerged in January 2022. CoviDVBot is not known to cause any side effects to a user. It first originated from a bot called {self.client.user}, before evolving and being able to infect humans. (Patient Zero is Argon#0002)\nCoviDVBot is spread through interacting with other humans, especially via mentioning someone.\nThere is no known cure for CoviDVBot, hence once infected, the disease will stay with the user for eternity."
         embed1 = discord.Embed(title="CoviDVBot At a Glance", description=um, color=self.client.embed_color)
         nooo = {}
         for covidinfector in covidinfectors:
