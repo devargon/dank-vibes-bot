@@ -40,6 +40,7 @@ class Mod(Sticky, DisboardAutoLock, censor, BrowserScreenshot, lockdown, command
     """
     def __init__(self, client):
         PROXY = "161.35.235.103:8889"
+        self.queue = []
         self.op = webdriver.ChromeOptions() # selenium options for chrome
         self.op.add_argument('--no-sandbox')
         self.op.add_argument('--disable-gpu')
