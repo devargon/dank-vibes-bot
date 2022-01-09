@@ -570,10 +570,10 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
             if len(users_infected_byauthor) > 0:
                 if len(users_infected_byauthor) <= 3:
                     infector_list = [str(self.client.get_user(user)) for user in users_infected_byauthor if self.client.get_user(user) is not None]
-                    infector_list = ", ".join(infector_list)
+                    infector_list = "**" + ", ".join(infector_list) + "**"
                 else:
                     infector_list = [str(self.client.get_user(user)) for user in users_infected_byauthor[:3] if self.client.get_user(user) is not None]
-                    infector_list = ", ".join(infector_list) + f"and {len(users_infected_byauthor) - 3} others"
+                    infector_list = "**" + ", ".join(infector_list) + f"** and {len(users_infected_byauthor) - 3} others"
                 embed2.add_field(name=f"People you infected ({len(users_infected_byauthor)})", value=f"{infector_list}", inline=True)
             else:
                 embed2.add_field(name="People you infected", value="No one (yet)", inline=True)
