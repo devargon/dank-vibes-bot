@@ -34,7 +34,7 @@ class FrozenNicknames(menus.ListPageSource):
         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return embed
 
-class Mod(DisboardAutoLock, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
+class Mod(Sticky, DisboardAutoLock, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
     """
     Mod commands
     """
