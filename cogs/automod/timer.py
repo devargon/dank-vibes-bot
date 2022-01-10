@@ -21,7 +21,7 @@ class timer(commands.Cog):
                 if timer_record.get('time') < round(time()):
                     await self.client.pool_pg.execute("DELETE FROM timers WHERE message_id = $1", timer_record.get('message_id'))
             print(timer_record.get('channel_id'))
-            channel = guild.get_channel(timer_record.get('channel_id'))
+            channel = self.client.get_channel(timer_record.get('channel_id'))
             if channel is None:
                 if timer_record.get('time') < round(time()):
                     await self.client.pool_pg.execute("DELETE FROM timers WHERE message_id = $1", timer_record.get('message_id'))
