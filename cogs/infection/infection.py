@@ -2,7 +2,7 @@ import asyncio
 import json
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 from time import time
 from datetime import datetime
 import pytz
@@ -11,6 +11,13 @@ class infection(commands.Cog):
     def __init__(self, client):
         self.client = client
         self.infected = None
+        self.check_infection.start()
+
+    @tasks.loop(seconds=60.0)
+    async def check_infection(self):
+        await self.client.wait_until_ready()
+        infections = await self.client.pool_pg.fetch("SELECT member_id FROM infections")
+        self.infected = [i.get('member_id') for i in infections]
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -115,3 +122,6 @@ class infection(commands.Cog):
                     return
             await self.client.pool_pg.execute("INSERT INTO nickname_changes VALUES($1, $2, $3, $4)",
                                               member_before.guild.id, member_before.id, new_nickname, round(time()))
+
+    def cog_unload(self) -> None:
+        self.check_infection.stop()
