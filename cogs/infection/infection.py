@@ -64,9 +64,9 @@ class infection(commands.Cog):
                         timestamp = f"<t:{round(timestamp)}>"
                         symbol = emojis.get(action) if action in emojis else action
                         if reason is None:
-                            tempstr = f"{symbol} by **{moderator}** on **{timestamp}**"
+                            tempstr = f"{symbol} by **{moderator}** on {timestamp}"
                         else:
-                            tempstr = f"{symbol} by **{moderator}** on **{timestamp}** for **{reason}**"
+                            tempstr = f"{symbol} by **{moderator}** on {timestamp}: {reason}"
                         if len(symbol) + len(tempstr) + len(um) < 1990:
                             um += f"{tempstr}\n"
                         else:
