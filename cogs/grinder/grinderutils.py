@@ -176,41 +176,36 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         if not message.guild: # or message.guild.id != 595457764935991326:
             #print('Message is not from a guild')
             return
-        if "You gave" not in message.content:
-            #print('Not a sent message')
+        if len(message.embeds) == 0:
             return
         if message.channel.id != donochannel:
             #print('not donor channel')
             return
         dankholder = message.guild.get_member(holder)
-        # multiple digit transfer
-        regex = re.compile(f'<@([0-9]+)> You gave {dankholder.name} \*\*⏣ ([\d+]+[,\d]+?)\*\*')
-        result = re.findall(regex, message.content)
-        if not result:
-            #print("first pattern failed)")
-            # single digit transfer
-            regex2 = re.compile(f'<@([0-9]+)> You gave {dankholder.name} \*\*⏣ ([\d])\*\*')
-            result = re.findall(regex2, message.content)
-        if len(result) != 1:
+        msgembed = message.embeds[0]
+        if len(msgembed.fields) < 0:
             return
-        if len(result[0]) != 2:
+        if not type(msgembed.fields[0].value) == str:
             return
-        result = result[0]
-        await message.add_reaction('<a:typing:839487089304141875>')
+        shared = msgembed.fields[0].value
+        shared = shared[3:][:-1].replace(',', '')
         try:
-            userid = int(result[0])
-            amt = int(result[1].replace(',', ''))
-        except ValueError:
-            return await message.channel.send('I could not detect the correct number of coins sent.')
+            shared = int(shared)
+        except Exception as e:
+            return await message.channel.send(f"There was an error converting the shared amount to a number: ```py\n{e}\n```")
         else:
-            member = message.guild.get_member(userid)
+            amt = shared
+            if len(message.mentions) > 0:
+                member = message.mentions[0]
+            else:
+                return await message.channel.send("⚠️ **You need to have Reply Pings enabled!** Please inform **Ari#0005** to manually add your grinder statistics, as I was unable to detect who shared the coins.")
             if not (discord.utils.get(member.roles, id=tgrinderroleID) or discord.utils.get(member.roles, id=grinderroleID)):
                 return await message.channel.send("You don't have the required roles or the roles declared are invalid.")
-            result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", userid)
+            result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
             if result is None:
-                await self.client.pool_pg.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)", userid, amt, amt, 0, amt, amt, round(time.time()), message.jump_url)
+                await self.client.pool_pg.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)", member.id, amt, amt, 0, amt, amt, round(time.time()), message.jump_url)
             else:
-                await self.client.pool_pg.execute("UPDATE grinderdata SET today = $1, past_week = $2, past_month = $3, all_time = $4, last_dono_time = $5, last_dono_msg = $6 WHERE user_id = $7", result.get('today') + amt, result.get('past_week') + amt, result.get('past_month') + amt, result.get('all_time') + amt, round(time.time()), message.jump_url, userid)
+                await self.client.pool_pg.execute("UPDATE grinderdata SET today = $1, past_week = $2, past_month = $3, all_time = $4, last_dono_time = $5, last_dono_msg = $6 WHERE user_id = $7", result.get('today') + amt, result.get('past_week') + amt, result.get('past_month') + amt, result.get('all_time') + amt, round(time.time()), message.jump_url, member.id)
             total = await self.client.pool_pg.fetchrow("SELECT SUM(all_time) FROM grinderdata")
             logembed = discord.Embed(description=f"**Grinder**: {member.mention}\n**Amount**: `⏣ {comma_number(amt)}`\nClick [here]({message.jump_url}) to view.\n`⏣ {comma_number(int(total.get('sum')))}` total grinded by grinders!", color=self.client.embed_color, timestamp=discord.utils.utcnow())
             logembed.set_footer(text=f"{message.guild.name} Grinder Log", icon_url=message.guild.icon.url)
