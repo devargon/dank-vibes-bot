@@ -25,7 +25,8 @@ AVAILABLE_EXTENSIONS = ['cogs.dev',
 'cogs.giveaways',
 'cogs.donations',
 'cogs.dankmemer',
-'cogs.infection'
+'cogs.infection',
+'cogs.automod'
 ]
 
 load_dotenv('credentials.env')
