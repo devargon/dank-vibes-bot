@@ -11,7 +11,7 @@ class timer(commands.Cog):
 
     @tasks.loop(seconds=4)
     async def timer_loop(self):
-        await self.client.wait_until_ready()
+
         timers = await self.client.pool_pg.fetch("SELECT * FROM timers")
         if len(timers) == 0:
             return
@@ -20,8 +20,8 @@ class timer(commands.Cog):
             if guild is None:
                 if timer_record.get('time') < round(time()):
                     await self.client.pool_pg.execute("DELETE FROM timers WHERE message_id = $1", timer_record.get('message_id'))
-            print(timer_record.get('channel_id'))
-            channel = self.client.get_channel(timer_record.get('channel_id'))
+            chan_id = timer_record.get('channel_id')
+            channel = self.client.get_channel(chan_id)
             if channel is None:
                 if timer_record.get('time') < round(time()):
                     await self.client.pool_pg.execute("DELETE FROM timers WHERE message_id = $1", timer_record.get('message_id'))
@@ -63,8 +63,9 @@ class timer(commands.Cog):
                 except (discord.NotFound, discord.Forbidden, discord.HTTPException):
                     pass
 
+    @timer_loop.before_loop
+    async def before_timer_loop(self):
+        await self.client.wait_until_ready()
 
-
-
-
-
+    def cog_unload(self) -> None:
+        self.timer_loop.stop()
