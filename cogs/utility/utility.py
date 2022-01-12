@@ -494,4 +494,3 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
         embed.set_footer(text="Ends at")
         msg = await channel.send(embed=embed)
         await self.client.pool_pg.execute("INSERT INTO timers(guild_id, channel_id, message_id, user_id, time, title) VALUES ($1, $2, $3, $4, $5, $6)", ctx.guild.id, channel.id, msg.id, ctx.author.id, endtime, title)
-        await ctx.message.add_reaction("<:checkmark:841187106654519296>")
