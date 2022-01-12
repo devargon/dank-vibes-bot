@@ -83,7 +83,14 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         embed = discord.Embed(color=self.client.embed_color, timestamp=discord.utils.utcnow())
         embed.add_field(name='Grinder contributions', value=f"Today: `⏣ {comma_number(result.get('today')) if result else 0}` \nThis Week: `⏣ {comma_number(result.get('past_week')) if result else 0}`\nLast Week: `⏣ {comma_number(result.get('last_week')) if result else 0}`\nThis Month: `⏣ {comma_number(result.get('past_month')) if result else 0}`\nAll Time: `⏣ {comma_number(result.get('all_time')) if result else 0}`", inline=True)
         embed.add_field(name='Last Logged', value=f"<t:{result.get('last_dono_time')}>\n[Jump to logged message]({result.get('last_dono_msg')})" if result else "[<t:0>](https://www.youtube.com/watch?v=dQw4w9WgXcQ)", inline=True)
-        embed.add_field(name='Has fulfilled requirement?', value='<:DVB_True:887589686808309791> Yes' if (result and result.get('today') >= 5000000) else f"<:DVB_False:887589731515392000> No\nTo complete your requirement, you have to send `⏣ {comma_number(5000000-result.get('today') if result else 5000000)}` with tax to {self.client.get_user(holder)}.", inline=False)
+        if result and result.get('today') >= 3000000:
+            if result.get('today') >= 5000000:
+                value = f"<:DVB_True:887589686808309791> Yes"
+            else:
+                value = f"<:DVB_True:887589686808309791> Yes if grinder is on **3M Tier**"
+        else:
+            value=f"<:DVB_False:887589731515392000> No\nTo complete your requirement, you have to send `⏣ {comma_number(5000000-result.get('today') if result else 5000000)}`, or `⏣ {comma_number(3000000-result.get('today') if result else 3000000)}` (if you're on the 3M Tier) to {self.client.get_user(holder)}."
+        embed.add_field(name='Has fulfilled requirement?', value=value, inline=False)
         total = await self.client.pool_pg.fetchrow("SELECT SUM(all_time) FROM grinderdata")
         embed.set_footer(text=f"A total ⏣ {comma_number(int(total.get('sum')))} grinded so far! · {ctx.guild.name}")
         embed.set_author(name=str(member), icon_url=member.display_avatar.url)
@@ -182,13 +189,17 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             #print('not donor channel')
             return
         dankholder = message.guild.get_member(holder)
+
         msgembed = message.embeds[0]
         if len(msgembed.fields) < 0:
             return
-        if not type(msgembed.fields[0].value) == str:
+        if not (type(msgembed.fields[0].value) == str and type(msgembed.fields[0].name) == str):
+            return
+        title = msgembed.fields[0].name
+        if title != "Shared":
             return
         shared = msgembed.fields[0].value
-        shared = shared[3:][:-1].replace(',', '')
+        shared = shared.split(' ')[1].replace('`', '').replace(',', '')
         try:
             shared = int(shared)
         except Exception as e:
@@ -215,11 +226,23 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                 old = 0
             else:
                 old = result.get('today')
+            if old + amt >= 3000000:
+                has_completed_3m = True
+            else:
+                has_completed_3m = False
             if old + amt >= 5000000:
+                has_completed_5m = True
+            else:
+                has_completed_5m = False
+            if has_completed_3m == True:
+                if has_completed_5m is not True:
+                    msg = "**If you are on the 3M Grinder Tier:** \n<:DVB_True:887589686808309791> You have completed your Grinder requirement for today! I will notify you when you can submit your next ⏣ 3,000,000 again.\n\nIf you are on the **5M Grinder Tier**: \n<:DVB_False:887589731515392000> Ignore this message."
+                else:
+                    msg = "<:DVB_True:887589686808309791> You have completed your Grinder requirement for today! I will notify you when you can submit your next ⏣ 3,000,000/⏣ 5,000,000 again."
                 try:
-                    await member.send("<:DVB_True:887589686808309791> You have completed your Grinder requirement for today! I will notify you when you can submit your next ⏣ 5,000,000 again.")
+                    await member.send(msg)
                 except:
-                    await message.channel.send(f"{member.mention} <:DVB_True:887589686808309791> You have completed your Grinder requirement for today! I will notify you when you can submit your next ⏣ 5,000,000 again.")
+                    await message.channel.send(f"{member.mention} {msg}")
 
     @checks.is_bav_or_mystic()
     @commands.command(name="gdm", brief="Reminds DV Grinders that the requirement has been checked.", description="Reminds DV Grinders that the requirement has been checked.")
