@@ -588,9 +588,10 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
                     elif covid.get('member_id') == infected:
                         return covid.get('infector')
                 return None
+            infectiontrack.append(f"**{ctx.author}**")
             infector = get_infector(ctx.author.id)
             if infector is not None:
-                infectiontrack.append(f"**{infector}**")
+                infectiontrack.append(str(infector))
             while infector is not None:
                 infector = get_infector(infector)
                 if infector is not None:
