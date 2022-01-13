@@ -591,7 +591,12 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
             infectiontrack.append(f"**{ctx.author}**")
             infector = get_infector(ctx.author.id)
             if infector is not None:
-                infectiontrack.append(str(infector))
+                user = self.client.get_user(infector)
+                if user is not None:
+                    user = str(user)
+                else:
+                    user = str(infector)
+                infectiontrack.append(user)
             while infector is not None:
                 infector = get_infector(infector)
                 if infector is not None:
