@@ -15,6 +15,7 @@ from datetime import datetime
 guildid = 871734809154707467 if os.getenv('state') == '1' else 595457764935991326
 tgrinderroleID = 896052592797417492 if os.getenv('state') == '1' else 827270880182009956
 grinderroleID = 896052612284166204 if os.getenv('state') == '1' else 859494328422367273
+grinder3mroleID = 896052612284166204 if os.getenv('state') == '1' else 931172654696788010
 argon = 650647680837484556
 donochannel = 871737314831908974 if os.getenv('state') == '1' else 862574856846704661
 logchannel = 871737332431216661 if os.getenv('state') == '1' else 896693789312319508
@@ -77,7 +78,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             member = ctx.author
         if ctx.author.id not in [argon] and ctx.author.guild_permissions.manage_roles != True:
             member = ctx.author
-        if not (ctx.author.id == argon or ctx.author.guild_permissions.manage_roles==True or discord.utils.get(ctx.author.roles, id=grinderroleID) or discord.utils.get(ctx.author.roles, id=tgrinderroleID) or ctx.author.id in [argon]):
+        if not (ctx.author.id == argon or ctx.author.guild_permissions.manage_roles==True or discord.utils.get(ctx.author.roles, id=grinderroleID) or discord.utils.get(ctx.author.roles, id=tgrinderroleID) or discord.utils.get(ctx.author.roles, id=grinder3mroleID) or ctx.author.id in [argon]):
             return await ctx.send("You need to be a **Grinder**/**Trial Grinder** to use this command.")
         result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
         embed = discord.Embed(color=self.client.embed_color, timestamp=discord.utils.utcnow())
@@ -210,7 +211,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                 member = message.mentions[0]
             else:
                 return await message.channel.send("⚠️ **You need to have Reply Pings enabled!** Please inform **Ari#0005** to manually add your grinder statistics, as I was unable to detect who shared the coins.")
-            if not (discord.utils.get(member.roles, id=tgrinderroleID) or discord.utils.get(member.roles, id=grinderroleID)):
+            if not (discord.utils.get(member.roles, id=tgrinderroleID) or discord.utils.get(member.roles, id=grinder3mroleID) or discord.utils.get(member.roles, id=grinderroleID)):
                 return await message.channel.send("You don't have the required roles or the roles declared are invalid.")
             result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
             if result is None:
@@ -255,10 +256,11 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         if flags.msg is not None and len(flags.msg) > 2500:
             return await ctx.send("You might have included a message, but it's more than 2500 characters so I cannot send it.")
         grinderrole = ctx.guild.get_role(grinderroleID)
+        grinder3mrole = ctx.guild.get_role(grinder3mroleID)
         tgrinderrole = ctx.guild.get_role(tgrinderroleID)
         if grinderrole is None or tgrinderrole is None:
             return await ctx.send("One or more roles declared in this command are invalid, hence the command cannot proceed.")
-        grinders = [member for member in ctx.guild.members if grinderrole in member.roles or tgrinderrole in member.roles]  # gets all grinders
+        grinders = [member for member in ctx.guild.members if grinderrole in member.roles or tgrinderrole in member.roles or grinder3mrole in member.roles]  # gets all grinders
         if not grinders:
             return await ctx.send("There are no grinders to be DMed.")
         confirmview = confirm(ctx, self.client, 15.0)
