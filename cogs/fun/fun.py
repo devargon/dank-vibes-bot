@@ -27,6 +27,7 @@ from .games import games
 from .color import color
 
 alexflipnoteAPI = os.getenv('alexflipnoteAPI')
+tenorAPI = os.getenv('tenorAPI')
 
 class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
     """
@@ -66,6 +67,8 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
         elif discord.utils.get(message.author.roles, id=915094170593529916):
             return commands.Cooldown(1, 900)
         elif discord.utils.get(message.author.roles, id=915094236582518834):
+            return commands.Cooldown(1, 900)
+        elif discord.utils.get(message.author.roles, id=931174008970444800):
             return commands.Cooldown(1, 900)
         elif discord.utils.get(message.author.roles, name="Vibing Investor"):
             return commands.Cooldown(1, 1800)
@@ -599,3 +602,35 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
         view = description(embed1, embed2, ctx.author)
         view.response = await ctx.send(embed=embed1, view=view)
         await view.wait()
+
+    @checks.in_beta()
+    @commands.cooldown(1, 10800, commands.BucketType.user)
+    @commands.command(name="sus")
+    async def sus(self, ctx):
+        """
+        Undefined
+        """
+        choice = random.randint(1, 2)
+        if choice == 1:
+            name = ctx.author.display_name
+            name = name + " ඞ"
+            if len(name) > 32:
+                choice = random.randint(1, 2)
+            else:
+                try:
+                    await ctx.author.edit(nick=name)
+                except discord.Forbidden:
+                    choice = random.randint(1, 2)
+                else:
+                    await ctx.send(f"{ctx.author.mention} ඞ")
+                    return
+        if choice == 2:
+            async with aiohttp.ClientSession() as session:
+                url=f"https://g.tenor.com/v1/search?q=among+us&key={tenorAPI}&limit=100"
+                async with session.get(url) as resp:
+                    data = await resp.json()
+                    gif = random.choice(data.get('results'))
+                    gif = gif.get('media')[0].get('gif').get('url')
+                    await ctx.send(gif)
+        else:
+            print('nooo')
