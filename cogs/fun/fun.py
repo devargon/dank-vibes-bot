@@ -580,6 +580,28 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
                 embed2.add_field(name=f"People you infected ({len(users_infected_byauthor)})", value=f"{infector_list}", inline=True)
             else:
                 embed2.add_field(name="People you infected", value="No one (yet)", inline=True)
+            infectiontrack = []
+            def get_infector(infected):
+                for covid in covidinfectors:
+                    if covid.get('infector') == self.client.user.id:
+                        return None
+                    elif covid.get('member_id') == infected:
+                        return covid.get('infector')
+                return None
+            infector = get_infector(ctx.author.id)
+            if infector is not None:
+                infectiontrack.append(f"**{infector}**")
+            while infector is not None:
+                infector = get_infector(infector)
+                if infector is not None:
+                    user = self.client.get_user(infector)
+                    if user is not None:
+                        infectiontrack.append(str(user))
+                    else:
+                        infectiontrack.append(f"{infector}")
+            if len(infectiontrack) > 0:
+                infector_list = " <- ".join(infectiontrack)
+                embed2.add_field(name="How you were infected", value=f"{infector_list}", inline=True)
             embed2.add_field(name="Your Status", value=govmessage, inline=False)
         else:
             govmessage = "<:DVB_True:887589686808309791> **You do not have CoviDVBot.**\nPlease stay safe."
