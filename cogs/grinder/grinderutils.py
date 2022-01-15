@@ -318,7 +318,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                 result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", grinder.id)
                 if result is None:
                     not_complete.append((grinder, 0))
-                if self.is_5m_grinder(grinder):
+                elif self.is_5m_grinder(grinder):
                     if result.get('today') < 5000000:
                         not_complete.append((grinder, result.get('today')))
                     else:
