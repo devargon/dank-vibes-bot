@@ -97,21 +97,21 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             return await ctx.send("You need to be a **Grinder**/**Trial Grinder** to use this command.")
         result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
         embed = discord.Embed(color=self.client.embed_color, timestamp=discord.utils.utcnow())
-        tier = "3M Grinder" if self.is_3m_grinder(member) else "5M Grinder" if self.is_5m_grinder(member) else "Trial Grinder (3M/5M)" if self.is_trial_grinder(member) else None
+        tier = "5M Grinder" if self.is_5m_grinder(member) else "3M Grinder" if self.is_3m_grinder(member) else "Trial Grinder (3M/5M)" if self.is_trial_grinder(member) else None
         tier = "**" + tier + "**" if tier is not None else None
         tier = f"Tier: {tier}\n" if tier is not None else None
         embed.add_field(name='Grinder contributions', value=f"{tier or ''}Today: `⏣ {comma_number(result.get('today')) if result else 0}` \nThis Week: `⏣ {comma_number(result.get('past_week')) if result else 0}`\nLast Week: `⏣ {comma_number(result.get('last_week')) if result else 0}`\nThis Month: `⏣ {comma_number(result.get('past_month')) if result else 0}`\nAll Time: `⏣ {comma_number(result.get('all_time')) if result else 0}`", inline=True)
         embed.add_field(name='Last Logged', value=f"<t:{result.get('last_dono_time')}>\n[Jump to logged message]({result.get('last_dono_msg')})" if result else "[<t:0>](https://www.youtube.com/watch?v=dQw4w9WgXcQ)", inline=True)
-        if self.is_3m_grinder(member):
-            if result and result.get('today') >= 3000000:
-                value = f"<:DVB_True:887589686808309791> Yes"
-            else:
-                value = f"<:DVB_False:887589731515392000> No\nTo complete your requirement, you have to send `⏣ {comma_number(3000000 - result.get('today') if result else 3000000)}` to {self.client.get_user(holder)}."
-        elif self.is_5m_grinder(member):
+        if self.is_5m_grinder(member):
             if result.get('today') >= 5000000:
                 value = f"<:DVB_True:887589686808309791> Yes"
             else:
                 value = f"<:DVB_False:887589731515392000> No\nTo complete your requirement, you have to send `⏣ {comma_number(5000000 - result.get('today') if result else 5000000)}` to {self.client.get_user(holder)}."
+        elif self.is_3m_grinder(member):
+            if result and result.get('today') >= 3000000:
+                value = f"<:DVB_True:887589686808309791> Yes"
+            else:
+                value = f"<:DVB_False:887589731515392000> No\nTo complete your requirement, you have to send `⏣ {comma_number(3000000 - result.get('today') if result else 3000000)}` to {self.client.get_user(holder)}."
         elif self.is_trial_grinder(member):
             if result.get('today') >= 3000000:
                 if result.get('today') >= 5000000:
