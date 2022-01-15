@@ -290,10 +290,8 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         print(grinder3mrole)
         if grinderrole is None or tgrinderrole is None:
             return await ctx.send("One or more roles declared in this command are invalid, hence the command cannot proceed.")
-        grinders = [member for member in ctx.guild.members if (grinderrole in member.roles or tgrinderrole in member.roles or grinder3mrole in member.roles)]  # gets all grinders
-        print(grinders)
-        return
-        if not grinders:
+        grinders = [member for member in ctx.guild.members if (grinderrole in member.roles or tgrinderrole in member.roles or grinder3mrole in member.roles)]  # gets all grinders if not grinders:
+        if len(grinders) == 0:
             return await ctx.send("There are no grinders to be DMed.")
         confirmview = confirm(ctx, self.client, 15.0)
         grinders = [member for member in ctx.guild.members if grinderrole in member.roles or tgrinderrole in member.roles]
