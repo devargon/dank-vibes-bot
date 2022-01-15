@@ -15,7 +15,7 @@ from datetime import datetime
 guildid = 871734809154707467 if os.getenv('state') == '1' else 595457764935991326
 tgrinderroleID = 896052592797417492 if os.getenv('state') == '1' else 827270880182009956
 grinderroleID = 896052612284166204 if os.getenv('state') == '1' else 859494328422367273
-grinder3mroleID = 896052612284166204 if os.getenv('state') == '1' else 931172654696788010
+grinder3mroleID = 931905577473409174 if os.getenv('state') == '1' else 931172654696788010
 argon = 650647680837484556
 donochannel = 871737314831908974 if os.getenv('state') == '1' else 862574856846704661
 logchannel = 871737332431216661 if os.getenv('state') == '1' else 896693789312319508
@@ -69,6 +69,21 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             ranks.append((f"#{index} {position[0]}", position[1]))
         return ranks
 
+    def is_3m_grinder(self, member):
+        if discord.utils.get(member.roles, id=grinder3mroleID) is not None:
+            return True
+        return False
+
+    def is_5m_grinder(self, member):
+        if discord.utils.get(member.roles, id=grinderroleID) is not None:
+            return True
+        return False
+
+    def is_trial_grinder(self, member):
+        if discord.utils.get(member.roles, id=tgrinderroleID) is not None:
+            return True
+
+
     @commands.command(name='grindercheck', usage='[member]', aliases=['gcheck', 'gc'])
     async def grindercheck(self, ctx, member: discord.Member = None):
         """
@@ -82,7 +97,10 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             return await ctx.send("You need to be a **Grinder**/**Trial Grinder** to use this command.")
         result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
         embed = discord.Embed(color=self.client.embed_color, timestamp=discord.utils.utcnow())
-        embed.add_field(name='Grinder contributions', value=f"Today: `⏣ {comma_number(result.get('today')) if result else 0}` \nThis Week: `⏣ {comma_number(result.get('past_week')) if result else 0}`\nLast Week: `⏣ {comma_number(result.get('last_week')) if result else 0}`\nThis Month: `⏣ {comma_number(result.get('past_month')) if result else 0}`\nAll Time: `⏣ {comma_number(result.get('all_time')) if result else 0}`", inline=True)
+        tier = "3M Grinder" if self.is_3m_grinder(member) else "5M Grinder" if self.is_5m_grinder(member) else "Trial Grinder (3M/5M)" if self.is_trial_grinder(member) else None
+        tier = "**" + tier + "**" if tier is not None else None
+        tier = f"Tier: {tier}\n" if tier is not None else None
+        embed.add_field(name='Grinder contributions', value=f"{tier or ''}Today: `⏣ {comma_number(result.get('today')) if result else 0}` \nThis Week: `⏣ {comma_number(result.get('past_week')) if result else 0}`\nLast Week: `⏣ {comma_number(result.get('last_week')) if result else 0}`\nThis Month: `⏣ {comma_number(result.get('past_month')) if result else 0}`\nAll Time: `⏣ {comma_number(result.get('all_time')) if result else 0}`", inline=True)
         embed.add_field(name='Last Logged', value=f"<t:{result.get('last_dono_time')}>\n[Jump to logged message]({result.get('last_dono_msg')})" if result else "[<t:0>](https://www.youtube.com/watch?v=dQw4w9WgXcQ)", inline=True)
         if result and result.get('today') >= 3000000:
             if result.get('today') >= 5000000:
@@ -291,10 +309,21 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                 result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", grinder.id)
                 if result is None:
                     not_complete.append((grinder, 0))
-                elif result.get('today') < 5000000:
-                    not_complete.append((grinder, result.get('today')))
-                else:
-                    completed_req.append((grinder, result.get('today')))
+                if self.is_5m_grinder(grinder):
+                    if result.get('today') < 5000000:
+                        not_complete.append((grinder, result.get('today')))
+                    else:
+                        completed_req.append((grinder, result.get('today')))
+                elif self.is_3m_grinder(grinder):
+                    if result.get('today') < 3000000:
+                        not_complete.append((grinder, result.get('today')))
+                    else:
+                        completed_req.append((grinder, result.get('today')))
+                elif self.is_trial_grinder(grinder):
+                    if result.get('today') < 3000000:
+                        not_complete.append((grinder, result.get('today')))
+                    else:
+                        completed_req.append((grinder, result.get('today')))
             await msg.edit(content="""
 <:DVB_start_complete:895172800627769447> Checking daily requirement 
 <:DVB_middle_incomplete:895172800430620742> <a:typing:839487089304141875> **Updating statistics** 
@@ -307,8 +336,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                 all = await self.client.pool_pg.fetch("SELECT user_id, past_week FROM grinderdata")
                 if all is not None:
                     for a in all:
-                        if ctx.guild.get_member(a.get('user_id')) in grinders:
-                            week_values.append((0, 0, a.get('past_week'), a.get('user_id')))
+                        week_values.append((0, 0, a.get('past_week'), a.get('user_id')))
                 await self.client.pool_pg.executemany("UPDATE grinderdata SET today = $1, past_week = $2, last_week = $3 WHERE user_id = $4", week_values)
             else:
                 reset_week = False
