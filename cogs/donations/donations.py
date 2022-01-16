@@ -161,7 +161,7 @@ class donations(commands.Cog):
             async with ctx.typing():
                 if users is None:
                     users = 10
-                query = "SELECT user_id, value FROM donations.{} ORDER BY value DESC".format(f"guild{ctx.guild.id}_{category_name.lower()}")
+                query = "SELECT user_id, value FROM donations.{} WHERE value != 0 ORDER BY value DESC ".format(f"guild{ctx.guild.id}_{category_name.lower()}")
                 leaderboard = await self.client.pool_pg.fetch(query)
                 if len(leaderboard) == 0:
                     return await ctx.send("There are no donations to show in this category.")
@@ -364,7 +364,7 @@ class donations(commands.Cog):
         async with ctx.typing():
             try:
                 query = "SELECT * FROM donations.{}".format(f"guild{ctx.guild.id}_weeklydank")
-                results = await self.client.pool_pg.fetch("SELECT * FROM donations.{} LIMIT 10".format(f"guild{ctx.guild.id}_dank"))
+                results = await self.client.pool_pg.fetch("SELECT * FROM donations.{} WHERE value != 0 ORDER BY value DESC LIMIT 10".format(f"guild{ctx.guild.id}_dank"))
             except asyncpg.exceptions.UndefinedTableError:
                 return await ctx.send("This command requires having a donation category called `dank` to work.")
             if not results:
