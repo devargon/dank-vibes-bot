@@ -21,7 +21,7 @@ donochannel = 871737314831908974 if os.getenv('state') == '1' else 8625748568467
 logchannel = 871737332431216661 if os.getenv('state') == '1' else 896693789312319508
 holder = 827080569501777942 if os.getenv('state') == '1' else 798238834340528149
 grinderlogID = 896068443093229579 if os.getenv('state') == '1' else 862433139921911809
-webhook_url = 'https://canary.discord.com/api/webhooks/896095030970818622/kI5DdgTRxbfkDS-xdoULPpDqan1nDpRexe6g8D4K5c-Dw5Rn-RLKyUBRCkesLhBwgO_p' if os.getenv('state') == '1' else 'https://discord.com/api/webhooks/922933444370104330/DxlVMQ7rxdk__R6Ej8SPWpaTXWprKcUVb606Hfo91PvFnA-5xXdMi3RuyQdIngZdU3Rf'
+webhook_url = 'https://canary.discord.com/api/webhooks/932261660322832415/gSkRlKsA1wtHHQxU0TGt_eTIzcPysnZ5G-yiaEXHMQlkAODYg9YboU_9sEIZghysIdB4' if os.getenv('state') == '1' else 'https://discord.com/api/webhooks/922933444370104330/DxlVMQ7rxdk__R6Ej8SPWpaTXWprKcUVb606Hfo91PvFnA-5xXdMi3RuyQdIngZdU3Rf'
 
 class MessageFlag(commands.FlagConverter, case_insensitive = True, delimiter = ' ', prefix='--'):
     msg : Optional[str]
@@ -287,14 +287,14 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         grinderrole = ctx.guild.get_role(grinderroleID)
         grinder3mrole = ctx.guild.get_role(grinder3mroleID)
         tgrinderrole = ctx.guild.get_role(tgrinderroleID)
-        print(grinder3mrole)
         if grinderrole is None or tgrinderrole is None:
             return await ctx.send("One or more roles declared in this command are invalid, hence the command cannot proceed.")
         grinders = [member for member in ctx.guild.members if (grinderrole in member.roles or tgrinderrole in member.roles or grinder3mrole in member.roles)]  # gets all grinders if not grinders:
         if len(grinders) == 0:
             return await ctx.send("There are no grinders to be DMed.")
+        print([grinder.name for grinder in grinders])
         confirmview = confirm(ctx, self.client, 15.0)
-        grinders = [member for member in ctx.guild.members if grinderrole in member.roles or tgrinderrole in member.roles]
+        grinders = [member for member in ctx.guild.members if self.is_5m_grinder(member) or self.is_3m_grinder(member) or self.is_trial_grinder(member)]
         embed = discord.Embed(title="DM Grinders?", description=f"I will be checking the grinder requirement for the {len(grinders)} grinders and trial grinders, and I'll send a summary to <#{logchannel}>. Afterwards, I'll DM them to update them about the grinder check. Are you sure?", color=self.client.embed_color)
         message = await ctx.send(embed=embed, view=confirmview)
         confirmview.response = message
@@ -368,7 +368,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                     await grinder.send(f"Hello {grinder.name}! I have a message for you:", embed=embed)  # hehe
                     success += 1
                 except discord.Forbidden:
-                    faileddms.append(grinder.mention)  # gets list of people who will be pinged later
+                    faileddms.append(grinder.mention)  # gets list of people who will be pinged later"""
             if faileddms:
                 channel = self.client.get_channel(donochannel)
                 await channel.send(''.join(faileddms), embed=embed)
@@ -380,18 +380,18 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                 await webhook.send(f"**__DV GRINDERS SUMMARY__** (for **{discord.utils.utcnow().strftime('%A, %d %B %Y')}**)", username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
                 for dat in completed_req:
                     if len(content) < 1800:
-                        content += f"\n<:DVB_True:887589686808309791> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
+                        content += f"\n`{'5' if self.is_5m_grinder(dat[0]) else '3' if self.is_3m_grinder(dat[0]) else 'T' if self.is_5m_grinder(dat[0]) else 'U'}` <:DVB_True:887589686808309791> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
                     else:
                         await reportchannel.send(content)
                         await webhook.send(content, username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
-                        content = f"\n<:DVB_True:887589686808309791> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
+                        content = f"\n`{'5' if self.is_5m_grinder(dat[0]) else '3' if self.is_3m_grinder(dat[0]) else 'T' if self.is_5m_grinder(dat[0]) else 'U'}` <:DVB_True:887589686808309791> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
                 for dat in not_complete:
                     if len(content) < 1800:
-                        content += f"\n<:DVB_False:887589731515392000> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
+                        content += f"\n`{'5' if self.is_5m_grinder(dat[0]) else '3' if self.is_3m_grinder(dat[0]) else 'T' if self.is_5m_grinder(dat[0]) else 'U'}` <:DVB_False:887589731515392000> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
                     else:
                         await reportchannel.send(content)
                         await webhook.send(content, username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
-                        content = f"\n<:DVB_False:887589731515392000> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
+                        content = f"\n`{'5' if self.is_5m_grinder(dat[0]) else '3' if self.is_3m_grinder(dat[0]) else 'T' if self.is_5m_grinder(dat[0]) else 'U'}` <:DVB_False:887589731515392000> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
                         await reportchannel.send(content)
                 await reportchannel.send(content)
                 await webhook.send(content, username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
