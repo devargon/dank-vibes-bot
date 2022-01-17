@@ -130,7 +130,8 @@ def not_in_gen():
     async def predicate(ctx):
         channel_id = 608498967474601995
         if ctx.guild:
-            if ctx.channel.id == channel_id:
-                raise ArgumentBaseError(message="You can't use this command here! Use it in another channel.")
+            if not ctx.author.guild_permissions.manage_roles or await ctx.is_bot_dev():
+                if ctx.channel.id == channel_id:
+                    raise ArgumentBaseError(message="You can't use this command here! Use it in another channel.")
         return True
     return commands.check(predicate)
