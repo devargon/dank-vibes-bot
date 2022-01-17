@@ -119,6 +119,12 @@ class DVVTcontext(commands.Context):
             return await self.send('Oops! something went wrong')
         return await self.send('Oops! something went wrong, \n{error}'.format(error=error), allowed_mentions=discord.AllowedMentions(roles=False, users=False), delete_after=10)
 
+    async def is_bot_dev(self):
+        """
+        Checks if the invoking user is a bot developer.
+        """
+        return await self.bot.pool_pg.fetchrow("SELECT * FROM devmode WHERE user_id = $1", self.message.author.id)
+
     @property
     def color(self):
         """
