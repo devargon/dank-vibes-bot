@@ -357,13 +357,12 @@ class donations(commands.Cog):
         embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
         return await ctx.send(embed=embed)
 
-    @checks.has_permissions_or_role(administrator=True)
-    @commands.command(name="wicked", aliases=["azumi"])
+    @checks.not_in_gen()
+    @commands.command(name="weeklydankleaderboard", aliases=["wdlb", "weeklylb", "wlb"])
     async def wicked(self, ctx):
         await ctx.message.delete()
         async with ctx.typing():
             try:
-                query = "SELECT * FROM donations.{}".format(f"guild{ctx.guild.id}_weeklydank")
                 results = await self.client.pool_pg.fetch("SELECT * FROM donations.{} WHERE value != 0 ORDER BY value DESC LIMIT 10".format(f"guild{ctx.guild.id}_dank"))
             except asyncpg.exceptions.UndefinedTableError:
                 return await ctx.send("This command requires having a donation category called `dank` to work.")
