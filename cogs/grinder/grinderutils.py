@@ -239,7 +239,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             if len(message.mentions) > 0:
                 member = message.mentions[0]
             else:
-                return await message.channel.send("⚠️ **You need to have Reply Pings enabled!** Please inform **Ari#0005** to manually add your grinder statistics, as I was unable to detect who shared the coins.")
+                return await message.reply("⚠️ **You need to have Reply Pings enabled!** Your grinder statistics will be manually added by <@!542905463541465088>, as I was unable to detect who shared the coins.")
             if not (discord.utils.get(member.roles, id=tgrinderroleID) or discord.utils.get(member.roles, id=grinder3mroleID) or discord.utils.get(member.roles, id=grinderroleID)):
                 return await message.channel.send("You don't have the required roles or the roles declared are invalid.")
             result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
