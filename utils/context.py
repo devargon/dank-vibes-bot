@@ -123,7 +123,7 @@ class DVVTcontext(commands.Context):
         """
         Checks if the invoking user is a bot developer.
         """
-        return await self.bot.pool_pg.fetchrow("SELECT * FROM devmode WHERE user_id = $1", self.message.author.id)
+        return True if (await self.bot.pool_pg.fetchrow("SELECT * FROM devmode WHERE user_id = $1", self.message.author.id)) else False
 
     @property
     def color(self):
