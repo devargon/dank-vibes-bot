@@ -86,7 +86,7 @@ def is_not_blacklisted() -> callable:
 
 def base_dev() -> callable:
     async def predicate(ctx):
-        if ctx.message.author.id in [321892489470410763, 650647680837484556, 515725341910892555]:
+        if await ctx.is_bot_dev():
             return True
         else:
             raise ArgumentBaseError(message="Only developers can use this command.")
