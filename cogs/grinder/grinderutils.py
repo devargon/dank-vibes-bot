@@ -382,18 +382,18 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                 await webhook.send(f"**__DV GRINDERS SUMMARY__** (for **{discord.utils.utcnow().strftime('%A, %d %B %Y')}**)", username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
                 for dat in completed_req:
                     if len(content) < 1800:
-                        content += f"\n`{'5' if self.is_5m_grinder(dat[0]) else '3' if self.is_3m_grinder(dat[0]) else 'T' if self.is_5m_grinder(dat[0]) else 'U'}` <:DVB_True:887589686808309791> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
+                        content += f"\n`{'5' if self.is_5m_grinder(dat[0]) else '3' if self.is_3m_grinder(dat[0]) else 'T' if self.is_trial_grinder(dat[0]) else 'U'}` <:DVB_True:887589686808309791> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
                     else:
                         await reportchannel.send(content)
                         await webhook.send(content, username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
-                        content = f"\n`{'5' if self.is_5m_grinder(dat[0]) else '3' if self.is_3m_grinder(dat[0]) else 'T' if self.is_5m_grinder(dat[0]) else 'U'}` <:DVB_True:887589686808309791> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
+                        content = f"\n`{'5' if self.is_5m_grinder(dat[0]) else '3' if self.is_3m_grinder(dat[0]) else 'T' if self.is_trial_grinder(dat[0]) else 'U'}` <:DVB_True:887589686808309791> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
                 for dat in not_complete:
                     if len(content) < 1800:
-                        content += f"\n`{'5' if self.is_5m_grinder(dat[0]) else '3' if self.is_3m_grinder(dat[0]) else 'T' if self.is_5m_grinder(dat[0]) else 'U'}` <:DVB_False:887589731515392000> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
+                        content += f"\n`{'5' if self.is_5m_grinder(dat[0]) else '3' if self.is_3m_grinder(dat[0]) else 'T' if self.is_trial_grinder(dat[0]) else 'U'}` <:DVB_False:887589731515392000> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
                     else:
                         await reportchannel.send(content)
                         await webhook.send(content, username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
-                        content = f"\n`{'5' if self.is_5m_grinder(dat[0]) else '3' if self.is_3m_grinder(dat[0]) else 'T' if self.is_5m_grinder(dat[0]) else 'U'}` <:DVB_False:887589731515392000> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
+                        content = f"\n`{'5' if self.is_5m_grinder(dat[0]) else '3' if self.is_3m_grinder(dat[0]) else 'T' if self.is_trial_grinder(dat[0]) else 'U'}` <:DVB_False:887589731515392000> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
                         await reportchannel.send(content)
                 await reportchannel.send(content)
                 await webhook.send(content, username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
