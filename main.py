@@ -158,7 +158,7 @@ class dvvt(commands.AutoShardedBot):
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS selfrolemessages(guild_id bigint, age bigint, gender bigint, location bigint, minigames bigint, event_pings bigint, dank_pings bigint, server_pings bigint, bot_roles bigint, random_color bigint, colors bigint, specialcolors bigint, boostping bigint, vipheist bigint)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS serverconfig(guild_id bigint, settings text, enabled boolean)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS stats(member_id bigint, remindertype integer, time bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS stickmessages(guild_id bigint PRIMARY KEY, channel_id bigint, message_id bigint, type integer, message text)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS stickymessages(guild_id bigint PRIMARY KEY, channel_id bigint, message_id bigint, type integer, message text)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS suggestion_response(suggestion_id integer, user_id bigint, response_id bigint, message_id bigint, message text)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS suggestions(suggestion_id serial, user_id bigint, finish boolean, response_id bigint, suggestion text)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS teleport(member_id bigint, checkpoint text, channel_id bigint)")
