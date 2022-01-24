@@ -62,7 +62,7 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
         elif ctx.command.name == "nickbet":
             self.nickbets = []
     def lowered_cooldown(message: discord.Message):
-        if discord.utils.get(message.author.roles, id=874931276329656370): # Contributor 24T
+        if discord.utils.get(message.author.roles, id=874833402052878396): # Contributor 24T
             return commands.Cooldown(1, 900)
         elif discord.utils.get(message.author.roles, id=931174008970444800): # weekly top grinder
             return commands.Cooldown(1, 900)
