@@ -471,11 +471,11 @@ class Mod(DisboardAutoLock, censor, BrowserScreenshot, lockdown, commands.Cog, n
         sending = []
         for obj_id in things_to_list:
             if len(obj_id) > 0:
-                if list_type.lower() in ['member', 'user', 'members', 'users']:
+                if list_type.lower() in ['member', 'user', 'members', 'users', 'm', 'u']:
                     sending.append(f"<@!{obj_id}>")
-                elif list_type.lower() in ['role', 'roles']:
+                elif list_type.lower() in ['role', 'roles', 'r']:
                     sending.append(f"<@&{obj_id}>")
-                elif list_type.lower() in ['channel', 'channels']:
+                elif list_type.lower() in ['channel', 'channels', 'c', 'chan']:
                     sending.append(f"<#{obj_id}>")
                 else:
                     return await ctx.send("`list_type` can be `member/user`, `role`, or `channel`.")
