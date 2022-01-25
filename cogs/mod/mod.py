@@ -454,7 +454,7 @@ class Mod(DisboardAutoLock, censor, BrowserScreenshot, lockdown, commands.Cog, n
 
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="list")
-    async def list(self, ctx, list_type: str = None, *, things_to_list:str = None):
+    async def list(self, ctx, list_type: str = None, *, things_to_list: str = None):
         """
         List roles, users or channels using this command! This command won't ping any users or roles.
         list_type can be `member/user`, `role`, or `channel`.
@@ -466,23 +466,19 @@ class Mod(DisboardAutoLock, censor, BrowserScreenshot, lockdown, commands.Cog, n
             return await ctx.send("You need to specify a list type to list. list_type can be `member/user`, `role`, or `channel`.")
         if things_to_list is None:
             return await ctx.send("You need to specify what to list.")
-        if list_type.lower() in ['member', 'user', 'members', 'users']:
-            things_to_list = things_to_list.split(' ')
-            sending = []
-            for member_id in things_to_list:
-                sending.append(f"<@!{member_id}>")
-        elif list_type.lower() in ['role', 'roles']:
-            things_to_list = things_to_list.split(' ')
-            sending = []
-            for role_id in things_to_list:
-                sending.append(f"<@&{role_id}>")
-        elif list_type.lower() in ['channel', 'channels']:
-            things_to_list = things_to_list.split(' ')
-            sending = []
-            for channel_id in things_to_list:
-                sending.append(f"<#{channel_id}>")
-        else:
-            return await ctx.send("`list_type` can be `member/user`, `role`, or `channel`.")
+        things_to_list = things_to_list.replace(' ', 'sep').replace('\n', 'sep').strip()
+        things_to_list = things_to_list.split('sep')
+        sending = []
+        for obj_id in things_to_list:
+            if len(obj_id) > 0:
+                if list_type.lower() in ['member', 'user', 'members', 'users']:
+                    sending.append(f"<@!{obj_id}>")
+                elif list_type.lower() in ['role', 'roles']:
+                    sending.append(f"<@&{obj_id}>")
+                elif list_type.lower() in ['channel', 'channels']:
+                    sending.append(f"<#{obj_id}>")
+                else:
+                    return await ctx.send("`list_type` can be `member/user`, `role`, or `channel`.")
         hm = ''
         for obj in sending:
             if len(hm) < 1900:
