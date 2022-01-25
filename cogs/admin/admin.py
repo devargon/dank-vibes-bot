@@ -159,21 +159,25 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         else:
             timeuntil = 9223372036854775807
         id = await self.client.pool_pg.fetchval("INSERT INTO blacklist(user_id, moderator_id, blacklist_active, reason, time_until) VALUES($1, $2, $3, $4, $5) RETURNING incident_id", user.id, ctx.author.id, True, reason, timeuntil, column='incident_id')
+        await self.client.get_all_blacklisted_users()
         embed=discord.Embed(title=f"{user} is now blacklisted.", description=f"**Reason**: {reason}\n**Blacklisted for**: {'Eternity' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}\nBlacklisted until: {'NA' if timeuntil == 9223372036854775807 else f'<t:{timeuntil}:R>'}", color=discord.Color.red())
         logembed = discord.Embed(title=f"Bot Blacklist: Case {id}", description=f"**Reason:** {reason}\n**Blacklisted for**: {'Eternity' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}\n**Blacklisted until**: {'NA' if timeuntil == 9223372036854775807 else f'<t:{timeuntil}:R>'}\n**Responsible Moderator**: {ctx.author} ({ctx.author.id})", color=discord.Color.red())
         logembed.set_author(name=f"{user} ({user.id})", icon_url=user.display_avatar.url)
         embed.set_footer(text="To unblacklist someone, use the `unblacklist` command.")
         embed.set_thumbnail(url=user.display_avatar.url)
-        dm_description=["You have been blacklisted from using certain functions of this bot by the developers or an Admin from Dank Vibes.", '', f"**Reason:** {reason}", f"**Blacklisted for**: {'Permanently' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}"]
         if duration != 9223372036854775807:
-            dm_description.append(f"The functions that you can't use include but are not limited to:\n`-` Using `nickbet`, `nick` and `chatchart` commands\n`-` Being nickbetted against\n\nYour blacklist will end on <t:{timeuntil}>.")
+            dm_description=[f"You have been blacklisted from using {self.client.user.name} by the developers or an Admin from Dank Vibes.", '', f"**Reason:** {reason}", f"**Blacklisted for**: {'Permanently' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}"]
+        else:
+            dm_description=[f"You have been **permanently** blacklisted from using {self.client.user.name} by the developers or an Admin from Dank Vibes.", '', f"**Reason:** {reason}"]
+        dm_description.append(f"You will not be able to run **any** commands. You will however, be reminded to vote and get Dank Memer reminders.")
         dm_description.append('')
-        dm_description.append("If you think this is a mistake or would like your blacklist to be rescinded, please open a ticket in <#870880772985344010>.")
+        dm_description.append(f"Your blacklist will end on <t:{timeuntil}>.\n")
+        dm_description.append("If you think this is a mistake and would like your blacklist to be removed, or need further clarification, please open a ticket in <#870880772985344010>.")
         dmembed = discord.Embed(title="⚠️ Warning!", description='\n'.join(dm_description), color=discord.Color.red())
         try:
             await user.send(embed=dmembed)
         except:
-            return await ctx.send("I was unable to tell them that they have been blacklisted in their DMs.")
+            await ctx.send("I was unable to tell them that they have been blacklisted in their DMs.")
         await self.client.get_channel(906433823594668052).send(embed=logembed)
         await ctx.send(embed=embed)
 
@@ -254,6 +258,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         if active_blacklist is None:
             return await ctx.send(f"{user.mention} is currently not blacklisted.")
         await self.client.pool_pg.execute("UPDATE blacklist SET blacklist_active = $1 WHERE user_id = $2 and incident_id = $3", False, user.id, active_blacklist.get('incident_id'))
+        await self.client.get_all_blacklisted_users()
         embed = discord.Embed(title=f"{user} is now unblacklisted.", color=discord.Color.green())
         logembed = discord.Embed(title=f"Bot Unblacklist: Case {active_blacklist.get('incident_id')}", description=f"**Reason:** Manually unblacklisted by {ctx.author}\n**Responsible Moderator**: {ctx.author} ({ctx.author.id})", color=discord.Color.green())
         logembed.set_author(name=f"{user} ({user.id})", icon_url=user.display_avatar.url)

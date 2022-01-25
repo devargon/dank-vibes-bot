@@ -50,6 +50,7 @@ class dvvt(commands.AutoShardedBot):
         self.maintenance = {}
         self.maintenance_message = {}
         self.available_extensions = AVAILABLE_EXTENSIONS
+        self.blacklist = {}
 
         for ext in self.available_extensions:
             self.load_extension(ext)
@@ -67,15 +68,18 @@ class dvvt(commands.AutoShardedBot):
     async def process_commands(self, message: discord.Message):
         ctx = await self.get_context(message)
         if ctx.cog:
-            if ctx.author.id not in [650647680837484556, 515725341910892555, 321892489470410763]:
-                blacklist = await self.pool_pg.fetchrow("SELECT * FROM blacklist WHERE user_id = $1 and blacklist_active = $2", message.author.id, True)
-                if blacklist and time.time() >= blacklist.get('time_until'):
-                    await self.pool_pg.execute("UPDATE blacklist SET blacklist_active = $1 WHERE user_id = $2 and incident_id = $3", False, message.author.id, blacklist.get('incident_id'))
-                    embed = discord.Embed(title=f"Bot Unblacklist | Case {blacklist.get('incident_id')}", description=f"**Reason**: Blacklist over, automatically rescinded\n**Responsible Moderator**: {ctx.me} ({ctx.me.id})", color=discord.Color.green())
-                    embed.set_author(name=f"{message.author} ({message.author.id})", icon_url=message.author.display_avatar.url)
-                    await self.get_channel(906433823594668052).send(embed=embed)
-                    await message.reply("You are no longer blacklisted from using the bot, and can use all functions of the bot.")
-                    return await self.invoke(ctx)
+            if ctx.author.id in self.blacklist:
+                if ctx.author.id not in [650647680837484556, 515725341910892555, 321892489470410763]:
+                    if time.time() >= self.blacklist[ctx.author.id]:
+                        blacklist = await self.pool_pg.fetchrow("SELECT * FROM blacklist WHERE user_id=$1 AND time_until = $2 AND blacklist_active = $3", ctx.author.id, self.blacklist[ctx.author.id], True)
+                        await self.pool_pg.execute("UPDATE blacklist SET blacklist_active = $1 WHERE user_id = $2 and incident_id = $3", False, message.author.id, blacklist.get('incident_id'))
+                        embed = discord.Embed(title=f"Bot Unblacklist | Case {blacklist.get('incident_id')}", description=f"**Reason**: Blacklist over, automatically rescinded\n**Responsible Moderator**: {ctx.me} ({ctx.me.id})", color=discord.Color.green())
+                        embed.set_author(name=f"{message.author} ({message.author.id})", icon_url=message.author.display_avatar.url)
+                        await self.get_channel(906433823594668052).send(embed=embed)
+                        await message.reply("You are no longer blacklisted from using the bot, and can use all functions of the bot.")
+                        await self.get_all_blacklisted_users()
+                    else:
+                        return
             if self.maintenance.get(ctx.cog.qualified_name) and message.author.id not in [321892489470410763, 650647680837484556]:
                 maintenance_message = self.maintenance_message.get(ctx.cog.qualified_name)
                 return await message.channel.send(maintenance_message)
@@ -209,6 +213,18 @@ class dvvt(commands.AutoShardedBot):
                 return True
         return False
 
+    async def get_all_blacklisted_users(self):
+        blacklist_dict = {}
+        blacklist = await self.pool_pg.fetch("SELECT * FROM blacklist WHERE blacklist_active = $1", True)
+        for entry in blacklist:
+            user_id = entry.get('user_id')
+            time_until = entry.get('time_until')
+            if time_until is None or user_id is None:
+                pass
+            else:
+                blacklist_dict[user_id] = time_until
+        self.blacklist = blacklist_dict
+
     async def check_blacklisted_user(self, member):
         blacklisted_users = await self.pool_pg.fetchrow("SELECT * FROM blacklist WHERE user_id = $1 and blacklist_active = $2", member.id, True)
         if blacklisted_users:
@@ -242,6 +258,7 @@ class dvvt(commands.AutoShardedBot):
             print(f"Connected to the database ({round(time.time() - start, 2)})s")
             self.loop.create_task(self.after_ready())
             self.loop.create_task(self.load_maintenance_data())
+            self.loop.create_task(self.get_all_blacklisted_users())
             self.run(token)
 
 if __name__ == '__main__':
