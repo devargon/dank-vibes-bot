@@ -1,21 +1,18 @@
-import discord
-from discord.ext import commands, menus
+from discord.ext import menus
 
 from .lockdown import lockdown
 from .censor import censor
 from .browser_screenshot import BrowserScreenshot
-from .disboard import DisboardAutoLock
 from .sticky import Sticky
 
 from utils import checks
 from utils.buttons import *
-from utils.format import text_to_file, stringtime_duration, ordinal
+from utils.format import text_to_file, ordinal
 from utils.time import humanize_timedelta
 from utils.menus import CustomMenu
 from utils.converters import BetterTimeConverter
 
 import os
-from typing import Literal
 from selenium import webdriver
 from fuzzywuzzy import process
 from collections import Counter
@@ -34,12 +31,13 @@ class FrozenNicknames(menus.ListPageSource):
         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return embed
 
-class Mod(DisboardAutoLock, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
+class Mod(Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
     """
     Mod commands
     """
     def __init__(self, client):
         PROXY = "161.35.235.103:8889"
+        self.queue = []
         self.op = webdriver.ChromeOptions() # selenium options for chrome
         self.op.add_argument('--no-sandbox')
         self.op.add_argument('--disable-gpu')

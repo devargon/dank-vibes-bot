@@ -1,10 +1,23 @@
+import asyncio
+import json
+
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
+from time import time
+from datetime import datetime
+import pytz
 
 class infection(commands.Cog):
     def __init__(self, client):
         self.client = client
         self.infected = None
+        self.check_infection.start()
+
+    @tasks.loop(seconds=60.0)
+    async def check_infection(self):
+        await self.client.wait_until_ready()
+        infections = await self.client.pool_pg.fetch("SELECT member_id FROM infections")
+        self.infected = [i.get('member_id') for i in infections]
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -13,6 +26,60 @@ class infection(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        if message.author.id == 235148962103951360:
+            if message.content.startswith('Exported') and len(message.attachments) > 0:
+                await message.add_reaction("🧐")
+                def check(payload):
+                    return payload.message_id == message.id and str(payload.emoji) == "🧐" and payload.user_id != self.client.user.id
+                try:
+                    await self.client.wait_for("raw_reaction_add", check=check, timeout=60)
+                except asyncio.TimeoutError:
+                    return await message.remove_reaction("🧐", self.client.user)
+                statusmsg = await message.reply("<a:typing:839487089304141875> **Reading exported modlog**...")
+                attachment = message.attachments[0]
+                data_bytes = await attachment.read()
+                data = data_bytes.decode('utf-8')
+                try:
+                    data_json = json.loads(data)
+                except json.decoder.JSONDecodeError:
+                    return await statusmsg.edit(content="<:redcross:806531740448718948> **Error:** `JSONDecodeError`")
+                else:
+                    um = ""
+                    emojis = {
+                        'ban': '<:DVB_ban:930310804203503626>',
+                        'mute': '<:DVB_Mute:930308084885241926>',
+                        'kick': '👢',
+                        'unmute': '<:DVB_Unmute:930308214132707338>',
+                        'unban': '<:DVB_Unban:930308373440765982>',
+                        'warn': '<:DVB_warn:930312114629931028>',
+                        'tempban': '<:DVB_tempban:930310741213454336>'
+                    }
+                    for modcase in data_json:
+                        moderator_id = modcase.get('moderator_id')
+                        moderator = self.client.get_user(moderator_id) or moderator_id
+                        action = modcase.get('action')
+                        reason = modcase.get('reason')
+                        timestamp = modcase.get('timestamp')
+                        timestamp = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%f').replace(tzinfo=pytz.utc).timestamp()
+                        timestamp = f"<t:{round(timestamp)}>"
+                        symbol = emojis.get(action) if action in emojis else action
+                        if reason is None:
+                            tempstr = f"{symbol} by **{moderator}** on {timestamp}"
+                        else:
+                            tempstr = f"{symbol} by **{moderator}** on {timestamp}: {reason}"
+                        if len(symbol) + len(tempstr) + len(um) < 1990:
+                            um += f"{tempstr}\n"
+                        else:
+                            await message.channel.send(um)
+                            um = f"{tempstr}\n"
+                    await message.channel.send(um)
+                    await message.channel.send("What it means:\n<:DVB_ban:930310804203503626> - Ban\n<:DVB_Mute:930308084885241926> - Mute\n<:DVB_Unmute:930308214132707338> - Unmute\n<:DVB_Unban:930308373440765982> - Unban\n<:DVB_warn:930312114629931028> - Warn\n<:DVB_tempban:930310741213454336> - Tempban")
+
+
+
+
+
+
         if message.author.bot:
             return
         if type(self.infected) is not list:
@@ -20,13 +87,45 @@ class infection(commands.Cog):
         if message.author.id not in self.infected:
             return
         if len(message.mentions) > 0:
+            infected_thisSession = []
             for member in message.mentions:
                 if member.id == self.client.user.id:
                     return
                 if member.id in self.infected:
-                    return
-                self.infected.append(member.id)
-                await self.client.pool_pg.execute("INSERT INTO infections (member_id, guild_id, channel_id, message_id, timeinfected) VALUES ($1, $2, $3, $4, $5)", member.id, message.guild.id, message.channel.id, message.id, message.created_at.timestamp())
-            await message.add_reaction('🩺')
+                    pass
+                else:
+                    self.infected.append(member.id)
+                    infected_thisSession.append(member.id)
+                    await self.client.pool_pg.execute("INSERT INTO infections (member_id, guild_id, channel_id, message_id, infector, timeinfected) VALUES ($1, $2, $3, $4, $5, $6)", member.id, message.guild.id, message.channel.id, message.id, message.author.id, round(time()))
+            if len(infected_thisSession) > 0:
+                await message.add_reaction('😷')
+                await message.add_reaction('⚠️')
         else:
             return
+
+    @commands.Cog.listener()
+    async def on_member_update(self, member_before, member_after):
+        if member_before.display_name != member_after.display_name:
+            old_nickname = member_before.display_name
+            new_nickname = member_after.display_name
+            if f"[AFK] {old_nickname}" == new_nickname:
+                return
+            if f"[AFK] {new_nickname}" == old_nickname:
+                return
+            result = await self.client.pool_pg.fetchrow(
+                "SELECT * FROM freezenick WHERE user_id = $1 and guild_id = $2", member_after.id,
+                member_after.guild.id)
+            if result is not None:
+                if result.get('nickname') == new_nickname:
+                    return
+                if result.get('nickname') == old_nickname:
+                    return
+                if result.get('old_nickname') == new_nickname:
+                    return
+                if result.get('old_nickname') == old_nickname:
+                    return
+            await self.client.pool_pg.execute("INSERT INTO nickname_changes VALUES($1, $2, $3, $4)",
+                                              member_before.guild.id, member_before.id, new_nickname, round(time()))
+
+    def cog_unload(self) -> None:
+        self.check_infection.stop()

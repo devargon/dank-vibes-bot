@@ -9,8 +9,10 @@ import aiohttp
 import asyncio
 import operator
 import alexflipnote
+from collections import Counter
 from typing import Union, Optional
 import matplotlib.pyplot as plt
+from itertools import islice
 
 from utils import checks
 from utils.time import humanize_timedelta
@@ -25,6 +27,7 @@ from .games import games
 from .color import color
 
 alexflipnoteAPI = os.getenv('alexflipnoteAPI')
+tenorAPI = os.getenv('tenorAPI')
 
 class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
     """
@@ -59,11 +62,9 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
         elif ctx.command.name == "nickbet":
             self.nickbets = []
     def lowered_cooldown(message: discord.Message):
-        if discord.utils.get(message.author.roles, id=874931276329656370):
+        if discord.utils.get(message.author.roles, id=874833402052878396): # Contributor 24T
             return commands.Cooldown(1, 900)
-        elif discord.utils.get(message.author.roles, id=915094170593529916):
-            return commands.Cooldown(1, 900)
-        elif discord.utils.get(message.author.roles, id=915094236582518834):
+        elif discord.utils.get(message.author.roles, id=931174008970444800): # weekly top grinder
             return commands.Cooldown(1, 900)
         elif discord.utils.get(message.author.roles, name="Vibing Investor"):
             return commands.Cooldown(1, 1800)
@@ -219,7 +220,7 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
 
     @checks.requires_roles()
     @commands.command(name="hideping", aliases = ["hp", "secretping", "sp"], hidden=True)
-    @commands.cooldown(1,5, commands.BucketType.user)
+    @commands.cooldown(1, 30, commands.BucketType.user)
     async def hideping(self, ctx, channel: Optional[discord.TextChannel] = None, member: discord.Member=None, *, message=None):
         """
         Secretly ping someone with this command!
@@ -481,3 +482,179 @@ class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
 
         if ctx.author.id in [650647680837484556, 321892489470410763]:
             ctx.command.reset_cooldown(ctx)
+
+    @commands.command(name="covidvbot", aliases=["covid", "infect"])
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def covidbot(self, ctx):
+        """
+        Fetches information about CoviDVBot.
+        """
+        class description(discord.ui.View):
+            def __init__(self, embed1, embed2, author):
+                self.embed1 = embed1
+                self.embed2 = embed2
+                self.response = None
+                self.author = author
+                super().__init__(timeout=None)
+
+            @discord.ui.button(label="Description of CoviDVBot", style=discord.ButtonStyle.green)
+            async def yes(self, button: discord.ui.Button, interaction: discord.Interaction):
+                await self.response.edit(embed=self.embed1)
+
+            @discord.ui.button(label="CoviDVBot Statistics", style=discord.ButtonStyle.red)
+            async def no(self, button: discord.ui.Button, interaction: discord.Interaction):
+                await self.response.edit(embed=self.embed2)
+
+            async def interaction_check(self, interaction: discord.Interaction) -> bool:
+                if interaction.user.id != self.author.id:
+                    await interaction.response.send_message("These buttons aren't for you!", ephemeral=True)
+                    return False
+                return True
+
+            async def on_timeout(self) -> None:
+                self.returning_value = None
+                for b in self.children:
+                    b.disabled = True
+                await self.response.edit(view=self)
+
+
+
+        covidinfectors = await self.client.pool_pg.fetch("SELECT * FROM infections ORDER BY infectioncase DESC")
+        um = f"CoviDVBot, also known as **Co**rona**vi**rus **D**isease of Dank Vibes **Bot**, is a coronavirus that emerged in January 2022. CoviDVBot is not known to cause any side effects to a user. It first originated from a bot called {self.client.user}, before evolving and being able to infect humans. (Patient Zero is Argon#0002)\nCoviDVBot is spread through interacting with other humans, especially via mentioning someone.\nThere is no known cure for CoviDVBot, hence once infected, the disease will stay with the user for eternity."
+        embed1 = discord.Embed(title="CoviDVBot At a Glance", description=um, color=self.client.embed_color)
+        nooo = {}
+        for covidinfector in covidinfectors:
+            userid = covidinfector.get('infector')
+            if userid not in nooo:
+                nooo[userid] = 1
+            else:
+                nooo[userid] = nooo[userid] + 1
+        top_infectors = dict(sorted(nooo.items(), key=lambda x: x[1], reverse=True))
+        final = dict(islice(top_infectors.items(), 3))
+        superspreaders = []
+        for spreader in final:
+            member = self.client.get_user(spreader)
+            if member is None:
+                superspreaders.append(f"{spreader} - {final[spreader]}")
+            else:
+                name = f"{member} - {final[spreader]}"
+                superspreaders.append(name)
+        most_recent_infections = covidinfectors[:3]
+        user_ids = [covid.get('member_id') for covid in covidinfectors]
+        if ctx.author.id in user_ids:
+            is_infected = True
+        else:
+            is_infected = False
+        if is_infected:
+            govmessage = "😷 **You have been diagnosed with CoviDVBot.**\nPlease head to the nearest quarantine facility to facilitate your recovery."
+            users_infected_byauthor = [covid.get('member_id') for covid in covidinfectors if covid.get('infector') == ctx.author.id]
+            if len(users_infected_byauthor) > 0:
+                if len(users_infected_byauthor) <= 3:
+                    infector_list = [str(self.client.get_user(user)) for user in users_infected_byauthor if self.client.get_user(user) is not None]
+                    infector_list = ", ".join(infector_list)
+                else:
+                    infector_list = [str(self.client.get_user(user)) for user in users_infected_byauthor[:3] if self.client.get_user(user) is not None]
+                    infector_list = ", ".join(infector_list) + f"and {len(users_infected_byauthor) - 3} others"
+                embed1.add_field(name=f"People you infected ({len(users_infected_byauthor)})", value=f"{infector_list}", inline=True)
+            else:
+                embed1.add_field(name="People you infected", value="No one (yet)", inline=True)
+            embed1.add_field(name="Your Status", value=govmessage, inline=False)
+        else:
+            govmessage = "<:DVB_True:887589686808309791> **You do not have CoviDVBot.**\nPlease stay safe."
+            embed1.add_field(name="Your Status", value=govmessage, inline=False)
+        embed2 = discord.Embed(title="CoviDVBot At a Glance", color=self.client.embed_color)
+        if is_infected:
+            govmessage = "😷 **You have been diagnosed with CoviDVBot.**\nPlease head to the nearest quarantine facility to facilitate your recovery."
+            users_infected_byauthor = [covid.get('member_id') for covid in covidinfectors if covid.get('infector') == ctx.author.id]
+            if len(users_infected_byauthor) > 0:
+                if len(users_infected_byauthor) <= 3:
+                    infector_list = [str(self.client.get_user(user)) for user in users_infected_byauthor if self.client.get_user(user) is not None]
+                    infector_list = "**" + ", ".join(infector_list) + "**"
+                else:
+                    infector_list = [str(self.client.get_user(user)) for user in users_infected_byauthor[:3] if self.client.get_user(user) is not None]
+                    infector_list = "**" + ", ".join(infector_list) + f"** and {len(users_infected_byauthor) - 3} others"
+                embed2.add_field(name=f"People you infected ({len(users_infected_byauthor)})", value=f"{infector_list}", inline=True)
+            else:
+                embed2.add_field(name="People you infected", value="No one (yet)", inline=True)
+            infectiontrack = []
+            def get_infector(infected):
+                for covid in covidinfectors:
+                    if covid.get('infector') == self.client.user.id:
+                        return None
+                    elif covid.get('member_id') == infected:
+                        return covid.get('infector')
+                return None
+            infectiontrack.append(f"**{ctx.author}**")
+            infector = get_infector(ctx.author.id)
+            if infector is not None:
+                user = self.client.get_user(infector)
+                if user is not None:
+                    user = str(user)
+                else:
+                    user = str(infector)
+                infectiontrack.append(user)
+            while infector is not None:
+                infector = get_infector(infector)
+                if infector is not None:
+                    user = self.client.get_user(infector)
+                    if user is not None:
+                        infectiontrack.append(str(user))
+                    else:
+                        infectiontrack.append(f"{infector}")
+            if len(infectiontrack) > 0:
+                infector_list = " <- ".join(infectiontrack)
+                embed2.add_field(name="How you were infected", value=f"{infector_list}", inline=True)
+            embed2.add_field(name="Your Status", value=govmessage, inline=False)
+        else:
+            govmessage = "<:DVB_True:887589686808309791> **You do not have CoviDVBot.**\nPlease stay safe."
+            embed2.add_field(name="Your Status", value=govmessage, inline=False)
+        embed2.add_field(name="Infected", value=f"{len(covidinfectors)}", inline=True)
+        embed2.add_field(name="Superspreaders", value='\n'.join(superspreaders), inline=True)
+        embed2.add_field(name="Deaths", value="0", inline=True)
+        embed2.add_field(name="Recovered", value="0", inline=True)
+        most_recent_infections_lst = []
+        for recent_infection in most_recent_infections:
+            member_id = recent_infection.get('member_id')
+            member = self.client.get_user(member_id)
+            #infector = self.client.get_user(recent_infection.get('infector')) or "Unknown"
+            if member is None:
+                member = f"{member_id} - <t:{recent_infection.get('timeinfected')}:R>"
+            else:
+                member = f"{member} - <t:{recent_infection.get('timeinfected')}:R>"
+            most_recent_infections_lst.append(member)
+        embed2.add_field(name="Most recent infections", value='\n'.join(most_recent_infections_lst), inline=True)
+        view = description(embed1, embed2, ctx.author)
+        view.response = await ctx.send(embed=embed1, view=view)
+        await view.wait()
+
+    @checks.in_beta()
+    @commands.cooldown(1, 10800, commands.BucketType.user)
+    @commands.command(name="sus")
+    async def sus(self, ctx):
+        """
+        Undefined
+        """
+        choice = random.randint(1, 2)
+        if choice == 1:
+            name = ctx.author.display_name
+            name = name + " ඞ"
+            if len(name) > 32:
+                choice = random.randint(1, 2)
+            else:
+                try:
+                    await ctx.author.edit(nick=name)
+                except discord.Forbidden:
+                    choice = random.randint(1, 2)
+                else:
+                    await ctx.send(f"{ctx.author.mention} ඞ")
+                    return
+        if choice == 2:
+            async with aiohttp.ClientSession() as session:
+                url=f"https://g.tenor.com/v1/search?q=among+us&key={tenorAPI}&limit=100"
+                async with session.get(url) as resp:
+                    data = await resp.json()
+                    gif = random.choice(data.get('results'))
+                    gif = gif.get('media')[0].get('gif').get('url')
+                    await ctx.send(gif)
+        else:
+            print('nooo')

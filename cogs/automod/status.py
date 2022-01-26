@@ -6,7 +6,7 @@ class AutoStatus(commands.Cog):
         self.client = client
         self.status = None
 
-    @tasks.loop(seconds=15.0)
+    @tasks.loop(minutes=1.0)
     async def change_status(self):
         await self.client.wait_until_ready()
         statuses = await self.client.pool_pg.fetch("SELECT * FROM maintenance")

@@ -22,11 +22,12 @@ AVAILABLE_EXTENSIONS = ['cogs.dev',
 'cogs.votetracker',
 'cogs.messagetracking',
 'cogs.grinder',
-'cogs.automod',
 'cogs.giveaways',
 'cogs.donations',
 'cogs.dankmemer',
-'cogs.infection'
+'cogs.infection',
+'cogs.automod',
+'cogs.disboard'
 ]
 
 load_dotenv('credentials.env')
@@ -151,7 +152,7 @@ class dvvt(commands.AutoShardedBot):
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS dumbfightlog(invoker_id bigint, target_id bigint, did_win integer)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS freezenick(id serial, user_id bigint, guild_id bigint, nickname text, old_nickname text, time bigint, reason text, responsible_moderator bigint)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS grinderdata(user_id bigint PRIMARY KEY, today bigint, past_week bigint, last_week bigint, past_month bigint, all_time bigint, last_dono_time bigint, last_dono_msg text)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS giveaways(guild_id bigint, channel_id bigint, message_id bigint, time bigint, name text, host_id bigint, winners integer)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS giveaways(guild_id bigint, channel_id bigint, message_id bigint, time bigint, name text, host_id bigint, winners integer, active boolean)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS giveawayentrants(message_id bigint, user_id bigint)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS ignoredchristmascat(guild_id bigint, category_id bigint PRIMARY KEY)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS ignoredchristmaschan(guild_id bigint, channel_id bigint PRIMARY KEY)")
@@ -173,12 +174,12 @@ class dvvt(commands.AutoShardedBot):
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS prefixes(guild_id bigint PRIMARY KEY, prefix text)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS remindersettings(member_id bigint PRIMARY KEY, method integer, daily bigint, lottery bigint, work bigint, lifesaver bigint, apple integer, redeem integer, weekly integer, monthly integer, hunt integer, fish integer, dig integer, highlow integer, snakeeyes integer, search integer, crime integer, beg integer, dailybox integer, horseshoe integer, pizza integer, drop integer)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS rmpreference(member_id bigint PRIMARY KEY, rmtype integer)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS roleremove(member_id bigint PRIMARY KEY)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS roleremove(member_id bigint PRIMARY KEY, rmtime bigint)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS rules(guild_id bigint, command text, role_id bigint, whitelist boolean)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS selfrolemessages(guild_id bigint, age bigint, gender bigint, location bigint, minigames bigint, event_pings bigint, dank_pings bigint, server_pings bigint, bot_roles bigint, random_color bigint, colors bigint, specialcolors bigint, boostping bigint, vipheist bigint)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS serverconfig(guild_id bigint, settings text, enabled boolean)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS stats(member_id bigint, remindertype integer, time bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS stickmessages(guild_id bigint PRIMARY KEY, channel_id bigint, message_id bigint, type integer, message text)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS stickymessages(guild_id bigint PRIMARY KEY, channel_id bigint, message_id bigint, type integer, message text)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS suggestion_response(suggestion_id integer, user_id bigint, response_id bigint, message_id bigint, message text)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS suggestions(suggestion_id serial, user_id bigint, finish boolean, response_id bigint, suggestion text)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS teleport(member_id bigint, checkpoint text, channel_id bigint)")
@@ -192,7 +193,7 @@ class dvvt(commands.AutoShardedBot):
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS nickname_changes(guild_id bigint, member_id bigint, nickname text, time bigint)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS name_changes(user_id bigint, name text, time bigint)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS timers(guild_id bigint, channel_id bigint, message_id bigint, user_id bigint, time bigint, title text)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS infections(infectioncase serial, member_id bigint PRIMARY KEY, guild_id bigint, channel_id bigint, message_id bigint, timeinfected bigint)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS infections(infectioncase serial, member_id bigint PRIMARY KEY, guild_id bigint, channel_id bigint, message_id bigint, infector bigint, timeinfected bigint)")
                 await self.pool_pg.execute("CREATE SCHEMA IF NOT EXISTS donations")
         print("Bot is ready")
 

@@ -98,7 +98,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
                 return
             for row in result:  # iterate through the list of members who have reminders.
                 memberid = row.get('member_id')
-                await self.client.pool_pg.execute('UPDATE roleremove SET rmtime = $1 WHERE member_id = $2', 9223372036854775807, memberid)
+                await self.client.pool_pg.execute('DELETE FROM roleremove WHERE rmtime = $1 AND member_id = $2', row.get('rmtime'), memberid)
                 preferences = await self.client.pool_pg.fetchrow("SELECT rmtype FROM rmpreference WHERE member_id = $1", memberid)
                 if preferences is None:  # somehow there is no preference for this user, so i'll create an entry to prevent it from breaking
                     await self.client.pool_pg.execute("INSERT INTO rmpreference(member_id, rmtype) VALUES($1, $2)", memberid, 1)

@@ -86,7 +86,7 @@ def is_not_blacklisted() -> callable:
 
 def base_dev() -> callable:
     async def predicate(ctx):
-        if ctx.message.author.id in [321892489470410763, 650647680837484556, 515725341910892555]:
+        if await ctx.is_bot_dev():
             return True
         else:
             raise ArgumentBaseError(message="Only developers can use this command.")
@@ -130,7 +130,8 @@ def not_in_gen():
     async def predicate(ctx):
         channel_id = 608498967474601995
         if ctx.guild:
-            if ctx.channel.id == channel_id:
-                raise ArgumentBaseError(message="You can't use this command here! Use it in another channel.")
+            if not ctx.author.guild_permissions.manage_roles or await ctx.is_bot_dev():
+                if ctx.channel.id == channel_id:
+                    raise ArgumentBaseError(message="You can't use this command here! Use it in another channel.")
         return True
     return commands.check(predicate)

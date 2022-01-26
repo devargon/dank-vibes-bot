@@ -23,6 +23,10 @@ def get_emoji(category):
         emoji = "<:DVB_PokeTwo:915096051441082421> "
     elif "wicked" == name:
         emoji = "<:DVB_Wicked:914575135044939786> "
+    elif "dank" == name:
+        emoji = "<:DVB_DankMemer:929402679258648596>"
+    elif "pokemon" == name:
+        emoji = "<:DVB_Pokemon:929402811500855316>"
     else:
         emoji = ""
     return emoji
@@ -157,7 +161,7 @@ class donations(commands.Cog):
             async with ctx.typing():
                 if users is None:
                     users = 10
-                query = "SELECT user_id, value FROM donations.{} ORDER BY value DESC".format(f"guild{ctx.guild.id}_{category_name.lower()}")
+                query = "SELECT user_id, value FROM donations.{} WHERE value != 0 ORDER BY value DESC ".format(f"guild{ctx.guild.id}_{category_name.lower()}")
                 leaderboard = await self.client.pool_pg.fetch(query)
                 if len(leaderboard) == 0:
                     return await ctx.send("There are no donations to show in this category.")
@@ -353,14 +357,13 @@ class donations(commands.Cog):
         embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
         return await ctx.send(embed=embed)
 
-    @checks.has_permissions_or_role(administrator=True)
-    @commands.command(name="wicked", aliases=["azumi"])
+    @checks.not_in_gen()
+    @commands.command(name="weeklydankleaderboard", aliases=["wdlb", "weeklylb", "wlb"])
     async def wicked(self, ctx):
         await ctx.message.delete()
         async with ctx.typing():
             try:
-                query = "SELECT * FROM donations.{}".format(f"guild{ctx.guild.id}_weeklydank")
-                results = await self.client.pool_pg.fetch("SELECT * FROM donations.{} LIMIT 10".format(f"guild{ctx.guild.id}_dank"))
+                results = await self.client.pool_pg.fetch("SELECT * FROM donations.{} WHERE value != 0 ORDER BY value DESC LIMIT 10".format(f"guild{ctx.guild.id}_dank"))
             except asyncpg.exceptions.UndefinedTableError:
                 return await ctx.send("This command requires having a donation category called `dank` to work.")
             if not results:

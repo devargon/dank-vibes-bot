@@ -782,7 +782,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 nextstreamtime = round(time.time()) + 600
                 await self.handle_reminder_entry(member.id, 20, aftermsg.channel.id, aftermsg.guild.id, nextstreamtime)
                 await checkmark(beforemsg)
-        elif beforeembed.footer is not None and beforeembed.title is not None:
+        elif beforeembed.footer is not None and beforeembed.title is not None and isinstance(beforeembed.title, str):
             def get_member():
                 for member in beforemsg.guild.members:
                     if beforeembed.title.startswith(f"{member.name}'s"):

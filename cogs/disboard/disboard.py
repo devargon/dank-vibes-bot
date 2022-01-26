@@ -27,7 +27,7 @@ class DisboardAutoLock(commands.Cog):
         if overwrite.send_messages != False:
             if "Bump done!" in embed.description:
                 if not message.channel.id == disboard_channel:
-                    await dischannel.send(f"This server has been bumped by someone in another channel! Thank you for bumping the server ❤️ <3")
+                    await dischannel.send(f"This server has been bumped by someone in another channel! Thank you for bumping the server <#")
                 else:
                     await dischannel.send(f"Thank you for bumping the server ❤️ <3")
                 now = round(time.time())
@@ -37,7 +37,7 @@ class DisboardAutoLock(commands.Cog):
                 result = re.findall(regex2, embed.description)
                 if result:
                     if not message.channel.id == disboard_channel:
-                        await dischannel.send(f"This server has been bumped by someone in another channel! Thank you for bumping the server ❤️ <3")
+                        await dischannel.send(f"This server has been bumped by someone in another channel! Thank you for bumping the server <#")
                     else:
                         await dischannel.send(f"Thank you for bumping the server ❤️ <3")
                 now = round(time.time())
