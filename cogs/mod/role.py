@@ -4,13 +4,26 @@ from discord.ext import commands
 from utils import checks
 from utils.converters import BetterRoles
 
+import imghdr
+import aiohttp
+from typing import Union
+from emoji import UNICODE_EMOJI
+import re
+
+regex = re.compile(
+        r'^(?:http|ftp)s?://' # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #normal urls
+        r'localhost|)' #localhoar
+        r'(?::\d+)?' # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+
 class Role(commands.Cog):
     def __init__(self, client):
         self.client = client
 
     @checks.has_permissions_or_role(administrator=True)
-    @commands.command(name="role")
-    async def role(self, ctx, member: discord.Member = None, *, role: BetterRoles = None):
+    @commands.group(name="role", invoke_without_command=True)
+    async def role_base(self, ctx, member: discord.Member = None, *, role: BetterRoles = None):
         """
         Use this command to add or remove a role to a user.
         """
