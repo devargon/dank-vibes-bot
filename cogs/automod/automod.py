@@ -7,6 +7,7 @@ from .timedunlock import TimedUnlock
 from .namelog import NameLogging
 from .timer import timer
 from .status import AutoStatus
+from .editpoll import polledition
 from abc import ABC
 import os
 from utils import checks
@@ -40,7 +41,7 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
     """
     pass
 
-class AutoMod(AutoStatus, timer, NameLogging, timedrole, TimedUnlock, Verification, Freezenick, commands.Cog):
+class AutoMod(polledition, AutoStatus, timer, NameLogging, timedrole, TimedUnlock, Verification, Freezenick, commands.Cog):
     """
     This file is just a placeholder for the various automod functions/modules.
     """
@@ -52,6 +53,7 @@ class AutoMod(AutoStatus, timer, NameLogging, timedrole, TimedUnlock, Verificati
         self.unlock.start()
         self.timer_loop.start()
         self.change_status.start()
+        self.edit_polls.start()
         self.verifyview = False
         self.status = None
 
@@ -61,26 +63,11 @@ class AutoMod(AutoStatus, timer, NameLogging, timedrole, TimedUnlock, Verificati
             self.client.add_view(verifyView())
             self.verifyview = True
 
-    def cog_unload(self) -> None:
+    def cog_unload(self):
         self.freezenick.stop()
         self.check_verification.stop()
         self.timedrole.stop()
         self.unlock.start()
         self.timer_loop.stop()
         self.change_status.stop()
-
-    @checks.has_permissions_or_role(administrator=True)
-    @commands.command(name="verify")
-    async def verify(self, ctx):
-        """
-        Sends the message that allows people to be verified with a button.
-        """
-        embed = discord.Embed(title="__**VERIFY**__", url="https://discord.gg/invite/dankmemer",
-                              description="Click the **Verify** button below this embed to gain access to the server. By clicking you agree to all the rules mentioned above!\n** **",
-                              color=5763312)
-        embed.set_footer(text="Dank Vibes",
-                         icon_url="https://cdn.discordapp.com/icons/595457764935991326/a_58b91a8c9e75742d7b423411b0205b2b.gif")
-        embed.set_image(url="https://cdn.discordapp.com/attachments/616007729718231161/910817422557196328/rawr_nya.gif")
-        embed.set_thumbnail(
-            url="https://cdn.discordapp.com/icons/595457764935991326/a_fba2b3f7548d99cd344931e27930ec4d.gif?size=1024")
-        await ctx.send(embed=embed, view=verifyView())
+        self.edit_polls.cancel()
