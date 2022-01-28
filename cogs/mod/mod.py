@@ -4,6 +4,7 @@ from .lockdown import lockdown
 from .censor import censor
 from .browser_screenshot import BrowserScreenshot
 from .sticky import Sticky
+from .role import Role
 
 from utils import checks
 from utils.buttons import *
@@ -31,7 +32,7 @@ class FrozenNicknames(menus.ListPageSource):
         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return embed
 
-class Mod(Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
+class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
     """
     Mod commands
     """
@@ -394,11 +395,14 @@ class Mod(Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod')
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="names")
     async def names(self, ctx, *, member: discord.User = None):
+        """
+        Shows a user's past tracked usernames. Username changes are only recorded from 9 January 22 onwards.
+        """
         if member is None:
             return await ctx.send("You need to specify a user.")
         names = await self.client.pool_pg.fetch("SELECT * FROM name_changes WHERE user_id = $1", member.id)
         if len(names) == 0:
-            return await ctx.send(f"There has been no name changes recorded for {member}.\nName changes are only recorded starting from x Jan 2022.")
+            return await ctx.send(f"There has been no name changes recorded for {member}.\nName changes are only recorded starting from 9 Jan 2022.")
         buffer = []
         for nameentry in names:
             name = nameentry.get('name')
@@ -410,11 +414,14 @@ class Mod(Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod')
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="nicknames")
     async def nicknames(self, ctx, *, member: discord.Member = None):
+        """
+        Shows a user's past (tracked) nicknames. Nickname changes are only recorded from 9 January 22 onwards.
+        """
         if member is None:
             return await ctx.send("You need to specify a user.")
         nicknames = await self.client.pool_pg.fetch("SELECT * FROM nickname_changes WHERE member_id = $1", member.id)
         if len(nicknames) == 0:
-            return await ctx.send(f"There has been no nickname changes recorded for {member}.\nNickname changes are only recorded starting from x Jan 2022.")
+            return await ctx.send(f"There has been no nickname changes recorded for {member}.\nNickname changes are only recorded starting from 9 Jan 2022.")
         buffer = []
         for nicknameentry in nicknames:
             nickname = nicknameentry.get('nickname')
@@ -422,33 +429,6 @@ class Mod(Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod')
             buffer.append((nickname, time))
         pages = CustomMenu(source=FrozenNicknames(buffer, f"{member.name}'s past nicknames", True), clear_reactions_after=True, timeout=60)
         return await pages.start(ctx)
-
-    @checks.has_permissions_or_role(administrator=True)
-    @commands.command(name="role")
-    async def role(self, ctx, member: discord.Member = None, *, role: BetterRoles = None):
-        """
-        Use this command to add or remove a role to a user.
-        """
-        if member is None:
-            return await ctx.send("You need to specify a member to add a role.")
-        if role is None:
-            return await ctx.send(f"You need to specify a role to add to {member}.")
-        if not role.is_assignable():
-            return await ctx.send(f"You cannot add **{role.name}** to **{member}**; this may be as the role is an integration, the role of another bot, guild default roles (like `@everyone`, Booster role), or that the role is higher than my highest role.")
-        if role >= ctx.author.top_role:
-            return await ctx.send(f"You cannot add **{role.name}** to **{member}** as the role is higher than or the same as your own highest role.")
-        if role in member.roles:
-            try:
-                await member.remove_roles(role, reason=f"Requested by {ctx.author} ({ctx.author.id})")
-            except discord.Forbidden:
-                return await ctx.send(f"I don't have permission to remove **{role.name}** from **{member}**.")
-            await ctx.send(f"Removed **{role.name}** from **{member}**.")
-        else:
-            try:
-                await member.add_roles(role, reason=f"Requested by {ctx.author} ({ctx.author.id})")
-            except discord.Forbidden:
-                return await ctx.send(f"I don't have permission to add **{role.name}** to **{member}**.")
-            await ctx.send(f"Added **{role.name}** to **{member}**.")
 
     @checks.has_permissions_or_role(administrator=True)
     @commands.command(name="list")
