@@ -9,6 +9,7 @@ from utils.format import grammarformat, stringtime_duration
 from utils.time import humanize_timedelta
 from utils.menus import CustomMenu
 from time import time
+import os
 
 verify_role = 911541857807384677
 class verifyView(discord.ui.View):
