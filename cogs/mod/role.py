@@ -51,7 +51,7 @@ class Role(commands.Cog):
             await ctx.send(f"Added **{role.name}** to **{member}**.")
 
     @checks.has_permissions_or_role(administrator=True)
-    @commands.command(name='icon')
+    @role_base.command(name='icon')
     async def role_icon(self, ctx, role: discord.Role = None, argument: Union[discord.Emoji, discord.PartialEmoji, str] = None):
         """
         Changes the icon of a role in the server.
@@ -60,9 +60,13 @@ class Role(commands.Cog):
         `Attachment > Emoji > URL > "None"`
         If `None` is given, the bot will remove the icon instead."""
         if 'ROLE_ICONS' not in ctx.guild.features:
-            return await ctx.send("⚠️ **Your server does not have the role icon feature currently.** You require Level 2 Boosts for your server to be able to use role icons.")
+            return await ctx.send("⚠️ **Your server currently does not have the role icon feature.** You require Level 2 Boosts for your server to be able to use role icons.")
         if role is None:
             return await ctx.send("You need to specify a role for which you are editing the role icon.")
+        if role >= ctx.me.top_role:
+            return await ctx.send(f"I cannot edit the icon of **{role.name}** as the role is higher than or the same as **my** highest role.")
+        if role > ctx.author.top_role:
+            return await ctx.send("You **cannot** edit a role that is higher than your own highest role.")
         if len(ctx.message.attachments) > 0:
             argumenttype = "ATTACHMENT"
             argument = ctx.message.attachments[0]
