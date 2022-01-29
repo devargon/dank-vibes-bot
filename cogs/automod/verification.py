@@ -58,6 +58,3 @@ class Verification(commands.Cog):
         else:
             return
         await member_before.add_roles(*roles, reason="Member finished Membership Screening")
-
-    def cog_unload(self) -> None:
-        self.check_verification.stop()

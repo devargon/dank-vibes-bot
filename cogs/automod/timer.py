@@ -67,6 +67,3 @@ class timer(commands.Cog):
     @timer_loop.before_loop
     async def before_timer_loop(self):
         await self.client.wait_until_ready()
-
-    def cog_unload(self) -> None:
-        self.timer_loop.stop()
