@@ -104,6 +104,10 @@ class dankreminders(discord.ui.View):
                   "Use a pizza", "Get drop items", "(POPULAR) Interact on stream", "Post memes", "Marriage Interaction", "Interact with pet"]
         is_enabled = [daily, weekly, monthly, lottery, work, donor, hunt, fish, dig, crime, beg, search, se, highlow, dailybox, horseshoe, pizza, drop, stream, postmeme, marriage, pet]
 
+        async def initialise_dank_reminders(user: Union[discord.Member, discord.User]):
+            await self.client.pool_pg.execute("INSERT INTO remindersettings (member_id, method) VALUES ($1, $2) ON CONFLICT (member_id) DO UPDATE SET method = $2", user.id, 0)
+            return await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", user.id)
+
         async def update_message(emoji, interaction: discord.Interaction):
             if str(emoji) == "<:DVB_calendar:873107952159059991>":
                 await self.client.pool_pg.execute("UPDATE remindersettings SET daily = $1 WHERE member_id = $2", numberswitcher(self.result.get('daily')), ctx.author.id)  # switches to enabled/disabled reminder
@@ -146,10 +150,10 @@ class dankreminders(discord.ui.View):
             elif str(emoji) == "<:DVB_Laptop:915524266940854303>":
                 await self.client.pool_pg.execute("UPDATE remindersettings SET postmeme = $1 WHERE member_id = $2", numberswitcher(self.result.get('postmeme')), ctx.author.id)
             elif str(emoji) == "<:DVB_Ring:928236453920669786>":
+                if self.result.get('marriage') != 1:
+                    await interaction.response.send_message("__**Important!**__\nWhen you share coins or gift items to your partner, I will react to the shared/gifted message from Dank Memer with <:DVB_Ring:928236453920669786>.\n\nRemember to set your marriage partner via `smp <user>`! This way, I can detect when you gift or share coins to your marriage partner.", ephemeral=True)
                 await self.client.pool_pg.execute("UPDATE remindersettings SET marriage = $1 WHERE member_id = $2", numberswitcher(self.result.get('marriage')), ctx.author.id)
-                await interaction.response.send_message("__**Important!**__\nI'll remind you every **__15 hours__** to interact with your partner, as there is no accurate duration as to when your marriage's stats will be too low.", ephemeral=True)
             elif str(emoji) == "<:DVB_pet:928236242469011476>":
-                await interaction.response.send_message("__**Important!**__\nI'll remind you every **__12 hours__** to interact with your pet, as there is no accurate duration as to when your pet's stats will be too low.", ephemeral=True)
                 await self.client.pool_pg.execute("UPDATE remindersettings SET pet = $1 WHERE member_id = $2", numberswitcher(self.result.get('pet')), ctx.author.id)
             self.result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
             self.children[reminderemojis.index(str(emoji))].style = discord.ButtonStyle.red if is_enabled[reminderemojis.index(str(emoji))] is True else discord.ButtonStyle.green
@@ -197,6 +201,22 @@ class dankreminders(discord.ui.View):
         for b in self.children:
             b.disabled = True
         await self.response.edit(view=self)
+
+
+def get_shared_user_name(embed: discord.Embed):
+    if len(embed.fields) > 0:
+        if isinstance(embed.fields[0].name, str):
+            if embed.fields[0].name.startswith("Shared"):
+                ending = "'s Wallet"
+            elif embed.fields[0].name.startswith("Gifted"):
+                ending = " now has"
+            else:
+                raise ValueError
+            userdetail_field = embed.fields[2].name
+            if isinstance(userdetail_field, str):
+                if userdetail_field.endswith(ending):
+                    return userdetail_field[:-len(ending)]
+
 
 class DankMemer(commands.Cog, name='dankmemer'):
     """
@@ -659,24 +679,19 @@ class DankMemer(commands.Cog, name='dankmemer'):
         """
         Marriage reminder
         """
-        content = message.content
-        content = content.strip().lower()
-        if content in ["pls marry", "pls marriage"]:
-            def check(m):
-                if m.author.id == 270904126974590976:
-                    if len(m.embeds) > 0:
-                        if m.embeds[0].title:
-                            if m.embeds[0].title == ("Your Marriage Status"):
-                                return True
-                return False
-            try:
-                await self.client.wait_for('message', check=check, timeout=10.0)
-            except asyncio.TimeoutError:
-                return await crossmark(message)
-            else:
-                timetomarriage = round(time.time()) + 54000
-                await self.handle_reminder_entry(message.author.id, 22, message.channel.id, message.guild.id, timetomarriage)
-                return await checkmark(message)
+        if message.author.id == 270904126974590976:
+            if len(message.mentions) > 0:
+                if len(message.embeds) > 0:
+                    user_name = get_shared_user_name(message.embeds[0])
+                    if user_name:
+                        partner_id = await self.client.pool_pg.fetchval("SELECT m_partner FROM remindersettings WHERE member_id = $1", message.mentions[0].id)
+                        partner = self.client.get_user(partner_id)
+                        if partner is not None:
+                            if user_name == partner.name:
+                                timetomarriage = round(time.time()) + 54000
+                                await self.handle_reminder_entry(message.author.id, 22, message.channel.id, message.guild.id, timetomarriage)
+                                return await message.add_reaction('<:DVB_Ring:928236453920669786>')
+
 
 
     @commands.Cog.listener()
@@ -954,7 +969,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
 
 
     @checks.not_in_gen()
-    @commands.command(name="dankreminders", aliases = ["dankrm", "drm"])
+    @commands.command(name="dankreminders", aliases=["dankrm", "drm"])
     async def dankreminders(self, ctx):
         """
         Shows your reminders for Dank Memer and allows you to enable/disable them.
@@ -1075,6 +1090,52 @@ class DankMemer(commands.Cog, name='dankmemer'):
         for drop in drops:
             embed.add_field(name=drop.get("name"), value=f"Cost: {drop.get('price')}\nDrop Time: <t:{drop.get('time')}>")
         await ctx.send(embed=embed)
+
+    @commands.cooldown(5, 1, commands.BucketType.user)
+    @commands.command(name='setmarriagepartner', aliases=['smp', 'mp', 'marriagepartner'])
+    async def set_marriage_partner(self, ctx, user: Union[discord.Member, str] = None):
+        """
+        Sets (or changes) your current Dank Memer marriage partner (for marriage reminders).
+        To reset your marriage partner to None, use `none` instead of mentioning a user.
+        """
+        if user is None:
+            return await ctx.send("You need to specify who you're setting as your marriage partner.")
+        existing_partner = await self.client.pool_pg.fetchval("SELECT m_partner FROM remindersettings WHERE member_id = $1", ctx.author.id)
+        confirmview = confirm(ctx, self.client, 10.0)
+        if isinstance(user, str):
+            if user.lower() == "none":
+                if existing_partner is None:
+                    return await ctx.send("You don't even have a marriage partner set 🤨")
+                embed = discord.Embed(title=f"You already have a marriage partner set.", description=f"Do you want to **reset your marriage partner**?", color=discord.Color.orange())
+                confirmview.response = await ctx.send(embed=embed, view=confirmview)
+                await confirmview.wait()
+                if confirmview.returning_value is None or confirmview.returning_value == False:
+                    embed.color, embed.description = discord.Color.red(), "Aight, we are not changing anything today."
+                    return await confirmview.response.edit(embed=embed)
+                await self.client.pool_pg.execute("UPDATE remindersettings SET m_partner = $1 WHERE member_id = $2", None, ctx.author.id)
+                embed.color, embed.description = discord.Color.green(), f"Your marriage partner is now reset. We hope this wasn't the result of a divorce."
+                return await confirmview.response.edit(embed=embed)
+            else:
+                return await ctx.send(f"{user} is not a valid user.")
+
+        if existing_partner:
+            confirmview = confirm(ctx, self.client, 10.0)
+            embed = discord.Embed(title=f"You already have a marriage partner set.", description=f"Do you want to change your marriage partner to **{user.name}**?", color=discord.Color.orange())
+            confirmview.response = await ctx.send(embed=embed, view=confirmview)
+            await confirmview.wait()
+            if confirmview.returning_value is None or confirmview.returning_value == False:
+                embed.color, embed.description = discord.Color.red(), "Aight, we are not changing anything today."
+                return await confirmview.response.edit(embed=embed)
+            await self.client.pool_pg.execute("UPDATE remindersettings SET m_partner = $1 WHERE member_id = $2", user.id, ctx.author.id)
+            embed.color, embed.description = discord.Color.green(), f"Your marriage partner is now set to **{user.name}**! When you share coins with or gift items to your partner, I will remind you to do it again in a few hours."
+            return await confirmview.response.edit(embed=embed)
+        else:
+            await self.client.pool_pg.execute("INSERT INTO remindersettings (member_id, m_partner) VALUES ($1, $2) ON CONFLICT (member_id) DO update SET m_partner = $2", ctx.author.id, user.id)
+            embed = discord.Embed(title="Success!", description=f"Your marriage partner is now set to **{user.name}**! When you share coins with or gift items to your partner, I will remind you to do it again in a few hours.", color=discord.Color.green()).set_footer(text="Make sure you have enabled marriage reminders via the `dankreminders` command.")
+            return await ctx.send(embed=embed)
+
+
+
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="trendinggame")
