@@ -689,7 +689,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                         if partner is not None:
                             if user_name == partner.name:
                                 timetomarriage = round(time.time()) + 54000
-                                await self.handle_reminder_entry(message.author.id, 22, message.channel.id, message.guild.id, timetomarriage)
+                                await self.handle_reminder_entry(message.mentions[0].id, 22, message.channel.id, message.guild.id, timetomarriage)
                                 return await message.add_reaction('<:DVB_Ring:928236453920669786>')
 
 
