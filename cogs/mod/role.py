@@ -83,50 +83,58 @@ class Role(commands.Cog):
                     f"Your argument needs to be of (in order) an Attachment, Custom Emoji, Unicode Emoji or URL. If you are removing the role icon, run `getcommandfunc @{role.name} None`.")
         else:
             argumenttype = "EMOJI"
-        if argumenttype == "UNICODE":
-            await role.edit(unicode_emoji=argument)
-            successembed = discord.Embed(title="Success!",
-                                         description=f"The role icon for **{role.name}** has been set to {argument}.",
-                                         color=discord.Color.green())
-        elif argumenttype == "ATTACHMENT":
-            if argument.size > 262144:
-                return await ctx.send(
-                    "The attachment is too big for me to read. The maximum file size of a role icon is 256 KB.")
-            imagebytes = await argument.read()
-            imagetype = imghdr.what(None, imagebytes)
-            if imagetype is None:
-                return await ctx.send("The attachment is not an image.")
-            elif imagetype not in ['png', 'jpeg', 'jpg', 'webp']:
-                return await ctx.send(
-                    "The attachment that you provided cannot be used. Only .PNG, .JPEG and .WEBP files are supported.")
-            await role.edit(icon=imagebytes)
-            successembed = discord.Embed(title="Success!", description=f"The role icon for **{role.name}** has been set to the provided attachment.", color=discord.Color.green())
+        try:
+            if argumenttype == "NONE":
+                await role.edit(reason=f"Requested by {ctx.author} ({ctx.author.id})", icon=None)
+                successembed = discord.Embed(title="Success!", description=f"The role icon for **{role.name}** has been removed.", color=discord.Color.green())
 
-        elif argumenttype == "EMOJI":
-            imagebytes = await argument.read()
-            imagetype = imghdr.what(None, imagebytes)
-            if imagetype is None:
-                return await ctx.send("The emoji you provided is not valid.")
-            elif imagetype not in ['png', 'jpeg', 'jpg', 'webp']:
-                return await ctx.send("The emoji that you provided cannot be used. Only .PNG, .JPEG and .WEBP files (A.K.A. non-animated emojis) are supported.")
-            await role.edit(icon=imagebytes)
-            successembed = discord.Embed(title="Success!", description=f"The role icon for **{role.name}** has been set to the requested custom emoji.", color=discord.Color.green())
+            elif argumenttype == "UNICODE":
+                await role.edit(reason=f"Requested by {ctx.author} ({ctx.author.id})", unicode_emoji=argument)
+                successembed = discord.Embed(title="Success!", description=f"The role icon for **{role.name}** has been set to {argument}.", color=discord.Color.green())
 
-        elif argumenttype == "URL":
-            async with aiohttp.ClientSession() as session:
-                async with session.get(argument) as resp:
-                    if resp.status != 200:
-                        return await ctx.send("The URL you provided is not valid.")
-                    imagebytes = await resp.read()
-            imagetype = imghdr.what(None, imagebytes)
-            if imagetype is None:
-                return await ctx.send("The URL you provided is not valid.")
-            elif imagetype not in ['png', 'jpeg', 'jpg', 'webp']:
-                return await ctx.send(
-                    "The URL you provided is not a picture that can be used. Only .PNG, .JPEG and .WEBP files are supported.")
-            print(imagetype)
-            await role.edit(icon=imagebytes)
-            successembed = discord.Embed(title="Success!", description=f"The role icon for **{role.name}** has been set to the requested URL.", color=discord.Color.green())
-        else:
-            successembed = discord.Embed(title="This action failed", description="An unexpected error occured; inform the developer about this.", color=discord.Color.red())
-        await ctx.send(embed=successembed)
+            elif argumenttype == "ATTACHMENT":
+                if argument.size > 262144:
+                    return await ctx.send("The attachment is too big for me to read. The maximum file size of a role icon is 256 KB.")
+                imagebytes = await argument.read()
+                imagetype = imghdr.what(None, imagebytes)
+                if imagetype is None:
+                    return await ctx.send("The attachment is not an image.")
+                elif imagetype not in ['png', 'jpeg', 'jpg', 'webp']:
+                    return await ctx.send("The attachment that you provided cannot be used. Only .PNG, .JPEG and .WEBP files are supported.")
+                await role.edit(reason=f"Requested by {ctx.author} ({ctx.author.id})", icon=imagebytes)
+                successembed = discord.Embed(title="Success!", description=f"The role icon for **{role.name}** has been set to the provided attachment.", color=discord.Color.green())
+
+            elif argumenttype == "EMOJI":
+                imagebytes = await argument.read()
+                imagetype = imghdr.what(None, imagebytes)
+                if imagetype is None:
+                    return await ctx.send("The emoji you provided is not valid.")
+                elif imagetype not in ['png', 'jpeg', 'jpg', 'webp']:
+                    return await ctx.send("The emoji that you provided cannot be used. Only .PNG, .JPEG and .WEBP files (A.K.A. non-animated emojis) are supported.")
+                await role.edit(reason=f"Requested by {ctx.author} ({ctx.author.id})", icon=imagebytes)
+                successembed = discord.Embed(title="Success!", description=f"The role icon for **{role.name}** has been set to the requested custom emoji.", color=discord.Color.green())
+
+            elif argumenttype == "URL":
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(argument) as resp:
+                        if resp.status != 200:
+                            return await ctx.send("The URL you provided is not valid.")
+                        imagebytes = await resp.read()
+                imagetype = imghdr.what(None, imagebytes)
+                if imagetype is None:
+                    return await ctx.send("The URL you provided is not valid.")
+                elif imagetype not in ['png', 'jpeg', 'jpg', 'webp']:
+                    return await ctx.send("The URL you provided is not a picture that can be used. Only .PNG, .JPEG and .WEBP files are supported.")
+                await role.edit(reason=f"Requested by {ctx.author} ({ctx.author.id})", icon=imagebytes)
+                successembed = discord.Embed(title="Success!", description=f"The role icon for **{role.name}** has been set to the requested URL.", color=discord.Color.green())
+            else:
+                successembed = discord.Embed(title="This action failed", description="An unexpected error occured; inform the developer about this.", color=discord.Color.red())
+            await ctx.send(embed=successembed)
+        except (discord.Forbidden, discord.HTTPException, discord.InvalidArgument) as e:
+            if e == discord.Forbidden:
+                return await ctx.send(f"I don't have permission to edit the role **{role.name}** :(")
+            elif e == discord.HTTPException:
+                await ctx.send("An unexpected error occured.\nThis could happen as:\n<:ReplyCont:871807889587707976> The image size is too big (only images smaller than 256 kb is allowed).\n<:Reply:871808167011549244> The image type/format is not supported.\nA report has been sent to the developer to investigate the cause.")
+                raise e
+            elif e == discord.InvalidArgument:
+                return await ctx.send("The role you provided is not valid.")
