@@ -225,7 +225,10 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         msgembed = message.embeds[0]
         if len(msgembed.fields) < 0:
             return
-        if not (type(msgembed.fields[0].value) == str and type(msgembed.fields[0].name) == str):
+        try:
+            if not (type(msgembed.fields[0].value) == str and type(msgembed.fields[0].name) == str):
+                return
+        except IndexError:
             return
         title = msgembed.fields[0].name
         if title != "Shared":
