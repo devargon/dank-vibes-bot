@@ -224,11 +224,11 @@ class Utility(polls, Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog
             value_1.append(f'<:stage_channel:868806674452987924> {stage}')
         py_version = "{}.{}.{}".format(*sys.version_info[:3])
         dpy_version = discord.__version__
-        embed = discord.Embed(description=f"{ctx.guild.me.name} is a multipurpose bot designed to help members and enhance the Dank Vibes experience with a helpful set of fun and utility commands. \n\n{ctx.guild.me.name} is created by {str(self.client.get_user(321892489470410763))} with the Discord.py library, and developed by {str(self.client.get_user(321892489470410763))} and {str(self.client.get_user(650647680837484556))}.", color=self.client.embed_color)
+        embed = discord.Embed(description=f"{ctx.guild.me.name} is a multipurpose bot designed to help members and enhance the Dank Vibes experience with a helpful set of fun and utility commands. \n\n{ctx.guild.me.name} is created by {str(self.client.get_user(321892489470410763))} with the Pycord library, and developed by {str(self.client.get_user(321892489470410763))} and {str(self.client.get_user(650647680837484556))}.", color=self.client.embed_color)
         embed.add_field(name='Stats', value="\n".join(value_1), inline=True)
-        embed.add_field(name='Versions', value=f"<:python:868806455317393428> `{py_version}`\n<:discordpy:868806486241992724> `{dpy_version}`", inline=True)
+        embed.add_field(name='Versions', value=f"<:python:868806455317393428> `{py_version}`\n<:DVB_PyCord:937351289514385428> `{dpy_version}`", inline=True)
         embed.add_field(name='Developers', value=f"{str(self.client.get_user(650647680837484556))}", inline=True)
-        embed.add_field(name="Special Thanks To", value=f"{str(await self.client.fetch_user(727498137232736306))}\n{str(await self.client.fetch_user(321892489470410763))}\n{await self.client.fetch_user(560251854399733760)}", inline=True)
+        embed.add_field(name="Special Thanks To", value=f"{str(await self.client.fetch_user(727498137232736306))}\n{self.client.get_user(321892489470410763)}\n{self.client.get_user(560251854399733760)}\n{self.client.get_user(886598864965103727)} <3", inline=True)
         if ctx.author.id in [650647680837484556, 515725341910892555, 321892489470410763]:
             loop = asyncio.get_event_loop()
             def get_advanced_details():
