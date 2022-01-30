@@ -49,17 +49,13 @@ class polls(commands.Cog):
         self.poll_views_added = False
         self.client = client
 
-    def generate_embed(self, author:str, author_icon:Optional[str], poll_name:str, polldata:dict):
+    def generate_embed(self, author: str, author_icon: Optional[str], poll_name: str, polldata: dict):
         embed = discord.Embed(title=poll_name, color=self.client.embed_color)
-        embed.set_footer(text="The poll data updates every 10 seconds.")
+        embed.set_footer(text="The poll data updates every 15 seconds.")
         if author_icon is not None:
             embed.set_author(name=author, icon_url=author_icon)
         else:
             embed.set_author(name=author)
-        polldata_example = {
-            'choice1': 4,
-            'choice2': 5
-        }
         total = sum([polldata[key] for key in polldata])
         for index, key in enumerate(polldata):
             if polldata[key] == 0:
