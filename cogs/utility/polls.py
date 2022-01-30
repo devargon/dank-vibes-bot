@@ -8,11 +8,11 @@ from utils.format import generate_loadbar
 import time
 
 class PollButtons(discord.ui.View):
-    def __init__(self, choices: list, client, addedtime):
+    def __init__(self, choices: list, client, identifier):
         self.choices = choices
         self.client = client
         self.response = None
-        self.time = addedtime
+        self.identifier = identifier
 
         super().__init__(timeout=None)
 
@@ -30,18 +30,13 @@ class PollButtons(discord.ui.View):
             await self.client.pool_pg.execute("INSERT INTO pollvotes (poll_id, user_id, choice) VALUES ($1, $2, $3)", poll_id, interaction.user.id, option)
             await interaction.edit_original_message(content=f"For the poll **{poll_data.get('poll_name')}**, you voted: **{option}**\n\nYour vote has been recorded!")
 
-
-
-
-
-
         class pollbutton(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
                 await manage_callback(self, interaction)
 
 
         for option in self.choices:
-            self.add_item(pollbutton(label=option, style=discord.ButtonStyle.primary, custom_id=f"{self.time}_{option}"))
+            self.add_item(pollbutton(label=option, style=discord.ButtonStyle.primary, custom_id=f"{self.identifier}_{option}"))
 
 
 
@@ -83,7 +78,7 @@ class polls(commands.Cog):
             for poll in all_polls:
                 poll_m_id = poll.get('message_id')
                 poll_choices = poll.get('choices').split('|')
-                self.client.add_view(PollButtons(poll_choices, self.client, poll.get('created')), message_id=poll_m_id)
+                self.client.add_view(PollButtons(poll_choices, self.client, poll.get('invoked_message_id')), message_id=poll_m_id)
 
 
 
@@ -122,12 +117,12 @@ class polls(commands.Cog):
             choices_dict[option] = 0
         embed = self.generate_embed(f"{ctx.author}'s Poll", ctx.author.display_avatar.url, question, choices_dict)
         timeadded = round(time.time())
-        poll_view = PollButtons(choices, self.client, timeadded)
+        poll_view = PollButtons(choices, self.client, ctx.message.id)
         msg = await ctx.send(embed=embed, view=poll_view)
         print(msg)
         poll_view.response = msg
         print(poll_view.response)
-        await self.client.pool_pg.execute("INSERT INTO polls(guild_id, channel_id, message_id, poll_name, choices, created) VALUES ($1, $2, $3, $4, $5, $6)", ctx.guild.id, ctx.channel.id, poll_view.response.id, question, "|".join(choices), timeadded)
+        await self.client.pool_pg.execute("INSERT INTO polls(guild_id, channel_id, invoked_message_id, message_id, creator_id, poll_name, choices, created) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", ctx.guild.id, ctx.channel.id, ctx.message.id, poll_view.response.id, ctx.author.id, question, "|".join(choices), timeadded)
         print('done')
         await poll_view.wait()
 
