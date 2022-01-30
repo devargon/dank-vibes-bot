@@ -4,7 +4,7 @@ asyncpg==0.24.0
 colorthief==0.2.1
 cycler==0.10.0
 discord-ext-menus @ git+https://github.com/Rapptz/discord-ext-menus@fbb8803779373357e274e1540b368365fd9d8074
-discord.py @ git+https://github.com/Rapptz/discord.py@45d498c1b76deaf3b394d17ccf56112fa691d160
+py-cord==2.0.0b1
 alexflipnote.py @ git+https://github.com/argo0n/forked_alexflipnote.py
 expr.py==0.3.0
 fuzzywuzzy==0.18.0
@@ -35,3 +35,4 @@ alexflipnote.py
 more-itertools
 googletrans==3.1.0a0
 hyper
+emoji
