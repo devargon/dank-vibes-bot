@@ -27,6 +27,7 @@ from .whois import Whois
 from .teleport import Teleport
 from .nicknames import nicknames
 from .suggestion import Suggestion
+from .polls import polls
 
 
 LANGUAGES = {'af': 'afrikaans', 'sq': 'albanian', 'am': 'amharic', 'ar': 'arabic', 'hy': 'armenian', 'az': 'azerbaijani',
@@ -50,7 +51,7 @@ LANGUAGES = {'af': 'afrikaans', 'sq': 'albanian', 'am': 'amharic', 'ar': 'arabic
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
 
-class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name='utility', metaclass=CompositeMetaClass):
+class Utility(polls, Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name='utility', metaclass=CompositeMetaClass):
     """
     Utility commands
     """
@@ -59,6 +60,7 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
         self.nickconfig = {}
         self.persistent_views_added = False
         self.translator = Translator()
+        self.poll_views_added = False
 
 
     async def get_text_to_translate(self, ctx, userinput):
