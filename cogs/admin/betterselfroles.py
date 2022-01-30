@@ -80,7 +80,7 @@ class location(discord.ui.View):
         super().__init__(timeout=None)
         catroles = [665765320644100116, 665765314251980813, 665765307973107723, 665765326482571274, 665766596689526804, 665765388059017217]
         labels = ["North America", "South America", "Oceania", "Europe", "Africa", "Asia"]
-        emojis = ["<:NorthAmerica:898491000136290304>", "<:SouthAmerica:898491037100675072>", "<:Oceania:898491069942095872>", "<:Europe:898491102213079050>", "<:Africa:898491126363869214>", "<:Asia:898491160409047051>"]
+        emojis = ["<:p_continent_NA:896236086400012349>", "<:p_continent_SA:896236112983490620>", "<:p_continent_AU:838445838496694302>", "<:p_continent_EU:835705117047128085>", "<:p_continent_africa:843594148774805584>", "<:p_continent_asia:843594277833277471>"]
         ids = ["sr: north", "sr:south", "sr:oceania", "sr:europe", "sr:africa", "sr:asia"]
         class somebutton(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
