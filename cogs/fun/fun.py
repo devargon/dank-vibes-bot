@@ -27,7 +27,7 @@ from .color import color
 alexflipnoteAPI = os.getenv('alexflipnoteAPI')
 tenorAPI = os.getenv('tenorAPI')
 
-class Fun(color, games, ItemGames, snipe, imgen, dm, commands.Cog, name='fun'):
+class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
     """
     Fun commands
     """
