@@ -9,7 +9,6 @@ import aiohttp
 import asyncio
 import operator
 import alexflipnote
-from collections import Counter
 from typing import Union, Optional
 import matplotlib.pyplot as plt
 from itertools import islice
@@ -20,7 +19,6 @@ from utils.errors import ArgumentBaseError, NicknameIsManaged
 from utils.format import generate_loadbar
 
 from .dm import dm
-from .imgen import imgen
 from .snipe import snipe
 from .itemgames import ItemGames
 from .games import games

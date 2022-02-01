@@ -12,7 +12,10 @@ import alexflipnote
 
 alexflipnoteAPI = os.getenv('alexflipnoteAPI')
 
-class imgen(commands.Cog):
+class Imgen(commands.Cog, name='imgen'):
+    """
+    Image Generation commands
+    """
     def __init__(self, client):
         self.client = client
         self.alex_api = alexflipnote.Client(alexflipnoteAPI)
