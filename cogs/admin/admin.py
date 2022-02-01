@@ -69,7 +69,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         await self.client.pool_pg.execute("UPDATE serverconfig SET enabled=$1 WHERE guild_id=$2 AND settings=$3", result, guild.id, settings)
         return result
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="verify")
     async def verify(self, ctx):
         """
@@ -86,7 +86,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         await ctx.send(embed=embed, view=verifyView())
 
     @commands.command(name='serverconfig', aliases=["serverconf"])
-    @commands.has_guild_permissions(administrator=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def serverconfig(self, ctx):
         """
         Shows guild's server configuration settings and also allows you to allow/disable them.
@@ -149,7 +149,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
                 await message.edit(embed=tempembed)
             await message.remove_reaction(response.emoji, ctx.author)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='blacklist', aliases=['bl'])
     async def blacklist(self, ctx, *, user: discord.Member = None):
         """Blacklist a user from using the bot."""
@@ -220,7 +220,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         await ctx.send(embed=embed)
 
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="blacklists")
     async def active_blacklists(self, ctx, *, inquery: Union[discord.Member, int, str] = None):
         """
@@ -286,7 +286,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
             pages = CustomMenu(source=Blacklist(blacklists, title), clear_reactions_after=True, timeout=60)
             return await pages.start(ctx)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='unblacklist', aliases=['unbl'])
     async def unblacklist(self, ctx, *, user: discord.Member = None):
         """Unblacklist a user so that they can continue using the bot."""
@@ -303,7 +303,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         await self.client.get_channel(906433823594668052).send(embed=logembed)
         
     @commands.command(name="setnickchannel", aliases = ["nickchannel"])
-    @commands.has_guild_permissions(administrator=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def setchannel(self, ctx, channel:discord.TextChannel=None):
         """
         Set the channel for nickname requests to be sent to.
@@ -318,7 +318,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
             return await ctx.send(f"I will now send nickname requests to {channel.mention}.\nAll nickname requests sent in a previous channel have been forfeited.")
 
     @commands.command(name="setdmchannel", aliases = ["dmchannel"])
-    @commands.has_guild_permissions(administrator=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def setdmchannel(self, ctx, channel:discord.TextChannel=None):
         """
         Set the channel for dmname requests to be sent to.
@@ -333,7 +333,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
             return await ctx.send(f"I will now send DM requests to {channel.mention}.\nAll DM requests sent in a previous channel have been forfeited.")
 
     @commands.command(name="viewconfig")
-    @commands.has_guild_permissions(administrator=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def viewconfig(self, ctx, channel: discord.TextChannel = None):
         """
         Show configurations for nickname and DM requests.
@@ -344,7 +344,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         else:
             await ctx.send(embed=discord.Embed(title=f"Configurations for {ctx.guild.name}", description = f"Nickname requests: {ctx.guild.get_channel(result.get('nicknamechannel_id'))}\nDM requests: {ctx.guild.get_channel(result.get('dmchannel_id'))}", color = self.client.embed_color))
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="messagereset", aliases=["mreset"], invoke_without_command=True)
     async def messagelog(self, ctx):
         """
@@ -371,7 +371,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
             await msg.edit(embed=embed)
 
     @commands.group(invoke_without_command=True, name="messageroles")
-    @commands.has_guild_permissions(administrator=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def messageroles(self, ctx):
         """
         Configure the milestones for the roles.
@@ -384,7 +384,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         await ctx.send(embed=embed)
 
     @messageroles.command(name="list", aliases = ["show"])
-    @commands.has_guild_permissions(administrator=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def mrolelist(self, ctx):
         """
         Lists milestones for message count roles.
@@ -406,7 +406,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         await ctx.send(embed=embed)
 
     @messageroles.command(name="add", aliases=["create"])
-    @commands.has_guild_permissions(administrator=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def roleadd(self, ctx, messagecount = None, role:discord.Role = None):
         """
         Adds milestones for message roles.
@@ -425,7 +425,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         await ctx.send(f"**Done**\n**{role.name}** will be added to a member when they have sent a message **{messagecount} time(s)**.")
 
     @messageroles.command(name="remove", aliases=["delete"])
-    @commands.has_guild_permissions(administrator=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def roleremove(self, ctx, messagecount=None):
         """
         Removes milestones for nessage count roles.
@@ -443,7 +443,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         await self.client.pool_pg.execute("DELETE FROM messagemilestones WHERE messagecount = $1", messagecount) # Removes the milestone rule
         await ctx.send(f"**Done**\nThe milestone for having sent a message **{messagecount} time(s)** has been removed.")
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.cooldown(1, 15, commands.BucketType.guild)
     @commands.command(name='demote', aliases = ['suggestion49', 'suggest49'])
     async def demote(self, ctx, member: discord.Member=None):

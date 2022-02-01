@@ -141,7 +141,7 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
         view.response = message
 
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="getraw", aliases = ['raw', 'rawmessage'])
     async def getrawmessage(self, ctx, message_id=None, channel:discord.TextChannel=None):
         """
@@ -212,7 +212,7 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
         deleted = await ctx.channel.purge(limit=search, check=check, before=ctx.message)
         return Counter(m.author.display_name for m in deleted)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='cleanup', aliases=['cu'])
     async def cleanup(self, ctx, search=100):
         """
@@ -231,7 +231,7 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
             messages.extend(f'- **{author}**: {count}' for author, count in spammers)
         await ctx.send('\n'.join(messages), delete_after=3.0)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='freezenick', aliases=['fn'])
     async def freezenick(self, ctx, member:discord.Member = None, *, nickname:str = None):
         """
@@ -257,7 +257,7 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
             await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", member.id, ctx.guild.id, nickname, old_nick, timetounfreeze, f"Invoked via freezenick command", ctx.author.id)
             return await ctx.send(f"{member.mention}'s nickname is now frozen to `{nickname}`.")
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="freezenicks")
     async def active_freezenicks(self, ctx):
         """
@@ -285,7 +285,7 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
             pages = CustomMenu(source=FrozenNicknames(frozennicknames, title, False), clear_reactions_after=True, timeout=60)
             return await pages.start(ctx)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='unfreezenick', aliases=['ufn'])
     async def unfreezenick(self, ctx, member: discord.Member = None):
         """
@@ -322,7 +322,7 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
                     role_to_return = discord.utils.get(ctx.guild.roles, id=roles_and_aliases[name])
                     return role_to_return
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='slowmode', aliases=['sm'])
     async def slowmode(self, ctx, channel: Optional[discord.TextChannel] = None, duration: BetterTimeConverter = None):
         if duration is None:
@@ -343,7 +343,7 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
 
 
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="roleinfo", aliases=['ri'])
     async def roleinfo(self, ctx, *, role: BetterRoles = None):
         if role is None:
@@ -392,7 +392,7 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
         embed.set_footer(text=f"Role ID: {role.id}")
         await ctx.send(embed=embed)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="names")
     async def names(self, ctx, *, member: discord.User = None):
         """
@@ -411,7 +411,7 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
         pages = CustomMenu(source=FrozenNicknames(buffer, f"{member.name}'s past names", True), clear_reactions_after=True, timeout=60)
         return await pages.start(ctx)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="nicknames")
     async def nicknames(self, ctx, *, member: discord.Member = None):
         """
@@ -430,7 +430,7 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
         pages = CustomMenu(source=FrozenNicknames(buffer, f"{member.name}'s past nicknames", True), clear_reactions_after=True, timeout=60)
         return await pages.start(ctx)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="list")
     async def list(self, ctx, list_type: str = None, *, things_to_list: str = None):
         """

@@ -88,7 +88,7 @@ class lockdown(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.group(name="lockdown", invoke_without_command=True)
     async def lockdown(self, ctx):
         """
@@ -126,7 +126,7 @@ This will set a message for the lockdown profile when it is used to lock channel
         """
         await ctx.send(embed=discord.Embed(title=f"{self.client.user.name}'s Lockdown Guide", description=message, color=self.client.embed_color, timestamp=discord.utils.utcnow()))
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @lockdown.command(name="create")
     async def lockdown_create(self, ctx, name=None, channel:discord.TextChannel=None):
         """
@@ -145,7 +145,7 @@ This will set a message for the lockdown profile when it is used to lock channel
         await self.client.pool_pg.execute("INSERT INTO lockdownprofiles VALUES($1, $2, $3)", ctx.guild.id, name, channel.id)
         return await ctx.send(embed=discord.Embed(title="Success!", description = f"The lockdown profile with the name **{name}** has been created and **{channel}** has been added to the lockdown profile.", color=discord.Color.green()))
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @lockdown.command(name="add")
     async def lockdown_add(self, ctx, profile_name=None, channels: commands.Greedy[discord.TextChannel]=None):
         """
@@ -180,7 +180,7 @@ This will set a message for the lockdown profile when it is used to lock channel
             desccontent += f"\n{already_added_channels} was/were not added to the lockdown profile **{profile_name}** as it already exists in the profile."
         return await ctx.send(embed=discord.Embed(title="Success!", description=desccontent, color=discord.Color.green() if len(already_added_channels) == 0 else discord.Color.orange()))
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @lockdown.command(name="view")
     async def lockdown_view(self, ctx, *, profile_name=None):
         """
@@ -234,7 +234,7 @@ This will set a message for the lockdown profile when it is used to lock channel
             embed.set_footer(text="By using Dank Vibes Bot's lockdown utility, you agree that WICKED should not be bullying members.")
             await ctx.send(embed=embed)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @lockdown.command(name="remove")
     async def lockdown_remove(self, ctx, profile_name=None, channels: commands.Greedy[discord.TextChannel]=None):
         """
@@ -269,7 +269,7 @@ This will set a message for the lockdown profile when it is used to lock channel
             desccontent += f"\n{non_existent_channels} aren't in the profile **{profile_name}** so they were not removed."
         return await ctx.send(embed=discord.Embed(title="Success!", description=desccontent, color=discord.Color.green() if len(non_existent_channels) == 0 else discord.Color.orange()))
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @lockdown.command(name="delete", aliases = ["clear"])
     async def lockdown_delete(self, ctx, *, profile_name=None):
         """
@@ -300,7 +300,7 @@ This will set a message for the lockdown profile when it is used to lock channel
             embed.color, embed.description = discord.Color.green(), f"The lockdown profile **{profile_name}** has been removed."
             return await msg.edit(embed=embed)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @lockdown.command(name="start", aliases = ["initiate"])
     async def lockdown_start(self, ctx, *, profile_name = None):
         """
@@ -372,7 +372,7 @@ This will set a message for the lockdown profile when it is used to lock channel
             await ctx.send(msg_content)
 
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @lockdown.command(name="end")
     async def lockdown_end(self, ctx, *, profile_name = None):
         """
@@ -440,7 +440,7 @@ This will set a message for the lockdown profile when it is used to lock channel
                     msg_content += f"{case[0]} - {case[1]}"
             await ctx.send(msg_content)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @lockdown.command(name="msg", aliases = ["message"])
     async def lockdown_message(self, ctx, profile_name = None, *, message = None):
         """

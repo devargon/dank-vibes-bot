@@ -50,7 +50,7 @@ class Joining(commands.Cog):
         else:
             return
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="joinmessage")
     async def joinmessage(self, ctx, channel: discord.TextChannel = None):
         """

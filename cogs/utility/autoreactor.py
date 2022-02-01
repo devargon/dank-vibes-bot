@@ -112,7 +112,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
         """
         return await ctx.help()
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @autoreact.command(name='add', aliases=['create', '+'], usage='<trigger> <response>')
     async def autoreact_add(self, ctx, trigger: str = None, *, responses: EmojiOrString = None):
         """
@@ -137,7 +137,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
         return await ctx.send("Autoreaction added.")
 
     @autoreact.command(name='remove', aliases=['delete', '-'], usage='<trigger>')
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     async def autoreact_remove(self, ctx, trigger: str = None):
         """
         Remove an auto reaction.
@@ -214,7 +214,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
         return await ctx.send("Autoreaction added.")
 
     @autoreact.command(name='clear')
-    @commands.has_guild_permissions(administrator=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def autoreact_clear(self, ctx):
         """
         Clear all auto reactions from the server
@@ -250,7 +250,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
                 return await msg.clear_reactions()
 
     @autoreact.command(name='list')
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     async def autoreact_list(self, ctx):
         """
         View a full list of all auto reactions in the server

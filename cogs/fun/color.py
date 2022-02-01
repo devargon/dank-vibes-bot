@@ -36,7 +36,7 @@ class color(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="color", aliases=["colour"])
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def color(self, ctx, argument:Union[discord.Member, str] = None):

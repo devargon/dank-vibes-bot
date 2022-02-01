@@ -185,7 +185,7 @@ class giveaways(commands.Cog):
         noping: typing.Optional[str]
 
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='trophy', aliases=['tro'])
     async def trophy_giveaway(self, ctx, *, flags: RoleFlags):
         """
@@ -269,12 +269,12 @@ class giveaways(commands.Cog):
                     additional_message = flags.msg
                 await ctx.send(f"<@&{pingrole}> {additional_message}", allowed_mentions=discord.AllowedMentions(everyone=False, roles=True, users=True))
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.group(name="giveaway", aliases=['g'], invoke_without_command=True)
     async def giveaway(self, ctx):
         await ctx.help()
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @giveaway.command(name="start", aliases=['s'], usage="[duration] [winner] <requirement> [prize]")
     async def giveaway_start(self, ctx):
         """
@@ -282,7 +282,7 @@ class giveaways(commands.Cog):
         """
         return await ctx.send("i'm not really a giveaway bot so here's a youtube video instead <https://www.youtube.com/watch?v=dQw4w9WgXcQ>")
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @giveaway.command(name="cancel", aliases=['c'])
     async def giveaway_cancel(self, ctx, messasge_ID=None):
         """
@@ -290,7 +290,7 @@ class giveaways(commands.Cog):
         """
         return await ctx.send("i'm not really a giveaway bot so here's a youtube video instead <https://www.youtube.com/watch?v=dQw4w9WgXcQ>")
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @giveaway.command(name="end", aliases=['e'])
     async def giveaway_end(self, ctx, message_ID=None):
         """
@@ -327,7 +327,7 @@ class giveaways(commands.Cog):
                             raise ArgumentBaseError(message="5You did not provide a valid message link or ID.")
 
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @giveaway.command(name="reroll", aliases=["r"])
     async def giveaway_reroll(self, ctx, message_ID: BetterMessageID = None, winner: int = None):
         """
@@ -362,7 +362,7 @@ class giveaways(commands.Cog):
             await channel.send(message)
 
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @giveaway.command(name="active", aliases = ['a'])
     async def giveaway_active(self, ctx):
         """
@@ -395,7 +395,7 @@ class giveaways(commands.Cog):
                 pages = CustomMenu(source=GiveawayList(giveaway_list, embed.title), clear_reactions_after=True, timeout=60)
                 return await pages.start(ctx)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.cooldown(240, 1, commands.BucketType.guild)
     @giveaway.command(name='gw')
     async def giveaway_gw(self, ctx, *, text = None):
@@ -410,7 +410,7 @@ class giveaways(commands.Cog):
         msg = await ctx.send(f"{emoji} **<@&758175760909074432>** {emoji}\n{text}", allowed_mentions=discord.AllowedMentions(everyone=False, users=False, roles=True))
         await msg.add_reaction('<:dv_wCyanHeartOwO:837700662192111617>')
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.cooldown(240, 1, commands.BucketType.guild)
     @giveaway.command(name='elite')
     async def giveaway_elite(self, ctx, *, text=None):
@@ -425,7 +425,7 @@ class giveaways(commands.Cog):
         msg = await ctx.send(f"{emoji} **<@&758174135276142593>** {emoji}\n{text}", allowed_mentions=discord.AllowedMentions(everyone=False, users=False, roles=True))
         await msg.add_reaction('<:dv_wCyanHeartOwO:837700662192111617>')
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.cooldown(240, 1, commands.BucketType.guild)
     @giveaway.command(name='booster')
     async def giveaway_booster(self, ctx, *, text = None):
@@ -440,7 +440,7 @@ class giveaways(commands.Cog):
         msg = await ctx.send(f"{emoji} **<@&662876587687018507>** {emoji}\n{text}", allowed_mentions=discord.AllowedMentions(everyone=False, users=False, roles=True))
         await msg.add_reaction('<:dv_wCyanHeartOwO:837700662192111617>')
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.cooldown(240, 1, commands.BucketType.guild)
     @giveaway.command(name='nitro')
     async def giveaway_nitro(self, ctx, *, text=None):

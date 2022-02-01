@@ -25,7 +25,7 @@ class BrowserScreenshot(commands.Cog):
         self.client = client
 
     @commands.cooldown(1, 30.0, commands.BucketType.guild)
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="browser", aliases=["screenshot", "ss"])
     async def screenshot(self, ctx, link):
         """

@@ -387,7 +387,7 @@ class BetterSelfroles(commands.Cog):
                 self.client.add_view(VIPHeist(), message_id=selfrolemessages.get('vipheist'))
             self.selfroleviews_added = True
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="initselfroles", aliases=["isr"])
     async def selfroles(self, ctx):
         channel = ctx.guild.get_channel(782586550486695936)
@@ -458,7 +458,7 @@ class BetterSelfroles(commands.Cog):
             await self.client.pool_pg.execute("INSERT INTO selfrolemessages VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)", *msgids)
         await ctx.send("Done!")
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="initviproles", aliases=['ivr'])
     async def initviproles(self, ctx):
         channel = ctx.guild.get_channel(641497978112180235)

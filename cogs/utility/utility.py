@@ -80,7 +80,7 @@ class Utility(Autoreaction, polls, Whois, L2LVC, nicknames, Suggestion, Teleport
 
 
     @commands.cooldown(10, 1, commands.BucketType.user)
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.group(name="translate", aliases=['trans', 'tl'], invoke_without_command=True)
     async def translate_command(self, ctx, dest_language: str = None, *, text: str = None):
         """
@@ -133,7 +133,7 @@ class Utility(Autoreaction, polls, Whois, L2LVC, nicknames, Suggestion, Teleport
         embed.set_footer(icon_url="https://upload.wikimedia.org/wikipedia/commons/d/db/Google_Translate_Icon.png", text="Powered by Google Translate")
         await transmsg.edit(embed=embed)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @translate_command.command(name="languages", aliases=["langs", "lang"])
     async def translate_languages(self, ctx):
         """
@@ -456,7 +456,7 @@ class Utility(Autoreaction, polls, Whois, L2LVC, nicknames, Suggestion, Teleport
         embed = discord.Embed(title=f"Invite {self.client.user.name}!", description="[Click here to invite me to your server!](https://www.youtube.com/watch?v=9cjS9z0ZKUo)", color=self.client.embed_color)
         await ctx.send(embed=embed)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='timer')
     async def timer(self, ctx, channel: typing.Optional[discord.TextChannel] = None, duration: BetterTimeConverter = None, *, title:str = None):
         """

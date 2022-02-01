@@ -21,7 +21,7 @@ class Role(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.group(name="role", invoke_without_command=True)
     async def role_base(self, ctx, member: discord.Member = None, *, role: BetterRoles = None):
         """
@@ -50,7 +50,7 @@ class Role(commands.Cog):
                 return await ctx.send(f"I don't have permission to add **{role.name}** to **{member}**.")
             await ctx.send(f"Added **{role.name}** to **{member}**.")
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @role_base.command(name='icon')
     async def role_icon(self, ctx, role: discord.Role = None, argument: Union[discord.Emoji, discord.PartialEmoji, str] = None):
         """

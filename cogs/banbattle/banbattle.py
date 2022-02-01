@@ -82,7 +82,7 @@ class BanBattle(commands.Cog, name='banbattle'):
 
     @checks.is_dvbm()
     @commands.group(name='banbattle')
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     async def banbattle(self, ctx):
         """
         Base command for Banbattle.
@@ -91,7 +91,7 @@ class BanBattle(commands.Cog, name='banbattle'):
 
     @checks.is_dvbm()
     @banbattle.command(name='start')
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     async def banbattle_start(self, ctx):
         """
         Starts a banbattle.
@@ -142,7 +142,7 @@ class BanBattle(commands.Cog, name='banbattle'):
 
     @checks.is_dvbm()
     @banbattle.command(name='leaderboard', aliases=['lb'])
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     async def banbattle_leaderboard(self, ctx):
         """
         Shows the leaderboard for a banbattle.
@@ -153,7 +153,7 @@ class BanBattle(commands.Cog, name='banbattle'):
 
     @checks.is_dvbm()
     @banbattle.command(name='end', aliases=['clear'])
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     async def banbattle_end(self, ctx):
         """
         Ends a banbattle.
