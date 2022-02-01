@@ -18,7 +18,7 @@ class Imgen(commands.Cog, name='imgen'):
     """
     def __init__(self, client):
         self.client = client
-        self.alex_api = alexflipnote.Client(alexflipnoteAPI)
+        self.alex_api = alexflipnote.Client()
 
     @checks.requires_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
