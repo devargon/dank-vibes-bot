@@ -37,9 +37,9 @@ class ErrorHandler(commands.Cog):
         elif isinstance(error, commands.CheckFailure):
             await send_error("Oops!, looks like you don't have enough permission to use this command.", delete_after=5)
         elif isinstance(error, commands.CommandOnCooldown):
-            enabled = await ctx.bot.pool_pg.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
-            if enabled == True:
-                return await ctx.invoke()
+            #enabled = await ctx.bot.pool_pg.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
+            #if enabled == True:
+                #return await ctx.invoke(ctx.command, *ctx.args, **ctx.kwargs)
             message = f"You're on cooldown. Try again in **{humanize_timedelta(seconds=error.retry_after)}**."
             if ctx.command.name == "dumbfight":
                 message += "\nPeople with **Vibing Investor** will have a cooldown of only **30 minutes**!"
@@ -65,19 +65,6 @@ class ErrorHandler(commands.Cog):
         elif isinstance(error, commands.BadArgument):
             ctx.command.reset_cooldown(ctx)
             await send_error(error, delete_after=10)
-        elif isinstance(error, discord.errors.DiscordServerError):
-            sent = False
-            times = 0
-            while sent == False and times <= 5:
-                try:
-                    await asyncio.sleep(5.0)
-                    await ctx.send(
-                        "⚠️ While processing your command, I was unable to connect to Discord. This is an issue with Discord's servers. Try to run the command again.")
-                    sent = True
-                except:
-                    times += 1
-            await self.client.get_channel(871737028105109574).send(
-                f"I encountered a Discord Server Error at {ctx.channel.mention}: {ctx.message.jump_url}")
         else:
             embed = discord.Embed(title="⚠️ Oh no!",
                                   description="Something terribly went wrong when this command was used.\n\nThe developers have been notified and it'll fixed soon.",
