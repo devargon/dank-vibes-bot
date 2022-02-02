@@ -120,7 +120,8 @@ class dvvt(commands.AutoShardedBot):
                       'roleremove', 'votecount', 'cooldowns', 'selfrolemessages', 'devmode', 'blacklisted_words',
                       'blacklist', 'freezenick', 'autorole', 'giveaways', 'giveawayentrants', 'dankdrops', 'autorole',
                       'donation_categories', 'christmaseventconfig', 'commandaccess', 'ignoredchristmascat',
-                      'ignoredchristmaschan', 'perkremoval', 'commandlog', 'timedunlock', 'nickname_changes', 'name_changes', 'timers', 'infections', 'polls', 'pollvotes']
+                      'ignoredchristmaschan', 'perkremoval', 'commandlog', 'timedunlock', 'nickname_changes',
+                      'name_changes', 'timers', 'infections', 'polls', 'pollvotes', 'highlight', 'highlight_ignores']
         tables = await self.pool_pg.fetch("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';")
         tables = [i.get('table_name') for i in tables]
         if tables is None:
@@ -195,6 +196,8 @@ class dvvt(commands.AutoShardedBot):
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS infections(infectioncase serial, member_id bigint PRIMARY KEY, guild_id bigint, channel_id bigint, message_id bigint, timeinfected bigint)")
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS polls(poll_id serial, guild_id bigint, channel_id bigint, invoked_message_id bigint, message_id bigint, creator_id bigint, poll_name text, choices text, created bigint)"),
                 await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS pollvotes(poll_id integer, user_id bigint, choice text)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS highlight (guild_id bigint, user_id bigint, highlights text)")
+                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS highlight_ignores (guild_id bigint, user_id bigint, ignore_type text, ignore_id bigint)")
                 await self.pool_pg.execute("CREATE SCHEMA IF NOT EXISTS donations")
         print("Bot is ready")
 
