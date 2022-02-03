@@ -225,13 +225,9 @@ class Highlight(commands.Cog):
                             cmd: commands.Command = self.client.get_command('highlight')
                             if cmd is not None:
                                 try:
-                                    print('checking')
                                     can_run = await cmd.can_run(new_ctx)
                                 except:
-                                    print('error occured')
                                     can_run = False
-                                print('check succeeded')
-                                print(can_run)
                                 if can_run:
                                     # Check if user has channel or user ignored
                                     um = await self.client.pool_pg.fetch("SELECT ignore_type, ignore_id FROM highlight_ignores WHERE guild_id = $1 AND user_id = $2", message.guild.id, highlighted_member.id)
@@ -253,16 +249,6 @@ class Highlight(commands.Cog):
                                             except:
                                                 pass
                                         notified.append(highlighted_member.id)
-                                        print('can run')
-                                    else:
-                                        print('ignored')
-                                else:
-                                    print('cannot run')
-                                    return
-                            else:
-                                print('highlight is not a command')
-                        else:
-                            print('ctx is none')
 
     @checks.requires_roles()
     @commands.guild_only()

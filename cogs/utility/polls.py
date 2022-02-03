@@ -18,7 +18,6 @@ class PollButtons(discord.ui.View):
 
         async def manage_callback(button: discord.ui.Button, interaction: discord.Interaction):
             await interaction.response.send_message("<a:typing:839487089304141875> **Processing your vote...**", ephemeral=True)
-            print(self.client)
             poll_data = await self.client.pool_pg.fetchrow("SELECT poll_name, poll_id, created FROM polls WHERE message_id = $1", interaction.message.id)
             if poll_data is None:
                 return await interaction.edit_original_message(content="There is no poll associated with this message.")
@@ -115,10 +114,7 @@ class polls(commands.Cog):
         timeadded = round(time.time())
         poll_view = PollButtons(choices, self.client, ctx.message.id)
         msg = await ctx.send(embed=embed, view=poll_view)
-        print(msg)
         poll_view.response = msg
-        print(poll_view.response)
         await self.client.pool_pg.execute("INSERT INTO polls(guild_id, channel_id, invoked_message_id, message_id, creator_id, poll_name, choices, created) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", ctx.guild.id, ctx.channel.id, ctx.message.id, poll_view.response.id, ctx.author.id, question, "|".join(choices), timeadded)
-        print('done')
         await poll_view.wait()
 

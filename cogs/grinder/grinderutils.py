@@ -297,7 +297,6 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         grinders = [member for member in ctx.guild.members if (grinderrole in member.roles or tgrinderrole in member.roles or grinder3mrole in member.roles)]  # gets all grinders if not grinders:
         if len(grinders) == 0:
             return await ctx.send("There are no grinders to be DMed.")
-        print([grinder.name for grinder in grinders])
         confirmview = confirm(ctx, self.client, 15.0)
         grinders = [member for member in ctx.guild.members if self.is_5m_grinder(member) or self.is_3m_grinder(member) or self.is_trial_grinder(member)]
         embed = discord.Embed(title="DM Grinders?", description=f"I will be checking the grinder requirement for the {len(grinders)} grinders and trial grinders, and I'll send a summary to <#{logchannel}>. Afterwards, I'll DM them to update them about the grinder check. Are you sure?", color=self.client.embed_color)
