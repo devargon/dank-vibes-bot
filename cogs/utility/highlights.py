@@ -79,22 +79,6 @@ class Highlight(commands.Cog):
 
     @checks.requires_roles()
     @commands.guild_only()
-    @highlight.command(name="add", aliases=['+'], no_pm=True)
-    async def highlight_add(self, ctx, text: str = None):
-        """
-        Adds a text or phrase to your highlight list.
-        When you don't talk after 5 minutes, you will be DMed if someone highlights you with said phrase.
-        """
-        message = copy.copy(ctx.message)
-        if text is None:
-            message.content = f"{ctx.prefix}{ctx.command.name}"
-        else:
-            message.content = f"{ctx.prefix}{ctx.command} {text}"
-        new_ctx = await self.client.get_context(message, cls=type(ctx))
-        await self.client.invoke(new_ctx)
-
-    @checks.requires_roles()
-    @commands.guild_only()
     @highlight.command(name="clear", aliases=['reset'], no_pm=True)
     async def highlight_clear(self, ctx):
         """
