@@ -214,7 +214,7 @@ class Highlight(commands.Cog):
                 if stem(k.lower()) in final_message and message.author.id != v and v not in notified:
                     # highlight is in nessage, user not notified yet
                     if highlighted_member := message.guild.get_member(v):  # user is in the server
-                        if self.client.check_blacklisted_user(highlighted_member):
+                        if await self.client.check_blacklisted_user(highlighted_member):
                             notified.append(highlighted_member)
                             continue
                         # check if user can run command
