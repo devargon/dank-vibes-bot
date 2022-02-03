@@ -36,3 +36,7 @@ more-itertools
 googletrans==3.1.0a0
 hyper
 emoji
+typing
+stemming
+httpcore
+parsedatetime
