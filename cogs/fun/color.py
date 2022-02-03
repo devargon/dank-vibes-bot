@@ -10,10 +10,8 @@ from utils import http
 from PIL import UnidentifiedImageError
 
 regex = re.compile(
-        r'^(?:http|ftp)s?://' # http:// or https://
-        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #normal urls
-        r'localhost|)' #localhoar
-        r'(?::\d+)?' # optional port
+        r'^https?://' # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?))' #localhoar # optional port
         r'(?:/?|[/?]\S+)$', re.IGNORECASE)
 
 class ColorDisplay(menus.ListPageSource):
