@@ -60,9 +60,9 @@ class CogManager(commands.Cog):
             try:
                 self.client.load_extension(cog)
                 output.append(f'{cog} is loaded.')
-            except commands.ExtensionAlreadyLoaded:
+            except discord.ExtensionAlreadyLoaded:
                 output.append(f'{cog} is already loaded.')
-            except commands.ExtensionNotFound:
+            except discord.ExtensionNotFound:
                 output.append(f'{cog} is not a valid extension.')
                 error.append(cog)
             except Exception as e:
@@ -120,9 +120,9 @@ class CogManager(commands.Cog):
                 try:
                     self.client.unload_extension(cog)
                     output.append(f'{cog} is unloaded.')
-                except commands.ExtensionNotLoaded:
+                except discord.ExtensionNotLoaded:
                     output.append(f'{cog} is already unloaded.')
-                except commands.ExtensionNotFound:
+                except discord.ExtensionNotFound:
                     output.append(f'{cog} is not a valid extension.')
                     error.append(cog)
                 except Exception as e:
@@ -178,10 +178,10 @@ class CogManager(commands.Cog):
                 try:
                     self.client.reload_extension(cog)
                     output.append(f'{cog} is reloaded.')
-                except commands.ExtensionNotFound:
+                except discord.ExtensionNotFound:
                     output.append(f'{cog} is not a valid extension.')
                     error.append(cog)
-                except commands.ExtensionNotLoaded:
+                except discord.ExtensionNotLoaded:
                     output.append(f"{cog} isn't loaded.")
                     error.append(cog)
                 except Exception as e:
