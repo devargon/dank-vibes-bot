@@ -83,7 +83,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         if discord.utils.get(member.roles, id=tgrinderroleID) is not None:
             return True
 
-
+    @checks.requires_roles()
     @commands.command(name='grindercheck', usage='[member]', aliases=['gcheck', 'gc'])
     async def grindercheck(self, ctx, member: discord.Member = None):
         """
@@ -407,7 +407,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
 <:DVB_end_complete:895172800082509846> Notifying grinders and sending a summary
 Done! Note: People who **did not** complete the req won't be told they didn't complete it. Otherwise, I would've told them that they had completed the req.\n{'Additionally, the weekly statistics has been reset.' if reset_week else ''}""")
 
-
+    @checks.requires_roles()
     @commands.command(name='grinderleaderboard', aliases=['glb', 'grinderlb'])
     async def grinderleaderboard(self, ctx, *, arg: str = None):
         """
