@@ -8,6 +8,7 @@ from .namelog import NameLogging
 from .timer import timer
 from .status import AutoStatus
 from .editpoll import polledition
+from .reminders import reminders_
 from abc import ABC
 import os
 from utils import checks
@@ -41,7 +42,8 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
     """
     pass
 
-class AutoMod(polledition, AutoStatus, timer, NameLogging, timedrole, TimedUnlock, Verification, Freezenick, commands.Cog):
+
+class AutoMod(reminders_, polledition, AutoStatus, timer, NameLogging, timedrole, TimedUnlock, Verification, Freezenick, commands.Cog):
     """
     This file is just a placeholder for the various automod functions/modules.
     """
@@ -54,6 +56,7 @@ class AutoMod(polledition, AutoStatus, timer, NameLogging, timedrole, TimedUnloc
         self.timer_loop.start()
         self.change_status.start()
         self.edit_polls.start()
+        self.reminder_check.start()
         self.verifyview = False
         self.status = None
 
