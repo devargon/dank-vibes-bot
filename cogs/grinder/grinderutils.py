@@ -11,7 +11,10 @@ import re
 import time
 from utils.format import comma_number, stringnum_toint
 from utils.buttons import confirm
+from utils.converters import BetterInt
 from datetime import datetime
+
+
 guildid = 871734809154707467 if os.getenv('state') == '1' else 595457764935991326
 tgrinderroleID = 896052592797417492 if os.getenv('state') == '1' else 827270880182009956
 grinderroleID = 896052612284166204 if os.getenv('state') == '1' else 859494328422367273
@@ -93,14 +96,16 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             member = ctx.author
         if ctx.author.id not in [argon] and ctx.author.guild_permissions.manage_roles != True:
             member = ctx.author
-        if not (ctx.author.id == argon or ctx.author.guild_permissions.manage_roles==True or discord.utils.get(ctx.author.roles, id=grinderroleID) or discord.utils.get(ctx.author.roles, id=tgrinderroleID) or discord.utils.get(ctx.author.roles, id=grinder3mroleID) or ctx.author.id in [argon]):
-            return await ctx.send("You need to be a **Grinder**/**Trial Grinder** to use this command.")
         result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
         embed = discord.Embed(color=self.client.embed_color, timestamp=discord.utils.utcnow())
         tier = "5M Grinder" if self.is_5m_grinder(member) else "3M Grinder" if self.is_3m_grinder(member) else "Trial Grinder (3M/5M)" if self.is_trial_grinder(member) else None
         tier = "**" + tier + "**" if tier is not None else None
         tier = f"Tier: {tier}\n" if tier is not None else None
-        embed.add_field(name='Grinder contributions', value=f"{tier or ''}Today: `⏣ {comma_number(result.get('today')) if result else 0}` \nThis Week: `⏣ {comma_number(result.get('past_week')) if result else 0}`\nLast Week: `⏣ {comma_number(result.get('last_week')) if result else 0}`\nThis Month: `⏣ {comma_number(result.get('past_month')) if result else 0}`\nAll Time: `⏣ {comma_number(result.get('all_time')) if result else 0}`", inline=True)
+        if ctx.author.guild_permissions.manage_roles:
+            in_advance = f"`⏣ {comma_number(result.get('advance_amt'))}`" if result.get('advance_amt') is not None else "`⏣ 0`"
+            embed.add_field(name='Grinder contributions', value=f"{tier or ''}Today: `⏣ {comma_number(result.get('today')) if result else 0}` \nThis Week: `⏣ {comma_number(result.get('past_week')) if result else 0}`\nLast Week: `⏣ {comma_number(result.get('last_week')) if result else 0}`\nThis Month: `⏣ {comma_number(result.get('past_month')) if result else 0}`\nAll Time: `⏣ {comma_number(result.get('all_time')) if result else 0}`\nAdvance Balance: {in_advance}", inline=True)
+        else:
+            embed.add_field(name='Grinder contributions', value=f"{tier or ''}Today: `⏣ {comma_number(result.get('today')) if result else 0}` \nThis Week: `⏣ {comma_number(result.get('past_week')) if result else 0}`\nLast Week: `⏣ {comma_number(result.get('last_week')) if result else 0}`\nThis Month: `⏣ {comma_number(result.get('past_month')) if result else 0}`\nAll Time: `⏣ {comma_number(result.get('all_time')) if result else 0}`", inline=True)
         embed.add_field(name='Last Logged', value=f"<t:{result.get('last_dono_time')}>\n[Jump to logged message]({result.get('last_dono_msg')})" if result else "[<t:0>](https://www.youtube.com/watch?v=dQw4w9WgXcQ)", inline=True)
         if self.is_5m_grinder(member):
             if result and result.get('today') >= 5000000:
@@ -131,7 +136,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
 
     @checks.is_bav_or_mystic()
     @commands.command(name="gedit")
-    async def grinder_edit(self, ctx, member: discord.Member = None, number: str = None):
+    async def grinder_edit(self, ctx, member: discord.Member = None, number: BetterInt = None):
         """
         Adds or removes a certain amount of coins from a grinder's data. To change it to a specific amount, use `g set` instead.
         """
@@ -207,18 +212,12 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         if message.author == self.client.user:
             return
         if message.author.id != 270904126974590976:
-            #print('Author is not Dank Memer')
             return
-        #if self.client.maintenance.get(self.qualified_name):
-            #print('Cog is under maintenance')
-            #return
-        if not message.guild: # or message.guild.id != 595457764935991326:
-            #print('Message is not from a guild')
+        if not message.guild:
             return
         if len(message.embeds) == 0:
             return
         if message.channel.id != donochannel:
-            #print('not donor channel')
             return
         dankholder = message.guild.get_member(holder)
 
@@ -321,22 +320,47 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             for grinder in grinders:
                 result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", grinder.id)
                 if result is None:
-                    not_complete.append((grinder, 0))
-                elif self.is_5m_grinder(grinder):
-                    if result.get('today') < 5000000:
-                        not_complete.append((grinder, result.get('today')))
+                    await self.client.pool_pg.fetchrow("INSERT INTO grinderdata(user_id, today, past_week, last_week, past_month, all_time, last_dono_time, last_dono_msg, advance_amt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)", grinder.id, 0, 0, 0, 0, 0, 0, "https://www.youtube.com/watch?v=dQw4w9WgXcQ", 0)
+                    result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", grinder.id)
+                today = result.get('today') or 0
+                if self.is_5m_grinder(grinder):
+                    if today < 5000000:
+                        not_complete.append((grinder, today, result, 5000000, ""))
                     else:
-                        completed_req.append((grinder, result.get('today')))
+                        completed_req.append((grinder, today, ""))
                 elif self.is_3m_grinder(grinder):
-                    if result.get('today') < 3000000:
-                        not_complete.append((grinder, result.get('today')))
+                    if today < 3000000:
+                        not_complete.append((grinder, today, result, 3000000, ""))
                     else:
-                        completed_req.append((grinder, result.get('today')))
+                        completed_req.append((grinder, today, ""))
                 elif self.is_trial_grinder(grinder):
-                    if result.get('today') < 3000000:
-                        not_complete.append((grinder, result.get('today')))
+                    if today < 3000000:
+                        not_complete.append((grinder, today, result, 3000000, ""))
                     else:
-                        completed_req.append((grinder, result.get('today')))
+                        completed_req.append((grinder, today, ""))
+            if len(not_complete) > 0:
+                copied_not_complete = not_complete.copy()
+                for tup in copied_not_complete:
+                    print(tup)
+                    grinder, today, result, req, desc = tup
+                    uncompleted = req - today
+                    available_funds = result.get('advance_amt') or 0
+                    if req == uncompleted:
+                        if available_funds >= uncompleted:
+                            remaining = await self.client.pool_pg.fetchval("UPDATE grinderdata SET advance_amt = advance_amt - $1 WHERE user_id = $2 RETURNING advance_amt", uncompleted, grinder.id, column='advance_amt')
+                            not_complete.remove(tup)
+                            completed_req.append((grinder, uncompleted, f"Deduct from advance funds, ⏣ {comma_number(remaining)} remaining"))
+                        elif available_funds > 0:
+                            remaining = await self.client.pool_pg.fetchval("UPDATE grinderdata SET advance_amt = 0 WHERE user_id = $1 RETURNING advance_amt", grinder.id, column='advance_amt')
+                            still_uncompleted = req - available_funds
+                            not_complete.remove(tup)
+                            not_complete.append((grinder, still_uncompleted, result, req, f"Deduct from advance funds, ⏣ {comma_number(remaining)} remaining"))
+                        else:
+                            continue
+
+
+
+
             await msg.edit(content="""
 <:DVB_start_complete:895172800627769447> Checking daily requirement 
 <:DVB_middle_incomplete:895172800430620742> <a:typing:839487089304141875> **Updating statistics** 
@@ -369,7 +393,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             faileddms = []
             for grinder in grinders:
                 try:
-                    await grinder.send(f"Hello {grinder.name}! I have a message for you:", embed=embed)  # hehe
+                    #await grinder.send(f"Hello {grinder.name}! I have a message for you:", embed=embed)  # hehe
                     success += 1
                 except discord.Forbidden:
                     faileddms.append(grinder.mention)  # gets list of people who will be pinged later"""
@@ -382,25 +406,43 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                 reportchannel = self.client.get_channel(logchannel)
                 await reportchannel.send(f"**__DV GRINDERS SUMMARY__** (for **{discord.utils.utcnow().strftime('%A, %d %B %Y')}**)")
                 await webhook.send(f"**__DV GRINDERS SUMMARY__** (for **{discord.utils.utcnow().strftime('%A, %d %B %Y')}**)", username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
+
+                def generate_tier_label(grinder_user):
+                    return '5' if self.is_5m_grinder(grinder_user) else '3' if self.is_3m_grinder(grinder_user) else 'T' if self.is_trial_grinder(grinder_user) else 'U'
+
+                def add_text_to_content(data_tuple):
+                    initial_text = f"\n`{generate_tier_label(data_tuple[0])}` <:DVB_True:887589686808309791> **{dat[0]}** sent `⏣ {comma_number(data_tuple[1])}`"
+                    if data_tuple[2] != "":
+                        initial_text += f" ({data_tuple[2]})"
+                    return initial_text
+
                 for dat in completed_req:
                     if len(content) < 1800:
-                        content += f"\n`{'5' if self.is_5m_grinder(dat[0]) else '3' if self.is_3m_grinder(dat[0]) else 'T' if self.is_trial_grinder(dat[0]) else 'U'}` <:DVB_True:887589686808309791> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
+                        content += add_text_to_content(dat)
                     else:
                         await reportchannel.send(content)
                         await webhook.send(content, username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
-                        content = f"\n`{'5' if self.is_5m_grinder(dat[0]) else '3' if self.is_3m_grinder(dat[0]) else 'T' if self.is_trial_grinder(dat[0]) else 'U'}` <:DVB_True:887589686808309791> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
+                        content = add_text_to_content(dat)
+
+                def add_text_to_content(data_tuple):
+                    initial_text = f"\n`{generate_tier_label(data_tuple[0])}` <:DVB_False:887589731515392000> **{dat[0]}** sent `⏣ {comma_number(data_tuple[1])}`"
+                    if data_tuple[4] != "":
+                        initial_text += f" ({data_tuple[4]})"
+                    return initial_text
+
+
                 for dat in not_complete:
                     if len(content) < 1800:
-                        content += f"\n`{'5' if self.is_5m_grinder(dat[0]) else '3' if self.is_3m_grinder(dat[0]) else 'T' if self.is_trial_grinder(dat[0]) else 'U'}` <:DVB_False:887589731515392000> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
+                        content += add_text_to_content(dat)
                     else:
                         await reportchannel.send(content)
                         await webhook.send(content, username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
-                        content = f"\n`{'5' if self.is_5m_grinder(dat[0]) else '3' if self.is_3m_grinder(dat[0]) else 'T' if self.is_trial_grinder(dat[0]) else 'U'}` <:DVB_False:887589731515392000> **{dat[0]}** sent `⏣ {comma_number(dat[1])}`"
+                        content = add_text_to_content(dat)
                         await reportchannel.send(content)
                 await reportchannel.send(content)
                 await webhook.send(content, username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
-                await reportchannel.send(f"Total grinded today: {sum([dat[1] for dat in completed_req] + [dat[1] for dat in not_complete])}")
-                await webhook.send(f"Total grinded today: {sum([dat[1] for dat in completed_req] + [dat[1] for dat in not_complete])}", username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
+                await reportchannel.send(f"Total grinded today: {comma_number(sum([dat[1] for dat in completed_req] + [dat[1] for dat in not_complete]))}")
+                await webhook.send(f"Total grinded today: {comma_number(sum([dat[1] for dat in completed_req] + [dat[1] for dat in not_complete]))}", username=self.client.user.name, avatar_url=ctx.me.display_avatar.url)
             await msg.edit(content=f"""
 <:DVB_start_complete:895172800627769447> Checking daily requirement 
 <:DVB_middle_complete:895172800627769444> Updating statistics
@@ -446,3 +488,25 @@ Done! Note: People who **did not** complete the req won't be told they didn't co
             else:
                 pages = CustomMenu(source=GrinderLeaderboard(leaderboard, title), clear_reactions_after=True, timeout=60)
                 return await pages.start(ctx)
+
+    @checks.requires_roles()
+    @commands.command(name='grinderpaymentinadvance', aliases=['gpia', 'pia'])
+    async def grinderpaymentinadvance(self, ctx, member: discord.Member = None, *, amount: BetterInt = None):
+        """
+        Sets the payout for a user.
+        """
+        if member is None:
+            return await ctx.send("Please specify a user.")
+        if amount is None:
+            return await ctx.send("Please specify an amount.")
+        current = await self.client.pool_pg.fetchrow("SELECT advance_amt FROM grinderdata WHERE user_id = $1", member.id)
+        if current is None:
+            old_amt = 0
+            amt = await self.client.pool_pg.fetchval("INSERT INTO grinderdata (user_id, advance_amt) VALUES ($1, $2) RETURNING advance_amt", member.id, amount, column='advance_amt')
+            new_amt = amt
+        else:
+            old_amt = current.get('advance_amt') or 0
+            new_amt = old_amt + amount
+            await self.client.pool_pg.execute("UPDATE grinderdata SET advance_amt = $1 WHERE user_id = $2", new_amt, member.id)
+        embed = discord.Embed(title=f"Summary for {member}'s In Advance statistics", description=f"Old Amount: `⏣ {comma_number(old_amt)}`\nNew Amount: `⏣ {comma_number(new_amt)}` (+ ⏣ {comma_number(amount)})", color=discord.Color.green())
+        await ctx.send(embed=embed)
