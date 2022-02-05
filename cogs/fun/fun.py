@@ -1,5 +1,6 @@
 import discord
 from discord import Webhook
+from discord.commands import Option
 from discord.ext import commands
 
 import os
@@ -265,6 +266,56 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
             embed=discord.Embed(title=f"Hideping command invoked with {ctx.me}", color=discord.Color.green())
             embed.add_field(name="Author", value=f"**{ctx.author}** ({ctx.author.id})", inline=True)
             embed.add_field(name="Target", value=f"**{member}** ({member.id})", inline=True)
+            embed.add_field(name="Message", value=message or "No message", inline=True)
+            await webhook.send(embed=embed, username=f"{self.client.user.name} Logs")
+
+    @checks.requires_roles()
+    @commands.slash_command(name="hideping", description="Secretly ping someone with this command!", guild_ids=[871734809154707467])
+    @commands.cooldown(1, 30, commands.BucketType.user)
+    async def hideping_slash(self, ctx,
+                             target: Option(discord.Member, "Who you want to ping"),
+                             channel: Option(discord.TextChannel, "If you want to ping someone in another channel") = None,
+                             message: Option(str, "An optional message") = None
+                             ):
+        """
+        Secretly ping someone with this command!
+        """
+        if channel is None:
+            channel = ctx.channel
+        if not (channel.permissions_for(ctx.author).send_messages and channel.permissions_for(ctx.author).view_channel):
+            ctx.command.reset_cooldown(ctx)
+            return await ctx.respond("You are not authorized to view/send messages in that channel.", ephemeral=True)
+        if message is not None and len(message) > 180:
+            ctx.command.reset_cooldown(ctx)
+            return await ctx.send("Your accompanying message can only be at most 180 characters.")
+        if message is None:
+            message = ''
+        if await self.client.check_blacklisted_content(message):
+            message = ''
+        content = f"{message or ''} ‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍||‍ <@{target.id}>"  # ik this looks sketchy, but you can paste it in discord and send it to see how this looks like :MochaLaugh:
+        webhooks = await channel.webhooks()
+        webhook = discord.utils.get(webhooks, name=self.client.user.name)
+        if webhook is None:
+            try:
+                webhook = await channel.create_webhook(name=self.client.user.name)
+            except discord.Forbidden:
+                try:
+                    ctx.command.reset_cooldown(ctx)
+                    await ctx.send("I am unable to create a webhook to send the hideping message.")
+                except (discord.HTTPException, discord.Forbidden):
+                    ctx.command.reset_cooldown(ctx)
+                    return
+                return
+        await webhook.send(content, username="You were hidepinged",
+                           avatar_url="https://cdn.discordapp.com/attachments/871737314831908974/895639630429433906/incognito.png")
+        await ctx.respond(f"**{target}** has been secretly pinged in {channel.mention}! <:qbgiggle:718020317632790548>", ephemeral=True)
+        async with aiohttp.ClientSession() as session:
+            webhook = Webhook.from_url(
+                'https://canary.discord.com/api/webhooks/883563427455438858/GsF8ZPIemw6D-x6TIp7wO88ySQizKePKCS5zRA-EBtNfHRC15e9koti7-02GKBuoZ_Yi',
+                session=session)
+            embed = discord.Embed(title=f"Hideping command invoked with {ctx.me}", color=discord.Color.green())
+            embed.add_field(name="Author", value=f"**{ctx.author}** ({ctx.author.id})", inline=True)
+            embed.add_field(name="Target", value=f"**{target}** ({target.id})", inline=True)
             embed.add_field(name="Message", value=message or "No message", inline=True)
             await webhook.send(embed=embed, username=f"{self.client.user.name} Logs")
 
