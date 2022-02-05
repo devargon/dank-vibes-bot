@@ -217,7 +217,7 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
                 await message.edit(content="🥺", embed=embed)
 
     @checks.requires_roles()
-    @commands.command(name="hideping", aliases = ["hp", "secretping", "sp"], hidden=True)
+    @commands.command(name="hideping", aliases = ["hp", "secretping"], hidden=True)
     @commands.cooldown(1, 30, commands.BucketType.user)
     async def hideping(self, ctx, channel: Optional[discord.TextChannel] = None, member: discord.Member=None, *, message=None):
         """
