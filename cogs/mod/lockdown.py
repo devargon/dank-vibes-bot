@@ -1,9 +1,11 @@
+import os
+
 import discord
 from datetime import datetime
 from discord.ext import commands
 from utils import checks
 import asyncio
-from discord.ext import commands, menus
+from discord.ext import commands, pages
 from utils.menus import CustomMenu
 import json
 from utils.buttons import *
@@ -72,13 +74,24 @@ async def send_lockdown_message(self, channel: discord.TextChannel, message: str
             embed.set_footer(icon_url=channel.guild.icon.url, text=channel.guild.name)
             return await channel.send(content=extra_message, embed=embed)
 
-class lockdown_pagination(menus.ListPageSource):
-    def __init__(self, entries, title):
-        self.title = title
-        super().__init__(entries, per_page=20)
 
-    async def format_page(self, menu, page):
-        embed = discord.Embed(color=menu.ctx.bot.embed_color, title=self.title, timestamp=discord.utils.utcnow())
+class LockdownPagination:
+    def __init__(self, entries, title, per_page, client):
+        self.title = title
+        self.entries = entries
+        self.pages = []
+        self.client = client
+        self.per_page = per_page
+
+    def get_pages(self):
+        while len(self.entries) > self.per_page:
+            self.pages.append(self.format_page(self.entries[:20]))
+            self.entries = self.entries[20:]
+        self.pages.append(self.format_page(self.entries))
+        return self.pages
+
+    def format_page(self, page):
+        embed = discord.Embed(color=self.client.embed_color, title=self.title, timestamp=discord.utils.utcnow())
         embed.description = "\n".join(page)
         embed.add_field(name="Legend", value="<:DVB_Neutral:887589643686670366> `-` Unknown\n<:DVB_False:887589731515392000> `-` **Locked** for <@&649499248320184320>\n<:DVB_True:887589686808309791> `-` **Unlocked** for <@&649499248320184320>")
         embed.set_footer(text="The lockdown status may not be 100% accurate.")
@@ -201,7 +214,7 @@ This will set a message for the lockdown profile when it is used to lock channel
                         "DELETE FROM lockdownprofiles WHERE profile_name = $1 and channel_id = $2 and guild_id = $3",profile_name, ele.get('channel_id'), ctx.guild.id)
                     deleted_channels += 1
                 else:
-                    peepo = ctx.guild.get_role(649499248320184320)
+                    peepo = ctx.guild.default_role if os.getenv('state') == '1' else ctx.guild.get_role(649499248320184320)
                     able_to_speak = channel.permissions_for(peepo).send_messages
                     if able_to_speak:
                         emoji = "<:DVB_True:887589686808309791>"
@@ -214,8 +227,8 @@ This will set a message for the lockdown profile when it is used to lock channel
                 channel_list.append(
                     f"\n{deleted_channels} channels have been removed from this profile as {self.client.user.name} was unable to find those channels.")
             title = f"Channels in the lockdown profile {profile_name}"
-            pages = CustomMenu(source=lockdown_pagination(channel_list, title), clear_reactions_after=True, timeout=30)
-            await pages.start(ctx)
+            paginator = pages.Paginator(pages=LockdownPagination(channel_list, title, 20, self.client).get_pages(), disable_on_timeout=True, use_default_buttons=True)
+            await paginator.send(ctx)
         else:
             results = await self.client.pool_pg.fetch("SELECT * FROM lockdownprofiles WHERE guild_id = $1", ctx.guild.id)
             if len(results) == 0:
