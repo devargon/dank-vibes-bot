@@ -102,11 +102,11 @@ class ServerConfigView(discord.ui.View):
         self.add_item(Button(label="Verification", style=get_style(verification)))
         self.add_item(Button(label="Timeout Log", style=get_style(timeoutlog)))
 
-        async def on_timeout(self) -> None:
-            for b in self.children:
-                b.disabled = True
-            await self.response.edit(view=self)
-            self.stop()
+    async def on_timeout(self) -> None:
+        for b in self.children:
+            b.disabled = True
+        await self.response.edit(view=self)
+        self.stop()
 
 
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
