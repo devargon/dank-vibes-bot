@@ -44,6 +44,71 @@ class Blacklist(menus.ListPageSource):
         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return embed
 
+class ServerConfigView(discord.ui.View):
+    def __init__(self, guild, owodaily, owoweekly, votelb, verification, timeoutlog, client):
+        self.client = client
+        self.guild = guild
+        self.response = None
+        super().__init__(timeout=20)
+
+        async def handle_toggle(guild, settings) -> bool:
+            if (result := await self.client.pool_pg.fetchrow(
+                    "SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", guild.id,
+                    settings)) is not None:
+                result = result.get('enabled')
+            else:
+                await self.client.pool_pg.execute("INSERT INTO serverconfig VALUES ($1, $2, $3)", guild.id,
+                                                  settings, False)
+                result = False
+            if result:
+                result = False
+            else:
+                result = True
+            await self.client.pool_pg.execute(
+                "UPDATE serverconfig SET enabled=$1 WHERE guild_id=$2 AND settings=$3", result, guild.id, settings)
+            return result
+
+        def get_style(arg):
+            if arg is not True:
+                return discord.ButtonStyle.red
+            else:
+                return discord.ButtonStyle.green
+
+        async def handle_button_interaction(button: discord.ui.Button, interaction: discord.Interaction):
+            if button.label == "OwO Daily Leaderboard":
+                new_setting = await handle_toggle(self.guild, "owodailylb")
+                button.style = get_style(new_setting)
+            elif button.label == "OwO Weekly Leaderboard":
+                new_setting = await handle_toggle(self.guild, "owoweeklylb")
+                button.style = get_style(new_setting)
+            elif button.label == "Vote Leaderboard":
+                new_setting = await handle_toggle(self.guild, "votelb")
+                button.style = get_style(new_setting)
+            elif button.label == "Verification":
+                new_setting = await handle_toggle(self.guild, "verification")
+                button.style = get_style(new_setting)
+            elif button.label == "Timeout Log":
+                new_setting = await handle_toggle(self.guild, "timeoutlog")
+                button.style = get_style(new_setting)
+            await self.response.edit(view=self)
+
+        class Button(discord.ui.Button):
+            async def callback(self, interaction: discord.Interaction):
+                await handle_button_interaction(self, interaction)
+
+        self.add_item(Button(label="OwO Daily Leaderboard", style=get_style(owodaily)))
+        self.add_item(Button(label="OwO Weekly Leaderboard", style=get_style(owoweekly)))
+        self.add_item(Button(label="Vote Leaderboard", style=get_style(votelb)))
+        self.add_item(Button(label="Verification", style=get_style(verification)))
+        self.add_item(Button(label="Timeout Log", style=get_style(timeoutlog)))
+
+        async def on_timeout(self) -> None:
+            for b in self.children:
+                b.disabled = True
+            await self.response.edit(view=self)
+            self.stop()
+
+
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
 
@@ -55,19 +120,6 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         self.client = client
         self.queue = []
         self.selfroleviews_added = False
-
-    async def handle_toggle(self, guild, settings) -> bool:
-        if (result := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", guild.id, settings)) is not None:
-            result = result.get('enabled')
-        else:
-            await self.client.pool_pg.execute("INSERT INTO serverconfig VALUES ($1, $2, $3)", guild.id, settings, False)
-            result = False
-        if result:
-            result = False
-        else:
-            result = True
-        await self.client.pool_pg.execute("UPDATE serverconfig SET enabled=$1 WHERE guild_id=$2 AND settings=$3", result, guild.id, settings)
-        return result
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="verify")
@@ -91,10 +143,6 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         """
         Shows guild's server configuration settings and also allows you to allow/disable them.
         """
-        def get_emoji(enabled):
-            if enabled:
-                return "<:DVB_enabled:872003679895560193>"
-            return "<:DVB_disabled:872003709096321024>"
         embed = discord.Embed(title=f"Server Configuration Settings For {ctx.guild.name}", color=self.client.embed_color, timestamp=discord.utils.utcnow())
         if (owodaily := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "owodailylb")) is not None:
             owodaily = owodaily.get('enabled')
@@ -104,50 +152,13 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
             votelb = votelb.get('enabled')
         if (verification := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "verification")) is not None:
             verification = verification.get('enabled')
-        if (censor := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "censor")) is not None:
-            censor = censor.get('enabled')
-        embed.add_field(name=f"{get_emoji(owodaily)} OwO Daily Leaderboard", value=f"{'Enabled' if owodaily else 'Disabled'}", inline=False)
-        embed.add_field(name=f"{get_emoji(owoweekly)} OwO Weekly Leaderboard", value=f"{'Enabled' if owoweekly else 'Disabled'}", inline=False)
-        embed.add_field(name=f"{get_emoji(votelb)} Vote Leaderboard", value=f"{'Enabled' if votelb else 'Disabled'}", inline=False)
-        embed.add_field(name=f"{get_emoji(verification)} Verify after Membership Screening", value=f"{'Enabled' if votelb else 'Disabled'}", inline=False)
-        embed.add_field(name=f"{get_emoji(censor)} Delete blacklisted messages (Not in use)", value='Enabled' if censor else 'Disabled', inline=False)
+        if (timeoutlog := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "timeoutlog")) is not None:
+            timeoutlog = timeoutlog.get('enabled')
+        view = ServerConfigView(ctx.guild, owodaily, owoweekly, votelb, verification, timeoutlog, self.client)
         embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon.url)
-        message = await ctx.send(embed=embed)
-        emojis = ['1⃣', '2⃣', '3⃣', '4️⃣', '5️⃣', 'ℹ']
-        for emoji in emojis:
-            await message.add_reaction(emoji)
-        def check(payload):
-                return payload.user_id == ctx.message.author.id and payload.channel_id == ctx.channel.id and payload.message_id == message.id and str(payload.emoji) in emojis
-        while True:
-            try:
-                response = await self.client.wait_for('raw_reaction_add', timeout=15, check=check)
-            except asyncio.TimeoutError:
-                return await message.clear_reactions()
-            if str(response.emoji) == emojis[0]:
-                owodaily = await self.handle_toggle(ctx.guild, "owodailylb")
-                embed.set_field_at(index=0, name=f"{get_emoji(owodaily)} OwO Daily Leaderboard", value=f"{'Enabled' if owodaily else 'Disabled'}", inline=False)
-                await message.edit(embed=embed)
-            elif str(response.emoji) == emojis[1]:
-                owoweekly = await self.handle_toggle(ctx.guild, 'owoweeklylb')
-                embed.set_field_at(index=1, name=f"{get_emoji(owoweekly)} OwO Weekly Leaderboard", value=f"{'Enabled' if owoweekly else 'Disabled'}", inline=False)
-                await message.edit(embed=embed)
-            elif str(response.emoji) == emojis[2]:
-                votelb = await self.handle_toggle(ctx.guild, 'votelb')
-                embed.set_field_at(index=2, name=f"{get_emoji(votelb)} Vote Leaderboard", value=f"{'Enabled' if votelb else 'Disabled'}", inline=False)
-                await message.edit(embed=embed)
-            elif str(response.emoji) == emojis[3]:
-                votelb = await self.handle_toggle(ctx.guild, 'verification')
-                embed.set_field_at(index=3, name=f"{get_emoji(votelb)} Verify after Membership Screening", value=f"{'Enabled' if votelb else 'Disabled'}", inline=False)
-                await message.edit(embed=embed)
-            elif str(response.emoji) == emojis[4]:
-                votelb = await self.handle_toggle(ctx.guild, 'censor')
-                embed.set_field_at(index=4, name=f"{get_emoji(votelb)} Delete blacklisted messages (Not in use)", value=f"{'Enabled' if votelb else 'Disabled'}", inline=False)
-                await message.edit(embed=embed)
-            elif str(response.emoji) == emojis[4]:
-                tempembed = discord.Embed(title='Information', color=self.client.embed_color, description="React with the emojis to toggle leaderboards")
-                tempembed.add_field(name='Reactions' ,value=f"{emojis[0]} Toggles OwO daily leaderboard\n{emojis[1]} Toggles OwO weekly leaderboard\n{emojis[2]} Toggles vote leaderboard\n{emojis[3]} Toggles Verification success on completing Membership Screening.\n{emojis[4]} Shows this infomation message.")
-                await message.edit(embed=tempembed)
-            await message.remove_reaction(response.emoji, ctx.author)
+        view.response = await ctx.send(embed=embed, view=view)
+        await view.wait()
+
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='blacklist', aliases=['bl'])
