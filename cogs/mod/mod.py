@@ -17,7 +17,8 @@ import os
 from selenium import webdriver
 from fuzzywuzzy import process
 from collections import Counter
-
+from datetime import timedelta
+import time
 
 class FrozenNicknames(menus.ListPageSource):
     def __init__(self, entries, title, inline):
@@ -321,6 +322,56 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
                 if ratio >= 75:
                     role_to_return = discord.utils.get(ctx.guild.roles, id=roles_and_aliases[name])
                     return role_to_return
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name='timeout', aliases=['to'])
+    async def timeout(self, ctx, member: discord.Member = None, duration: BetterTimeConverter = None, *, reason: str = None):
+        if member is None:
+            return await ctx.send("You need to tell me who you want to timeout.")
+        if duration is None:
+            return await ctx.send("You need to tell me how long you want to timeout the user for.")
+        duration: int = duration
+        if duration <= 0:
+            return await ctx.send("You can't timeout someone for less than 1 second.")
+        td_obj = timedelta(seconds=duration)
+        try:
+            if reason is None:
+                auditreason = f"Requested by {ctx.author.name}#{ctx.author.discriminator} ({ctx.author.id}"
+            else:
+                auditreason = reason + f" | Requested by {ctx.author.name}#{ctx.author.discriminator} ({ctx.author.id}"
+            await member.timeout_for(duration=td_obj, reason=auditreason)
+        except discord.Forbidden:
+            return await ctx.send(f"I do not have permission to put {member} on a timeout.")
+        else:
+            embed = discord.Embed(title=f"{ctx.author.name} has put {member.name} on a timeout for {humanize_timedelta(seconds=duration)}!", description=f"{member.mention} right now:", color=self.client.embed_color, timestamp=discord.utils.utcnow()+td_obj)
+            embed.set_image(url="https://www.charlottesvillepeds.com/wp-content/uploads/2018/12/Timeout.jpg")
+            embed.set_footer(text=f"{member}'s timeout will end at")
+            if reason is not None:
+                embed.add_field(name="Reason", value=reason, inline=False)
+            await ctx.send(embed=embed)
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name='untimeout', aliases=['ut', 'uto'])
+    async def untimeout(self, ctx, member: discord.Member = None, reason: str = None):
+        if member is None:
+            return await ctx.send("You need to tell me who you want to untimeout.")
+        if member.communication_disabled_until is None or member.communication_disabled_until < discord.utils.utcnow():
+            return await ctx.send(f"{member} is not currently on a timeout.")
+        try:
+            if reason is None:
+                auditreason = f"Requested by {ctx.author.name}#{ctx.author.discriminator} ({ctx.author.id}"
+            else:
+                auditreason = reason + f" | Requested by {ctx.author.name}#{ctx.author.discriminator} ({ctx.author.id}"
+            await member.timeout(until=None, reason=auditreason)
+        except discord.Forbidden:
+            return await ctx.send(f"I do not have permission to remove {member}'s timeout.")
+        else:
+            await ctx.send(f"{member.name}'s timeout successfully removed.")
+
+
+
+
+
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='slowmode', aliases=['sm'])
