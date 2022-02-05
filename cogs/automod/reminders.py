@@ -27,7 +27,7 @@ class reminders_(commands.Cog):
                     time_created = reminder.get('created_time')
                     channel = self.client.get_channel(chan_id)
                     msg_link = f"https://discord.com/channels/{guild_id}/{chan_id}/{msg_id}"
-                    embed = discord.Embed(title=f"Reminder {reminder.get('id')}", description=f"You asked to be reminded for {reminder.get('name')} [{humanize_timedelta(seconds=time_end - time_created)} ago]({msg_link}).", color=self.client.embed_color)
+                    embed = discord.Embed(title=f"Reminder #{reminder.get('id')}", description=f"You asked to be reminded for {reminder.get('name')} [{humanize_timedelta(seconds=time_end - time_created)} ago]({msg_link}).", color=self.client.embed_color)
                     text = f"Your reminder ended: **{reminder.get('name')}**"
                     if user is not None:
                         try:
