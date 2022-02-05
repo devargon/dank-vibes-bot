@@ -226,15 +226,19 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
         if channel is None:
             channel = ctx.channel
         if not (channel.permissions_for(ctx.author).send_messages and channel.permissions_for(ctx.author).view_channel):
+            ctx.command.reset_cooldown(ctx)
             return await ctx.send("You are not authorized to view/send messages in that channel.")
         if member is None:
+            ctx.command.reset_cooldown(ctx)
             await ctx.send("You need to provide a member or message link.\n**Usage**: `hideping <channel> [member] [message]`")
             return
         if message is not None and len(message) > 180:
+            ctx.command.reset_cooldown(ctx)
             return await ctx.send("Your accompanying message can only be at most 180 characters.")
         try:
             await ctx.message.delete() # hides the ping so it has to delete the message that was sent to ping user
         except (discord.HTTPException, discord.Forbidden):
+            ctx.command.reset_cooldown(ctx)
             await ctx.send("I could not complete this command as I could not delete your message.")
             return
         if message is None:
@@ -249,8 +253,10 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
                 webhook = await channel.create_webhook(name=self.client.user.name)
             except discord.Forbidden:
                 try:
+                    ctx.command.reset_cooldown(ctx)
                     await ctx.send("I am unable to create a webhook to send the hideping message.")
                 except (discord.HTTPException, discord.Forbidden):
+                    ctx.command.reset_cooldown(ctx)
                     return
                 return
         await webhook.send(content, username="You were hidepinged", avatar_url="https://cdn.discordapp.com/attachments/871737314831908974/895639630429433906/incognito.png")
