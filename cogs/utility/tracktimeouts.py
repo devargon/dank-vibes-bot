@@ -17,7 +17,7 @@ class TimeoutTracking(commands.Cog):
     async def on_member_update(self, before: discord.Member, after: discord.Member):
         now = round(time.time())
         if before.communication_disabled_until != after.communication_disabled_until:
-            if await self.client.pool_pg.fetchval("SELECT * FROM serverconfig WHERE guild_id = $1 AND settings = $2", after.guild.id, 'timeoutlog') is True:
+            if await self.client.pool_pg.fetchval("SELECT enabled FROM serverconfig WHERE guild_id = $1 AND settings = $2", after.guild.id, 'timeoutlog') is True:
                 guild = before.guild
                 if guild.get_member(self.client.user.id).guild_permissions.view_audit_log:
                     async for entry in guild.audit_logs(limit=6, action=discord.AuditLogAction.member_update):
