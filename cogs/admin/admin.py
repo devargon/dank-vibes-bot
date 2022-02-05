@@ -1,5 +1,7 @@
 from abc import ABC
 from discord.ext import menus
+
+from utils.converters import BetterInt
 from .serverrule import ServerRule
 from .joining import Joining
 from .betterselfroles import BetterSelfroles
@@ -159,6 +161,41 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         view.response = await ctx.send(embed=embed, view=view)
         await view.wait()
 
+    @commands.has_guild_permissions(administrator=True)
+    @commands.command(name="spamping", aliases=["sp"])
+    @commands.cooldown(1, 120, commands.BucketType.user)
+    async def spamping(self, ctx, member: discord.Member = None, times: BetterInt = None, *, message: str = None):
+        """
+        NO
+        max is 500 times btw
+        """
+        if member is None:
+            return await ctx.send("You need to specify who to spam ping.")
+        if times is None:
+            times = 10
+        times: int = times
+        if member == self.client.user:
+            return await ctx.send("https://i.imgflip.com/2yvmo3.jpg")
+        times = min(times, 500)
+        currenttime = 0
+        confirmview = confirm(ctx, self.client, 20.0)
+        embed = discord.Embed(title="Dangerous Action!!", description=f"Are you sure you want to ping **{member}** **{times}** times? You may be hated by them forever :(", color=discord.Color.orange())
+        confirmview.response = await ctx.send(ctx.author.mention, view=confirmview, embed=embed)
+        await confirmview.wait()
+        if not confirmview.returning_value:
+            embed.color, embed.description = discord.Color.red(), "No one will be spam pinged today :D"
+            return await confirmview.response.edit(embed=embed)
+        embed.color, embed.description = discord.Color.green(), "..."
+        await confirmview.response.edit(embed=embed)
+        while currenttime < times:
+            currenttime += 1
+            message = message or ''
+            await ctx.send(f"{member.mention} {message} ({currenttime} of {times})")
+        await ctx.send(f"I have finished pinging {member} {times} times.")
+        try:
+            await member.send(f"Sorry for the pings in {ctx.channel.mention} <a:dv_pandaPleadOwO:837769147055472660>")
+        except discord.Forbidden:
+            pass
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='blacklist', aliases=['bl'])
