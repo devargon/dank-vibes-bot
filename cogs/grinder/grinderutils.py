@@ -341,7 +341,6 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             if len(not_complete) > 0:
                 copied_not_complete = not_complete.copy()
                 for tup in copied_not_complete:
-                    print(tup)
                     grinder, today, result, req, desc = tup
                     uncompleted = req - today
                     available_funds = result.get('advance_amt') or 0

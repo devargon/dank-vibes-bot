@@ -708,14 +708,11 @@ class DankMemer(commands.Cog, name='dankmemer'):
             return
         async def check_for_adventure():
             if not len(beforemsg.mentions) > 0:
-                print('adv no mentions')
             else:
                 if len(beforemsg.embeds) > 0:
                     embed = beforemsg.embeds[0]
                     if isinstance(embed.author.name, str) or isinstance(embed.title, str):
-                        print('embed should not have author or title')
                     if len(beforemsg.components) > 0:
-                        print('yay')
                     def find_one_enabled_component(mtarget):
                         view = discord.ui.View.from_message(mtarget)
                         for component in view.children:
@@ -731,10 +728,8 @@ class DankMemer(commands.Cog, name='dankmemer'):
                                 return False
                         return True
                     if not find_one_enabled_component(beforemsg):
-                        print('no enabled component at start')
                         return False
                     if not find_all_disabled_component(aftermsg):
-                        print('not all components are disabled')
                         return False
                 target = beforemsg.mentions[0]
                 await self.handle_reminder_entry(target.id, 24, beforemsg.channel.id, beforemsg.guild.id, round(time.time()) + 300)
