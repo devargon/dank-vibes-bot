@@ -108,7 +108,6 @@ class Highlight(commands.Cog):
         if text is None:
             return await ctx.send("You aren't tracking this text at all 🤨")
         await self.client.pool_pg.execute("DELETE FROM highlight WHERE user_id=$1 AND guild_id=$2 AND highlights=$3", ctx.author.id, ctx.guild.id, text)
-        self.conn.commit()
         await ctx.send(f"Removed '{text}' from your highlighted words.")
 
     @checks.requires_roles()
