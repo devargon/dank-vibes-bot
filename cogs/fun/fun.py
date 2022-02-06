@@ -277,9 +277,6 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
                              channel: Option(discord.TextChannel, "If you want to ping someone in another channel") = None,
                              message: Option(str, "An optional message") = None
                              ):
-        """
-        Secretly ping someone with this command!
-        """
         if channel is None:
             channel = ctx.channel
         if not (channel.permissions_for(ctx.author).send_messages and channel.permissions_for(ctx.author).view_channel):
@@ -287,7 +284,7 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
             return await ctx.respond("You are not authorized to view/send messages in that channel.", ephemeral=True)
         if message is not None and len(message) > 180:
             ctx.command.reset_cooldown(ctx)
-            return await ctx.send("Your accompanying message can only be at most 180 characters.")
+            return await ctx.respond("Your accompanying message can only be at most 180 characters.", ephemeral=True)
         if message is None:
             message = ''
         if await self.client.check_blacklisted_content(message):
@@ -301,7 +298,7 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
             except discord.Forbidden:
                 try:
                     ctx.command.reset_cooldown(ctx)
-                    await ctx.send("I am unable to create a webhook to send the hideping message.")
+                    await ctx.respond("I am unable to create a webhook to send the hideping message.", ephemeral=True)
                 except (discord.HTTPException, discord.Forbidden):
                     ctx.command.reset_cooldown(ctx)
                     return
