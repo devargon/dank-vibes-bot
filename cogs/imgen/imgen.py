@@ -367,7 +367,7 @@ class Imgen(commands.Cog, name='imgen'):
 
     @checks.requires_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
-    @commands.slash_command(name="drake", description="Image generation | I don't really know how to explain this meme... It's just the drake meme thing", guild_ids=[871734809154707467])
+    @commands.slash_command(name="drake", description="Image generation | I don't really know how to explain this meme... It's just the drake meme thing")
     async def drake_slash(self, ctx, top_text: str, bottom_text: str):
         text = [top_text[:50], bottom_text[:50]]
         image = await self.alex_api.drake(text[0], text[1])

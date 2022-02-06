@@ -270,7 +270,7 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
             await webhook.send(embed=embed, username=f"{self.client.user.name} Logs")
 
     @checks.requires_roles()
-    @commands.slash_command(name="hideping", description="Secretly ping someone with this command!", guild_ids=[871734809154707467])
+    @commands.slash_command(name="hideping", description="Secretly ping someone with this command!")
     @commands.cooldown(1, 30, commands.BucketType.user)
     async def hideping_slash(self, ctx,
                              target: Option(discord.Member, "Who you want to ping"),
