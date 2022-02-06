@@ -190,7 +190,7 @@ class Highlight(commands.Cog):
         final_message = [stem(x) for x in final_message.split()] # formats the mesasge for better parsing
 
         local_last_seen = self.last_seen.get(message.author.id, self.client.uptime.timestamp())  # See if the user had sent a message recently
-        if (round(time.time()) - local_last_seen) < 300:
+        if (round(time.time()) - local_last_seen) > 300:
 
             for k, v in a:
                 notified = []
