@@ -76,7 +76,7 @@ class polls(commands.Cog):
                 self.client.add_view(PollButtons(poll_choices, self.client, poll.get('invoked_message_id')), message_id=poll_m_id)
 
 
-
+    @checks.requires_roles()
     @commands.guild_only()
     @commands.command(name="poll", aliases=["quickpoll", "createpoll"])
     async def create_poll(self, ctx, *, question_and_choices = None):
