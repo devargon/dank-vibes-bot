@@ -190,6 +190,8 @@ class Highlight(commands.Cog):
         final_message = [stem(x) for x in final_message.split()] # formats the mesasge for better parsing
 
         local_last_seen = self.last_seen.get(message.author.id, self.client.uptime.timestamp())  # See if the user had sent a message recently
+        if 'argon' in message.content:
+            print(round(time.time()), local_last_seen, round(time.time()) - local_last_seen)
         if (round(time.time()) - local_last_seen) > 300:
 
             for k, v in a:
