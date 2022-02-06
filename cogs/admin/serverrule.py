@@ -24,7 +24,7 @@ class ServerRule(commands.Cog):
 
     @commands.guild_only()
     @commands.group(name='serverrule', aliases=['sr'], invoke_without_command=True)
-    @checks.is_owner_or_perms(administrator=True)
+    @checks.is_owner_or_perms(manage_roles=True)
     async def serverrule(self, ctx):
         """
         Base command for managing server rules."""
@@ -32,7 +32,7 @@ class ServerRule(commands.Cog):
 
     @commands.guild_only()
     @serverrule.command(name='add', usage='<allow_or_deny> <command> <role>')
-    @checks.is_owner_or_perms(administrator=True)
+    @checks.is_owner_or_perms(manage_roles=True)
     async def serverrule_add(self, ctx, allow_or_deny: AllowDeny = None, cmd: str = None, role: BetterRoles = None):
         """
         Add a rule to a command in this server.
@@ -79,7 +79,7 @@ class ServerRule(commands.Cog):
 
     @commands.guild_only()
     @serverrule.command(name='remove', usage='<command> <role>')
-    @checks.is_owner_or_perms(administrator=True)
+    @checks.is_owner_or_perms(manage_roles=True)
     async def serverrule_remove(self, ctx, cmd: str = None, role: BetterRoles = None):
         """
         Remove a rule from a command in this server.
@@ -105,7 +105,7 @@ class ServerRule(commands.Cog):
     
     @commands.guild_only()
     @serverrule.command(name='clear', usage='<command>')
-    @checks.is_owner_or_perms(administrator=True)
+    @checks.is_owner_or_perms(manage_roles=True)
     async def serverrule_clear(self, ctx, *, cmd: str):
         """
         Clear all rules from a command in this server.
@@ -125,7 +125,7 @@ class ServerRule(commands.Cog):
 
     @commands.guild_only()
     @serverrule.command(name='view', usage='<command>')
-    @checks.is_owner_or_perms(administrator=True)
+    @checks.is_owner_or_perms(manage_roles=True)
     async def serverrule_view(self, ctx, *, cmd: str):
         """
         Lists all rules from a command in this server.

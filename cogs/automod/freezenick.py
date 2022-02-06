@@ -38,6 +38,3 @@ class Freezenick(commands.Cog):
                     await self.client.pool_pg.execute("DELETE FROM freezenick WHERE id = $1", row.get('id'))
         except Exception as e:
             await self.client.get_channel(871737028105109574).send(f"Error in Freezenick function: {e}")
-
-    def cog_unload(self) -> None:
-        self.freezenick.stop()

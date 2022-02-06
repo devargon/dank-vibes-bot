@@ -60,9 +60,9 @@ class CogManager(commands.Cog):
             try:
                 self.client.load_extension(cog)
                 output.append(f'{cog} is loaded.')
-            except commands.ExtensionAlreadyLoaded:
+            except discord.ExtensionAlreadyLoaded:
                 output.append(f'{cog} is already loaded.')
-            except commands.ExtensionNotFound:
+            except discord.ExtensionNotFound:
                 output.append(f'{cog} is not a valid extension.')
                 error.append(cog)
             except Exception as e:
@@ -114,18 +114,21 @@ class CogManager(commands.Cog):
                 name = name if name.startswith('cogs') else 'cogs.' + name
                 cogs_to_unload.append(name)
         for cog in cogs_to_unload:
-            try:
-                self.client.unload_extension(cog)
-                output.append(f'{cog} is unloaded.')
-            except commands.ExtensionNotLoaded:
-                output.append(f'{cog} is already unloaded.')
-            except commands.ExtensionNotFound:
-                output.append(f'{cog} is not a valid extension.')
-                error.append(cog)
-            except Exception as e:
-                error.append(cog)
-                output.append(f'{cog} has not been unloaded.')
-                exception_log.append(f'```py\n{e}\n```')
+            if cog == 'cogs.automod':
+                output.append(f'{cog} cannot be unloaded!!')
+            else:
+                try:
+                    self.client.unload_extension(cog)
+                    output.append(f'{cog} is unloaded.')
+                except discord.ExtensionNotLoaded:
+                    output.append(f'{cog} is already unloaded.')
+                except discord.ExtensionNotFound:
+                    output.append(f'{cog} is not a valid extension.')
+                    error.append(cog)
+                except Exception as e:
+                    error.append(cog)
+                    output.append(f'{cog} has not been unloaded.')
+                    exception_log.append(f'```py\n{e}\n```')
         embed = discord.Embed(color=self.client.embed_color)
         await ctx.checkmark() if len(error) == 0 else await ctx.crossmark()
         if len(output) == 1:
@@ -169,20 +172,23 @@ class CogManager(commands.Cog):
                 name = name if name.startswith('cogs') else 'cogs.' + name
                 cogs_to_load.append(name)
         for cog in cogs_to_load:
-            try:
-                self.client.reload_extension(cog)
-                output.append(f'{cog} is reloaded.')
-            except commands.ExtensionNotFound:
-                output.append(f'{cog} is not a valid extension.')
-                error.append(cog)
-            except commands.ExtensionNotLoaded:
-                output.append(f"{cog} isn't loaded.")
-                error.append(cog)
-            except Exception as e:
-                error.append(cog)
-                output.append(f'{cog} has not been loaded.')
-                exception_message = f"```py\n{e}```"
-                exception_log.append(exception_message)
+            if cog == 'cogs.automod':
+                output.append(f'{cog} cannot be reloaded!!')
+            else:
+                try:
+                    self.client.reload_extension(cog)
+                    output.append(f'{cog} is reloaded.')
+                except discord.ExtensionNotFound:
+                    output.append(f'{cog} is not a valid extension.')
+                    error.append(cog)
+                except discord.ExtensionNotLoaded:
+                    output.append(f"{cog} isn't loaded.")
+                    error.append(cog)
+                except Exception as e:
+                    error.append(cog)
+                    output.append(f'{cog} has not been loaded.')
+                    exception_message = f"```py\n{e}```"
+                    exception_log.append(exception_message)
         embed = discord.Embed(color=self.client.embed_color)
         await ctx.checkmark() if len(error) == 0 else await ctx.crossmark()
         if len(output) == 1:

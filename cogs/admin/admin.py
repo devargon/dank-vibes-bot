@@ -1,5 +1,7 @@
 from abc import ABC
 from discord.ext import menus
+
+from utils.converters import BetterInt, BetterTimeConverter
 from .serverrule import ServerRule
 from .joining import Joining
 from .betterselfroles import BetterSelfroles
@@ -9,6 +11,28 @@ from utils.format import grammarformat, stringtime_duration
 from utils.time import humanize_timedelta
 from utils.menus import CustomMenu
 from time import time
+import os
+
+verify_role = 911541857807384677
+class verifyView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(emoji="✅", label="Verify", style=discord.ButtonStyle.blurple, custom_id='dv:verify')
+    async def verifybutton(self, button: discord.ui.Button, interaction: discord.Interaction):
+        await interaction.response.defer()
+        await interaction.followup.send("<a:DVB_Loading:909997219644604447> Verifying you...", ephemeral=True)
+        verifyrole = interaction.guild.get_role(verify_role)
+        if verifyrole:
+            await interaction.user.remove_roles(verifyrole)
+        roleids = [905980110954455070, 905980110157541446, 905980109268324402, 905980108148461599, 905980107435442186] \
+            if os.getenv('state') == '1' else \
+            [837591810389442600, 671426678807068683, 671426686100963359, 671426692077584384, 649499248320184320]
+        roles = [interaction.guild.get_role(roleid) for roleid in roleids]
+        for role in roles:
+            if role not in interaction.user.roles:
+                await interaction.user.add_roles(role, reason="User completed manual verification")
+        await interaction.followup.send("You've been verified! You should now be able to talk.", ephemeral=True)
 
 class Blacklist(menus.ListPageSource):
     def __init__(self, entries, title):
@@ -22,6 +46,71 @@ class Blacklist(menus.ListPageSource):
         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return embed
 
+class ServerConfigView(discord.ui.View):
+    def __init__(self, guild, owodaily, owoweekly, votelb, verification, timeoutlog, client):
+        self.client = client
+        self.guild = guild
+        self.response = None
+        super().__init__(timeout=20)
+
+        async def handle_toggle(guild, settings) -> bool:
+            if (result := await self.client.pool_pg.fetchrow(
+                    "SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", guild.id,
+                    settings)) is not None:
+                result = result.get('enabled')
+            else:
+                await self.client.pool_pg.execute("INSERT INTO serverconfig VALUES ($1, $2, $3)", guild.id,
+                                                  settings, False)
+                result = False
+            if result:
+                result = False
+            else:
+                result = True
+            await self.client.pool_pg.execute(
+                "UPDATE serverconfig SET enabled=$1 WHERE guild_id=$2 AND settings=$3", result, guild.id, settings)
+            return result
+
+        def get_style(arg):
+            if arg is not True:
+                return discord.ButtonStyle.red
+            else:
+                return discord.ButtonStyle.green
+
+        async def handle_button_interaction(button: discord.ui.Button, interaction: discord.Interaction):
+            if button.label == "OwO Daily Leaderboard":
+                new_setting = await handle_toggle(self.guild, "owodailylb")
+                button.style = get_style(new_setting)
+            elif button.label == "OwO Weekly Leaderboard":
+                new_setting = await handle_toggle(self.guild, "owoweeklylb")
+                button.style = get_style(new_setting)
+            elif button.label == "Vote Leaderboard":
+                new_setting = await handle_toggle(self.guild, "votelb")
+                button.style = get_style(new_setting)
+            elif button.label == "Verification":
+                new_setting = await handle_toggle(self.guild, "verification")
+                button.style = get_style(new_setting)
+            elif button.label == "Timeout Log":
+                new_setting = await handle_toggle(self.guild, "timeoutlog")
+                button.style = get_style(new_setting)
+            await self.response.edit(view=self)
+
+        class Button(discord.ui.Button):
+            async def callback(self, interaction: discord.Interaction):
+                await handle_button_interaction(self, interaction)
+
+        self.add_item(Button(label="OwO Daily Leaderboard", style=get_style(owodaily)))
+        self.add_item(Button(label="OwO Weekly Leaderboard", style=get_style(owoweekly)))
+        self.add_item(Button(label="Vote Leaderboard", style=get_style(votelb)))
+        self.add_item(Button(label="Verification", style=get_style(verification)))
+        self.add_item(Button(label="Timeout Log", style=get_style(timeoutlog)))
+
+    async def on_timeout(self) -> None:
+        for b in self.children:
+            b.disabled = True
+        await self.response.edit(view=self)
+        self.stop()
+
+
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
 
@@ -34,29 +123,28 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         self.queue = []
         self.selfroleviews_added = False
 
-    async def handle_toggle(self, guild, settings) -> bool:
-        if (result := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", guild.id, settings)) is not None:
-            result = result.get('enabled')
-        else:
-            await self.client.pool_pg.execute("INSERT INTO serverconfig VALUES ($1, $2, $3)", guild.id, settings, False)
-            result = False
-        if result:
-            result = False
-        else:
-            result = True
-        await self.client.pool_pg.execute("UPDATE serverconfig SET enabled=$1 WHERE guild_id=$2 AND settings=$3", result, guild.id, settings)
-        return result
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name="verify")
+    async def verify(self, ctx):
+        """
+        Sends the message that allows people to be verified with a button.
+        """
+        embed = discord.Embed(title="__**VERIFY**__", url="https://discord.gg/invite/dankmemer",
+                              description="Click the **Verify** button below this embed to gain access to the server. By clicking you agree to all the rules mentioned above!\n** **",
+                              color=5763312)
+        embed.set_footer(text="Dank Vibes",
+                         icon_url="https://cdn.discordapp.com/icons/595457764935991326/a_58b91a8c9e75742d7b423411b0205b2b.gif")
+        embed.set_image(url="https://cdn.discordapp.com/attachments/616007729718231161/910817422557196328/rawr_nya.gif")
+        embed.set_thumbnail(
+            url="https://cdn.discordapp.com/icons/595457764935991326/a_fba2b3f7548d99cd344931e27930ec4d.gif?size=1024")
+        await ctx.send(embed=embed, view=verifyView())
 
     @commands.command(name='serverconfig', aliases=["serverconf"])
-    @commands.has_guild_permissions(administrator=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def serverconfig(self, ctx):
         """
         Shows guild's server configuration settings and also allows you to allow/disable them.
         """
-        def get_emoji(enabled):
-            if enabled:
-                return "<:DVB_enabled:872003679895560193>"
-            return "<:DVB_disabled:872003709096321024>"
         embed = discord.Embed(title=f"Server Configuration Settings For {ctx.guild.name}", color=self.client.embed_color, timestamp=discord.utils.utcnow())
         if (owodaily := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "owodailylb")) is not None:
             owodaily = owodaily.get('enabled')
@@ -66,52 +154,50 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
             votelb = votelb.get('enabled')
         if (verification := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "verification")) is not None:
             verification = verification.get('enabled')
-        if (censor := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "censor")) is not None:
-            censor = censor.get('enabled')
-        embed.add_field(name=f"{get_emoji(owodaily)} OwO Daily Leaderboard", value=f"{'Enabled' if owodaily else 'Disabled'}", inline=False)
-        embed.add_field(name=f"{get_emoji(owoweekly)} OwO Weekly Leaderboard", value=f"{'Enabled' if owoweekly else 'Disabled'}", inline=False)
-        embed.add_field(name=f"{get_emoji(votelb)} Vote Leaderboard", value=f"{'Enabled' if votelb else 'Disabled'}", inline=False)
-        embed.add_field(name=f"{get_emoji(verification)} Verify after Membership Screening", value=f"{'Enabled' if votelb else 'Disabled'}", inline=False)
-        embed.add_field(name=f"{get_emoji(censor)} Delete blacklisted messages (Not in use)", value='Enabled' if censor else 'Disabled', inline=False)
+        if (timeoutlog := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "timeoutlog")) is not None:
+            timeoutlog = timeoutlog.get('enabled')
+        view = ServerConfigView(ctx.guild, owodaily, owoweekly, votelb, verification, timeoutlog, self.client)
         embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon.url)
-        message = await ctx.send(embed=embed)
-        emojis = ['1⃣', '2⃣', '3⃣', '4️⃣', '5️⃣', 'ℹ']
-        for emoji in emojis:
-            await message.add_reaction(emoji)
-        def check(payload):
-                return payload.user_id == ctx.message.author.id and payload.channel_id == ctx.channel.id and payload.message_id == message.id and str(payload.emoji) in emojis
-        while True:
-            try:
-                response = await self.client.wait_for('raw_reaction_add', timeout=15, check=check)
-            except asyncio.TimeoutError:
-                return await message.clear_reactions()
-            if str(response.emoji) == emojis[0]:
-                owodaily = await self.handle_toggle(ctx.guild, "owodailylb")
-                embed.set_field_at(index=0, name=f"{get_emoji(owodaily)} OwO Daily Leaderboard", value=f"{'Enabled' if owodaily else 'Disabled'}", inline=False)
-                await message.edit(embed=embed)
-            elif str(response.emoji) == emojis[1]:
-                owoweekly = await self.handle_toggle(ctx.guild, 'owoweeklylb')
-                embed.set_field_at(index=1, name=f"{get_emoji(owoweekly)} OwO Weekly Leaderboard", value=f"{'Enabled' if owoweekly else 'Disabled'}", inline=False)
-                await message.edit(embed=embed)
-            elif str(response.emoji) == emojis[2]:
-                votelb = await self.handle_toggle(ctx.guild, 'votelb')
-                embed.set_field_at(index=2, name=f"{get_emoji(votelb)} Vote Leaderboard", value=f"{'Enabled' if votelb else 'Disabled'}", inline=False)
-                await message.edit(embed=embed)
-            elif str(response.emoji) == emojis[3]:
-                votelb = await self.handle_toggle(ctx.guild, 'verification')
-                embed.set_field_at(index=3, name=f"{get_emoji(votelb)} Verify after Membership Screening", value=f"{'Enabled' if votelb else 'Disabled'}", inline=False)
-                await message.edit(embed=embed)
-            elif str(response.emoji) == emojis[4]:
-                votelb = await self.handle_toggle(ctx.guild, 'censor')
-                embed.set_field_at(index=4, name=f"{get_emoji(votelb)} Delete blacklisted messages (Not in use)", value=f"{'Enabled' if votelb else 'Disabled'}", inline=False)
-                await message.edit(embed=embed)
-            elif str(response.emoji) == emojis[4]:
-                tempembed = discord.Embed(title='Information', color=self.client.embed_color, description="React with the emojis to toggle leaderboards")
-                tempembed.add_field(name='Reactions' ,value=f"{emojis[0]} Toggles OwO daily leaderboard\n{emojis[1]} Toggles OwO weekly leaderboard\n{emojis[2]} Toggles vote leaderboard\n{emojis[3]} Toggles Verification success on completing Membership Screening.\n{emojis[4]} Shows this infomation message.")
-                await message.edit(embed=tempembed)
-            await message.remove_reaction(response.emoji, ctx.author)
+        view.response = await ctx.send(embed=embed, view=view)
+        await view.wait()
 
-    @checks.has_permissions_or_role(administrator=True)
+    @commands.has_guild_permissions(administrator=True)
+    @commands.command(name="spamping", aliases=["sp"])
+    @commands.cooldown(1, 120, commands.BucketType.user)
+    async def spamping(self, ctx, member: discord.Member = None, times: BetterInt = None, *, message: str = None):
+        """
+        NO
+        max is 500 times btw
+        """
+        if member is None:
+            return await ctx.send("You need to specify who to spam ping.")
+        if times is None:
+            times = 10
+        times: int = times
+        if member == self.client.user:
+            return await ctx.send("https://i.imgflip.com/2yvmo3.jpg")
+        times = min(times, 500)
+        currenttime = 0
+        confirmview = confirm(ctx, self.client, 20.0)
+        embed = discord.Embed(title="Dangerous Action!!", description=f"Are you sure you want to ping **{member}** **{times}** times? You may be hated by them forever :(", color=discord.Color.orange())
+        confirmview.response = await ctx.send(ctx.author.mention, view=confirmview, embed=embed)
+        await confirmview.wait()
+        if not confirmview.returning_value:
+            embed.color, embed.description = discord.Color.red(), "No one will be spam pinged today :D"
+            return await confirmview.response.edit(embed=embed)
+        embed.color, embed.description = discord.Color.green(), "..."
+        await confirmview.response.edit(embed=embed)
+        while currenttime < times:
+            currenttime += 1
+            message = message or ''
+            await ctx.send(f"{member.mention} {message} ({currenttime} of {times})")
+        await ctx.send(f"I have finished pinging {member} {times} times.")
+        try:
+            await member.send(f"Sorry for the pings in {ctx.channel.mention} <a:dv_pandaPleadOwO:837769147055472660>")
+        except discord.Forbidden:
+            pass
+
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='blacklist', aliases=['bl'])
     async def blacklist(self, ctx, *, user: discord.Member = None):
         """Blacklist a user from using the bot."""
@@ -159,26 +245,30 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         else:
             timeuntil = 9223372036854775807
         id = await self.client.pool_pg.fetchval("INSERT INTO blacklist(user_id, moderator_id, blacklist_active, reason, time_until) VALUES($1, $2, $3, $4, $5) RETURNING incident_id", user.id, ctx.author.id, True, reason, timeuntil, column='incident_id')
+        self.client.blacklist[user.id] = timeuntil
         embed=discord.Embed(title=f"{user} is now blacklisted.", description=f"**Reason**: {reason}\n**Blacklisted for**: {'Eternity' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}\nBlacklisted until: {'NA' if timeuntil == 9223372036854775807 else f'<t:{timeuntil}:R>'}", color=discord.Color.red())
         logembed = discord.Embed(title=f"Bot Blacklist: Case {id}", description=f"**Reason:** {reason}\n**Blacklisted for**: {'Eternity' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}\n**Blacklisted until**: {'NA' if timeuntil == 9223372036854775807 else f'<t:{timeuntil}:R>'}\n**Responsible Moderator**: {ctx.author} ({ctx.author.id})", color=discord.Color.red())
         logembed.set_author(name=f"{user} ({user.id})", icon_url=user.display_avatar.url)
         embed.set_footer(text="To unblacklist someone, use the `unblacklist` command.")
         embed.set_thumbnail(url=user.display_avatar.url)
-        dm_description=["You have been blacklisted from using certain functions of this bot by the developers or an Admin from Dank Vibes.", '', f"**Reason:** {reason}", f"**Blacklisted for**: {'Permanently' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}"]
         if duration != 9223372036854775807:
-            dm_description.append(f"The functions that you can't use include but are not limited to:\n`-` Using `nickbet`, `nick` and `chatchart` commands\n`-` Being nickbetted against\n\nYour blacklist will end on <t:{timeuntil}>.")
+            dm_description=[f"You have been blacklisted from using {self.client.user.name} by the developers or an Admin from Dank Vibes.", '', f"**Reason:** {reason}", f"**Blacklisted for**: {'Permanently' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}"]
+        else:
+            dm_description=[f"You have been **permanently** blacklisted from using {self.client.user.name} by the developers or an Admin from Dank Vibes.", '', f"**Reason:** {reason}"]
+        dm_description.append(f"You will not be able to run **any** commands. You will however, be reminded to vote and get Dank Memer reminders.")
         dm_description.append('')
-        dm_description.append("If you think this is a mistake or would like your blacklist to be rescinded, please open a ticket in <#870880772985344010>.")
+        dm_description.append(f"Your blacklist will end on <t:{timeuntil}>.\n")
+        dm_description.append("If you think this is a mistake and would like your blacklist to be removed, or need further clarification, please open a ticket in <#870880772985344010>.")
         dmembed = discord.Embed(title="⚠️ Warning!", description='\n'.join(dm_description), color=discord.Color.red())
         try:
             await user.send(embed=dmembed)
         except:
-            return await ctx.send("I was unable to tell them that they have been blacklisted in their DMs.")
+            await ctx.send("I was unable to tell them that they have been blacklisted in their DMs.")
         await self.client.get_channel(906433823594668052).send(embed=logembed)
         await ctx.send(embed=embed)
 
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="blacklists")
     async def active_blacklists(self, ctx, *, inquery: Union[discord.Member, int, str] = None):
         """
@@ -244,7 +334,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
             pages = CustomMenu(source=Blacklist(blacklists, title), clear_reactions_after=True, timeout=60)
             return await pages.start(ctx)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='unblacklist', aliases=['unbl'])
     async def unblacklist(self, ctx, *, user: discord.Member = None):
         """Unblacklist a user so that they can continue using the bot."""
@@ -261,7 +351,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         await self.client.get_channel(906433823594668052).send(embed=logembed)
         
     @commands.command(name="setnickchannel", aliases = ["nickchannel"])
-    @commands.has_guild_permissions(administrator=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def setchannel(self, ctx, channel:discord.TextChannel=None):
         """
         Set the channel for nickname requests to be sent to.
@@ -276,7 +366,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
             return await ctx.send(f"I will now send nickname requests to {channel.mention}.\nAll nickname requests sent in a previous channel have been forfeited.")
 
     @commands.command(name="setdmchannel", aliases = ["dmchannel"])
-    @commands.has_guild_permissions(administrator=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def setdmchannel(self, ctx, channel:discord.TextChannel=None):
         """
         Set the channel for dmname requests to be sent to.
@@ -291,7 +381,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
             return await ctx.send(f"I will now send DM requests to {channel.mention}.\nAll DM requests sent in a previous channel have been forfeited.")
 
     @commands.command(name="viewconfig")
-    @commands.has_guild_permissions(administrator=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def viewconfig(self, ctx, channel: discord.TextChannel = None):
         """
         Show configurations for nickname and DM requests.
@@ -302,7 +392,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         else:
             await ctx.send(embed=discord.Embed(title=f"Configurations for {ctx.guild.name}", description = f"Nickname requests: {ctx.guild.get_channel(result.get('nicknamechannel_id'))}\nDM requests: {ctx.guild.get_channel(result.get('dmchannel_id'))}", color = self.client.embed_color))
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="messagereset", aliases=["mreset"], invoke_without_command=True)
     async def messagelog(self, ctx):
         """
@@ -329,7 +419,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
             await msg.edit(embed=embed)
 
     @commands.group(invoke_without_command=True, name="messageroles")
-    @commands.has_guild_permissions(administrator=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def messageroles(self, ctx):
         """
         Configure the milestones for the roles.
@@ -342,7 +432,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         await ctx.send(embed=embed)
 
     @messageroles.command(name="list", aliases = ["show"])
-    @commands.has_guild_permissions(administrator=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def mrolelist(self, ctx):
         """
         Lists milestones for message count roles.
@@ -364,7 +454,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         await ctx.send(embed=embed)
 
     @messageroles.command(name="add", aliases=["create"])
-    @commands.has_guild_permissions(administrator=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def roleadd(self, ctx, messagecount = None, role:discord.Role = None):
         """
         Adds milestones for message roles.
@@ -383,7 +473,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         await ctx.send(f"**Done**\n**{role.name}** will be added to a member when they have sent a message **{messagecount} time(s)**.")
 
     @messageroles.command(name="remove", aliases=["delete"])
-    @commands.has_guild_permissions(administrator=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def roleremove(self, ctx, messagecount=None):
         """
         Removes milestones for nessage count roles.
@@ -401,10 +491,10 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         await self.client.pool_pg.execute("DELETE FROM messagemilestones WHERE messagecount = $1", messagecount) # Removes the milestone rule
         await ctx.send(f"**Done**\nThe milestone for having sent a message **{messagecount} time(s)** has been removed.")
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.cooldown(1, 15, commands.BucketType.guild)
     @commands.command(name='demote', aliases = ['suggestion49', 'suggest49'])
-    async def demote(self, ctx, member: discord.Member=None):
+    async def demote(self, ctx, member: discord.Member=None, duration: BetterTimeConverter=None):
         """
         The infamous suggestion 49.
         """
@@ -412,6 +502,8 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         if member is None:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("You need to tell me who to demote, otherwise I'm demoting **you**.")
+        if duration is None:
+            duration = 30
         if ctx.author.guild_permissions.administrator != True and ctx.guild.get_role(684591962094829569) not in ctx.author.roles:
             await ctx.send("You have not met the requirements to demote someone else, hence you're being self-demoted.")
             selfdemote = True
@@ -440,10 +532,12 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
             except Exception as e:
                 return await msg.edit(content=f"There was an issue with removing roles. I've temporarily stopped demoting {member}. More details: {e}")
         lstofrolenames = [role.name for role in tupremove]
+        if duration > 300:
+            duration = 300
         try:
-            await msg.edit(content=f"{member.mention} has been demoted for 30 seconds. They are no longer a  **{grammarformat(lstofrolenames)}.**")
+            await msg.edit(content=f"{member.mention} has been demoted for {humanize_timedelta(seconds=duration)}. They are no longer a  **{grammarformat(lstofrolenames)}.**")
         except discord.NotFound:
-            await ctx.send(f"{member.mention} has been demoted for 30 seconds. Their removed roles are: **{grammarformat(lstofrolenames)}**")
+            await ctx.send(f"{member.mention} has been demoted for {humanize_timedelta(seconds=duration)}. Their removed roles are: **{grammarformat(lstofrolenames)}**")
         try:
             message = f"Alas! Due to you misbehaving, you have been demoted by **{ctx.author}**." if not selfdemote else "You have just self demoted yourself."
             await member.send(f"{message} You no longer have the roles: **{', '.join(role.name for role in tupremove)}**. \nYour roles might be readded afterwards. Or will they? <:dv_bShrugOwO:837687264263798814>")

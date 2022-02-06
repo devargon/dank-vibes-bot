@@ -83,7 +83,7 @@ class donations(commands.Cog):
         else:
             return result
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="add-category")
     async def add_category(self, ctx, category_name:str = None):
         """
@@ -111,7 +111,7 @@ class donations(commands.Cog):
                     await self.client.pool_pg.execute(createdb_query)
                     return await ctx.send(f"Category `{category_name}` created.")
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="remove-category")
     async def remove_category(self, ctx, category_name:str = None):
         """
@@ -183,7 +183,7 @@ class donations(commands.Cog):
                         pages = CustomMenu(source=DonationLeaderboard(donations, title, footer), clear_reactions_after=True, timeout=60.0)
                         return await pages.start(ctx)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="donations", aliases=['d'])
     async def donations(self, ctx, member:discord.Member = None):
         """
@@ -250,7 +250,7 @@ class donations(commands.Cog):
                     pages = CustomMenu(source=UserDonations(donations, title, member), clear_reactions_after=True, timeout=60)
                     return await pages.start(ctx)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="resetdonations")
     async def resetdonations(self, ctx, category_name: str = None):
         """
@@ -278,7 +278,7 @@ class donations(commands.Cog):
         await ctx.send(f"The donations of the category `{real_name}` has been reset.")
 
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="adddonations", aliases=["ad"])
     async def adddonations(self, ctx, member:discord.Member = None, amount: BetterInt = None, *, category_name: str = None):
         """
@@ -304,7 +304,7 @@ class donations(commands.Cog):
         embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
         return await ctx.send(embed=embed)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="removedonations", aliases=["rd"])
     async def removedonations(self, ctx, member:discord.Member = None, amount: BetterInt = None, *, category_name: str = None):
         """
@@ -334,7 +334,7 @@ class donations(commands.Cog):
         embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
         return await ctx.send(embed=embed)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="setdonations", aliases=["sd"])
     async def setdonations(self, ctx, member:discord.Member = None, amount: BetterInt = None, *, category_name: str = None):
         """

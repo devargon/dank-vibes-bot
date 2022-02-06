@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 
+import re
 import os
 import sys
 import time
@@ -27,6 +28,11 @@ from .whois import Whois
 from .teleport import Teleport
 from .nicknames import nicknames
 from .suggestion import Suggestion
+from .polls import polls
+from .autoreactor import Autoreaction
+from .highlights import Highlight
+from .reminders import reminders
+from .tracktimeouts import TimeoutTracking
 
 
 LANGUAGES = {'af': 'afrikaans', 'sq': 'albanian', 'am': 'amharic', 'ar': 'arabic', 'hy': 'armenian', 'az': 'azerbaijani',
@@ -50,7 +56,7 @@ LANGUAGES = {'af': 'afrikaans', 'sq': 'albanian', 'am': 'amharic', 'ar': 'arabic
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
 
-class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name='utility', metaclass=CompositeMetaClass):
+class Utility(TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name='utility', metaclass=CompositeMetaClass):
     """
     Utility commands
     """
@@ -59,6 +65,11 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
         self.nickconfig = {}
         self.persistent_views_added = False
         self.translator = Translator()
+        self.poll_views_added = False
+        self.last_seen = {}
+        self.regex_pattern = re.compile('([^\s\w]|_)+')
+        self.website_regex = re.compile("https?:\/\/[^\s]*")
+        self.blacklist = []
 
 
     async def get_text_to_translate(self, ctx, userinput):
@@ -77,7 +88,7 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
 
 
     @commands.cooldown(10, 1, commands.BucketType.user)
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.group(name="translate", aliases=['trans', 'tl'], invoke_without_command=True)
     async def translate_command(self, ctx, dest_language: str = None, *, text: str = None):
         """
@@ -130,7 +141,7 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
         embed.set_footer(icon_url="https://upload.wikimedia.org/wikipedia/commons/d/db/Google_Translate_Icon.png", text="Powered by Google Translate")
         await transmsg.edit(embed=embed)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @translate_command.command(name="languages", aliases=["langs", "lang"])
     async def translate_languages(self, ctx):
         """
@@ -222,11 +233,11 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
             value_1.append(f'<:stage_channel:868806674452987924> {stage}')
         py_version = "{}.{}.{}".format(*sys.version_info[:3])
         dpy_version = discord.__version__
-        embed = discord.Embed(description=f"{ctx.guild.me.name} is a multipurpose bot designed to help members and enhance the Dank Vibes experience with a helpful set of fun and utility commands. \n\n{ctx.guild.me.name} is created by {str(self.client.get_user(321892489470410763))} with the Discord.py library, and developed by {str(self.client.get_user(321892489470410763))} and {str(self.client.get_user(650647680837484556))}.", color=self.client.embed_color)
+        embed = discord.Embed(description=f"{ctx.guild.me.name} is a multipurpose bot designed to help members and enhance the Dank Vibes experience with a helpful set of fun and utility commands. \n\n{ctx.guild.me.name} is created by {str(self.client.get_user(321892489470410763))} with the Pycord library, and developed by {str(self.client.get_user(321892489470410763))} and {str(self.client.get_user(650647680837484556))}.", color=self.client.embed_color)
         embed.add_field(name='Stats', value="\n".join(value_1), inline=True)
-        embed.add_field(name='Versions', value=f"<:python:868806455317393428> `{py_version}`\n<:discordpy:868806486241992724> `{dpy_version}`", inline=True)
+        embed.add_field(name='Versions', value=f"<:python:868806455317393428> `{py_version}`\n<:DVB_PyCord:937351289514385428> `{dpy_version}`", inline=True)
         embed.add_field(name='Developers', value=f"{str(self.client.get_user(650647680837484556))}", inline=True)
-        embed.add_field(name="Special Thanks To", value=f"{str(await self.client.fetch_user(727498137232736306))}\n{str(await self.client.fetch_user(321892489470410763))}\n{await self.client.fetch_user(560251854399733760)}", inline=True)
+        embed.add_field(name="Special Thanks To", value=f"{str(await self.client.fetch_user(727498137232736306))}\n{self.client.get_user(321892489470410763)}\n{self.client.get_user(560251854399733760)}\n{self.client.get_user(886598864965103727)} <3", inline=True)
         if ctx.author.id in [650647680837484556, 515725341910892555, 321892489470410763]:
             loop = asyncio.get_event_loop()
             def get_advanced_details():
@@ -448,33 +459,12 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
                     embed.add_field(name="🛠️ Last commit", value=f"GitHub did not return a 200 status code.\nStatus code: {r.status}", inline=False)
                 await msg.edit(content="All retrieved in `{}`ms".format(round((time.perf_counter() - now) * 1000)), embed=embed)
 
-    @checks.has_permissions_or_role(administrator=True)
-    @commands.command(name="access")
-    async def access(self, ctx, user: typing.Optional[discord.Member] = None):
-        if user is None:
-            if len(ctx.message.mentions) > 0:
-                user = ctx.message.mentions[0]
-            else:
-                user = ctx.author
-        accessrole = ctx.guild.get_role(905980110954455070) if os.getenv('state') == '1' else ctx.guild.get_role(915045523801640981)
-        if accessrole is None:
-            await ctx.send("Access role not found.")
-            return
-        finish = round(time.time())+300
-        await user.add_roles(accessrole, reason=f"Delayed role addition, authorized by {ctx.author}")
-        embed = discord.Embed(title="Temporary Role Added!", description=f"{user.mention} has been given the {accessrole.mention} role and has access to <#915041843555758130> until the role is removed <t:{finish}:R>!", color=self.client.embed_color)
-        await ctx.send(embed=embed)
-        if await self.client.pool_pg.fetchrow("SELECT * FROM timedrole WHERE member_id = $1 AND guild_id = $2 AND role_id = $3", user.id, ctx.guild.id, accessrole.id):
-            await self.client.pool_pg.execute("UPDATE timedrole SET time = $1 WHERE member_id = $2 AND guild_id = $3 AND role_id = $4", finish, user.id, ctx.guild.id, accessrole.id)
-        else:
-            await self.client.pool_pg.execute("INSERT INTO timedrole VALUES($1, $2, $3, $4)", user.id, ctx.guild.id, accessrole.id, finish)
-
     @commands.command(name="invite", hidden=True)
     async def _invite(self, ctx):
         embed = discord.Embed(title=f"Invite {self.client.user.name}!", description="[Click here to invite me to your server!](https://www.youtube.com/watch?v=9cjS9z0ZKUo)", color=self.client.embed_color)
         await ctx.send(embed=embed)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='timer')
     async def timer(self, ctx, channel: typing.Optional[discord.TextChannel] = None, duration: BetterTimeConverter = None, *, title:str = None):
         """
@@ -494,3 +484,98 @@ class Utility(Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name=
         embed.set_footer(text="Ends at")
         msg = await channel.send(embed=embed)
         await self.client.pool_pg.execute("INSERT INTO timers(guild_id, channel_id, message_id, user_id, time, title) VALUES ($1, $2, $3, $4, $5, $6)", ctx.guild.id, channel.id, msg.id, ctx.author.id, endtime, title)
+
+    @commands.cooldown(10, 1, commands.BucketType.user)
+    @commands.command(name='avatar', aliases=['av', 'pfp', 'banner', 'bn', 'sav'])
+    async def avatar(self, ctx, user: typing.Optional[discord.Member] = None):
+        """
+        Shows you a user's avatar, banner or server banner.
+        """
+        if user is None:
+            user = ctx.author
+        # Getting avatar URL
+        avatar = user.avatar
+        if avatar is None:
+            avatar = self.client.get_user(user.id).display_avatar
+        avatar_url = avatar.with_size(1024).url
+        # Getting Server Avatar URL
+        d_avatar = user.display_avatar
+        if d_avatar == avatar:
+            d_avatar_url = None
+        else:
+            d_avatar_url = d_avatar.with_size(1024).url
+        # Getting banner URL
+        api_fetched_user = await self.client.fetch_user(user.id)
+        banner = api_fetched_user.banner
+        if banner is None:
+            banner_url = None
+        else:
+            banner_url = banner.with_size(1024).url
+        if ctx.invoked_with in ['av', 'pfp', 'avatar']:
+            init_picked = 'av'
+        elif ctx.invoked_with in ['banner', 'bn']:
+            init_picked = 'bn'
+        elif ctx.invoked_with in ['sav']:
+            init_picked = 'sav'
+        else:
+            return
+        def generate_embed(user, name, url):
+            embed = discord.Embed(title=f"{user}'s {name}", color=self.client.embed_color)
+            embed.set_image(url=url)
+            return embed
+        class AvatarView(discord.ui.View):
+            def __init__(self, user, avatar_url, d_avatar_url, banner_url, init_picked):
+                self.user = user
+                self.avatar_url = avatar_url
+                self.d_avatar_url = d_avatar_url
+                self.banner_url = banner_url
+                self.init_picked = init_picked
+                self.response = None
+                super().__init__(timeout=None)
+
+                async def update_message(label, button):
+                    if label == 'Avatar':
+                        new_embed = generate_embed(self.user, label, self.avatar_url)
+                    elif label == 'Server Avatar':
+                        new_embed = generate_embed(self.user, label, self.d_avatar_url)
+                    elif label == 'Banner':
+                        new_embed = generate_embed(self.user, label, self.banner_url)
+                    else:
+                        return
+                    for b in self.children:
+                        if b.style == discord.ButtonStyle.green:
+                            b.style = discord.ButtonStyle.grey
+                        if b == button:
+                            b.style = discord.ButtonStyle.green
+                    await self.response.edit(embed=new_embed, view=self)
+
+
+
+                class SelectButton(discord.ui.Button):
+                    async def callback(self, interaction: discord.Interaction):
+                        if self.style == discord.ButtonStyle.green:
+                            return
+                        else:
+                            await update_message(self.label, self)
+
+                self.add_item(SelectButton(label='Avatar', style=discord.ButtonStyle.green if init_picked == 'av' else discord.ButtonStyle.grey))
+                self.add_item(SelectButton(label='Server Avatar', style=discord.ButtonStyle.green if init_picked == 'sav' else discord.ButtonStyle.grey, disabled = True if d_avatar_url is None else False))
+                self.add_item(SelectButton(label='Banner', style=discord.ButtonStyle.green if init_picked == 'bn' else discord.ButtonStyle.grey, disabled = True if banner_url is None else False))
+
+            async def on_timeout(self):
+                for b in self.children:
+                    b.disabled = True
+                await self.response.edit(view=self)
+        if init_picked == 'av':
+            embed = generate_embed(user, 'Avatar', avatar_url)
+        elif init_picked == 'bn':
+            embed = generate_embed(user, 'Banner', banner_url)
+        elif init_picked == 'sav':
+            embed = generate_embed(user, 'Server Avatar', d_avatar_url)
+        else:
+            return
+        avatarview = AvatarView(user, avatar_url, d_avatar_url, banner_url, init_picked)
+        avatarview.response = await ctx.send(embed=embed, view=avatarview)
+        await avatarview.wait()
+
+

@@ -37,6 +37,3 @@ class TimedUnlock(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         self.unlock.start()
-
-    async def cog_unload(self) -> None:
-        self.unlock.stop()

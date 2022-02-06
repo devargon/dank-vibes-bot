@@ -14,10 +14,8 @@ from utils import checks
 
 #Checking if provided link is indeed a link
 regex = re.compile(
-        r'^(?:http|ftp)s?://' # http:// or https://
-        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #normal urls
-        r'localhost|)' #localhoar
-        r'(?::\d+)?' # optional port
+        r'^https?://' # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|)'
         r'(?:/?|[/?]\S+)$', re.IGNORECASE)
 
 class BrowserScreenshot(commands.Cog):
@@ -25,7 +23,7 @@ class BrowserScreenshot(commands.Cog):
         self.client = client
 
     @commands.cooldown(1, 30.0, commands.BucketType.guild)
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="browser", aliases=["screenshot", "ss"])
     async def screenshot(self, ctx, link):
         """

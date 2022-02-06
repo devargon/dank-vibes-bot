@@ -171,7 +171,7 @@ class ItemGames(commands.Cog):
             ranks.append((f"#{index} {position[0]}", position[1]))
         return ranks
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.group(name="inventory", aliases=['inv'], invoke_without_command=True)
     async def inventory(self, ctx, member: discord.Member = None):
         """
@@ -208,7 +208,7 @@ class ItemGames(commands.Cog):
         embed.set_footer(text="Use dv.inv info [item] to know more about an item.")
         await ctx.send(embed=embed)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="give", aliases=['share', 'trade'])
     async def item_give(self, ctx, member: discord.Member = None, item: str = None, num: int = None):
         """
@@ -341,7 +341,7 @@ class ItemGames(commands.Cog):
         embed.set_footer(text=f"You own {quantity} of this item.")
         await ctx.send(embed=embed)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='skullleaderboard', aliases=['slb', 'skulllb'])
     async def skullleaderboard(self, ctx, *, arg: str = None):
         """
@@ -350,7 +350,7 @@ class ItemGames(commands.Cog):
         await ctx.send("This command is deprecated. Use `dv.itemlb` instead!")
 
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='itemleaderboard', aliases=['ilb', 'itemlb'])
     async def itemleaderboard(self, ctx, *, item: str = None):
         """

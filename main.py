@@ -5,7 +5,7 @@ import asyncpg
 import datetime
 from dotenv import load_dotenv
 from discord import client
-from discord.ext import commands
+from discord.ext import commands, tasks
 from utils.context import DVVTcontext
 from utils.format import print_exception
 
@@ -22,12 +22,12 @@ AVAILABLE_EXTENSIONS = ['cogs.dev',
 'cogs.votetracker',
 'cogs.messagetracking',
 'cogs.grinder',
+'cogs.automod',
 'cogs.giveaways',
 'cogs.donations',
 'cogs.dankmemer',
 'cogs.infection',
-'cogs.automod',
-'cogs.disboard'
+'cogs.imgen'
 ]
 
 load_dotenv('credentials.env')
@@ -51,14 +51,40 @@ class dvvt(commands.AutoShardedBot):
         self.maintenance = {}
         self.maintenance_message = {}
         self.available_extensions = AVAILABLE_EXTENSIONS
+        self.blacklist = {}
 
         for ext in self.available_extensions:
             self.load_extension(ext)
 
+    @tasks.loop(seconds=5)
+    async def update_blacklist(self):
+        await self.wait_until_ready()
+        blacklist_dict = dict(self.blacklist) # copy the dict so that we can iterate over it and not result in runtime error due to dictionary edits
+        for user in blacklist_dict:
+            if time.time() >= self.blacklist[user]:
+                blacklist = await self.pool_pg.fetchrow(
+                    "SELECT * FROM blacklist WHERE user_id=$1 AND time_until = $2 AND blacklist_active = $3", user, self.blacklist[user], True)
+                await self.pool_pg.execute(
+                    "UPDATE blacklist SET blacklist_active = $1 WHERE user_id = $2 and incident_id = $3", False, user, blacklist.get('incident_id'))
+                embed = discord.Embed(title=f"Bot Unblacklist | Case {blacklist.get('incident_id')}", description=f"**Reason**: Blacklist over, automatically rescinded\n**Responsible Moderator**: {self.user.name} ({self.user.id})", color=discord.Color.green())
+                user = await self.fetch_user(user)
+                embed.set_author(name=f"{user} ({user.id})", icon_url=user.display_avatar.url)
+                if user is not None:
+                    try:
+                        await user.send("You are no longer blacklisted from using the bot, and can use all functions of the bot.")
+                    except discord.HTTPException:
+                        pass
+                del self.blacklist[user.id]
+        await self.get_all_blacklisted_users()
+
+    @update_blacklist.before_loop
+    async def before_update_blacklist(self):
+        await self.wait_until_ready()
+
     async def get_context(self, message, *, cls=None):
         context = await super().get_context(message, cls=DVVTcontext)
         return context
-    
+
     async def load_maintenance_data(self):
         results = await self.pool_pg.fetch("SELECT * FROM maintenance")
         for result in results:
@@ -68,15 +94,9 @@ class dvvt(commands.AutoShardedBot):
     async def process_commands(self, message: discord.Message):
         ctx = await self.get_context(message)
         if ctx.cog:
-            if ctx.author.id not in [650647680837484556, 515725341910892555, 321892489470410763]:
-                blacklist = await self.pool_pg.fetchrow("SELECT * FROM blacklist WHERE user_id = $1 and blacklist_active = $2", message.author.id, True)
-                if blacklist and time.time() >= blacklist.get('time_until'):
-                    await self.pool_pg.execute("UPDATE blacklist SET blacklist_active = $1 WHERE user_id = $2 and incident_id = $3", False, message.author.id, blacklist.get('incident_id'))
-                    embed = discord.Embed(title=f"Bot Unblacklist | Case {blacklist.get('incident_id')}", description=f"**Reason**: Blacklist over, automatically rescinded\n**Responsible Moderator**: {ctx.me} ({ctx.me.id})", color=discord.Color.green())
-                    embed.set_author(name=f"{message.author} ({message.author.id})", icon_url=message.author.display_avatar.url)
-                    await self.get_channel(906433823594668052).send(embed=embed)
-                    await message.reply("You are no longer blacklisted from using the bot, and can use all functions of the bot.")
-                    return await self.invoke(ctx)
+            if ctx.author.id in self.blacklist:
+                if ctx.author.id not in [650647680837484556, 515725341910892555, 321892489470410763]:
+                    return
             if self.maintenance.get(ctx.cog.qualified_name) and message.author.id not in [321892489470410763, 650647680837484556]:
                 maintenance_message = self.maintenance_message.get(ctx.cog.qualified_name)
                 return await message.channel.send(maintenance_message)
@@ -100,7 +120,8 @@ class dvvt(commands.AutoShardedBot):
                       'roleremove', 'votecount', 'cooldowns', 'selfrolemessages', 'devmode', 'blacklisted_words',
                       'blacklist', 'freezenick', 'autorole', 'giveaways', 'giveawayentrants', 'dankdrops', 'autorole',
                       'donation_categories', 'christmaseventconfig', 'commandaccess', 'ignoredchristmascat',
-                      'ignoredchristmaschan', 'perkremoval', 'commandlog', 'timedunlock', 'nickname_changes', 'name_changes', 'timers', 'infections']
+                      'ignoredchristmaschan', 'perkremoval', 'commandlog', 'timedunlock', 'nickname_changes',
+                      'name_changes', 'timers', 'infections', 'polls', 'pollvotes', 'highlight', 'highlight_ignores', 'reminders']
         tables = await self.pool_pg.fetch("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';")
         tables = [i.get('table_name') for i in tables]
         if tables is None:
@@ -114,66 +135,71 @@ class dvvt(commands.AutoShardedBot):
                 pass
             else:
                 print("Some databases do not exist, creating them now...")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS autoreactions(guild_id bigint, trigger text, response text)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS autorole(member_id bigint, guild_id bigint, role_id bigint, time bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS blacklist(incident_id serial, user_id bigint, moderator_id bigint, blacklist_active boolean, time_until bigint, reason text)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS blacklisted_words(string text)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS channelconfigs(guild_id bigint NOT null PRIMARY KEY, nickname_channel_id bigint, dmchannel_id bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS christmaseventconfig(guild_id bigint, percentage real)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS commandaccess(member_id bigint, command text, until bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS cooldowns(command_name text, member_id bigint, time bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS dankdrops(guild_id bigint, name text, price text, time bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS dankreminders(member_id bigint, remindertype bigint, channel_id bigint, guild_id bigint, time bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS devmode(user_id bigint, devmode boolean)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS donation_categories(guild_id bigint, category_name text)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS dmrequests(id serial, member_id bigint, target_id bigint, dmcontent text, messageid bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS dmrequestslog(id bigint, member_id bigint, target_id bigint, approver_id bigint, dmcontent text, status integer)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS dumbfightlog(invoker_id bigint, target_id bigint, did_win integer)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS freezenick(id serial, user_id bigint, guild_id bigint, nickname text, old_nickname text, time bigint, reason text, responsible_moderator bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS grinderdata(user_id bigint PRIMARY KEY, today bigint, past_week bigint, last_week bigint, past_month bigint, all_time bigint, last_dono_time bigint, last_dono_msg text)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS giveaways(guild_id bigint, channel_id bigint, message_id bigint, time bigint, name text, host_id bigint, winners integer, active boolean)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS giveawayentrants(message_id bigint, user_id bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS ignoredchristmascat(guild_id bigint, category_id bigint PRIMARY KEY)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS ignoredchristmaschan(guild_id bigint, channel_id bigint PRIMARY KEY)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS inventories(user_id bigint PRIMARY KEY, skull bigint, argonphallicobject bigint, llamaspit bigint, slicefrenzylesliecake bigint, wickedrusteze bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS iteminfo(name text PRIMARY KEY, fullname text, description text, emoji text, image text, hidden boolean)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS joinmessages(guild_id bigint PRIMARY KEY, channel_id bigint, plain_text text, embed_details text, delete_after integer)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS karutaeventconfig(channel_id text, percentage_chance real)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS lockdownmsgs(guild_id bigint, profile_name text, startmsg text, endmsg text)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS lockdownprofiles(guild_id bigint, profile_name text, channel_id bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS maintenance(cog_name text PRIMARY KEY, message text, enabled boolean)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS messagelog(user_id bigint PRIMARY KEY, messagecount bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS messagemilestones(messagecount integer, roleid bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS milestones(votecount integer, roleid bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS nicknames(id serial, member_id bigint PRIMARY KEY, nickname text, messageid bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS owocount(member_id bigint PRIMARY KEY, daily_count integer, weekly_count integer, total_count integer, yesterday integer, last_week integer)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS owocurrent(member_id bigint PRIMARY KEY, daily_count integer, weekly_count integer, total_count integer)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS owopast(member_id bigint PRIMARY KEY, yesterday integer, last_week integer)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS perkremoval(member_id bigint, perk text, until bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS prefixes(guild_id bigint PRIMARY KEY, prefix text)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS remindersettings(member_id bigint PRIMARY KEY, method integer, daily bigint, lottery bigint, work bigint, lifesaver bigint, apple integer, redeem integer, weekly integer, monthly integer, hunt integer, fish integer, dig integer, highlow integer, snakeeyes integer, search integer, crime integer, beg integer, dailybox integer, horseshoe integer, pizza integer, drop integer)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS rmpreference(member_id bigint PRIMARY KEY, rmtype integer)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS roleremove(member_id bigint PRIMARY KEY, rmtime bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS rules(guild_id bigint, command text, role_id bigint, whitelist boolean)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS selfrolemessages(guild_id bigint, age bigint, gender bigint, location bigint, minigames bigint, event_pings bigint, dank_pings bigint, server_pings bigint, bot_roles bigint, random_color bigint, colors bigint, specialcolors bigint, boostping bigint, vipheist bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS serverconfig(guild_id bigint, settings text, enabled boolean)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS stats(member_id bigint, remindertype integer, time bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS stickymessages(guild_id bigint PRIMARY KEY, channel_id bigint, message_id bigint, type integer, message text)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS suggestion_response(suggestion_id integer, user_id bigint, response_id bigint, message_id bigint, message text)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS suggestions(suggestion_id serial, user_id bigint, finish boolean, response_id bigint, suggestion text)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS teleport(member_id bigint, checkpoint text, channel_id bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS temp(member_id bigint PRIMARY KEY, daily_count integer, weekly_count integer, total_count integer, yesterday integer, last_week integer)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS tempweekly(member_id bigint PRIMARY KEY, yesterday integer, last_week integer)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS timedrole(member_id bigint, guild_id bigint, role_id bigint, time bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS viprolemessages(guild_id bigint, colors bigint, vipcolors bigint, boostgaw bigint, vipheistping bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS votecount(member_id bigint PRIMARY KEY, count integer)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS commandlog(guild_id bigint, channel_id bigint, user_id bigint, command text, message text, time bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS timedunlock(guild_id bigint, channel_id bigint, time bigint, responsible_moderator bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS nickname_changes(guild_id bigint, member_id bigint, nickname text, time bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS name_changes(user_id bigint, name text, time bigint)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS timers(guild_id bigint, channel_id bigint, message_id bigint, user_id bigint, time bigint, title text)")
-                await self.pool_pg.execute("CREATE TABLE IF NOT EXISTS infections(infectioncase serial, member_id bigint PRIMARY KEY, guild_id bigint, channel_id bigint, message_id bigint, infector bigint, timeinfected bigint)")
-                await self.pool_pg.execute("CREATE SCHEMA IF NOT EXISTS donations")
+                await self.pool_pg.execute("""CREATE TABLE IF NOT EXISTS autoreactions(guild_id bigint, trigger text, response text);
+CREATE TABLE IF NOT EXISTS autorole(member_id bigint, guild_id bigint, role_id bigint, time bigint);
+CREATE TABLE IF NOT EXISTS blacklist(incident_id serial, user_id bigint, moderator_id bigint, blacklist_active boolean, time_until bigint, reason text);
+CREATE TABLE IF NOT EXISTS blacklisted_words(string text);
+CREATE TABLE IF NOT EXISTS channelconfigs(guild_id bigint NOT null PRIMARY KEY, nickname_channel_id bigint, dmchannel_id bigint);
+CREATE TABLE IF NOT EXISTS christmaseventconfig(guild_id bigint, percentage real);
+CREATE TABLE IF NOT EXISTS commandaccess(member_id bigint, command text, until bigint);
+CREATE TABLE IF NOT EXISTS cooldowns(command_name text, member_id bigint, time bigint);
+CREATE TABLE IF NOT EXISTS dankdrops(guild_id bigint, name text, price text, time bigint);
+CREATE TABLE IF NOT EXISTS dankreminders(member_id bigint, remindertype bigint, channel_id bigint, guild_id bigint, time bigint);
+CREATE TABLE IF NOT EXISTS devmode(user_id bigint, devmode boolean);
+CREATE TABLE IF NOT EXISTS donation_categories(guild_id bigint, category_name text);
+CREATE TABLE IF NOT EXISTS dmrequests(id serial, member_id bigint, target_id bigint, dmcontent text, messageid bigint);
+CREATE TABLE IF NOT EXISTS dmrequestslog(id bigint, member_id bigint, target_id bigint, approver_id bigint, dmcontent text, status integer);
+CREATE TABLE IF NOT EXISTS dumbfightlog(invoker_id bigint, target_id bigint, did_win integer);
+CREATE TABLE IF NOT EXISTS freezenick(id serial, user_id bigint, guild_id bigint, nickname text, old_nickname text, time bigint, reason text, responsible_moderator bigint);
+CREATE TABLE IF NOT EXISTS grinderdata(user_id bigint PRIMARY KEY, today bigint, past_week bigint, last_week bigint, past_month bigint, all_time bigint, last_dono_time bigint, last_dono_msg text, advance_amt bigint); 
+CREATE TABLE IF NOT EXISTS giveaways(guild_id bigint, channel_id bigint, message_id bigint, time bigint, name text, host_id bigint, winners integer);
+CREATE TABLE IF NOT EXISTS giveawayentrants(message_id bigint, user_id bigint);
+CREATE TABLE IF NOT EXISTS ignoredchristmascat(guild_id bigint, category_id bigint PRIMARY KEY);
+CREATE TABLE IF NOT EXISTS ignoredchristmaschan(guild_id bigint, channel_id bigint PRIMARY KEY);
+CREATE TABLE IF NOT EXISTS inventories(user_id bigint PRIMARY KEY, skull bigint, argonphallicobject bigint, llamaspit bigint, slicefrenzylesliecake bigint, wickedrusteze bigint);
+CREATE TABLE IF NOT EXISTS iteminfo(name text PRIMARY KEY, fullname text, description text, emoji text, image text, hidden boolean);
+CREATE TABLE IF NOT EXISTS joinmessages(guild_id bigint PRIMARY KEY, channel_id bigint, plain_text text, embed_details text, delete_after integer);
+CREATE TABLE IF NOT EXISTS karutaeventconfig(channel_id text, percentage_chance real);
+CREATE TABLE IF NOT EXISTS lockdownmsgs(guild_id bigint, profile_name text, startmsg text, endmsg text);
+CREATE TABLE IF NOT EXISTS lockdownprofiles(guild_id bigint, profile_name text, channel_id bigint);
+CREATE TABLE IF NOT EXISTS maintenance(cog_name text PRIMARY KEY, message text, enabled boolean);
+CREATE TABLE IF NOT EXISTS messagelog(user_id bigint PRIMARY KEY, messagecount bigint);
+CREATE TABLE IF NOT EXISTS messagemilestones(messagecount integer, roleid bigint);
+CREATE TABLE IF NOT EXISTS milestones(votecount integer, roleid bigint);
+CREATE TABLE IF NOT EXISTS nicknames(id serial, member_id bigint PRIMARY KEY, nickname text, messageid bigint);
+CREATE TABLE IF NOT EXISTS owocount(member_id bigint PRIMARY KEY, daily_count integer, weekly_count integer, total_count integer, yesterday integer, last_week integer);
+CREATE TABLE IF NOT EXISTS owocurrent(member_id bigint PRIMARY KEY, daily_count integer, weekly_count integer, total_count integer);
+CREATE TABLE IF NOT EXISTS owopast(member_id bigint PRIMARY KEY, yesterday integer, last_week integer);
+CREATE TABLE IF NOT EXISTS perkremoval(member_id bigint, perk text, until bigint);
+CREATE TABLE IF NOT EXISTS prefixes(guild_id bigint PRIMARY KEY, prefix text);
+CREATE TABLE IF NOT EXISTS remindersettings(member_id bigint PRIMARY KEY, method integer, daily bigint, lottery bigint, work bigint, lifesaver bigint, apple integer, redeem integer, weekly integer, monthly integer, hunt integer, fish integer, dig integer, highlow integer, snakeeyes integer, search integer, crime integer, beg integer, dailybox integer, horseshoe integer, pizza integer, drop integer);
+CREATE TABLE IF NOT EXISTS rmpreference(member_id bigint PRIMARY KEY, rmtype integer);
+CREATE TABLE IF NOT EXISTS roleremove(member_id bigint PRIMARY KEY);
+CREATE TABLE IF NOT EXISTS rules(guild_id bigint, command text, role_id bigint, whitelist boolean);
+CREATE TABLE IF NOT EXISTS selfrolemessages(guild_id bigint, age bigint, gender bigint, location bigint, minigames bigint, event_pings bigint, dank_pings bigint, server_pings bigint, bot_roles bigint, random_color bigint, colors bigint, specialcolors bigint, boostping bigint, vipheist bigint);
+CREATE TABLE IF NOT EXISTS serverconfig(guild_id bigint, settings text, enabled boolean);
+CREATE TABLE IF NOT EXISTS stats(member_id bigint, remindertype integer, time bigint);
+CREATE TABLE IF NOT EXISTS stickmessages(guild_id bigint PRIMARY KEY, channel_id bigint, message_id bigint, type integer, message text);
+CREATE TABLE IF NOT EXISTS suggestion_response(suggestion_id integer, user_id bigint, response_id bigint, message_id bigint, message text);
+CREATE TABLE IF NOT EXISTS suggestions(suggestion_id serial, user_id bigint, finish boolean, response_id bigint, suggestion text);
+CREATE TABLE IF NOT EXISTS teleport(member_id bigint, checkpoint text, channel_id bigint);
+CREATE TABLE IF NOT EXISTS temp(member_id bigint PRIMARY KEY, daily_count integer, weekly_count integer, total_count integer, yesterday integer, last_week integer);
+CREATE TABLE IF NOT EXISTS tempweekly(member_id bigint PRIMARY KEY, yesterday integer, last_week integer);
+CREATE TABLE IF NOT EXISTS timedrole(member_id bigint, guild_id bigint, role_id bigint, time bigint);
+CREATE TABLE IF NOT EXISTS viprolemessages(guild_id bigint, colors bigint, vipcolors bigint, boostgaw bigint, vipheistping bigint);
+CREATE TABLE IF NOT EXISTS votecount(member_id bigint PRIMARY KEY, count integer);
+CREATE TABLE IF NOT EXISTS commandlog(guild_id bigint, channel_id bigint, user_id bigint, command text, message text, time bigint);
+CREATE TABLE IF NOT EXISTS timedunlock(guild_id bigint, channel_id bigint, time bigint, responsible_moderator bigint);
+CREATE TABLE IF NOT EXISTS nickname_changes(guild_id bigint, member_id bigint, nickname text, time bigint);
+CREATE TABLE IF NOT EXISTS name_changes(user_id bigint, name text, time bigint);
+CREATE TABLE IF NOT EXISTS timers(guild_id bigint, channel_id bigint, message_id bigint, user_id bigint, time bigint, title text);
+CREATE TABLE IF NOT EXISTS infections(infectioncase serial, member_id bigint PRIMARY KEY, guild_id bigint, channel_id bigint, message_id bigint, timeinfected bigint);
+CREATE TABLE IF NOT EXISTS polls(poll_id serial, guild_id bigint, channel_id bigint, invoked_message_id bigint, message_id bigint, creator_id bigint, poll_name text, choices text, created bigint);
+CREATE TABLE IF NOT EXISTS pollvotes(poll_id integer, user_id bigint, choice text);
+CREATE TABLE IF NOT EXISTS highlight (guild_id bigint, user_id bigint, highlights text);
+CREATE TABLE IF NOT EXISTS highlight_ignores (guild_id bigint, user_id bigint, ignore_type text, ignore_id bigint);
+CREATE TABLE IF NOT EXISTS reminders(id serial, user_id bigint, guild_id bigint, channel_id bigint, message_id bigint, name text, time bigint, created_time bigint);
+CREATE SCHEMA IF NOT EXISTS donations""")
         print("Bot is ready")
 
     @property
@@ -210,6 +236,18 @@ class dvvt(commands.AutoShardedBot):
                 return True
         return False
 
+    async def get_all_blacklisted_users(self):
+        blacklist_dict = {}
+        blacklist = await self.pool_pg.fetch("SELECT * FROM blacklist WHERE blacklist_active = $1", True)
+        for entry in blacklist:
+            user_id = entry.get('user_id')
+            time_until = entry.get('time_until')
+            if time_until is None or user_id is None:
+                pass
+            else:
+                blacklist_dict[user_id] = time_until
+        self.blacklist = blacklist_dict
+
     async def check_blacklisted_user(self, member):
         blacklisted_users = await self.pool_pg.fetchrow("SELECT * FROM blacklist WHERE user_id = $1 and blacklist_active = $2", member.id, True)
         if blacklisted_users:
@@ -243,6 +281,8 @@ class dvvt(commands.AutoShardedBot):
             print(f"Connected to the database ({round(time.time() - start, 2)})s")
             self.loop.create_task(self.after_ready())
             self.loop.create_task(self.load_maintenance_data())
+            self.loop.create_task(self.get_all_blacklisted_users())
+            self.update_blacklist.start()
             self.run(token)
 
 if __name__ == '__main__':

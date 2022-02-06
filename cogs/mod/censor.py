@@ -18,7 +18,7 @@ class censor(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.group(name='censor', invoke_without_command=True)
     async def censor(self, ctx, *, content: str = None):
         """
@@ -38,7 +38,7 @@ class censor(commands.Cog):
             await self.client.pool_pg.execute("INSERT INTO blacklisted_words(string) VALUES ($1)", content)
             await ctx.send(f"<:DVB_True:887589686808309791> `{content}` has been blacklisted.")
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @censor.command(name='list')
     async def censor_list(self, ctx):
         """
@@ -52,7 +52,7 @@ class censor(commands.Cog):
         menu = menus.MenuPages(source=censor_list_pagination(blacklisted, title), clear_reactions_after=True)
         await menu.start(ctx)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @censor.command(name='add', aliases=['+'])
     async def censor_add(self, ctx, *, content: str = None):
         """
@@ -70,7 +70,7 @@ class censor(commands.Cog):
             await self.client.pool_pg.execute("INSERT INTO blacklisted_words(string) VALUES ($1)", content)
             await ctx.send(f"<:DVB_True:887589686808309791> `{content}` has been blacklisted.")
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @censor.command(name='remove', aliases=['delete', '-'])
     async def censor_remove(self, ctx, *, content: str = None):
         """

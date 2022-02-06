@@ -212,7 +212,7 @@ class DVBotHelp(commands.DefaultHelpCommand):
         
         ctx = self.context
         bot = ctx.bot
-        EACH_PAGE = 5
+        EACH_PAGE = 7
         command_data = {}
         for cog, unfiltered in mapping.items():
             if list_commands := await self.filter_commands(unfiltered, sort=True):
@@ -277,7 +277,7 @@ class DVBotHelp(commands.DefaultHelpCommand):
         if not list_commands:
             raise ArgumentBaseError(message="You don't have enough permission to see this help.") from None
         embeds = []
-        for chunks in more_itertools.chunked(list_commands, 5):
+        for chunks in more_itertools.chunked(list_commands, 7):
             embed = discord.Embed(title=f"{getattr(cog, 'qualified_name', 'No').capitalize()} Category", color=self.context.bot.embed_color)
             embed.set_footer(text=f"Requested by {self.context.author}", icon_url=self.context.author.display_avatar.url)
             for command in chunks:

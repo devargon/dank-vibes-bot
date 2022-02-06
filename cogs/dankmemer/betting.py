@@ -23,7 +23,7 @@ class betting(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.group(name="bet", invoke_without_command=True)
     async def bet(self, ctx, member: discord.Member = None):
         """
@@ -74,7 +74,7 @@ class betting(commands.Cog):
             self.fighters[member] = lst
             await ctx.send(f"Your entry has been added! You have placed a bet on **{member}**.")
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @bet.command(name="check")
     async def bet_check(self, ctx, member:discord.Member=None):
         """
@@ -93,7 +93,7 @@ class betting(commands.Cog):
             pages = CustomMenu(source=betcheck_pagination(memberlist, title), clear_reactions_after=True, timeout=30)
             await pages.start(ctx)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @bet.command(name="start")
     async def bet_start(self, ctx):
         """

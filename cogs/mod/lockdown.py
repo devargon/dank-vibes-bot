@@ -1,9 +1,11 @@
+import os
+
 import discord
 from datetime import datetime
 from discord.ext import commands
 from utils import checks
 import asyncio
-from discord.ext import commands, menus
+from discord.ext import commands, pages
 from utils.menus import CustomMenu
 import json
 from utils.buttons import *
@@ -72,13 +74,24 @@ async def send_lockdown_message(self, channel: discord.TextChannel, message: str
             embed.set_footer(icon_url=channel.guild.icon.url, text=channel.guild.name)
             return await channel.send(content=extra_message, embed=embed)
 
-class lockdown_pagination(menus.ListPageSource):
-    def __init__(self, entries, title):
-        self.title = title
-        super().__init__(entries, per_page=20)
 
-    async def format_page(self, menu, page):
-        embed = discord.Embed(color=menu.ctx.bot.embed_color, title=self.title, timestamp=discord.utils.utcnow())
+class LockdownPagination:
+    def __init__(self, entries, title, per_page, client):
+        self.title = title
+        self.entries = entries
+        self.pages = []
+        self.client = client
+        self.per_page = per_page
+
+    def get_pages(self):
+        while len(self.entries) > self.per_page:
+            self.pages.append(self.format_page(self.entries[:20]))
+            self.entries = self.entries[20:]
+        self.pages.append(self.format_page(self.entries))
+        return self.pages
+
+    def format_page(self, page):
+        embed = discord.Embed(color=self.client.embed_color, title=self.title, timestamp=discord.utils.utcnow())
         embed.description = "\n".join(page)
         embed.add_field(name="Legend", value="<:DVB_Neutral:887589643686670366> `-` Unknown\n<:DVB_False:887589731515392000> `-` **Locked** for <@&649499248320184320>\n<:DVB_True:887589686808309791> `-` **Unlocked** for <@&649499248320184320>")
         embed.set_footer(text="The lockdown status may not be 100% accurate.")
@@ -88,7 +101,7 @@ class lockdown(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.group(name="lockdown", invoke_without_command=True)
     async def lockdown(self, ctx):
         """
@@ -126,7 +139,7 @@ This will set a message for the lockdown profile when it is used to lock channel
         """
         await ctx.send(embed=discord.Embed(title=f"{self.client.user.name}'s Lockdown Guide", description=message, color=self.client.embed_color, timestamp=discord.utils.utcnow()))
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @lockdown.command(name="create")
     async def lockdown_create(self, ctx, name=None, channel:discord.TextChannel=None):
         """
@@ -145,7 +158,7 @@ This will set a message for the lockdown profile when it is used to lock channel
         await self.client.pool_pg.execute("INSERT INTO lockdownprofiles VALUES($1, $2, $3)", ctx.guild.id, name, channel.id)
         return await ctx.send(embed=discord.Embed(title="Success!", description = f"The lockdown profile with the name **{name}** has been created and **{channel}** has been added to the lockdown profile.", color=discord.Color.green()))
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @lockdown.command(name="add")
     async def lockdown_add(self, ctx, profile_name=None, channels: commands.Greedy[discord.TextChannel]=None):
         """
@@ -180,7 +193,7 @@ This will set a message for the lockdown profile when it is used to lock channel
             desccontent += f"\n{already_added_channels} was/were not added to the lockdown profile **{profile_name}** as it already exists in the profile."
         return await ctx.send(embed=discord.Embed(title="Success!", description=desccontent, color=discord.Color.green() if len(already_added_channels) == 0 else discord.Color.orange()))
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @lockdown.command(name="view")
     async def lockdown_view(self, ctx, *, profile_name=None):
         """
@@ -201,7 +214,7 @@ This will set a message for the lockdown profile when it is used to lock channel
                         "DELETE FROM lockdownprofiles WHERE profile_name = $1 and channel_id = $2 and guild_id = $3",profile_name, ele.get('channel_id'), ctx.guild.id)
                     deleted_channels += 1
                 else:
-                    peepo = ctx.guild.get_role(649499248320184320)
+                    peepo = ctx.guild.default_role if os.getenv('state') == '1' else ctx.guild.get_role(649499248320184320)
                     able_to_speak = channel.permissions_for(peepo).send_messages
                     if able_to_speak:
                         emoji = "<:DVB_True:887589686808309791>"
@@ -214,8 +227,8 @@ This will set a message for the lockdown profile when it is used to lock channel
                 channel_list.append(
                     f"\n{deleted_channels} channels have been removed from this profile as {self.client.user.name} was unable to find those channels.")
             title = f"Channels in the lockdown profile {profile_name}"
-            pages = CustomMenu(source=lockdown_pagination(channel_list, title), clear_reactions_after=True, timeout=30)
-            await pages.start(ctx)
+            paginator = pages.Paginator(pages=LockdownPagination(channel_list, title, 20, self.client).get_pages(), disable_on_timeout=True, use_default_buttons=True)
+            await paginator.send(ctx)
         else:
             results = await self.client.pool_pg.fetch("SELECT * FROM lockdownprofiles WHERE guild_id = $1", ctx.guild.id)
             if len(results) == 0:
@@ -234,7 +247,7 @@ This will set a message for the lockdown profile when it is used to lock channel
             embed.set_footer(text="By using Dank Vibes Bot's lockdown utility, you agree that WICKED should not be bullying members.")
             await ctx.send(embed=embed)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @lockdown.command(name="remove")
     async def lockdown_remove(self, ctx, profile_name=None, channels: commands.Greedy[discord.TextChannel]=None):
         """
@@ -269,7 +282,7 @@ This will set a message for the lockdown profile when it is used to lock channel
             desccontent += f"\n{non_existent_channels} aren't in the profile **{profile_name}** so they were not removed."
         return await ctx.send(embed=discord.Embed(title="Success!", description=desccontent, color=discord.Color.green() if len(non_existent_channels) == 0 else discord.Color.orange()))
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @lockdown.command(name="delete", aliases = ["clear"])
     async def lockdown_delete(self, ctx, *, profile_name=None):
         """
@@ -300,7 +313,7 @@ This will set a message for the lockdown profile when it is used to lock channel
             embed.color, embed.description = discord.Color.green(), f"The lockdown profile **{profile_name}** has been removed."
             return await msg.edit(embed=embed)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @lockdown.command(name="start", aliases = ["initiate"])
     async def lockdown_start(self, ctx, *, profile_name = None):
         """
@@ -372,7 +385,7 @@ This will set a message for the lockdown profile when it is used to lock channel
             await ctx.send(msg_content)
 
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @lockdown.command(name="end")
     async def lockdown_end(self, ctx, *, profile_name = None):
         """
@@ -440,7 +453,7 @@ This will set a message for the lockdown profile when it is used to lock channel
                     msg_content += f"{case[0]} - {case[1]}"
             await ctx.send(msg_content)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @lockdown.command(name="msg", aliases = ["message"])
     async def lockdown_message(self, ctx, profile_name = None, *, message = None):
         """

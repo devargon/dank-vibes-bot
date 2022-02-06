@@ -241,7 +241,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         return await ctx.send("This command's functions have been merged with `dv.myv`.")
 
     @commands.group(invoke_without_command=True, name="voteroles")
-    @commands.has_guild_permissions(administrator=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def voteroles(self, ctx):
         """
         Configure the milestones for the roles.
@@ -255,7 +255,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         await ctx.send(embed=embed)
 
     @voteroles.command(name="list", aliases=["show"])
-    @commands.has_guild_permissions(administrator=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def rolelist(self, ctx):
         """
         Lists milestones for vote roles.
@@ -281,7 +281,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         await ctx.send(embed=embed)
 
     @voteroles.command(name="add", aliases=["create"])
-    @commands.has_guild_permissions(administrator=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def roleadd(self, ctx, votecount=None, role: discord.Role = None):
         """
         Adds milestones for vote roles.
@@ -300,7 +300,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         await ctx.send(f"**Done**\n**{role.name}** will be added to a member when they have voted **{votecount} time(s)**.")
 
     @voteroles.command(name="remove", aliases=["delete"])
-    @commands.has_guild_permissions(administrator=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def roleremove(self, ctx, votecount=None):
         """
         Removes milestones for vote roles.
@@ -319,7 +319,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         await ctx.send(f"**Done**\nThe milestone for having voted **{votecount} time(s)** has been removed.")
 
     @commands.command(name="votecountreset")
-    @commands.has_guild_permissions(administrator=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def vcreset(self, ctx):
         """
         Reset the vote count database. **This action is irreversible.**

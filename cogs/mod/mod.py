@@ -4,6 +4,7 @@ from .lockdown import lockdown
 from .censor import censor
 from .browser_screenshot import BrowserScreenshot
 from .sticky import Sticky
+from .role import Role
 
 from utils import checks
 from utils.buttons import *
@@ -16,7 +17,8 @@ import os
 from selenium import webdriver
 from fuzzywuzzy import process
 from collections import Counter
-
+from datetime import timedelta
+import time
 
 class FrozenNicknames(menus.ListPageSource):
     def __init__(self, entries, title, inline):
@@ -31,7 +33,7 @@ class FrozenNicknames(menus.ListPageSource):
         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return embed
 
-class Mod(Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
+class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
     """
     Mod commands
     """
@@ -140,7 +142,7 @@ class Mod(Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod')
         view.response = message
 
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="getraw", aliases = ['raw', 'rawmessage'])
     async def getrawmessage(self, ctx, message_id=None, channel:discord.TextChannel=None):
         """
@@ -211,7 +213,7 @@ class Mod(Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod')
         deleted = await ctx.channel.purge(limit=search, check=check, before=ctx.message)
         return Counter(m.author.display_name for m in deleted)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='cleanup', aliases=['cu'])
     async def cleanup(self, ctx, search=100):
         """
@@ -230,7 +232,7 @@ class Mod(Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod')
             messages.extend(f'- **{author}**: {count}' for author, count in spammers)
         await ctx.send('\n'.join(messages), delete_after=3.0)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='freezenick', aliases=['fn'])
     async def freezenick(self, ctx, member:discord.Member = None, *, nickname:str = None):
         """
@@ -256,7 +258,7 @@ class Mod(Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod')
             await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", member.id, ctx.guild.id, nickname, old_nick, timetounfreeze, f"Invoked via freezenick command", ctx.author.id)
             return await ctx.send(f"{member.mention}'s nickname is now frozen to `{nickname}`.")
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="freezenicks")
     async def active_freezenicks(self, ctx):
         """
@@ -284,7 +286,7 @@ class Mod(Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod')
             pages = CustomMenu(source=FrozenNicknames(frozennicknames, title, False), clear_reactions_after=True, timeout=60)
             return await pages.start(ctx)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='unfreezenick', aliases=['ufn'])
     async def unfreezenick(self, ctx, member: discord.Member = None):
         """
@@ -321,7 +323,57 @@ class Mod(Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod')
                     role_to_return = discord.utils.get(ctx.guild.roles, id=roles_and_aliases[name])
                     return role_to_return
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name='timeout', aliases=['to'])
+    async def timeout(self, ctx, member: discord.Member = None, duration: BetterTimeConverter = None, *, reason: str = None):
+        if member is None:
+            return await ctx.send("You need to tell me who you want to timeout.")
+        if duration is None:
+            return await ctx.send("You need to tell me how long you want to timeout the user for.")
+        duration: int = duration
+        if duration <= 0:
+            return await ctx.send("You can't timeout someone for less than 1 second.")
+        td_obj = timedelta(seconds=duration)
+        try:
+            if reason is None:
+                auditreason = f"Requested by {ctx.author.name}#{ctx.author.discriminator} ({ctx.author.id}"
+            else:
+                auditreason = reason + f" | Requested by {ctx.author.name}#{ctx.author.discriminator} ({ctx.author.id}"
+            await member.timeout_for(duration=td_obj, reason=auditreason)
+        except discord.Forbidden:
+            return await ctx.send(f"I do not have permission to put {member} on a timeout.")
+        else:
+            embed = discord.Embed(title=f"{ctx.author.name} has put {member.name} on a timeout for {humanize_timedelta(seconds=duration)}!", description=f"{member.mention} right now:", color=self.client.embed_color, timestamp=discord.utils.utcnow()+td_obj)
+            embed.set_image(url="https://www.charlottesvillepeds.com/wp-content/uploads/2018/12/Timeout.jpg")
+            embed.set_footer(text=f"{member}'s timeout will end at")
+            if reason is not None:
+                embed.add_field(name="Reason", value=reason, inline=False)
+            await ctx.send(embed=embed)
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name='untimeout', aliases=['ut', 'uto'])
+    async def untimeout(self, ctx, member: discord.Member = None, reason: str = None):
+        if member is None:
+            return await ctx.send("You need to tell me who you want to untimeout.")
+        if member.communication_disabled_until is None or member.communication_disabled_until < discord.utils.utcnow():
+            return await ctx.send(f"{member} is not currently on a timeout.")
+        try:
+            if reason is None:
+                auditreason = f"Requested by {ctx.author.name}#{ctx.author.discriminator} ({ctx.author.id}"
+            else:
+                auditreason = reason + f" | Requested by {ctx.author.name}#{ctx.author.discriminator} ({ctx.author.id}"
+            await member.timeout(until=None, reason=auditreason)
+        except discord.Forbidden:
+            return await ctx.send(f"I do not have permission to remove {member}'s timeout.")
+        else:
+            await ctx.send(f"{member.name}'s timeout successfully removed.")
+
+
+
+
+
+
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='slowmode', aliases=['sm'])
     async def slowmode(self, ctx, channel: Optional[discord.TextChannel] = None, duration: BetterTimeConverter = None):
         if duration is None:
@@ -342,11 +394,12 @@ class Mod(Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod')
 
 
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="roleinfo", aliases=['ri'])
     async def roleinfo(self, ctx, *, role: BetterRoles = None):
         if role is None:
             return await ctx.send("What role do you want to know about?")
+        role: discord.Role = role
         rolename = role.name
         members = len(role.members)
         color = format(role.color.value, 'x')
@@ -361,6 +414,7 @@ class Mod(Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod')
         desc = [f"Color: **{color}**", f"Hoisted: **{hoisted}**", f"Members with this role: **{members}**",
                 f"Mentionable: **{'<:DVB_True:887589686808309791>' if mentionable else '<:DVB_False:887589731515392000>'}**",
                 f"Created on: **{created}**", '']
+        icon = role.icon.url if role.icon else None
         if role.is_default():
             desc.append("⚠️This is a guild-default role.")
         elif role.is_bot_managed():
@@ -389,16 +443,21 @@ class Mod(Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod')
         embed = discord.Embed(title=f"Role Info for {rolename}", description='\n'.join(desc), color=role.color)
         embed.add_field(name=f"Positon ({strposition})", value=str_position, inline=False)
         embed.set_footer(text=f"Role ID: {role.id}")
+        if icon:
+            embed.set_thumbnail(url=icon)
         await ctx.send(embed=embed)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="names")
     async def names(self, ctx, *, member: discord.User = None):
+        """
+        Shows a user's past tracked usernames. Username changes are only recorded from 9 January 22 onwards.
+        """
         if member is None:
             return await ctx.send("You need to specify a user.")
         names = await self.client.pool_pg.fetch("SELECT * FROM name_changes WHERE user_id = $1", member.id)
         if len(names) == 0:
-            return await ctx.send(f"There has been no name changes recorded for {member}.\nName changes are only recorded starting from x Jan 2022.")
+            return await ctx.send(f"There has been no name changes recorded for {member}.\nName changes are only recorded starting from 9 Jan 2022.")
         buffer = []
         for nameentry in names:
             name = nameentry.get('name')
@@ -407,14 +466,17 @@ class Mod(Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod')
         pages = CustomMenu(source=FrozenNicknames(buffer, f"{member.name}'s past names", True), clear_reactions_after=True, timeout=60)
         return await pages.start(ctx)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="nicknames")
     async def nicknames(self, ctx, *, member: discord.Member = None):
+        """
+        Shows a user's past (tracked) nicknames. Nickname changes are only recorded from 9 January 22 onwards.
+        """
         if member is None:
             return await ctx.send("You need to specify a user.")
         nicknames = await self.client.pool_pg.fetch("SELECT * FROM nickname_changes WHERE member_id = $1", member.id)
         if len(nicknames) == 0:
-            return await ctx.send(f"There has been no nickname changes recorded for {member}.\nNickname changes are only recorded starting from x Jan 2022.")
+            return await ctx.send(f"There has been no nickname changes recorded for {member}.\nNickname changes are only recorded starting from 9 Jan 2022.")
         buffer = []
         for nicknameentry in nicknames:
             nickname = nicknameentry.get('nickname')
@@ -423,36 +485,9 @@ class Mod(Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod')
         pages = CustomMenu(source=FrozenNicknames(buffer, f"{member.name}'s past nicknames", True), clear_reactions_after=True, timeout=60)
         return await pages.start(ctx)
 
-    @checks.has_permissions_or_role(administrator=True)
-    @commands.command(name="role")
-    async def role(self, ctx, member: discord.Member = None, *, role: BetterRoles = None):
-        """
-        Use this command to add or remove a role to a user.
-        """
-        if member is None:
-            return await ctx.send("You need to specify a member to add a role.")
-        if role is None:
-            return await ctx.send(f"You need to specify a role to add to {member}.")
-        if not role.is_assignable():
-            return await ctx.send(f"You cannot add **{role.name}** to **{member}**; this may be as the role is an integration, the role of another bot, guild default roles (like `@everyone`, Booster role), or that the role is higher than my highest role.")
-        if role >= ctx.author.top_role:
-            return await ctx.send(f"You cannot add **{role.name}** to **{member}** as the role is higher than or the same as your own highest role.")
-        if role in member.roles:
-            try:
-                await member.remove_roles(role, reason=f"Requested by {ctx.author} ({ctx.author.id})")
-            except discord.Forbidden:
-                return await ctx.send(f"I don't have permission to remove **{role.name}** from **{member}**.")
-            await ctx.send(f"Removed **{role.name}** from **{member}**.")
-        else:
-            try:
-                await member.add_roles(role, reason=f"Requested by {ctx.author} ({ctx.author.id})")
-            except discord.Forbidden:
-                return await ctx.send(f"I don't have permission to add **{role.name}** to **{member}**.")
-            await ctx.send(f"Added **{role.name}** to **{member}**.")
-
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="list")
-    async def list(self, ctx, list_type: str = None, *, things_to_list:str = None):
+    async def list(self, ctx, list_type: str = None, *, things_to_list: str = None):
         """
         List roles, users or channels using this command! This command won't ping any users or roles.
         list_type can be `member/user`, `role`, or `channel`.
@@ -464,23 +499,19 @@ class Mod(Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod')
             return await ctx.send("You need to specify a list type to list. list_type can be `member/user`, `role`, or `channel`.")
         if things_to_list is None:
             return await ctx.send("You need to specify what to list.")
-        if list_type.lower() in ['member', 'user', 'members', 'users']:
-            things_to_list = things_to_list.split(' ')
-            sending = []
-            for member_id in things_to_list:
-                sending.append(f"<@!{member_id}>")
-        elif list_type.lower() in ['role', 'roles']:
-            things_to_list = things_to_list.split(' ')
-            sending = []
-            for role_id in things_to_list:
-                sending.append(f"<@&{role_id}>")
-        elif list_type.lower() in ['channel', 'channels']:
-            things_to_list = things_to_list.split(' ')
-            sending = []
-            for channel_id in things_to_list:
-                sending.append(f"<#{channel_id}>")
-        else:
-            return await ctx.send("`list_type` can be `member/user`, `role`, or `channel`.")
+        things_to_list = things_to_list.replace(' ', 'sep').replace('\n', 'sep').strip()
+        things_to_list = things_to_list.split('sep')
+        sending = []
+        for obj_id in things_to_list:
+            if len(obj_id) > 0:
+                if list_type.lower() in ['member', 'user', 'members', 'users', 'm', 'u']:
+                    sending.append(f"<@!{obj_id}>")
+                elif list_type.lower() in ['role', 'roles', 'r']:
+                    sending.append(f"<@&{obj_id}>")
+                elif list_type.lower() in ['channel', 'channels', 'c', 'chan']:
+                    sending.append(f"<#{obj_id}>")
+                else:
+                    return await ctx.send("`list_type` can be `member/user`, `role`, or `channel`.")
         hm = ''
         for obj in sending:
             if len(hm) < 1900:

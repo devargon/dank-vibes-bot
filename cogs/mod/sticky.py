@@ -73,7 +73,7 @@ class Sticky(commands.Cog):
         except Exception as e:
             self.queue.remove(message.channel)
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.group(name="sticky", invoke_without_command=True, aliases = ["stickymessage"])
     async def sticky(self, ctx):
         """
@@ -91,7 +91,7 @@ class Sticky(commands.Cog):
         self.queue = []
         await ctx.send(f"The queue has been reset.")
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @sticky.command(name="create", alises=["add"])
     async def sticky_create(self, ctx, channel:discord.TextChannel=None, *, content=None):
         """
@@ -137,7 +137,7 @@ class Sticky(commands.Cog):
                 await self.client.pool_pg.execute("INSERT INTO stickymessages VALUES($1, $2, $3, $4, $5)", ctx.guild.id, channel.id, message.id, 1, content)
                 return await ctx.send(f"<:checkmark:841187106654519296> I am now sending a sticky message in {channel.mention}.")
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @sticky.command(name="remove", aliases=["delete"])
     async def sticky_remove(self, ctx, channel:discord.TextChannel=None):
         """
@@ -151,7 +151,7 @@ class Sticky(commands.Cog):
         await self.client.pool_pg.fetch("DELETE FROM stickymessages WHERE guild_id = $1 and channel_id = $2", ctx.guild.id, channel.id)
         return await ctx.send(f"<:checkmark:841187106654519296> The sticky message for {channel.mention} has been removed.")
 
-    @checks.has_permissions_or_role(administrator=True)
+    @checks.has_permissions_or_role(manage_roles=True)
     @sticky.command(name="view")
     async def sticky_view(self, ctx, channel:discord.TextChannel=None):
         """
