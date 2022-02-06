@@ -399,6 +399,7 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
     async def roleinfo(self, ctx, *, role: BetterRoles = None):
         if role is None:
             return await ctx.send("What role do you want to know about?")
+        role: discord.Role = role
         rolename = role.name
         members = len(role.members)
         color = format(role.color.value, 'x')
@@ -413,6 +414,7 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
         desc = [f"Color: **{color}**", f"Hoisted: **{hoisted}**", f"Members with this role: **{members}**",
                 f"Mentionable: **{'<:DVB_True:887589686808309791>' if mentionable else '<:DVB_False:887589731515392000>'}**",
                 f"Created on: **{created}**", '']
+        icon = role.icon.url if role.icon else None
         if role.is_default():
             desc.append("⚠️This is a guild-default role.")
         elif role.is_bot_managed():
@@ -441,6 +443,8 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
         embed = discord.Embed(title=f"Role Info for {rolename}", description='\n'.join(desc), color=role.color)
         embed.add_field(name=f"Positon ({strposition})", value=str_position, inline=False)
         embed.set_footer(text=f"Role ID: {role.id}")
+        if icon:
+            embed.set_thumbnail(url=icon)
         await ctx.send(embed=embed)
 
     @checks.has_permissions_or_role(manage_roles=True)
