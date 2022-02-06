@@ -2,12 +2,14 @@ import discord
 from discord.ext import commands
 
 import time
-from datetime import datetime
+from datetime import datetime, timezone
+import asyncio
 
 from main import dvvt
 from utils.buttons import confirm
 from utils.errors import ArgumentBaseError
 from utils.time import humanize_timedelta, UserFriendlyTime
+from utils import checks
 
 
 class Reminder:
@@ -39,6 +41,12 @@ class reminders(commands.Cog):
                 raise ArgumentBaseError(message="You don't have a reminder with that ID.")
             return Reminder(record=reminder)
 
+    def cleanup_code(self, content):
+        """Automatically removes code blocks from the code."""
+        if content.startswith('```') and content.endswith('```'):
+            return '\n'.join(content.split('\n')[1:-1])
+        return content.strip('` \n')
+
     class OwnReminderConverter(commands.Converter):
         async def convert(self, ctx, argument):
             try:
@@ -55,6 +63,7 @@ class reminders(commands.Cog):
         rm_id = await self.client.pool_pg.fetchval("INSERT INTO reminders(user_id, guild_id, channel_id, message_id, name, time, created_time) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id", user_id, guild_id, channel_id, message_id, name, end_time, round(time.time()), column='id')
         return rm_id
 
+    @checks.requires_roles()
     @commands.guild_only()
     @commands.group(name='remind', aliases=['reminder', 'remindme', 'rm'], invoke_without_command=True)
     async def remind(self, ctx, *, when_and_what_to_remind: UserFriendlyTime(commands.clean_content, default='\u2026') = None):
@@ -81,6 +90,7 @@ class reminders(commands.Cog):
         rm_id = await self.add_reminder(ctx.author.id, ctx.guild.id, ctx.channel.id, ctx.message.id, reminder, remind_dt.timestamp())
         await ctx.message.reply(f"Alright! I'll remind you about **{reminder}** in **{humanize_timedelta(seconds=round(remind_dt.timestamp()-time.time()))}** (at <t:{round(remind_dt.timestamp())}:f>).\nThis reminder's ID is `{rm_id}`.")
 
+    @checks.requires_roles()
     @commands.guild_only()
     @remind.command(name='list', aliases=['mine', 'show', 'display'])
     async def remind_list(self, ctx):
@@ -96,7 +106,7 @@ class reminders(commands.Cog):
             name = rm.get('name')
             time = rm.get('time')
             url = f"https://discord.com/channels/{ctx.guild.id}/{channel_id}/{message_id}"
-            reminder_list.append(f"ID: `{reminder_id}`, <t:{time}:d> <t:{time}:t> | [{name}]({url})")
+            reminder_list.append(f"ID: `{reminder_id}`, <t:{time}:d> <t:{time}:t> | {name}")
         current = len(reminder_list)
         deleted = 0
         if len('\n'.join(reminder_list)) > 2000:
@@ -113,6 +123,7 @@ class reminders(commands.Cog):
         embed.set_footer(text=footertext)
         await ctx.send(embed=embed)
 
+    @checks.requires_roles()
     @commands.guild_only()
     @remind.command(name='delete', aliases=['remove', 'del', 'rm'])
     async def remind_delete(self, ctx, *, reminder_id: OwnReminderConverter = None):
@@ -121,6 +132,7 @@ class reminders(commands.Cog):
         await self.client.pool_pg.execute("DELETE FROM reminders WHERE id=$1 AND user_id=$2 AND guild_id=$3", reminder.id, ctx.author.id, ctx.guild.id)
         await ctx.send(f"Your reminder **{reminder.name}** with ID `{reminder.id}` has been deleted.")
 
+    @checks.requires_roles()
     @commands.guild_only()
     @remind.command(name='clear', aliases=['clean', 'purge', 'reset'])
     async def remind_clear(self, ctx):
@@ -140,6 +152,7 @@ class reminders(commands.Cog):
         await self.client.pool_pg.execute("DELETE FROM reminders WHERE user_id=$1 AND guild_id=$2", ctx.author.id, ctx.guild.id)
         await ctx.send(f"Your {len(is_existing)} reminders have been removed.")
 
+    @checks.requires_roles()
     @commands.guild_only()
     @remind.command(name='when', aliases=['what', 'details'])
     async def remind_when(self, ctx, *, reminder_id: OwnReminderConverter = None):
@@ -155,8 +168,7 @@ class reminders(commands.Cog):
         embed.set_footer(text="Reminder created")
         await ctx.send(embed=embed)
 
-
-
+    @checks.requires_roles()
     @commands.guild_only()
     @remind.command(name='subscribe', aliases=['sub', 'clone'])
     async def remind_subscribe(self, ctx, *, reminder_id: ReminderConverter = None):
@@ -166,11 +178,76 @@ class reminders(commands.Cog):
         reminder: Reminder = reminder_id
         remind_time = reminder.time
         name = reminder.name
+        if reminder.user == ctx.author.id:
+            return await ctx.send("You can't subscribe to your own reminder.")
         reminder_id = await self.add_reminder(ctx.author.id, ctx.guild.id, ctx.channel.id, ctx.message.id, name, remind_time)
         await ctx.send(f"Alright! I have cloned the reminder **{name}**. You will be reminded about it in **{humanize_timedelta(seconds=round(remind_time-time.time()))}** (at <t:{round(remind_time)}:f>).\nThis reminder's ID is `{reminder_id}`.")
 
+    @checks.requires_roles()
+    @commands.guild_only()
+    @remind.command(name='import')
+    async def remind_import(self, ctx):
+        """
+        Imports your reminders from Carl-bot.
+        """
+        await ctx.send("**Step 1 of 2**\n**Send `-rm list` within the next 20 seconds. I will read your current Carl-bot reminders.**")
 
+        def check(m):
+            return m.author.id == ctx.author.id and m.channel.id == ctx.channel.id and m.content.lower() == '-rm list'
 
+        try:
+            msg = await self.client.wait_for('message', check=check, timeout=20)
+        except asyncio.TimeoutError:
+            return await ctx.send("**Timed out.** I could not detect you running `-rm list`, please try again.")
+
+        def check(m):
+            return m.author.id == 650647680837484556 and m.channel.id == ctx.channel.id and (m.content.startswith("User has no reminders") or m.content.startswith('```'))
+            return m.author.id == 235148962103951360 and m.channel.id == ctx.channel.id and (m.content.startswith("User has no reminders") or m.content.startswith('```'))
+
+        try:
+            msg = await self.client.wait_for('message', check=check, timeout=20.0)
+        except asyncio.TimeoutError:
+            return await ctx.send("**Timed out.** I could not detect Carl-bot's response, please try again.")
+        if msg.content.startswith("User has no reminders"):
+            return await ctx.send("**You do not have any reminders in Carl-bot.** As such, there's nothing to import.")
+        if not msg.content.startswith('```'):
+            return await ctx.send("**I detected Carl-bot's response but it is not in the expected format.** As such, there's nothing to import.")
+        raw_text = self.cleanup_code(msg.content)
+        arg = raw_text
+        reminders = []
+        for um in arg.split('\n'):
+            um = um.strip()
+            um = um.split(' ')
+            date = ' '.join(um[3:5])
+            rm = ' '.join(um[6:])
+            date_dt = datetime.strptime(date, '%Y-%m-%d %H:%M').replace(tzinfo=timezone.utc)
+            timestamp = round(date_dt.timestamp())
+            reminders.append((timestamp, rm))
+        if len(reminders) < 1:
+            return await ctx.send("**I could not detect any reminders from Carl-bot's message.** As such, there's nothing to import.")
+        embed = discord.Embed(title=f"These are the reminders that will be imported from Carl-bot to {self.client.user.name}.", color=self.client.embed_color)
+        rm_text = []
+        for remind in reminders:
+            rm_text.append(f"<t:{remind[0]}>: {remind[1]}")
+        embed.description = '\n'.join(rm_text)
+        confirmview = confirm(ctx, self.client, 20.0)
+        confirmview.response = await ctx.send("**Step 2 of 2**\n**Confirm that I have read your reminders correctly.** Click `yes` if you've ensured they're imported correctly.", embed=embed, view=confirmview)
+        await confirmview.wait()
+        if confirmview.returning_value is not True:
+            return await ctx.send("**Your reminders will not be imported from Carl-bot.")
+        else:
+            exising_reminders = await self.client.pool_pg.fetch(
+                "SELECT name, time FROM reminders WHERE user_id = $1 AND guild_id = $2", ctx.author.id, ctx.guild.id)
+            if len(exising_reminders) > 0:
+                existing_reminders = [(x.get('time'), x.get('name')) for x in exising_reminders]
+            else:
+                existing_reminders = []
+            to_import = [
+                (ctx.author.id, ctx.guild.id, ctx.channel.id, ctx.message.id, tup[1], tup[0], round(time.time()))
+                for tup in reminders
+                if tup not in existing_reminders]
+            await self.client.pool_pg.executemany("INSERT INTO reminders(user_id, guild_id, channel_id, message_id, name, time, created_time) VALUES ($1, $2, $3, $4, $5, $6, $7)", to_import)
+            await ctx.send("**Your reminders have been successfully imported from Carl-bot!**")
 
 
 
