@@ -41,12 +41,6 @@ class reminders(commands.Cog):
                 raise ArgumentBaseError(message="You don't have a reminder with that ID.")
             return Reminder(record=reminder)
 
-    def cleanup_code(self, content):
-        """Automatically removes code blocks from the code."""
-        if content.startswith('```') and content.endswith('```'):
-            return '\n'.join(content.split('\n')[1:-1])
-        return content.strip('` \n')
-
     class OwnReminderConverter(commands.Converter):
         async def convert(self, ctx, argument):
             try:
@@ -211,17 +205,18 @@ class reminders(commands.Cog):
             return await ctx.send("**You do not have any reminders in Carl-bot.** As such, there's nothing to import.")
         if not msg.content.startswith('```'):
             return await ctx.send("**I detected Carl-bot's response but it is not in the expected format.** As such, there's nothing to import.")
-        raw_text = self.cleanup_code(msg.content)
+        raw_text = msg.content[3:-3]
         arg = raw_text
         reminders = []
         for um in arg.split('\n'):
-            um = um.strip()
-            um = um.split(' ')
-            date = ' '.join(um[3:5])
-            rm = ' '.join(um[6:])
-            date_dt = datetime.strptime(date, '%Y-%m-%d %H:%M').replace(tzinfo=timezone.utc)
-            timestamp = round(date_dt.timestamp())
-            reminders.append((timestamp, rm))
+            if len(um) > 0:
+                um = um.strip()
+                um = um.split(' ')
+                date = ' '.join(um[3:5])
+                rm = ' '.join(um[6:])
+                date_dt = datetime.strptime(date, '%Y-%m-%d %H:%M').replace(tzinfo=timezone.utc)
+                timestamp = round(date_dt.timestamp())
+                reminders.append((timestamp, rm))
         if len(reminders) < 1:
             return await ctx.send("**I could not detect any reminders from Carl-bot's message.** As such, there's nothing to import.")
         embed = discord.Embed(title=f"These are the reminders that will be imported from Carl-bot to {self.client.user.name}.", color=self.client.embed_color)
