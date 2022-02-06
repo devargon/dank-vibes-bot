@@ -209,15 +209,15 @@ class dm(commands.Cog):
         if not (config := self.dmconfig.get(ctx.guild.id)):
             config = await self.client.pool_pg.fetchrow("SELECT dmchannel_id FROM channelconfigs where guild_id = $1", ctx.guild.id)
             if config is None or config.get('dmchannel_id') is None:
-                return await ctx.send('This server has not set a channel for DM requests to be directed to. Have someone with the `Administrator` Permission to add a DM request channel with `dv.setdmchannel <channel>`.')
+                return await ctx.respond('This server has not set a channel for DM requests to be directed to. Have someone with the `Administrator` Permission to add a DM request channel with `dv.setdmchannel <channel>`.', ephemeral=True)
             config = self.dmconfig.setdefault(ctx.guild.id, config.get('dmchannel_id'))
         request_channel = ctx.guild.get_channel(config)
         if request_channel is None:
-            await self.client.pool_pg.execute("DELETE FROM channelconfigs WHERE guild_id = $1", ctx.guild.id)
-            return await ctx.send("I could not find the channel to send DM requests to. Please contact an admin about this!")
+            await self.client.pool_pg.execute("DELETE FROM channelconfigs WHERE guild_id = $1", ctx.guild.id, ephemeral=True)
+            return await ctx.respond("I could not find the channel to send DM requests to. Please contact an admin about this!", ephemeral=True)
         existing = await self.client.pool_pg.fetch("SELECT * FROM dmrequests WHERE member_id = $1 and target_id = $2 and dmcontent = $3", ctx.author.id, member.id, message)
         if len(existing) > 0:
-            return await ctx.send("I already have an existing DM request that matches your new request.")
+            return await ctx.respond("I already have an existing DM request that matches your new request.", ephemeral=True)
         await self.client.pool_pg.execute("INSERT INTO dmrequests(member_id, target_id, dmcontent) values($1, $2, $3)", ctx.author.id, member.id, message)
         ID = (await self.client.pool_pg.fetchrow("SELECT id FROM dmrequests where member_id = $1 and dmcontent = $2", ctx.author.id, message)).get('id')
         embed = discord.Embed(title="DM Request", description=message, color=self.client.embed_color, timestamp=discord.utils.utcnow())
