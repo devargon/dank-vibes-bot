@@ -707,33 +707,32 @@ class DankMemer(commands.Cog, name='dankmemer'):
         if len(beforemsg.embeds) == 0 or len(aftermsg.embeds) == 0:
             return
         async def check_for_adventure():
-            if not len(beforemsg.mentions) > 0:
-            else:
+            if len(beforemsg.mentions) > 0:
                 if len(beforemsg.embeds) > 0:
                     embed = beforemsg.embeds[0]
                     if isinstance(embed.author.name, str) or isinstance(embed.title, str):
-                    if len(beforemsg.components) > 0:
-                    def find_one_enabled_component(mtarget):
-                        view = discord.ui.View.from_message(mtarget)
-                        for component in view.children:
-                            if component.disabled is False:
-                                return True
-                        return False
-                    def find_all_disabled_component(mtarget):
-                        view = discord.ui.View.from_message(mtarget)
-                        for component in view.children:
-                            if component.disabled is True:
-                                pass
-                            else:
+                        if len(beforemsg.components) > 0:
+                            def find_one_enabled_component(mtarget):
+                                view = discord.ui.View.from_message(mtarget)
+                                for component in view.children:
+                                    if component.disabled is False:
+                                        return True
                                 return False
-                        return True
-                    if not find_one_enabled_component(beforemsg):
-                        return False
-                    if not find_all_disabled_component(aftermsg):
-                        return False
-                target = beforemsg.mentions[0]
-                await self.handle_reminder_entry(target.id, 24, beforemsg.channel.id, beforemsg.guild.id, round(time.time()) + 300)
-                await beforemsg.add_reaction('🚀')
+                            def find_all_disabled_component(mtarget):
+                                view = discord.ui.View.from_message(mtarget)
+                                for component in view.children:
+                                    if component.disabled is True:
+                                        pass
+                                    else:
+                                        return False
+                                return True
+                            if not find_one_enabled_component(beforemsg):
+                                return False
+                            if not find_all_disabled_component(aftermsg):
+                                return False
+                        target = beforemsg.mentions[0]
+                        await self.handle_reminder_entry(target.id, 24, beforemsg.channel.id, beforemsg.guild.id, round(time.time()) + 300)
+                        await beforemsg.add_reaction('🚀')
         await check_for_adventure()
         beforeembed = beforemsg.embeds[0]
         afterembed = aftermsg.embeds[0]
