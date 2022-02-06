@@ -201,7 +201,6 @@ class reminders(commands.Cog):
             return await ctx.send("**Timed out.** I could not detect you running `-rm list`, please try again.")
 
         def check(m):
-            return m.author.id == 650647680837484556 and m.channel.id == ctx.channel.id and (m.content.startswith("User has no reminders") or m.content.startswith('```'))
             return m.author.id == 235148962103951360 and m.channel.id == ctx.channel.id and (m.content.startswith("User has no reminders") or m.content.startswith('```'))
 
         try:
