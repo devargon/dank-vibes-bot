@@ -231,6 +231,8 @@ class Highlight(commands.Cog):
                                                 await highlighted_member.send(f"In **{message.guild.name}**'s **{message.channel.name}**, you were highlighted with the phrase \"{k}\".", embed=e)
                                             except:
                                                 pass
+                                            else:
+                                                self.last_seen[message.author.id] = self.last_seen[message.author.id] + 60
                                         notified.append(highlighted_member.id)
 
     @checks.requires_roles()
