@@ -27,10 +27,10 @@ class age(discord.ui.View):
                     if role2 in interaction.user.roles:
                         await interaction.user.remove_roles(role2, reason="Selfrole")
                     await interaction.user.add_roles(role, reason="Selfrole")
-                    await interaction.response.send_message(f"The role **{role.name}** has been added to you.", ephemeral=True)
+                    await interaction.response.send_message(f"The role **{role.mention}** has been added to you.", ephemeral=True)
                 else:
                     await interaction.user.remove_roles(role, reason="Selfrole")
-                    await interaction.response.send_message(f"The role **{role.name}** has been removed from you.", ephemeral=True)
+                    await interaction.response.send_message(f"The role **{role.mention}** has been removed from you.", ephemeral=True)
 
         for emoji in emojis:
             self.add_item(somebutton(emoji=discord.PartialEmoji.from_str(emoji), label=labels[emojis.index(emoji)], style=discord.ButtonStyle.grey, custom_id=ids[emojis.index(emoji)]))
@@ -64,11 +64,11 @@ class gender(discord.ui.View):
                         await interaction.user.remove_roles(interaction.guild.get_role(catroles[0]), reason="Selfrole")
                 if role not in interaction.user.roles:
                     await interaction.user.add_roles(role, reason="Selfrole")
-                    await interaction.response.send_message(f"The role **{role.name}** has been added to you.",
+                    await interaction.response.send_message(f"The role **{role.mention}** has been added to you.",
                                                             ephemeral=True)
                 else:
                     await interaction.user.remove_roles(role, reason="Selfrole")
-                    await interaction.response.send_message(f"The role **{role.name}** has been removed from you.",
+                    await interaction.response.send_message(f"The role **{role.mention}** has been removed from you.",
                                                             ephemeral=True)
 
         for emoji in emojis:
@@ -95,10 +95,10 @@ class location(discord.ui.View):
                             await interaction.user.remove_roles(targetremove, reason="Selfrole")
                 if role not in interaction.user.roles:
                     await interaction.user.add_roles(role, reason="Selfrole")
-                    await interaction.response.send_message(f"The role **{role.name}** has been added to you.", ephemeral=True)
+                    await interaction.response.send_message(f"The role **{role.mention}** has been added to you.", ephemeral=True)
                 else:
                     await interaction.user.remove_roles(role, reason="Selfrole")
-                    await interaction.response.send_message(f"The role **{role.name}** has been removed from you.", ephemeral=True)
+                    await interaction.response.send_message(f"The role **{role.mention}** has been removed from you.", ephemeral=True)
 
         for emoji in emojis:
             self.add_item(somebutton(emoji=discord.PartialEmoji.from_str(emoji), label=labels[emojis.index(emoji)], style=discord.ButtonStyle.grey, custom_id=ids[emojis.index(emoji)]))
@@ -117,10 +117,10 @@ class minigames(discord.ui.View):
                 role = interaction.guild.get_role(catroles[index])
                 if role not in interaction.user.roles:
                     await interaction.user.add_roles(role, reason="Selfrole")
-                    await interaction.response.send_message(f"The role **{role.name}** has been added to you.", ephemeral=True)
+                    await interaction.response.send_message(f"The role **{role.mention}** has been added to you.", ephemeral=True)
                 else:
                     await interaction.user.remove_roles(role, reason="Selfrole")
-                    await interaction.response.send_message(f"The role **{role.name}** has been removed from you.", ephemeral=True)
+                    await interaction.response.send_message(f"The role **{role.mention}** has been removed from you.", ephemeral=True)
 
         for emoji in emojis:
             self.add_item(somebutton(emoji=discord.PartialEmoji.from_str(emoji), label=labels[emojis.index(emoji)], style=discord.ButtonStyle.grey, custom_id=ids[emojis.index(emoji)]))
@@ -140,10 +140,10 @@ class event_pings(discord.ui.View):
                 role = interaction.guild.get_role(catroles[index])
                 if role not in interaction.user.roles:
                     await interaction.user.add_roles(role, reason="Selfrole")
-                    await interaction.response.send_message(f"The role **{role.name}** has been added to you.", ephemeral=True)
+                    await interaction.response.send_message(f"The role **{role.mention}** has been added to you.", ephemeral=True)
                 else:
                     await interaction.user.remove_roles(role, reason="Selfrole")
-                    await interaction.response.send_message(f"The role **{role.name}** has been removed from you.", ephemeral=True)
+                    await interaction.response.send_message(f"The role **{role.mention}** has been removed from you.", ephemeral=True)
 
         for emoji in emojis:
             self.add_item(somebutton(emoji=discord.PartialEmoji.from_str(emoji), label=labels[emojis.index(emoji)], style=discord.ButtonStyle.grey, custom_id=ids[emojis.index(emoji)]))
@@ -162,10 +162,10 @@ class dank_pings(discord.ui.View):
                 role = interaction.guild.get_role(catroles[index])
                 if role not in interaction.user.roles:
                     await interaction.user.add_roles(role, reason="Selfrole")
-                    await interaction.response.send_message(f"The role **{role.name}** has been added to you.", ephemeral=True)
+                    await interaction.response.send_message(f"The role **{role.mention}** has been added to you.", ephemeral=True)
                 else:
                     await interaction.user.remove_roles(role, reason="Selfrole")
-                    await interaction.response.send_message(f"The role **{role.name}** has been removed from you.", ephemeral=True)
+                    await interaction.response.send_message(f"The role **{role.mention}** has been removed from you.", ephemeral=True)
 
         for emoji in emojis:
             self.add_item(somebutton(emoji=discord.PartialEmoji.from_str(emoji), label=labels[emojis.index(emoji)], style=discord.ButtonStyle.grey, custom_id=ids[emojis.index(emoji)]))
@@ -185,10 +185,10 @@ class server_pings(discord.ui.View):
                 role = interaction.guild.get_role(catroles[index])
                 if role not in interaction.user.roles:
                     await interaction.user.add_roles(role, reason="Selfrole")
-                    await interaction.response.send_message(f"The role **{role.name}** has been added to you.", ephemeral=True)
+                    await interaction.response.send_message(f"The role **{role.mention}** has been added to you.", ephemeral=True)
                 else:
                     await interaction.user.remove_roles(role, reason="Selfrole")
-                    await interaction.response.send_message(f"The role **{role.name}** has been removed from you.", ephemeral=True)
+                    await interaction.response.send_message(f"The role **{role.mention}** has been removed from you.", ephemeral=True)
 
         for emoji in emojis:
             self.add_item(somebutton(emoji=discord.PartialEmoji.from_str(emoji), label=labels[emojis.index(emoji)], style=discord.ButtonStyle.grey, custom_id=ids[emojis.index(emoji)]))
@@ -208,10 +208,10 @@ class bot_roles(discord.ui.View):
                 role = interaction.guild.get_role(catroles[index])
                 if role not in interaction.user.roles:
                     await interaction.user.add_roles(role, reason="Selfrole")
-                    await interaction.response.send_message(f"The role **{role.name}** has been added to you.", ephemeral=True)
+                    await interaction.response.send_message(f"The role **{role.mention}** has been added to you.", ephemeral=True)
                 else:
                     await interaction.user.remove_roles(role, reason="Selfrole")
-                    await interaction.response.send_message(f"The role **{role.name}** has been removed from you.", ephemeral=True)
+                    await interaction.response.send_message(f"The role **{role.mention}** has been removed from you.", ephemeral=True)
 
         for emoji in emojis:
             self.add_item(somebutton(emoji=discord.PartialEmoji.from_str(emoji), label=labels[emojis.index(emoji)], style=discord.ButtonStyle.grey, custom_id=ids[emojis.index(emoji)]))
@@ -230,10 +230,10 @@ class random_color(discord.ui.View):
                 role = interaction.guild.get_role(catroles[index])
                 if role not in interaction.user.roles:
                     await interaction.user.add_roles(role, reason="Selfrole")
-                    await interaction.response.send_message(f"The role **{role.name}** has been added to you.", ephemeral=True)
+                    await interaction.response.send_message(f"The role **{role.mention}** has been added to you.", ephemeral=True)
                 else:
                     await interaction.user.remove_roles(role, reason="Selfrole")
-                    await interaction.response.send_message(f"The role **{role.name}** has been removed from you.", ephemeral=True)
+                    await interaction.response.send_message(f"The role **{role.mention}** has been removed from you.", ephemeral=True)
 
         for emoji in emojis:
             self.add_item(somebutton(emoji=discord.PartialEmoji.from_str(emoji), label=labels[emojis.index(emoji)], style=discord.ButtonStyle.grey, custom_id = ids[emojis.index(emoji)]))
@@ -258,10 +258,10 @@ class colors(discord.ui.View):
                 if discord.utils.get(interaction.user.roles, id = 645934789160992768) or discord.utils.get(interaction.user.roles, id = 739199912377319427) or discord.utils.get(interaction.user.roles, id = 769491608189927434) or discord.utils.get(interaction.user.roles, id=847461071643607091) or discord.utils.get(interaction.user.roles, id = 758172293133762591) or discord.utils.get(interaction.user.roles, id = 758172863580209203) or discord.utils.get(interaction.user.roles, id = 872685125471727656):
                     if role not in interaction.user.roles:
                         await interaction.user.add_roles(role, reason="Selfrole")
-                        await interaction.response.send_message(f"The role **{role.name}** has been added to you.", ephemeral=True)
+                        await interaction.response.send_message(f"The role **{role.mention}** has been added to you.", ephemeral=True)
                     else:
                         await interaction.user.remove_roles(role, reason="Selfrole")
-                        await interaction.response.send_message(f"The role **{role.name}** has been removed from you.", ephemeral=True)
+                        await interaction.response.send_message(f"The role **{role.mention}** has been removed from you.", ephemeral=True)
                 else:
                     await interaction.response.send_message("To get any of these roles, you need to be a __Booster__, __Investor__, __100M Donator (Dank Memer)__ or __1M Donator (OwO)__.", ephemeral=True)
 
@@ -281,10 +281,10 @@ class BoostPing(discord.ui.View):
                 if discord.utils.get(interaction.user.roles, id = 645934789160992768):
                     if role not in interaction.user.roles:
                         await interaction.user.add_roles(role, reason="Selfrole")
-                        await interaction.response.send_message(f"The role **{role.name}** has been added to you.", ephemeral=True)
+                        await interaction.response.send_message(f"The role **{role.mention}** has been added to you.", ephemeral=True)
                     else:
                         await interaction.user.remove_roles(role, reason="Selfrole")
-                        await interaction.response.send_message(f"The role **{role.name}** has been removed from you.", ephemeral=True)
+                        await interaction.response.send_message(f"The role **{role.mention}** has been removed from you.", ephemeral=True)
                 else:
                     await interaction.response.send_message("To get this role, you need to be a __Booster__.", ephemeral=True)
 
@@ -304,10 +304,10 @@ class VIPHeist(discord.ui.View):
                 if discord.utils.get(interaction.user.roles, id = 758173667682287616):
                     if role not in interaction.user.roles:
                         await interaction.user.add_roles(role, reason="Selfrole")
-                        await interaction.response.send_message(f"The role **{role.name}** has been added to you.", ephemeral=True)
+                        await interaction.response.send_message(f"The role **{role.mention}** has been added to you.", ephemeral=True)
                     else:
                         await interaction.user.remove_roles(role, reason="Selfrole")
-                        await interaction.response.send_message(f"The role **{role.name}** has been removed from you.", ephemeral=True)
+                        await interaction.response.send_message(f"The role **{role.mention}** has been removed from you.", ephemeral=True)
                 else:
                     await interaction.response.send_message("To get any of these roles, you need to be a __750M Donator (Dank Memer)__.", ephemeral=True)
 
@@ -334,10 +334,10 @@ class specialcolors(discord.ui.View):
                 if discord.utils.get(interaction.user.roles, id = 758173974348824576) or discord.utils.get(interaction.user.roles, id = 739199912377319427) or discord.utils.get(interaction.user.roles, id = 756226612261027961) or discord.utils.get(interaction.user.roles, id=847461249935343626) or discord.utils.get(interaction.user.roles, id = 892266027495350333):
                     if role not in interaction.user.roles:
                         await interaction.user.add_roles(role, reason="Selfrole")
-                        await interaction.response.send_message(f"The role **{role.name}** has been added to you.", ephemeral=True)
+                        await interaction.response.send_message(f"The role **{role.mention}** has been added to you.", ephemeral=True)
                     else:
                         await interaction.user.remove_roles(role, reason="Selfrole")
-                        await interaction.response.send_message(f"The role **{role.name}** has been removed from you.", ephemeral=True)
+                        await interaction.response.send_message(f"The role **{role.mention}** has been removed from you.", ephemeral=True)
                 else:
                     await interaction.response.send_message("To get any of these roles, you need to be a __Double Booster__, __Vibing Investor__, __300M Donator (Dank Memer)__ or __5M Donator (OwO)__.", ephemeral=True)
 
