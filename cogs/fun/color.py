@@ -54,14 +54,14 @@ class color(commands.Cog):
                     argument = await commands.ColorConverter().convert(ctx, f"#{argument}")
                 except Exception as e:
                     if not regex.match(argument):
-                        await ctx.send("You provided an invalid image URL.")
+                        await ctx.send("You provided an invalid image URL or color.")
                         return
                     image = await http.get(argument, res_method="read")
                 else:
                     image = argument
             else:
                 if not regex.match(argument):
-                    await ctx.send("You provided an invalid image URL.")
+                    await ctx.send("You provided an invalid image URL or color.")
                     return
                 image = await http.get(argument, res_method="read")
         else:
