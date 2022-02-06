@@ -142,10 +142,6 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         """
         if member is None or number is None:
             return await ctx.send("The correct usage of this command is `gedit [member] [amount to add]`.")
-        try:
-            number = stringnum_toint(number)
-        except Exception as e:
-            return await ctx.send(e)
         if number is None:
             return await ctx.send("There was a problem converting your requested sum to a number. You might have input an incorrect number.")
         confirmview = confirm(ctx, self.client, 10.0)
@@ -174,16 +170,12 @@ class Grinderutils(commands.Cog, name='grinderutils'):
 
     @checks.is_bav_or_mystic()
     @commands.command(name="gset")
-    async def grinder_set(self, ctx, member: discord.Member = None, number: str = None):
+    async def grinder_set(self, ctx, member: discord.Member = None, number: BetterInt = None):
         """
         Sets the coins a grinder has donated to a specific amount. To add or remove coins, use `g edit` instead.
         """
         if member is None or number is None:
             return await ctx.send("The correct usage of this command is `gset [member] [amount to add]`.")
-        try:
-            number = stringnum_toint(number)
-        except Exception as e:
-            return await ctx.send(e)
         if number is None:
             return await ctx.send("There was a problem converting your requested sum to a number. You might have input an incorrect number.")
         confirmview = confirm(ctx, self.client, 10.0)
