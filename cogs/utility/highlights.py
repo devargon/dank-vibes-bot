@@ -189,13 +189,10 @@ class Highlight(commands.Cog):
         final_message = self.regex_pattern.sub('', final_message)
         final_message = [stem(x) for x in final_message.split()] # formats the mesasge for better parsing
 
-        local_last_seen = self.last_seen.get(message.author.id, self.client.uptime.timestamp())  # See if the user had sent a message recently
-        if 'argon' in message.content:
-            print(round(time.time()), local_last_seen, round(time.time()) - local_last_seen)
-        if (round(time.time()) - local_last_seen) > 300:
-
-            for k, v in a:
-                notified = []
+        notified = []
+        for k, v in a:
+            local_last_seen = self.last_seen.get(v, self.client.uptime.timestamp())
+            if (round(time.time()) - local_last_seen) > 300:
                 if stem(k.lower()) in final_message and message.author.id != v and v not in notified:
                     # highlight is in nessage, user not notified yet
                     if highlighted_member := message.guild.get_member(v):  # user is in the server
