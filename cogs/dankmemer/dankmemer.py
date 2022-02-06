@@ -730,9 +730,9 @@ class DankMemer(commands.Cog, name='dankmemer'):
                                 return False
                             if not find_all_disabled_component(aftermsg):
                                 return False
-                        target = beforemsg.mentions[0]
-                        await self.handle_reminder_entry(target.id, 24, beforemsg.channel.id, beforemsg.guild.id, round(time.time()) + 300)
-                        await beforemsg.add_reaction('🚀')
+                            target = beforemsg.mentions[0]
+                            await self.handle_reminder_entry(target.id, 24, beforemsg.channel.id, beforemsg.guild.id, round(time.time()) + 300)
+                            await beforemsg.add_reaction('🚀')
         await check_for_adventure()
         beforeembed = beforemsg.embeds[0]
         afterembed = aftermsg.embeds[0]
