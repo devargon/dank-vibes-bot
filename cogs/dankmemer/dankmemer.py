@@ -728,10 +728,8 @@ class DankMemer(commands.Cog, name='dankmemer'):
                                     return False
                             return True
                         if not find_one_enabled_component(beforemsg):
-                            print('no enabled components')
                             return False
                         if not find_all_disabled_component(aftermsg):
-                            print('not all components are disabled')
                             return False
                         target = beforemsg.mentions[0]
                         await self.handle_reminder_entry(target.id, 24, beforemsg.channel.id, beforemsg.guild.id, round(time.time()) + 300)
