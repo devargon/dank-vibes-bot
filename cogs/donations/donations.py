@@ -24,9 +24,9 @@ def get_emoji(category):
     elif "wicked" == name:
         emoji = "<:DVB_Wicked:914575135044939786> "
     elif "dank" == name:
-        emoji = "<:DVB_DankMemer:929402679258648596>"
+        emoji = "<:DVB_DankMemer:929402679258648596> "
     elif "pokemon" == name:
-        emoji = "<:DVB_Pokemon:929402811500855316>"
+        emoji = "<:DVB_Pokemon:929402811500855316> "
     else:
         emoji = ""
     return emoji
