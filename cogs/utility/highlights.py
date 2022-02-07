@@ -137,11 +137,10 @@ class Highlight(commands.Cog):
                     else:
                         obj = chan.mention
                 else:
-                    member = ctx.guild.get_member(ignore.get('ignore_id'))
-                    if member is None:
-                        obj = f"{ignore.get('ignore_id')} (unknown member)"
+                    if (member := ctx.guild.get_member(ignore.get('ignore_id'))) is not None:
+                        obj = f"{member.mention} ({member})"
                     else:
-                        obj = f"**{member}** (user)"
+                        obj = f"{ignore.get('ignore_id')} (unknown member)"
                 igsn.append(obj)
             igns = '\n'.join(igsn)
         embed = discord.Embed(title="You're currently tracking the following words: ", description=hls, color=self.client.embed_color)
