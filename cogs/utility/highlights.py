@@ -34,7 +34,7 @@ class Highlight(commands.Cog):
     @checks.requires_roles()
     @commands.guild_only()
     @commands.group(invoke_without_command=True, aliases=['hl'])
-    async def highlight(self, ctx, text: str = None):
+    async def highlight(self, ctx, *, text: str = None):
         """
         Adds a text or phrase to your highlight list.
         When you don't talk after 5 minutes, you will be DMed if someone highlights you with said phrase.
