@@ -191,7 +191,7 @@ class Highlight(commands.Cog):
         notified = []
         for k, v in a:
             local_last_seen = self.last_seen.get(v, self.client.uptime.timestamp())
-            if (round(time.time()) - local_last_seen) > 300:
+            if (round(time.time()) - local_last_seen) > 60:
                 if stem(k.lower()) in final_message and message.author.id != v and v not in notified:
                     # highlight is in nessage, user not notified yet
                     if highlighted_member := message.guild.get_member(v):  # user is in the server
