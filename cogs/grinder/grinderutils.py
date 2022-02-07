@@ -51,6 +51,16 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         self.waitlist = []
         #self.daily_owo_reset.start()
 
+    async def get_donation_count(self, member: discord.Member, category: str):
+        """
+        Gets the donation count for a user in a category.
+        """
+        result = await self.client.pool_pg.fetchval("SELECT value FROM donations.{} WHERE user_id = $1".format(f"guild{member.guild.id}_{category.lower()}"), member.id)
+        if result is None:
+            return 0
+        else:
+            return result
+
     def cog_unload(self):
         pass
         #self.daily_owo_reset.stop()
@@ -191,7 +201,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             embed.color, embed.description = discord.Color.red(), f"Action cancelled."
             return await message.edit(embed=embed)
         elif confirmview.returning_value == True:
-            embed.color, embed.description = discord.Color.green(), f"All of {member}'s grinder statistics has been updated."
+            embed.color, embed.description = discord.Color.green(), f"All of {member}'s grinder statistics has been updated. BTW, I did not automatically add them to the Dank Memer weekly donation leaderboard."
             if result is None:
                 await self.client.pool_pg.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)", member.id, 0, 0, 0, 0, number, round(time.time()), ctx.message.jump_url)
             else:
@@ -269,6 +279,10 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                     await member.send(msg)
                 except:
                     await message.channel.send(f"{member.mention} {msg}")
+            currentcount = await self.get_donation_count(member, 'dank')
+            amount = amt
+            QUERY = "INSERT INTO donations.{} VALUES ($1, $2) ON CONFLICT(user_id) DO UPDATE SET value=$2 RETURNING value".format(f"guild{message.guild.id}_dank")
+            await self.client.pool_pg.execute(QUERY, member.id, amount + currentcount, column='value')
 
     @checks.is_bav_or_mystic()
     @commands.command(name="gdm", brief="Reminds DV Grinders that the requirement has been checked.", description="Reminds DV Grinders that the requirement has been checked.")
