@@ -282,7 +282,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             currentcount = await self.get_donation_count(member, 'dank')
             amount = amt
             QUERY = "INSERT INTO donations.{} VALUES ($1, $2) ON CONFLICT(user_id) DO UPDATE SET value=$2 RETURNING value".format(f"guild{message.guild.id}_dank")
-            await self.client.pool_pg.execute(QUERY, member.id, amount + currentcount, column='value')
+            await self.client.pool_pg.execute(QUERY, member.id, amount + currentcount)
 
     @checks.is_bav_or_mystic()
     @commands.command(name="gdm", brief="Reminds DV Grinders that the requirement has been checked.", description="Reminds DV Grinders that the requirement has been checked.")
