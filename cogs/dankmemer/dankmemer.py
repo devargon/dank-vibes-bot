@@ -711,7 +711,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
             if len(beforemsg.mentions) > 0:
                 if len(beforemsg.embeds) > 0:
                     embed = beforemsg.embeds[0]
-                    if isinstance(embed.author.name, str) or isinstance(embed.title, str):
+                    if isinstance(embed.author.name, str) or isinstance(embed.title, str) or len(embed.fields) > 0:
                         return
                     if len(beforemsg.components) > 0:
                         def find_one_enabled_component(mtarget):
