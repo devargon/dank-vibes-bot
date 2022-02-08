@@ -4,6 +4,18 @@ from discord.ext import commands
 from utils.errors import NotInBanBattle, ArgumentBaseError
 from utils.format import get_command_name
 
+
+def is_dory():
+    async def predicate(ctx):
+        if ctx.guild is None:
+            raise commands.NoPrivateMessage()
+        if ctx.author.id == 493063931191885825:
+            return True
+        else:
+            raise ArgumentBaseError(message="You are not 🚪y")
+
+    return commands.check(predicate=predicate)
+
 def has_permissions_or_role(**perms):
         perms = commands.has_guild_permissions(**perms).predicate
         async def predicate(ctx):
