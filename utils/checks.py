@@ -38,7 +38,7 @@ def has_permissions_or_role(**perms):
         return commands.check(predicate=predicate)
 
 
-def requires_roles() -> callable:
+def perm_insensitive_roles() -> callable:
     async def predicate(ctx):
         if ctx.guild is None:
             raise commands.NoPrivateMessage()
@@ -48,7 +48,7 @@ def requires_roles() -> callable:
         if await ctx.bot.pool_pg.fetchval("SELECT member_id FROM commandaccess WHERE command = $1 AND member_id = $2", get_command_name(ctx.command), ctx.author.id):
             return True
         roles = await ctx.bot.pool_pg.fetch("SELECT role_id, whitelist FROM rules WHERE guild_id=$1 AND command=$2", ctx.guild.id, get_command_name(ctx.command))
-        if ctx.author.guild_permissions.administrator:
+        if ctx.author.guild_permissions.manage_roles:
             return True
         if not roles:
             raise ArgumentBaseError(message="This command needs to have at least one whitelisted role for it to work.")

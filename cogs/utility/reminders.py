@@ -57,7 +57,7 @@ class reminders(commands.Cog):
         rm_id = await self.client.pool_pg.fetchval("INSERT INTO reminders(user_id, guild_id, channel_id, message_id, name, time, created_time) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id", user_id, guild_id, channel_id, message_id, name, end_time, round(time.time()), column='id')
         return rm_id
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.guild_only()
     @commands.group(name='remind', aliases=['reminder', 'remindme', 'rm'], invoke_without_command=True)
     async def remind(self, ctx, *, when_and_what_to_remind: UserFriendlyTime(commands.clean_content, default='\u2026') = None):
@@ -84,7 +84,7 @@ class reminders(commands.Cog):
         rm_id = await self.add_reminder(ctx.author.id, ctx.guild.id, ctx.channel.id, ctx.message.id, reminder, remind_dt.timestamp())
         await ctx.message.reply(f"Alright! I'll remind you about **{reminder}** in **{humanize_timedelta(seconds=round(remind_dt.timestamp()-time.time()))}** (on <t:{round(remind_dt.timestamp())}:f>).\nThis reminder's ID is `{rm_id}`.")
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.guild_only()
     @remind.command(name='list', aliases=['mine', 'show', 'display'])
     async def remind_list(self, ctx):
@@ -117,7 +117,7 @@ class reminders(commands.Cog):
         embed.set_footer(text=footertext)
         await ctx.send(embed=embed)
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.guild_only()
     @remind.command(name='delete', aliases=['remove', 'del', 'rm'])
     async def remind_delete(self, ctx, *, reminder_id: OwnReminderConverter = None):
@@ -126,7 +126,7 @@ class reminders(commands.Cog):
         await self.client.pool_pg.execute("DELETE FROM reminders WHERE id=$1 AND user_id=$2 AND guild_id=$3", reminder.id, ctx.author.id, ctx.guild.id)
         await ctx.send(f"Your reminder **{reminder.name}** with ID `{reminder.id}` has been deleted.")
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.guild_only()
     @remind.command(name='clear', aliases=['clean', 'purge', 'reset'])
     async def remind_clear(self, ctx):
@@ -146,7 +146,7 @@ class reminders(commands.Cog):
         await self.client.pool_pg.execute("DELETE FROM reminders WHERE user_id=$1 AND guild_id=$2", ctx.author.id, ctx.guild.id)
         await ctx.send(f"Your {len(is_existing)} reminders have been removed.")
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.guild_only()
     @remind.command(name='when', aliases=['what', 'details'])
     async def remind_when(self, ctx, *, reminder_id: OwnReminderConverter = None):
@@ -162,7 +162,7 @@ class reminders(commands.Cog):
         embed.set_footer(text="Reminder created")
         await ctx.send(embed=embed)
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.guild_only()
     @remind.command(name='subscribe', aliases=['sub', 'clone'])
     async def remind_subscribe(self, ctx, *, reminder_id: ReminderConverter = None):
@@ -177,7 +177,7 @@ class reminders(commands.Cog):
         reminder_id = await self.add_reminder(ctx.author.id, ctx.guild.id, ctx.channel.id, ctx.message.id, name, remind_time)
         await ctx.send(f"Alright! I have cloned the reminder **{name}**. You will be reminded about it in **{humanize_timedelta(seconds=round(remind_time-time.time()))}** (at <t:{round(remind_time)}:f>).\nThis reminder's ID is `{reminder_id}`.")
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.guild_only()
     @remind.command(name='import')
     async def remind_import(self, ctx):

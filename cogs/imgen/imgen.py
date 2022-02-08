@@ -20,7 +20,7 @@ class Imgen(commands.Cog, name='imgen'):
         self.client = client
         self.alex_api = alexflipnote.Client()
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.command(name="goeatpoop")
     async def goeatpoop(self, ctx, member :discord.Member = None):
@@ -49,7 +49,7 @@ class Imgen(commands.Cog, name='imgen'):
         file = await loop.run_in_executor(None, generate)
         await ctx.send(file=file)
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.command(name="stank")
     async def stank(self, ctx, member: discord.Member = None):
@@ -79,7 +79,7 @@ class Imgen(commands.Cog, name='imgen'):
         msg = await ctx.send(file=file)
         await msg.edit(f"To steal this emoji, go to your server and paste this in: `!steal {member.display_name}stank {msg.attachments[0].proxy_url}`")
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.command(name="audacity")
     async def audacity(self, ctx, member: discord.Member = None):
@@ -109,7 +109,7 @@ class Imgen(commands.Cog, name='imgen'):
         file = await loop.run_in_executor(None, generate)
         await ctx.send(file=file)
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.command(name='annoy')
     async def annoy(self, ctx, member: discord.Member = None):
@@ -142,7 +142,7 @@ class Imgen(commands.Cog, name='imgen'):
         file = await loop.run_in_executor(None, generate)
         await ctx.send(f"{member.display_name} STOP DMING 🤬🤬🤬", file=file)
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.command(name="captcha")
     async def captcha(self, ctx, *, text: str = None):
@@ -158,7 +158,7 @@ class Imgen(commands.Cog, name='imgen'):
         image_bytes = await recaptchaimage.read()
         await ctx.send(additional_message, file=discord.File(fp=image_bytes, filename="reCAPTCHA.png"))
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.command(name="didyoumean", aliases=['dym', 'google'], usage="<2 texts separated by a comma>")
     async def didyoumean(self, ctx, *, text: str = None):
@@ -173,7 +173,7 @@ class Imgen(commands.Cog, name='imgen'):
         image_bytes = await didyoumeanimage.read()
         await ctx.send(file=discord.File(fp=image_bytes, filename="didyoumean.png"))
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.command(name="drake", usage="<2 texts separated by a comma>")
     async def drake(self, ctx, *, text: str = None):
@@ -188,7 +188,7 @@ class Imgen(commands.Cog, name='imgen'):
         image_bytes = await image.read()
         await ctx.send(file=discord.File(fp=image_bytes, filename="drake.png"))
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.command(name="fact")
     async def fact(self, ctx, *, text: str = None):
@@ -202,7 +202,7 @@ class Imgen(commands.Cog, name='imgen'):
         image_bytes = await image.read()
         await ctx.send(file=discord.File(fp=image_bytes, filename="fact.png"))
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.command(name="bad")
     async def bad(self, ctx, member: discord.Member = None):
@@ -216,7 +216,7 @@ class Imgen(commands.Cog, name='imgen'):
         image_bytes = await image.read()
         await ctx.send(file=discord.File(fp=image_bytes, filename="bad.png"))
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.command(name="what")
     async def what(self, ctx, member: discord.Member = None):
@@ -243,7 +243,7 @@ class Imgen(commands.Cog, name='imgen'):
                 image = file
         await ctx.send(file=discord.File(f"assets/spams/{image}"))
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.slash_command(name="goeatpoop", description="Image generation | Get someone to eat poop")
     async def goeatpoop_slash(self, ctx, member: discord.Member):
@@ -267,7 +267,7 @@ class Imgen(commands.Cog, name='imgen'):
         file = await loop.run_in_executor(None, generate)
         await ctx.respond(file=file)
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.slash_command(name="stank", description="Image generation | Someone's too stanky in here.")
     async def stank_slash(self, ctx, member: discord.Member):
@@ -292,7 +292,7 @@ class Imgen(commands.Cog, name='imgen'):
         file = await loop.run_in_executor(None, generate)
         await ctx.respond(file=file)
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.slash_command(name="audacity", description="Image generation | The Lion, The Witch, and the Audacity of-")
     async def audacity_slash(self, ctx, member: discord.Member):
@@ -318,7 +318,7 @@ class Imgen(commands.Cog, name='imgen'):
         file = await loop.run_in_executor(None, generate)
         await ctx.respond(file=file)
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.slash_command(name='annoy', description="Image generation | PLS STOP DMING ME")
     async def annoy_slash(self, ctx, member: discord.Member):
@@ -348,7 +348,7 @@ class Imgen(commands.Cog, name='imgen'):
         file = await loop.run_in_executor(None, generate)
         await ctx.respond(f"{member.display_name} STOP DMING 🤬🤬🤬", file=file)
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.slash_command(name="captcha", description="Image generation | Generate a reCAPTCHA button with the specified text.")
     async def captcha_slash(self, ctx, *, text: str):
@@ -356,7 +356,7 @@ class Imgen(commands.Cog, name='imgen'):
         image_bytes = await recaptchaimage.read()
         await ctx.respond(file=discord.File(fp=image_bytes, filename="reCAPTCHA.png"))
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.slash_command(name="didyoumean", aliases=['dym', 'google'], description="Image generation | When you search for `text1` on Google, but they ask you if you meant `text2`...")
     async def didyoumean_slash(self, ctx, *, search_bar_text: str, did_you_mean_text: str):
@@ -365,7 +365,7 @@ class Imgen(commands.Cog, name='imgen'):
         image_bytes = await didyoumeanimage.read()
         await ctx.respond(file=discord.File(fp=image_bytes, filename="didyoumean.png"))
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.slash_command(name="drake", description="Image generation | I don't really know how to explain this meme... It's just the drake meme thing")
     async def drake_slash(self, ctx, top_text: str, bottom_text: str):
@@ -374,7 +374,7 @@ class Imgen(commands.Cog, name='imgen'):
         image_bytes = await image.read()
         await ctx.respond(file=discord.File(fp=image_bytes, filename="drake.png"))
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.slash_command(name="fact", description="Image generation | IT IS A FACT!!!")
     async def fact_slash(self, ctx, *, text: str):
@@ -383,7 +383,7 @@ class Imgen(commands.Cog, name='imgen'):
         image_bytes = await image.read()
         await ctx.respond(file=discord.File(fp=image_bytes, filename="fact.png"))
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.slash_command(name="bad", description="Image generation | you bad bad but a man is scolding you instead")
     async def bad_slash(self, ctx, member: discord.Member):
@@ -392,7 +392,7 @@ class Imgen(commands.Cog, name='imgen'):
         image_bytes = await image.read()
         await ctx.respond(file=discord.File(fp=image_bytes, filename="bad.png"))
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.slash_command(name="what", description="Image generation | *sanctuary guardian music plays*")
     async def what_slash(self, ctx, member: discord.Member):

@@ -21,7 +21,7 @@ class Teleport(commands.Cog):
     def __init___(self, client):
         self.client = client
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.group(name='teleport', aliases=['tp'], invoke_without_command=True, usage='<checkpoint_name>')
     async def teleport(self, ctx, checkpoint: str = None):
         """
@@ -36,7 +36,7 @@ class Teleport(commands.Cog):
         await asyncio.sleep(5.0)
         await ctx.message.delete()
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @teleport.command(name='add', usage="<checkpoint_name> <channel>")
     async def teleport_add(self, ctx, checkpoint: str = None, channel: str = None):
         """
@@ -58,7 +58,7 @@ class Teleport(commands.Cog):
         await self.client.pool_pg.execute("INSERT INTO teleport VALUES ($1, $2, $3)", ctx.author.id, checkpoint.lower(), int(channel_id))
         await ctx.send("Checkpoint added.")
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @teleport.command(name='remove', usage="<checkpoint_name>")
     async def teleport_remove(self, ctx, checkpoint: str = None):
         """
@@ -71,7 +71,7 @@ class Teleport(commands.Cog):
         await self.client.pool_pg.execute("DELETE FROM teleport WHERE member_id=$1 AND checkpoint=$2", ctx.author.id, checkpoint.lower())
         await ctx.send("Checkpoint removed.")
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @teleport.command(name='list')
     async def teleport_list(self, ctx):
         """
@@ -89,7 +89,7 @@ class Teleport(commands.Cog):
         await pages.start(ctx)
         return await ctx.checkmark()
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @teleport.command(name='clear', aliases=['reset'])
     async def teleport_clear(self, ctx):
         """

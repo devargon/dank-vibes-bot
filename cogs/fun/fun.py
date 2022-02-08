@@ -78,7 +78,7 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
                 raise ArgumentBaseError(message="You have the **No Tags** role and can't use any commands in the **Fun** cantegory. <:dv_pepeHahaUSuckOwO:837653798313918475>")
         return True
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.dynamic_cooldown(lowered_cooldown, commands.BucketType.user)
     @commands.group(name="dumbfight", aliases = ["df"], invoke_without_command=True)
     async def dumbfight(self, ctx, member: discord.Member = None):
@@ -217,7 +217,7 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
                 embed.add_field(name=f"Last few wins and losses for {member}", value=text)
                 await message.edit(content="🥺", embed=embed)
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.command(name="hideping", aliases = ["hp", "secretping"], hidden=True)
     @commands.cooldown(1, 30, commands.BucketType.user)
     async def hideping(self, ctx, channel: Optional[discord.TextChannel] = None, member: discord.Member=None, *, message=None):
@@ -269,7 +269,7 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
             embed.add_field(name="Message", value=message or "No message", inline=True)
             await webhook.send(embed=embed, username=f"{self.client.user.name} Logs")
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.slash_command(name="hideping", description="Secretly ping someone with this command!")
     @commands.cooldown(1, 30, commands.BucketType.user)
     async def hideping_slash(self, ctx,
@@ -316,7 +316,7 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
             embed.add_field(name="Message", value=message or "No message", inline=True)
             await webhook.send(embed=embed, username=f"{self.client.user.name} Logs")
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.command(name="lockgen", brief = "Locks specified channel for 5 seconds", description = "Locks specified channel for 5 seconds", aliases = ["lg"])
     @commands.cooldown(1, 120, commands.BucketType.guild)
     async def lockgen(self, ctx):
@@ -369,7 +369,7 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
                 pass
         self.gen_is_muted = False
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.command(name="scramble", aliases=["shuffle"])
     @commands.cooldown(1, 1800, commands.BucketType.user)
     async def scramble(self, ctx, member: discord.Member=None):
@@ -436,7 +436,7 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
         em.set_author(name=f"Sent by: {message.author.display_name}", icon_url=message.author.display_avatar.url)
         await ctx.send(embed=em)
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.cooldown(1200, 1, commands.BucketType.user)
     @commands.command(name="chatchart", aliases=['cc'])
     async def chatchart(self, ctx, channel: Union[discord.TextChannel, str] = None):

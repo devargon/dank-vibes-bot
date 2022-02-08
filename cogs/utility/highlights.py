@@ -31,7 +31,7 @@ class Highlight(commands.Cog):
         self.website_regex = re.compile("https?://[^\s]*")
         self.blacklist = []
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.guild_only()
     @commands.group(invoke_without_command=True, aliases=['hl'])
     async def highlight(self, ctx, *, text: str = None):
@@ -57,7 +57,7 @@ class Highlight(commands.Cog):
         else:
             await ctx.send(f"'{text}' is already in your highlights.")
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.guild_only()
     @highlight.command(name="block", aliases=['ignore'])
     async def highlight_block(self, ctx, argument: ChannelOrMember = None):
@@ -77,7 +77,7 @@ class Highlight(commands.Cog):
         else:
             await ctx.send(f"**{argument.name}** is already in your highlight block list.")
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.guild_only()
     @highlight.command(name="clear", aliases=['reset'], no_pm=True)
     async def highlight_clear(self, ctx):
@@ -93,7 +93,7 @@ class Highlight(commands.Cog):
             await self.client.pool_pg.execute("DELETE FROM highlight WHERE user_id = $1 AND guild_id = $2", ctx.author.id, ctx.guild.id)
         await ctx.send("All your highlights have been removed.")
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.guild_only()
     @highlight.command(name="remove", aliases=['-'])
     async def highlight_remove(self, ctx, *, text: str):
@@ -110,7 +110,7 @@ class Highlight(commands.Cog):
         await self.client.pool_pg.execute("DELETE FROM highlight WHERE user_id=$1 AND guild_id=$2 AND highlights=$3", ctx.author.id, ctx.guild.id, text)
         await ctx.send(f"Removed '{text}' from your highlighted words.")
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.guild_only()
     @highlight.command(name="show", aliases=['display', 'list'])
     async def highlight_show(self, ctx):
@@ -147,7 +147,7 @@ class Highlight(commands.Cog):
         embed.add_field(name="You're currently ignoring the following channels/members: ", value=igns, inline=False)
         return await ctx.send(embed=embed)
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.guild_only()
     @highlight.command(name="unblock", aliases=['unignore'], no_pm=True)
     async def highlight_unblock(self, ctx, argument: ChannelOrMember = None):
@@ -233,7 +233,7 @@ class Highlight(commands.Cog):
                                                 self.last_seen[v] = self.last_seen[v] + 90
                                         notified.append(highlighted_member.id)
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.guild_only()
     @highlight.command(name='import')
     async def highlight_import(self, ctx):
