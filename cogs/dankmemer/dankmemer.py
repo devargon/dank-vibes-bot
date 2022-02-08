@@ -209,15 +209,16 @@ def get_shared_user_name(embed: discord.Embed):
     if len(embed.fields) > 0:
         if isinstance(embed.fields[0].name, str):
             if embed.fields[0].name.startswith("Shared"):
-                ending = "'s Wallet"
+                ending = ["'s Wallet", "'s Pocket"]
             elif embed.fields[0].name.startswith("Gifted"):
                 ending = " now has"
             else:
                 raise ValueError
             userdetail_field = embed.fields[2].name
             if isinstance(userdetail_field, str):
-                if userdetail_field.endswith(ending):
-                    return userdetail_field[:-len(ending)]
+                for ending_type in ending:
+                    if userdetail_field.endswith(ending_type):
+                        return userdetail_field[:-len(ending_type)]
 
 
 class DankMemer(commands.Cog, name='dankmemer'):
