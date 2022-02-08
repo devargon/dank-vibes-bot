@@ -51,7 +51,7 @@ def perm_insensitive_roles() -> callable:
         if ctx.author.guild_permissions.manage_roles:
             return True
         if not roles:
-            raise ArgumentBaseError(message="This command needs to have at least one whitelisted role for it to work.")
+            return True
         rolenames = []
         for role in roles:
             roleobj = ctx.guild.get_role(role.get('role_id'))
