@@ -230,7 +230,7 @@ class Highlight(commands.Cog):
                                             except:
                                                 pass
                                             else:
-                                                self.last_seen[v] = self.last_seen[v] + 60
+                                                self.last_seen[v] = self.last_seen[v] + 90
                                         notified.append(highlighted_member.id)
 
     @checks.requires_roles()
