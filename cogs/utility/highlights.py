@@ -230,7 +230,8 @@ class Highlight(commands.Cog):
                                             except:
                                                 pass
                                             else:
-                                                self.last_seen[v] = self.last_seen[v] + 90
+                                                curent_last_seen = self.last_seen.get(v, self.client.uptime)
+                                                self.last_seen[v] = curent_last_seen + 90
                                         notified.append(highlighted_member.id)
 
     @checks.perm_insensitive_roles()
