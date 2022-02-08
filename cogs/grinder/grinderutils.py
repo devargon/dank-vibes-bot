@@ -398,7 +398,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             faileddms = []
             for grinder in grinders:
                 try:
-                    #await grinder.send(f"Hello {grinder.name}! I have a message for you:", embed=embed)  # hehe
+                    await grinder.send(f"Hello {grinder.name}! I have a message for you:", embed=embed)  # hehe
                     success += 1
                 except discord.Forbidden:
                     faileddms.append(grinder.mention)  # gets list of people who will be pinged later"""
