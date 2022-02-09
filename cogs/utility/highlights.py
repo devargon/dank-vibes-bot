@@ -5,7 +5,6 @@ import time
 import discord
 import datetime
 from discord.ext import commands
-from stemming.porter2 import stem
 import copy
 from utils.buttons import confirm
 from utils import checks
@@ -42,7 +41,6 @@ class Highlight(commands.Cog):
         if text is None:
             return await ctx.send("You need to specify text that you want to be highlighted for.")
         text = (await commands.clean_content().convert(ctx, text)).lower()
-        text = stem(text)
         if len(text) < 2:
             return await ctx.send("The text you want to be highlighted for needs to be at least 2 characters long.")
         if len(text) > 50:
@@ -101,7 +99,6 @@ class Highlight(commands.Cog):
         Removes a phrase or text from your highlight list.
         """
         text = (await commands.clean_content().convert(ctx, text)).lower()
-        text = stem(text)
         if text is None:
             return await ctx.send("You need to specify text that you want to have removed from your highlights.")
         await self.client.pool_pg.fetchval("SELECT highlights FROM highlight WHERE user_id = $1 AND guild_id = $2 AND highlights = $3", ctx.author.id, ctx.guild.id, text)
@@ -186,13 +183,13 @@ class Highlight(commands.Cog):
 
         final_message = self.website_regex.sub('', message.content.lower())
         final_message = self.regex_pattern.sub('', final_message)
-        final_message = [stem(x) for x in final_message.split()] # formats the mesasge for better parsing
+        final_message = [x for x in final_message.split()] # formats the mesasge for better parsing
 
         notified = []
         for k, v in a:
             local_last_seen = self.last_seen.get(v, self.client.uptime.timestamp())
             if (round(time.time()) - local_last_seen) > 60:
-                if stem(k.lower()) in final_message and message.author.id != v and v not in notified:
+                if k.lower() in final_message and message.author.id != v and v not in notified:
                     # highlight is in nessage, user not notified yet
                     if highlighted_member := message.guild.get_member(v):  # user is in the server
                         if await self.client.check_blacklisted_user(highlighted_member):
