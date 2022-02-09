@@ -71,9 +71,7 @@ class polls(commands.Cog):
     async def on_ready(self):
         if not self.views_added:
             existing_requests = await self.client.pool_pg.fetch("SELECT messageid FROM nicknames")
-            if not self.persistent_views_added:
-                if len(existing_requests) == 0:
-                    return
+            if len(existing_requests) > 0:
                 for entry in existing_requests:
                     if entry.get('messageid'):
                         self.client.add_view(NicknamePersistentView(self.client), message_id=entry.get('messageid'))
