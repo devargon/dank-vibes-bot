@@ -39,8 +39,8 @@ class GetHeistPing(discord.ui.View):
 
     @discord.ui.button(label="Get the Heist Ping role", style=discord.ButtonStyle.green)
     async def callback(self, button: discord.ui.Button, interaction: discord.Interaction):
-        if not discord.utils.get(interaction.user.roles, name="Heists Ping"):
-            await interaction.user.add_roles(discord.utils.get(interaction.guild.roles, name="Heists Ping"))
+        if not discord.utils.get(interaction.user.roles, name="Heist Ping"):
+            await interaction.user.add_roles(discord.utils.get(interaction.guild.roles, name="Heist Ping"))
             await interaction.response.send_message("<:DVB_True:887589686808309791> The <@&758174643814793276> role has been added to you!", ephemeral=True)
         else:
             await interaction.response.send_message("You already have the <@&683884762997587998> role.**", ephemeral=True)
