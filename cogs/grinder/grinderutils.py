@@ -112,7 +112,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         tier = "**" + tier + "**" if tier is not None else None
         tier = f"Tier: {tier}\n" if tier is not None else None
         if ctx.author.guild_permissions.manage_roles:
-            in_advance = f"`⏣ {comma_number(result.get('advance_amt'))}`" if result.get('advance_amt') is not None else "`⏣ 0`"
+            in_advance = f"`⏣ {comma_number(result.get('advance_amt'))}`" if result and result.get('advance_amt') is not None else "`⏣ 0`"
             embed.add_field(name='Grinder contributions', value=f"{tier or ''}Today: `⏣ {comma_number(result.get('today')) if result else 0}` \nThis Week: `⏣ {comma_number(result.get('past_week')) if result else 0}`\nLast Week: `⏣ {comma_number(result.get('last_week')) if result else 0}`\nThis Month: `⏣ {comma_number(result.get('past_month')) if result else 0}`\nAll Time: `⏣ {comma_number(result.get('all_time')) if result else 0}`\nAdvance Balance: {in_advance}", inline=True)
         else:
             embed.add_field(name='Grinder contributions', value=f"{tier or ''}Today: `⏣ {comma_number(result.get('today')) if result else 0}` \nThis Week: `⏣ {comma_number(result.get('past_week')) if result else 0}`\nLast Week: `⏣ {comma_number(result.get('last_week')) if result else 0}`\nThis Month: `⏣ {comma_number(result.get('past_month')) if result else 0}`\nAll Time: `⏣ {comma_number(result.get('all_time')) if result else 0}`", inline=True)
