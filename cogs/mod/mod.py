@@ -38,7 +38,7 @@ class GetHeistPing(discord.ui.View):
         super().__init__(timeout=None)
 
     @discord.ui.button(label="Get the Heist Ping role", style=discord.ButtonStyle.green)
-    async def callback(self, interaction: discord.Interaction):
+    async def callback(self, button: discord.ui.Button, interaction: discord.Interaction):
         if not discord.utils.get(interaction.user.roles, name="Heists Ping"):
             await interaction.user.add_roles(discord.utils.get(interaction.guild.roles, name="Heists Ping"))
             await interaction.response.send_message("<:DVB_True:887589686808309791> The <@&758174643814793276> role has been added to you!", ephemeral=True)
@@ -50,7 +50,7 @@ class PublicVoteView(discord.ui.View):
         super().__init__(timeout=None)
 
     @discord.ui.button(label="See if you can join the heist later!", style=discord.ButtonStyle.green)
-    async def callback(self, interaction: discord.Interaction):
+    async def callback(self, button: discord.ui.Button, interaction: discord.Interaction):
         if discord.utils.get(interaction.user.roles, name="DV Voter"):
             await interaction.response.send_message("<:DVB_True:887589686808309791> **You currently have the <@&683884762997587998> role** and can join the heist!\nGet <@&758174643814793276> to be notified when the heist starts!", ephemeral=True, view=GetHeistPing())
         else:
