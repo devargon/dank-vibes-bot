@@ -43,7 +43,7 @@ class GetHeistPing(discord.ui.View):
             await interaction.user.add_roles(discord.utils.get(interaction.guild.roles, name="Heist Ping"))
             await interaction.response.send_message("<:DVB_True:887589686808309791> The <@&758174643814793276> role has been added to you!", ephemeral=True)
         else:
-            await interaction.response.send_message("You already have the <@&683884762997587998> role.**", ephemeral=True)
+            await interaction.response.send_message("<:DVB_True:887589686808309791> You already have the <@&758174643814793276> role.", ephemeral=True)
 
 class PublicVoteView(discord.ui.View):
     def __init__(self):
