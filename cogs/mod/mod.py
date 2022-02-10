@@ -33,6 +33,29 @@ class FrozenNicknames(menus.ListPageSource):
         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return embed
 
+class GetHeistPing(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Get the Heist Ping role", style=discord.ButtonStyle.green)
+    async def callback(self, interaction: discord.Interaction):
+        if not discord.utils.get(interaction.user.roles, name="Heists Ping"):
+            await interaction.user.add_roles(discord.utils.get(interaction.guild.roles, name="Heists Ping"))
+            await interaction.response.send_message("<:DVB_True:887589686808309791> The <@&758174643814793276> role has been added to you!", ephemeral=True)
+        else:
+            await interaction.response.send_message("You already have the <@&683884762997587998> role.**", ephemeral=True)
+
+class PublicVoteView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="See if you can join the heist later!", style=discord.ButtonStyle.green)
+    async def callback(self, interaction: discord.Interaction):
+        if discord.utils.get(interaction.user.roles, name="DV Voter"):
+            await interaction.response.send_message("<:DVB_True:887589686808309791> **You currently have the <@&683884762997587998> role** and can join the heist!\nGet <@&758174643814793276> to be notified when the heist starts!", ephemeral=True, view=GetHeistPing())
+        else:
+            await interaction.response.send_message("<:DVB_False:887589731515392000> **You do not have the <@&683884762997587998> role.**\n` - ` Vote for Dank Vibes at https://top.gg/servers/595457764935991326/vote, and click on the button again to see if you can join the heist!\n` - ` If you have voted for Dank Vibes but still do not have the role, open a ticket in <#870880772985344010> and inform a Mod there.", ephemeral=True)
+
 class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
     """
     Mod commands
@@ -391,7 +414,11 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
         else:
             await ctx.send(f"{channel.mention}'s slowmode has been removed.")
 
-
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name='dhvt')
+    async def dhvt(self, ctx):
+        await ctx.send("The requirement to join today's heist is to **vote for Dank Vibes**. Click on the button below to see if you have fulfilled the requirement!", view=PublicVoteView())
+        await ctx.message.delete()
 
 
     @checks.has_permissions_or_role(manage_roles=True)
