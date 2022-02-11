@@ -526,14 +526,14 @@ class DankMemer(commands.Cog, name='dankmemer'):
         """
         Hunting Reminder
         """
-        if message.content.startswith("You went hunting") and message.author.id == 270904126974590976 and len(message.mentions) > 0:
+        if (message.content.startswith("You went hunting") or message.content.startswith("Imagine going into the woods")) and message.author.id == 270904126974590976 and len(message.mentions) > 0:
             member = message.mentions[0]
             nexthunttime = round(time.time()) + 30
             await self.handle_reminder_entry(member.id, 8, message.channel.id, message.guild.id, nexthunttime)
         """
         Fishing Reminder
         """
-        if (message.content.startswith("You cast out your line") or message.content.startswith("LMAO you found nothing.")) and message.author.id == 270904126974590976 and len(message.mentions) > 0:
+        if (message.content.startswith("You cast out your line") or message.content.startswith("LMAO you found nothing.") or message.content.startswith("Awh man, no fis")) and message.author.id == 270904126974590976 and len(message.mentions) > 0:
             member = message.mentions[0]
             nextfishtime = round(time.time()) + 30
             await self.handle_reminder_entry(member.id, 9, message.channel.id, message.guild.id, nextfishtime)
