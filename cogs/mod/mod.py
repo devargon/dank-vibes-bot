@@ -52,7 +52,7 @@ class PublicVoteView(discord.ui.View):
     @discord.ui.button(label="See if you can join the heist later!", style=discord.ButtonStyle.green)
     async def callback(self, button: discord.ui.Button, interaction: discord.Interaction):
         if discord.utils.get(interaction.user.roles, name="DV Voter"):
-            await interaction.response.send_message("<:DVB_True:887589686808309791> **You currently have the <@&683884762997587998> role** and can join the heist!\nGet <@&758174643814793276> to be notified when the heist starts!", ephemeral=True, view=GetHeistPing())
+            await interaction.response.send_message("<:DVB_True:887589686808309791> **You currently have the <@&683884762997587998> role** and can join the heist!\nIf the heist hasn't started, get <@&758174643814793276> to be notified when it starts!", ephemeral=True, view=GetHeistPing())
         else:
             await interaction.response.send_message("<:DVB_False:887589731515392000> **You do not have the <@&683884762997587998> role.**\n` - ` Vote for Dank Vibes at https://top.gg/servers/595457764935991326/vote, and click on the button again to see if you can join the heist!\n` - ` If you have voted for Dank Vibes but still do not have the role, open a ticket in <#870880772985344010> and inform a Mod there.", ephemeral=True)
 
