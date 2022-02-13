@@ -141,23 +141,23 @@ class OwO(commands.Cog, name='owo'):
             top = 5 if len(number) == 0 else number[0]
             if 'daily' in arg.lower() or 'today' in arg.lower():
                 title = "Today's OwO leaderboard"
-                query = "SELECT member_id, daily_count FROM owocount ORDER BY daily_count DESC"
+                query = "SELECT member_id, daily_count FROM owocount ORDER BY daily_count"
                 usr_query = "SELECT member_id, daily_count FROM owocount WHERE member_id=$1"
             elif 'last week' in arg.lower():
                 title = "Last week's OwO leaderboard"
-                query = "SELECT member_id, last_week FROM owocount ORDER BY last_week DESC"
+                query = "SELECT member_id, last_week FROM owocount ORDER BY last_week"
                 usr_query = "SELECT member_id, last_week FROM owocount WHERE member_id=$1"
             elif 'weekly' in arg.lower() or 'week' in arg.lower():
                 title = "This week's OwO leaderboard"
-                query = "SELECT member_id, weekly_count FROM owocount ORDER BY weekly_count DESC"
+                query = "SELECT member_id, weekly_count FROM owocount ORDER BY weekly_count"
                 usr_query = "SELECT member_id, weekly_count FROM owocount WHERE member_id=$1"
             elif 'yesterday' in arg.lower():
                 title = "Yesterday's OwO leaderboard"
-                query = "SELECT member_id, yesterday FROM owocount ORDER BY yesterday DESC"
+                query = "SELECT member_id, yesterday FROM owocount ORDER BY yesterday"
                 usr_query = "SELECT member_id, yesterday FROM owocount WHERE member_id=$1"
             else:
                 title = f"OwO leaderboard for {ctx.guild.name}"
-                query = "SELECT member_id, total_count FROM owocount ORDER BY total_count DESC"
+                query = "SELECT member_id, total_count FROM owocount ORDER BY total_count"
                 usr_query = "SELECT member_id, total_count FROM owocount WHERE member_id=$1"
             leaderboard = await self.get_leaderboard(ctx, usr_query, query, top)
             if isinstance(leaderboard, discord.Embed):
