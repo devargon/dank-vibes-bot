@@ -158,7 +158,7 @@ class OwO(commands.Cog, name='owo'):
         owo100 = guild.get_role(owo100_id)
         self.active = False
         if discord.utils.utcnow().weekday() == 6:
-            if await self.client.pool_pg.fetchval("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", guild.id, "owoweeklylb"): # check if the weekly owo lb is enabled or not 
+            if await self.client.pool_pg.fetchval("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", guild.id, "owoweeklylb"): # check if the weekly owo lb is enabled or not
                 query = "SELECT member_id, weekly_count FROM owocount ORDER BY weekly_count DESC LIMIT $1"
                 embed = await self.get_leaderboard(guild, query, top=5)
                 embed.title = "This week's OwO leaderboard"
@@ -170,7 +170,7 @@ class OwO(commands.Cog, name='owo'):
             for res in weekly_res:
                 reset_values.append((0, res.get('weekly_count'), res.get('member_id')))
             await self.client.pool_pg.executemany("UPDATE owocount SET weekly_count=$1, last_week=$2 WHERE member_id=$3", reset_values)
-        if await self.client.pool_pg.fetchval("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", guild.id, "owodailylb"): # check if the daily owo lb is enabled or not 
+        if await self.client.pool_pg.fetchval("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", guild.id, "owodailylb"): # check if the daily owo lb is enabled or not
             query = "SELECT member_id, daily_count FROM owocount ORDER BY daily_count DESC LIMIT $1"
             embed = await self.get_leaderboard(guild, query, top=5)
             embed.title = "Today's OwO leaderboard"
@@ -245,3 +245,25 @@ class OwO(commands.Cog, name='owo'):
         self.waitlist.append(message.author.id)
         await asyncio.sleep(10.0)
         self.waitlist.remove(message.author.id)
+
+    @checks.dev()
+    @commands.command(name="tempowocmd")
+    async def tepowocmd(self, ctx):
+        guild = self.client.get_guild(595457764935991326)
+        channel = guild.get_channel(owo_announcement)
+        query = "SELECT member_id, weekly_count FROM owocount ORDER BY weekly_count DESC LIMIT $1"
+        embed = await self.get_leaderboard(guild, query, top=5)
+        embed.title = "This week's OwO leaderboard"
+        if channel is not None:
+            with contextlib.suppress(discord.HTTPException):
+                await channel.send(embed=embed)
+        weekly_res = await self.client.pool_pg.fetch("SELECT member_id, weekly_count FROM owocount")
+        reset_values = []
+        for res in weekly_res:
+            reset_values.append((0, res.get('weekly_count'), res.get('member_id')))
+        await self.client.pool_pg.executemany("UPDATE owocount SET weekly_count=$1, last_week=$2 WHERE member_id=$3", reset_values)
+        daily_res = await self.client.pool_pg.fetch("SELECT member_id, daily_count FROM owocount")
+        reset_values = []
+        for res in daily_res:
+            reset_values.append((0, res.get('daily_count'), res.get('member_id')))
+        await self.client.pool_pg.executemany("UPDATE owocount SET daily_count=$1, yesterday=$2 WHERE member_id=$3", reset_values)
