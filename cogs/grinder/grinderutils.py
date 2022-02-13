@@ -51,6 +51,16 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         self.waitlist = []
         #self.daily_owo_reset.start()
 
+    async def get_donation_count(self, member: discord.Member, category: str):
+        """
+        Gets the donation count for a user in a category.
+        """
+        result = await self.client.pool_pg.fetchval("SELECT value FROM donations.{} WHERE user_id = $1".format(f"guild{member.guild.id}_{category.lower()}"), member.id)
+        if result is None:
+            return 0
+        else:
+            return result
+
     def cog_unload(self):
         pass
         #self.daily_owo_reset.stop()
@@ -86,7 +96,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         if discord.utils.get(member.roles, id=tgrinderroleID) is not None:
             return True
 
-    @checks.requires_roles()
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='grindercheck', usage='[member]', aliases=['gcheck', 'gc'])
     async def grindercheck(self, ctx, member: discord.Member = None):
         """
@@ -102,7 +112,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         tier = "**" + tier + "**" if tier is not None else None
         tier = f"Tier: {tier}\n" if tier is not None else None
         if ctx.author.guild_permissions.manage_roles:
-            in_advance = f"`⏣ {comma_number(result.get('advance_amt'))}`" if result.get('advance_amt') is not None else "`⏣ 0`"
+            in_advance = f"`⏣ {comma_number(result.get('advance_amt'))}`" if result and result.get('advance_amt') is not None else "`⏣ 0`"
             embed.add_field(name='Grinder contributions', value=f"{tier or ''}Today: `⏣ {comma_number(result.get('today')) if result else 0}` \nThis Week: `⏣ {comma_number(result.get('past_week')) if result else 0}`\nLast Week: `⏣ {comma_number(result.get('last_week')) if result else 0}`\nThis Month: `⏣ {comma_number(result.get('past_month')) if result else 0}`\nAll Time: `⏣ {comma_number(result.get('all_time')) if result else 0}`\nAdvance Balance: {in_advance}", inline=True)
         else:
             embed.add_field(name='Grinder contributions', value=f"{tier or ''}Today: `⏣ {comma_number(result.get('today')) if result else 0}` \nThis Week: `⏣ {comma_number(result.get('past_week')) if result else 0}`\nLast Week: `⏣ {comma_number(result.get('last_week')) if result else 0}`\nThis Month: `⏣ {comma_number(result.get('past_month')) if result else 0}`\nAll Time: `⏣ {comma_number(result.get('all_time')) if result else 0}`", inline=True)
@@ -142,10 +152,6 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         """
         if member is None or number is None:
             return await ctx.send("The correct usage of this command is `gedit [member] [amount to add]`.")
-        try:
-            number = stringnum_toint(number)
-        except Exception as e:
-            return await ctx.send(e)
         if number is None:
             return await ctx.send("There was a problem converting your requested sum to a number. You might have input an incorrect number.")
         confirmview = confirm(ctx, self.client, 10.0)
@@ -174,16 +180,12 @@ class Grinderutils(commands.Cog, name='grinderutils'):
 
     @checks.is_bav_or_mystic()
     @commands.command(name="gset")
-    async def grinder_set(self, ctx, member: discord.Member = None, number: str = None):
+    async def grinder_set(self, ctx, member: discord.Member = None, number: BetterInt = None):
         """
         Sets the coins a grinder has donated to a specific amount. To add or remove coins, use `g edit` instead.
         """
         if member is None or number is None:
             return await ctx.send("The correct usage of this command is `gset [member] [amount to add]`.")
-        try:
-            number = stringnum_toint(number)
-        except Exception as e:
-            return await ctx.send(e)
         if number is None:
             return await ctx.send("There was a problem converting your requested sum to a number. You might have input an incorrect number.")
         confirmview = confirm(ctx, self.client, 10.0)
@@ -199,7 +201,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             embed.color, embed.description = discord.Color.red(), f"Action cancelled."
             return await message.edit(embed=embed)
         elif confirmview.returning_value == True:
-            embed.color, embed.description = discord.Color.green(), f"All of {member}'s grinder statistics has been updated."
+            embed.color, embed.description = discord.Color.green(), f"All of {member}'s grinder statistics has been updated. BTW, I did not automatically add them to the Dank Memer weekly donation leaderboard."
             if result is None:
                 await self.client.pool_pg.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)", member.id, 0, 0, 0, 0, number, round(time.time()), ctx.message.jump_url)
             else:
@@ -277,6 +279,10 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                     await member.send(msg)
                 except:
                     await message.channel.send(f"{member.mention} {msg}")
+            currentcount = await self.get_donation_count(member, 'dank')
+            amount = amt
+            QUERY = "INSERT INTO donations.{} VALUES ($1, $2) ON CONFLICT(user_id) DO UPDATE SET value=$2 RETURNING value".format(f"guild{message.guild.id}_dank")
+            await self.client.pool_pg.execute(QUERY, member.id, amount + currentcount)
 
     @checks.is_bav_or_mystic()
     @commands.command(name="gdm", brief="Reminds DV Grinders that the requirement has been checked.", description="Reminds DV Grinders that the requirement has been checked.")
@@ -392,7 +398,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             faileddms = []
             for grinder in grinders:
                 try:
-                    #await grinder.send(f"Hello {grinder.name}! I have a message for you:", embed=embed)  # hehe
+                    await grinder.send(f"Hello {grinder.name}! I have a message for you:", embed=embed)  # hehe
                     success += 1
                 except discord.Forbidden:
                     faileddms.append(grinder.mention)  # gets list of people who will be pinged later"""
@@ -448,7 +454,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
 <:DVB_end_complete:895172800082509846> Notifying grinders and sending a summary
 Done! Note: People who **did not** complete the req won't be told they didn't complete it. Otherwise, I would've told them that they had completed the req.\n{'Additionally, the weekly statistics has been reset.' if reset_week else ''}""")
 
-    @checks.requires_roles()
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='grinderleaderboard', aliases=['glb', 'grinderlb'])
     async def grinderleaderboard(self, ctx, *, arg: str = None):
         """
@@ -488,7 +494,7 @@ Done! Note: People who **did not** complete the req won't be told they didn't co
                 pages = CustomMenu(source=GrinderLeaderboard(leaderboard, title), clear_reactions_after=True, timeout=60)
                 return await pages.start(ctx)
 
-    @checks.requires_roles()
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='grinderpaymentinadvance', aliases=['gpia', 'pia'])
     async def grinderpaymentinadvance(self, ctx, member: discord.Member = None, *, amount: BetterInt = None):
         """

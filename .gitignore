@@ -12,6 +12,14 @@ cogs/autoreaction/__pycache__
 cogs/mod/__pycache__
 cogs/fun/__pycache__
 cogs/messagetracking/__pycache__
+cogs/automod/__pycache__
+cogs/disboard/__pycache__
+cogs/donations/__pycache__
+cogs/giveaways/__pycache__
+cogs/grinder/__pycache__
+cogs/imgen/__pycache__
+cogs/infection/__pycache__
+__pycache__
 utils/__pycache__
 databases/autoreactor.db 
 databases/database.db 

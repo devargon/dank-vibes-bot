@@ -5,7 +5,6 @@ import time
 import discord
 import datetime
 from discord.ext import commands
-from stemming.porter2 import stem
 import copy
 from utils.buttons import confirm
 from utils import checks
@@ -31,10 +30,10 @@ class Highlight(commands.Cog):
         self.website_regex = re.compile("https?://[^\s]*")
         self.blacklist = []
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.guild_only()
     @commands.group(invoke_without_command=True, aliases=['hl'])
-    async def highlight(self, ctx, text: str = None):
+    async def highlight(self, ctx, *, text: str = None):
         """
         Adds a text or phrase to your highlight list.
         When you don't talk after 5 minutes, you will be DMed if someone highlights you with said phrase.
@@ -42,7 +41,6 @@ class Highlight(commands.Cog):
         if text is None:
             return await ctx.send("You need to specify text that you want to be highlighted for.")
         text = (await commands.clean_content().convert(ctx, text)).lower()
-        text = stem(text)
         if len(text) < 2:
             return await ctx.send("The text you want to be highlighted for needs to be at least 2 characters long.")
         if len(text) > 50:
@@ -57,7 +55,7 @@ class Highlight(commands.Cog):
         else:
             await ctx.send(f"'{text}' is already in your highlights.")
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.guild_only()
     @highlight.command(name="block", aliases=['ignore'])
     async def highlight_block(self, ctx, argument: ChannelOrMember = None):
@@ -77,7 +75,7 @@ class Highlight(commands.Cog):
         else:
             await ctx.send(f"**{argument.name}** is already in your highlight block list.")
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.guild_only()
     @highlight.command(name="clear", aliases=['reset'], no_pm=True)
     async def highlight_clear(self, ctx):
@@ -93,7 +91,7 @@ class Highlight(commands.Cog):
             await self.client.pool_pg.execute("DELETE FROM highlight WHERE user_id = $1 AND guild_id = $2", ctx.author.id, ctx.guild.id)
         await ctx.send("All your highlights have been removed.")
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.guild_only()
     @highlight.command(name="remove", aliases=['-'])
     async def highlight_remove(self, ctx, *, text: str):
@@ -101,17 +99,15 @@ class Highlight(commands.Cog):
         Removes a phrase or text from your highlight list.
         """
         text = (await commands.clean_content().convert(ctx, text)).lower()
-        text = stem(text)
         if text is None:
             return await ctx.send("You need to specify text that you want to have removed from your highlights.")
         await self.client.pool_pg.fetchval("SELECT highlights FROM highlight WHERE user_id = $1 AND guild_id = $2 AND highlights = $3", ctx.author.id, ctx.guild.id, text)
         if text is None:
             return await ctx.send("You aren't tracking this text at all 🤨")
         await self.client.pool_pg.execute("DELETE FROM highlight WHERE user_id=$1 AND guild_id=$2 AND highlights=$3", ctx.author.id, ctx.guild.id, text)
-        self.conn.commit()
         await ctx.send(f"Removed '{text}' from your highlighted words.")
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.guild_only()
     @highlight.command(name="show", aliases=['display', 'list'])
     async def highlight_show(self, ctx):
@@ -138,18 +134,17 @@ class Highlight(commands.Cog):
                     else:
                         obj = chan.mention
                 else:
-                    member = ctx.guild.get_member(ignore.get('ignore_id'))
-                    if member is None:
-                        obj = f"{ignore.get('ignore_id')} (unknown member)"
+                    if (member := ctx.guild.get_member(ignore.get('ignore_id'))) is not None:
+                        obj = f"{member.mention} ({member})"
                     else:
-                        obj = f"**{member}** (user)"
+                        obj = f"{ignore.get('ignore_id')} (unknown member)"
                 igsn.append(obj)
             igns = '\n'.join(igsn)
         embed = discord.Embed(title="You're currently tracking the following words: ", description=hls, color=self.client.embed_color)
         embed.add_field(name="You're currently ignoring the following channels/members: ", value=igns, inline=False)
         return await ctx.send(embed=embed)
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.guild_only()
     @highlight.command(name="unblock", aliases=['unignore'], no_pm=True)
     async def highlight_unblock(self, ctx, argument: ChannelOrMember = None):
@@ -188,14 +183,13 @@ class Highlight(commands.Cog):
 
         final_message = self.website_regex.sub('', message.content.lower())
         final_message = self.regex_pattern.sub('', final_message)
-        final_message = [stem(x) for x in final_message.split()] # formats the mesasge for better parsing
+        final_message = [x for x in final_message.split()] # formats the mesasge for better parsing
 
-        local_last_seen = self.last_seen.get(message.author.id, self.client.uptime.timestamp())  # See if the user had sent a message recently
-        if (round(time.time()) - local_last_seen) < 300:
-
-            for k, v in a:
-                notified = []
-                if stem(k.lower()) in final_message and message.author.id != v and v not in notified:
+        notified = []
+        for k, v in a:
+            local_last_seen = self.last_seen.get(v, self.client.uptime.timestamp())
+            if (round(time.time()) - local_last_seen) > 60:
+                if k.lower() in final_message and message.author.id != v and v not in notified:
                     # highlight is in nessage, user not notified yet
                     if highlighted_member := message.guild.get_member(v):  # user is in the server
                         if await self.client.check_blacklisted_user(highlighted_member):
@@ -232,9 +226,11 @@ class Highlight(commands.Cog):
                                                 await highlighted_member.send(f"In **{message.guild.name}**'s **{message.channel.name}**, you were highlighted with the phrase \"{k}\".", embed=e)
                                             except:
                                                 pass
+                                            else:
+                                                self.last_seen[v] = round(time.time()) + 90
                                         notified.append(highlighted_member.id)
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.guild_only()
     @highlight.command(name='import')
     async def highlight_import(self, ctx):

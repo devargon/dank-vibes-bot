@@ -63,9 +63,8 @@ class Utility(TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois,
     def __init__(self, client):
         self.client = client
         self.nickconfig = {}
-        self.persistent_views_added = False
         self.translator = Translator()
-        self.poll_views_added = False
+        self.views_added = False
         self.last_seen = {}
         self.regex_pattern = re.compile('([^\s\w]|_)+')
         self.website_regex = re.compile("https?:\/\/[^\s]*")

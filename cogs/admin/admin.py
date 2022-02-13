@@ -161,7 +161,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         view.response = await ctx.send(embed=embed, view=view)
         await view.wait()
 
-    @commands.has_guild_permissions(administrator=True)
+    @checks.is_dory()
     @commands.command(name="spamping", aliases=["sp"])
     @commands.cooldown(1, 120, commands.BucketType.user)
     async def spamping(self, ctx, member: discord.Member = None, times: BetterInt = None, *, message: str = None):

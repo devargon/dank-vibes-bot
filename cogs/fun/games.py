@@ -17,7 +17,7 @@ class games(commands.Cog):
         self.client = client
         self.nickbets = []
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.cooldown(1, 30, commands.BucketType.user)
     @commands.command(name='guessthenumber', aliases=['gtn', 'numberevent'])
     async def guessthenumber(self, ctx):
@@ -185,7 +185,7 @@ class games(commands.Cog):
                                     await pinmsg.unpin(reason="Guess the Number game information")
                                     return await guessingmsg.reply(f"{guessingmsg.author.mention}", embed=embed)
 
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @checks.is_not_blacklisted()
     @commands.cooldown(1, 300, commands.BucketType.user)
     @commands.command(name="nickbet", aliases = ['nb'])

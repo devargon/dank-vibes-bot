@@ -132,7 +132,7 @@ class dm(commands.Cog):
             self.persistent_views_added = True
 
     @commands.command(name="dm")
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.cooldown(1, 600, commands.BucketType.user)
     async def dmrequest(self, ctx, member: discord.Member = None, *, message: str = None):
         """
@@ -191,7 +191,7 @@ class dm(commands.Cog):
             pass
 
     @commands.slash_command(name="dm")
-    @checks.requires_roles()
+    @checks.perm_insensitive_roles()
     @commands.cooldown(1, 600, commands.BucketType.user)
     async def dm_slash(self, ctx: discord.ApplicationContext, member: discord.Member, *, message: str):
         """

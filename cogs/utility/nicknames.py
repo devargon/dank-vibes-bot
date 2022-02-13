@@ -101,8 +101,8 @@ class nicknames(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-
-    @commands.Cog.listener()
+    #In polls.py
+    """@commands.Cog.listener()
     async def on_ready(self):
         existing_requests = await self.client.pool_pg.fetch("SELECT messageid FROM nicknames")
         if not self.persistent_views_added:
@@ -111,7 +111,7 @@ class nicknames(commands.Cog):
             for entry in existing_requests:
                 if entry.get('messageid'):
                     self.client.add_view(NicknamePersistentView(self.client), message_id=entry.get('messageid'))
-            self.persistent_views_added = True
+            self.persistent_views_added = True"""
 
     @checks.is_not_blacklisted()
     @commands.cooldown(60, 1, commands.BucketType.user)

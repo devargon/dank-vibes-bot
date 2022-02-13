@@ -209,15 +209,16 @@ def get_shared_user_name(embed: discord.Embed):
     if len(embed.fields) > 0:
         if isinstance(embed.fields[0].name, str):
             if embed.fields[0].name.startswith("Shared"):
-                ending = "'s Wallet"
+                ending = ["'s Wallet", "'s Pocket"]
             elif embed.fields[0].name.startswith("Gifted"):
                 ending = " now has"
             else:
                 raise ValueError
             userdetail_field = embed.fields[2].name
             if isinstance(userdetail_field, str):
-                if userdetail_field.endswith(ending):
-                    return userdetail_field[:-len(ending)]
+                for ending_type in ending:
+                    if userdetail_field.endswith(ending_type):
+                        return userdetail_field[:-len(ending_type)]
 
 
 class DankMemer(commands.Cog, name='dankmemer'):
@@ -525,14 +526,14 @@ class DankMemer(commands.Cog, name='dankmemer'):
         """
         Hunting Reminder
         """
-        if message.content.startswith("You went hunting") and message.author.id == 270904126974590976 and len(message.mentions) > 0:
+        if (message.content.startswith("You went hunting") or message.content.startswith("Imagine going into the woods")) and message.author.id == 270904126974590976 and len(message.mentions) > 0:
             member = message.mentions[0]
             nexthunttime = round(time.time()) + 30
             await self.handle_reminder_entry(member.id, 8, message.channel.id, message.guild.id, nexthunttime)
         """
         Fishing Reminder
         """
-        if (message.content.startswith("You cast out your line") or message.content.startswith("LMAO you found nothing.")) and message.author.id == 270904126974590976 and len(message.mentions) > 0:
+        if (message.content.startswith("You cast out your line") or message.content.startswith("LMAO you found nothing.") or message.content.startswith("Awh man, no fis")) and message.author.id == 270904126974590976 and len(message.mentions) > 0:
             member = message.mentions[0]
             nextfishtime = round(time.time()) + 30
             await self.handle_reminder_entry(member.id, 9, message.channel.id, message.guild.id, nextfishtime)
@@ -707,33 +708,33 @@ class DankMemer(commands.Cog, name='dankmemer'):
         if len(beforemsg.embeds) == 0 or len(aftermsg.embeds) == 0:
             return
         async def check_for_adventure():
-            if not len(beforemsg.mentions) > 0:
-            else:
+            if len(beforemsg.mentions) > 0:
                 if len(beforemsg.embeds) > 0:
                     embed = beforemsg.embeds[0]
-                    if isinstance(embed.author.name, str) or isinstance(embed.title, str):
+                    if isinstance(embed.author.name, str) or isinstance(embed.title, str) or len(embed.fields) > 0:
+                        return
                     if len(beforemsg.components) > 0:
-                    def find_one_enabled_component(mtarget):
-                        view = discord.ui.View.from_message(mtarget)
-                        for component in view.children:
-                            if component.disabled is False:
-                                return True
-                        return False
-                    def find_all_disabled_component(mtarget):
-                        view = discord.ui.View.from_message(mtarget)
-                        for component in view.children:
-                            if component.disabled is True:
-                                pass
-                            else:
-                                return False
-                        return True
-                    if not find_one_enabled_component(beforemsg):
-                        return False
-                    if not find_all_disabled_component(aftermsg):
-                        return False
-                target = beforemsg.mentions[0]
-                await self.handle_reminder_entry(target.id, 24, beforemsg.channel.id, beforemsg.guild.id, round(time.time()) + 300)
-                await beforemsg.add_reaction('🚀')
+                        def find_one_enabled_component(mtarget):
+                            view = discord.ui.View.from_message(mtarget)
+                            for component in view.children:
+                                if component.disabled is False:
+                                    return True
+                            return False
+                        def find_all_disabled_component(mtarget):
+                            view = discord.ui.View.from_message(mtarget)
+                            for component in view.children:
+                                if component.disabled is True:
+                                    pass
+                                else:
+                                    return False
+                            return True
+                        if not find_one_enabled_component(beforemsg):
+                            return False
+                        if not find_all_disabled_component(aftermsg):
+                            return False
+                        target = beforemsg.mentions[0]
+                        await self.handle_reminder_entry(target.id, 24, beforemsg.channel.id, beforemsg.guild.id, round(time.time()) + 300)
+                        await beforemsg.add_reaction('🚀')
         await check_for_adventure()
         beforeembed = beforemsg.embeds[0]
         afterembed = aftermsg.embeds[0]

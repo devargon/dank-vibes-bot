@@ -6,6 +6,7 @@ import asyncio
 from typing import Optional
 from utils.format import generate_loadbar
 import time
+from cogs.utility.nicknames import NicknamePersistentView
 
 class PollButtons(discord.ui.View):
     def __init__(self, choices: list, client, identifier):
@@ -68,15 +69,21 @@ class polls(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        if not self.poll_views_added:
+        if not self.views_added:
+            existing_requests = await self.client.pool_pg.fetch("SELECT messageid FROM nicknames")
+            if len(existing_requests) > 0:
+                for entry in existing_requests:
+                    if entry.get('messageid'):
+                        self.client.add_view(NicknamePersistentView(self.client), message_id=entry.get('messageid'))
             all_polls = await self.client.pool_pg.fetch("SELECT * FROM polls")
             for poll in all_polls:
                 poll_m_id = poll.get('message_id')
                 poll_choices = poll.get('choices').split('|')
                 self.client.add_view(PollButtons(poll_choices, self.client, poll.get('invoked_message_id')), message_id=poll_m_id)
+        self.views_added = True
 
 
-
+    @checks.perm_insensitive_roles()
     @commands.guild_only()
     @commands.command(name="poll", aliases=["quickpoll", "createpoll"])
     async def create_poll(self, ctx, *, question_and_choices = None):
