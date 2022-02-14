@@ -631,7 +631,7 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
                     if covid.get('infector') == self.client.user.id:
                         return None
                     elif covid.get('infector') == infected:
-                        return "You infected yourself"
+                        return None
                     elif covid.get('member_id') == infected:
                         return covid.get('infector')
                 return None
