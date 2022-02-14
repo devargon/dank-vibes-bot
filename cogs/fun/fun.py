@@ -557,12 +557,6 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
             async def no(self, button: discord.ui.Button, interaction: discord.Interaction):
                 await self.response.edit(embed=self.embed2)
 
-            async def interaction_check(self, interaction: discord.Interaction) -> bool:
-                if interaction.user.id != self.author.id:
-                    await interaction.response.send_message("These buttons aren't for you!", ephemeral=True)
-                    return False
-                return True
-
             async def on_timeout(self) -> None:
                 self.returning_value = None
                 for b in self.children:
@@ -572,7 +566,7 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
 
 
         covidinfectors = await self.client.pool_pg.fetch("SELECT * FROM infections ORDER BY infectioncase DESC")
-        um = f"The Horn Knee virus is an infectious disease that emerged in February 2022. It has **unprecedented side effects** that only Case 0 will know. The patient Zero is self.client.get_user(515725341910892555).\nThe Horn Knee virus is spread through interacting with other humans, especially via mentioning someone.\nThere is no known cutre for Horn Knee (obviously), but vaccines are being created at the moment."
+        um = f"The Horn Knee virus is an infectious disease that emerged in February 2022. It has **unprecedented side effects** that only Case 0 will know. The patient Zero is **{self.client.get_user(515725341910892555)}**.\nThe Horn Knee virus is spread through interacting with other humans, especially via mentioning someone.\nThere is no known cutre for Horn Knee (obviously), but vaccines are being created at the moment."
         embed1 = discord.Embed(title="Horn Knee Virus At a Glance", description=um, color=self.client.embed_color)
         nooo = {}
         for covidinfector in covidinfectors:
@@ -636,6 +630,8 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
                 for covid in covidinfectors:
                     if covid.get('infector') == self.client.user.id:
                         return None
+                    elif covid.get('infector') == infected:
+                        return "You infected yourself"
                     elif covid.get('member_id') == infected:
                         return covid.get('infector')
                 return None
@@ -653,6 +649,7 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
                 if infector is not None:
                     user = self.client.get_user(infector)
                     if user is not None:
+                        print(infectiontrack)
                         infectiontrack.append(str(user))
                     else:
                         infectiontrack.append(f"{infector}")
