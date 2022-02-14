@@ -566,7 +566,7 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
 
 
         covidinfectors = await self.client.pool_pg.fetch("SELECT * FROM infections ORDER BY infectioncase DESC")
-        um = f"The Horn Knee virus is an infectious disease that emerged in February 2022. It has **unprecedented side effects** that only Case 0 will know. The patient Zero is **{self.client.get_user(515725341910892555)}**.\nThe Horn Knee virus is spread through interacting with other humans, especially via mentioning someone.\nThere is no known cutre for Horn Knee (obviously), but vaccines are being created at the moment."
+        um = f"The Horn Knee virus is an infectious disease that emerged in February 2022. It has **unprecedented side effects** that only Case 0 will know. The patient Zero is **{self.client.get_user(515725341910892555)}**.\nThe Horn Knee virus is spread through interacting with other humans, especially via mentioning someone.\nThere is no known cure for Horn Knee (obviously), but vaccines are being researched at the moment. The person leading the vaccine development is {self.client.get_user(542905463541465088)}."
         embed1 = discord.Embed(title="Horn Knee Virus At a Glance", description=um, color=self.client.embed_color)
         nooo = {}
         for covidinfector in covidinfectors:
