@@ -99,7 +99,6 @@ class infection(commands.Cog):
                     await self.client.pool_pg.execute("INSERT INTO infections (member_id, guild_id, channel_id, message_id, infector, timeinfected) VALUES ($1, $2, $3, $4, $5, $6)", member.id, message.guild.id, message.channel.id, message.id, message.author.id, round(time()))
             if len(infected_thisSession) > 0:
                 await message.add_reaction('😷')
-                await message.add_reaction('⚠️')
         else:
             return
 
