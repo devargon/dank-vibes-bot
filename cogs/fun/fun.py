@@ -563,6 +563,11 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
                     b.disabled = True
                 await self.response.edit(view=self)
 
+            async def interaction_check(self, interaction: discord.Interaction) -> bool:
+                if interaction.user.id != self.author.id:
+                    await interaction.response.send_message("These buttons aren't for you!", ephemeral=True)
+                    return False
+                return True
 
 
         covidinfectors = await self.client.pool_pg.fetch("SELECT * FROM infections ORDER BY infectioncase DESC")
