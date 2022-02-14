@@ -635,8 +635,6 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
                 for covid in covidinfectors:
                     if covid.get('infector') == self.client.user.id:
                         return None
-                    elif covid.get('infector') == infected:
-                        return "You infected yourself"
                     elif covid.get('member_id') == infected:
                         return covid.get('infector')
                 return None
@@ -654,7 +652,6 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
                 if infector is not None:
                     user = self.client.get_user(infector)
                     if user is not None:
-                        print(infectiontrack)
                         infectiontrack.append(str(user))
                     else:
                         infectiontrack.append(f"{infector}")
