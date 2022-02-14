@@ -539,7 +539,7 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def covidbot(self, ctx):
         """
-        Fetches information about CoviDVBot.
+        Fetches information about Horn Knee Virus.
         """
         class description(discord.ui.View):
             def __init__(self, embed1, embed2, author):
@@ -549,11 +549,11 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
                 self.author = author
                 super().__init__(timeout=None)
 
-            @discord.ui.button(label="Description of CoviDVBot", style=discord.ButtonStyle.green)
+            @discord.ui.button(label="Description of Horn Knee Virus", style=discord.ButtonStyle.green)
             async def yes(self, button: discord.ui.Button, interaction: discord.Interaction):
                 await self.response.edit(embed=self.embed1)
 
-            @discord.ui.button(label="CoviDVBot Statistics", style=discord.ButtonStyle.red)
+            @discord.ui.button(label="Horn Knee Virus Statistics", style=discord.ButtonStyle.red)
             async def no(self, button: discord.ui.Button, interaction: discord.Interaction):
                 await self.response.edit(embed=self.embed2)
 
@@ -572,8 +572,8 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
 
 
         covidinfectors = await self.client.pool_pg.fetch("SELECT * FROM infections ORDER BY infectioncase DESC")
-        um = f"CoviDVBot, also known as **Co**rona**vi**rus **D**isease of Dank Vibes **Bot**, is a coronavirus that emerged in January 2022. CoviDVBot is not known to cause any side effects to a user. It first originated from a bot called {self.client.user}, before evolving and being able to infect humans. (Patient Zero is Argon#0002)\nCoviDVBot is spread through interacting with other humans, especially via mentioning someone.\nThere is no known cure for CoviDVBot, hence once infected, the disease will stay with the user for eternity."
-        embed1 = discord.Embed(title="CoviDVBot At a Glance", description=um, color=self.client.embed_color)
+        um = f"The Horn Knee virus is an infectious disease that emerged in February 2022. It has **unprecedented side effects** that only Case 0 will know. The patient Zero is self.client.get_user(515725341910892555).\nThe Horn Knee virus is spread through interacting with other humans, especially via mentioning someone.\nThere is no known cutre for Horn Knee (obviously), but vaccines are being created at the moment."
+        embed1 = discord.Embed(title="Horn Knee Virus At a Glance", description=um, color=self.client.embed_color)
         nooo = {}
         for covidinfector in covidinfectors:
             userid = covidinfector.get('infector')
@@ -598,11 +598,14 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
         else:
             is_infected = False
         if is_infected:
-            govmessage = "😷 **You have been diagnosed with CoviDVBot.**\nPlease head to the nearest quarantine facility to facilitate your recovery."
+            govmessage = "😷 **You have been diagnosed with Horn Knee Virus.**\nPlease head to the nearest quarantine facility to facilitate your recovery."
             users_infected_byauthor = [covid.get('member_id') for covid in covidinfectors if covid.get('infector') == ctx.author.id]
             if len(users_infected_byauthor) > 0:
                 if len(users_infected_byauthor) <= 3:
-                    infector_list = [str(self.client.get_user(user)) for user in users_infected_byauthor if self.client.get_user(user) is not None]
+                    if len(users_infected_byauthor) == 1:
+                        infector_list = ["No one"]
+                    else:
+                        infector_list = [str(self.client.get_user(user)) for user in users_infected_byauthor if self.client.get_user(user) is not None]
                     infector_list = ", ".join(infector_list)
                 else:
                     infector_list = [str(self.client.get_user(user)) for user in users_infected_byauthor[:3] if self.client.get_user(user) is not None]
@@ -612,11 +615,11 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
                 embed1.add_field(name="People you infected", value="No one (yet)", inline=True)
             embed1.add_field(name="Your Status", value=govmessage, inline=False)
         else:
-            govmessage = "<:DVB_True:887589686808309791> **You do not have CoviDVBot.**\nPlease stay safe."
+            govmessage = "<:DVB_True:887589686808309791> **You do not have the Horn Knee Virus.**\nPlease stay safe."
             embed1.add_field(name="Your Status", value=govmessage, inline=False)
-        embed2 = discord.Embed(title="CoviDVBot At a Glance", color=self.client.embed_color)
+        embed2 = discord.Embed(title="Horn Knee Virus At a Glance", color=self.client.embed_color)
         if is_infected:
-            govmessage = "😷 **You have been diagnosed with CoviDVBot.**\nPlease head to the nearest quarantine facility to facilitate your recovery."
+            govmessage = "😷 **You have been diagnosed with the Horn Knee Virus.**\nPlease head to the nearest quarantine facility to facilitate your recovery."
             users_infected_byauthor = [covid.get('member_id') for covid in covidinfectors if covid.get('infector') == ctx.author.id]
             if len(users_infected_byauthor) > 0:
                 if len(users_infected_byauthor) <= 3:
@@ -658,7 +661,7 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
                 embed2.add_field(name="How you were infected", value=f"{infector_list}", inline=True)
             embed2.add_field(name="Your Status", value=govmessage, inline=False)
         else:
-            govmessage = "<:DVB_True:887589686808309791> **You do not have CoviDVBot.**\nPlease stay safe."
+            govmessage = "<:DVB_True:887589686808309791> **You do not have the Horn Knee Virus.**\nPlease stay safe."
             embed2.add_field(name="Your Status", value=govmessage, inline=False)
         embed2.add_field(name="Infected", value=f"{len(covidinfectors)}", inline=True)
         embed2.add_field(name="Superspreaders", value='\n'.join(superspreaders), inline=True)
