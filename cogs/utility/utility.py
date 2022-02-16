@@ -513,9 +513,15 @@ class Utility(TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois,
         if ctx.invoked_with in ['av', 'pfp', 'avatar']:
             init_picked = 'av'
         elif ctx.invoked_with in ['banner', 'bn']:
-            init_picked = 'bn'
+            if banner_url is None:
+                init_picked = 'av'
+            else:
+                init_picked = 'bn'
         elif ctx.invoked_with in ['sav']:
-            init_picked = 'sav'
+            if d_avatar_url is None:
+                init_picked = 'av'
+            else:
+                init_picked = 'sav'
         else:
             return
         def generate_embed(user, name, url):
@@ -558,8 +564,8 @@ class Utility(TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois,
                             await update_message(self.label, self)
 
                 self.add_item(SelectButton(label='Avatar', style=discord.ButtonStyle.green if init_picked == 'av' else discord.ButtonStyle.grey))
-                self.add_item(SelectButton(label='Server Avatar', style=discord.ButtonStyle.green if init_picked == 'sav' else discord.ButtonStyle.grey, disabled = True if d_avatar_url is None else False))
-                self.add_item(SelectButton(label='Banner', style=discord.ButtonStyle.green if init_picked == 'bn' else discord.ButtonStyle.grey, disabled = True if banner_url is None else False))
+                self.add_item(SelectButton(label='Server Avatar', style=discord.ButtonStyle.green if init_picked == 'sav' else discord.ButtonStyle.grey, disabled=True if d_avatar_url is None else False))
+                self.add_item(SelectButton(label='Banner', style=discord.ButtonStyle.green if init_picked == 'bn' else discord.ButtonStyle.grey, disabled=True if banner_url is None else False))
 
             async def on_timeout(self):
                 for b in self.children:
