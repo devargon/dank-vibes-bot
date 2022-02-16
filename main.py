@@ -76,6 +76,7 @@ class dvvt(commands.AutoShardedBot):
                     except discord.HTTPException:
                         pass
                 del self.blacklist[user.id]
+                await self.get_channel(906433823594668052).send(embed=embed)
         await self.get_all_blacklisted_users()
 
     @update_blacklist.before_loop
@@ -93,10 +94,17 @@ class dvvt(commands.AutoShardedBot):
             self.maintenance_message.setdefault(result.get('cog_name'), result.get('message'))
 
     async def process_commands(self, message: discord.Message):
-        ctx = await self.get_context(message)
+        ctx: DVVTcontext = await self.get_context(message)
         if ctx.cog:
             if ctx.author.id in self.blacklist:
                 if ctx.author.id not in [650647680837484556, 515725341910892555, 321892489470410763]:
+                    if time.time() >= self.blacklist[ctx.author.id]:
+                        blacklist = await self.pool_pg.fetchrow("SELECT * FROM blacklist WHERE user_id=$1 AND time_until = $2 AND blacklist_active = $3", ctx.author.id, self.blacklist[ctx.author.id], True)
+                        await self.pool_pg.execute("UPDATE blacklist SET blacklist_active = $1 WHERE user_id = $2 and incident_id = $3", False, message.author.id, blacklist.get('incident_id'))
+                        embed = discord.Embed(title=f"Bot Unblacklist | Case {blacklist.get('incident_id')}", description=f"**Reason**: Blacklist over, automatically rescinded\n**Responsible Moderator**: {ctx.me} ({ctx.me.id})", color=discord.Color.green())
+                        embed.set_author(name=f"{message.author} ({message.author.id})", icon_url=message.author.display_avatar.url)
+                        await self.get_channel(906433823594668052).send(embed=embed)
+                        await message.reply("You are no longer blacklisted from using the bot, and can use all functions of the bot.")
                     return
             if self.maintenance.get(ctx.cog.qualified_name) and message.author.id not in [321892489470410763, 650647680837484556]:
                 maintenance_message = self.maintenance_message.get(ctx.cog.qualified_name)

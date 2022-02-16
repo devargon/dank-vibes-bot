@@ -70,8 +70,7 @@ class color(commands.Cog):
             color = image.to_rgb()
             hexcode = rgb_to_hex(color)
             hex_int = int(hexcode, 16)
-            hex_int = hex_int + 0x200
-            messagecontents = (f"HEX: `{hexcode}`\nRGB: `{color}`\nINT: `{int(hex_int)}`", f"https://api.alexflipnote.dev/color/image/{hexcode}", int(hex_int))
+            messagecontents = (f"HEX: `{hexcode}`\nRGB: `{color}`\nINT: `{int(hex_int)}`", f"https://api.alexflipnote.dev/color/image/{hexcode}", hex_int)
         else:
             try:
                 color_thief = ColorThief(BytesIO(image))
@@ -82,10 +81,9 @@ class color(commands.Cog):
             for color in palette:
                 hexcode = rgb_to_hex(color)
                 hex_int = int(hexcode, 16)
-                hex_int = hex_int + 0x200
                 messagecontents.append((f"HEX: `{hexcode}`\nRGB: `{color}`\nINT: `{int(hex_int)}`", f"https://api.alexflipnote.dev/color/image/{hexcode}", int(hex_int)))
         title = f"{argument.name}'s Profile Picture Color" if isinstance(argument, discord.Member) else "Your Color" if isinstance(argument, discord.Color) else "Image dominant colors"
-        if type(messagecontents) == tuple:
+        if type(messagecontents) == tuple: # if type is a color
             pages = CustomMenu(source=ColorDisplay([messagecontents], title, messagecontents[1]), clear_reactions_after=True, timeout=60)
         else:
             pages = CustomMenu(source=ColorDisplay(messagecontents, title, argument.display_avatar.url if isinstance(argument, discord.Member) else argument), clear_reactions_after=True, timeout=60)

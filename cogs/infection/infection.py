@@ -1,6 +1,6 @@
 import asyncio
 import json
-
+from main import dvvt
 import discord
 from discord.ext import commands, tasks
 from time import time
@@ -9,7 +9,7 @@ import pytz
 
 class infection(commands.Cog):
     def __init__(self, client):
-        self.client = client
+        self.client: dvvt = client
         self.infected = None
         self.check_infection.start()
 
@@ -74,17 +74,13 @@ class infection(commands.Cog):
                             um = f"{tempstr}\n"
                     await message.channel.send(um)
                     await message.channel.send("What it means:\n<:DVB_ban:930310804203503626> - Ban\n<:DVB_Mute:930308084885241926> - Mute\n<:DVB_Unmute:930308214132707338> - Unmute\n<:DVB_Unban:930308373440765982> - Unban\n<:DVB_warn:930312114629931028> - Warn\n<:DVB_tempban:930310741213454336> - Tempban")
-
-
-
-
-
-
         if message.author.bot:
             return
         if type(self.infected) is not list:
             return
         if message.author.id not in self.infected:
+            return
+        if message.author.id in self.client.blacklist:
             return
         if len(message.mentions) > 0:
             infected_thisSession = []
@@ -99,7 +95,6 @@ class infection(commands.Cog):
                     await self.client.pool_pg.execute("INSERT INTO infections (member_id, guild_id, channel_id, message_id, infector, timeinfected) VALUES ($1, $2, $3, $4, $5, $6)", member.id, message.guild.id, message.channel.id, message.id, message.author.id, round(time()))
             if len(infected_thisSession) > 0:
                 await message.add_reaction('😷')
-                await message.add_reaction('⚠️')
         else:
             return
 

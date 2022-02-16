@@ -543,7 +543,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
             await member.send(f"{message} You no longer have the roles: **{', '.join(role.name for role in tupremove)}**. \nYour roles might be readded afterwards. Or will they? <:dv_bShrugOwO:837687264263798814>")
         except:
             pass
-        await asyncio.sleep(30.0)
+        await asyncio.sleep(duration)
         try:
             await member.add_roles(*tupremove, reason='Demotion reversed automatically')
         except Exception as e:

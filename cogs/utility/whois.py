@@ -29,9 +29,9 @@ class Whois(commands.Cog):
         infection = await self.client.pool_pg.fetchrow("SELECT infectioncase, member_id, infector, timeinfected FROM infections WHERE member_id = $1", user.id)
         if infection:
             infector = self.client.get_user(infection.get('infector')) or infection.get('infector')
-            description.append(f"• User is infected with CoviDVBot: 🤒 (Case **{infection.get('infectioncase')}**)\n<:Reply:871808167011549244> Infected by **{infector}** <t:{infection.get('timeinfected')}:R>")
+            description.append(f"• User is infected with Horn Knee Virus: 🤒 (Case **{infection.get('infectioncase')}**)\n<:Reply:871808167011549244> Infected by **{infector}** <t:{infection.get('timeinfected')}:R>")
         else:
-            description.append("• User is infected with CoviDVBot: <:DVB_False:887589731515392000>")
+            description.append("• User is infected with Horn Knee Virus: <:DVB_False:887589731515392000>")
         embed = discord.Embed(color=self.client.embed_color)
         embed.set_author(name="{}'s Information".format(user.name), icon_url=user.display_avatar.url)
         embed.set_thumbnail(url=user.display_avatar.url)
