@@ -223,7 +223,7 @@ class Highlight(commands.Cog):
                                         e = await self.generate_context(message, k)
                                         if highlighted_member is not None and message.channel.permissions_for(highlighted_member).view_channel:
                                             try:
-                                                await highlighted_member.send(f"In **{message.guild.name}**'s **{message.channel.name}**, you were highlighted with the phrase \"{k}\".", embed=e)
+                                                await highlighted_member.send(f"\"{k}\", your tracked phrase, was mentioned by **{message.author.name}** in **{message.guild.name}**'s **{message.channel.name}**.", embed=e)
                                             except:
                                                 pass
                                             else:
