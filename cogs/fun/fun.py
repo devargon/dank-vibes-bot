@@ -1,7 +1,11 @@
+from datetime import datetime
+
 import discord
 from discord import Webhook
 from discord.commands import Option
 from discord.ext import commands
+
+from utils.context import DVVTcontext
 
 import os
 import time
@@ -28,6 +32,8 @@ from .color import color
 alexflipnoteAPI = os.getenv('alexflipnoteAPI')
 tenorAPI = os.getenv('tenorAPI')
 
+RandomColorID = 943530953110880327 if os.getenv('state') == '1' else 758176387806396456
+
 class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
     """
     Fun commands
@@ -48,7 +54,9 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
         self.planning_numberevent = []
         self.numberevent_channels = []
         self.nickbets = []
+        self.rcdata = ""
         self.alex_api = alexflipnote.Client()
+        self.rantimes = {}
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
@@ -712,3 +720,39 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
                     await ctx.send(gif)
         else:
             print('nooo')
+
+    @checks.perm_insensitive_roles()
+    @commands.cooldown(1, 1800, commands.BucketType.user)
+    @commands.command(name="randomcolor", aliases=['rc'])
+    async def randomcolor(self, ctx: DVVTcontext):
+        timenow = round(time.time())
+        cooldown = await self.client.pool_pg.fetchrow("SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time > $3", ctx.command.name,ctx.author.id, timenow)
+        if cooldown is not None:
+            return await ctx.send(f"You're on cooldown. try again in {humanize_timedelta(seconds=(cooldown.get('time') - timenow))}.", delete_after=10.0)
+        cooldown = await self.client.pool_pg.fetchrow("SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time < $3", ctx.command.name, ctx.author.id, timenow)
+        if cooldown:
+            await self.client.pool_pg.execute("DELETE FROM cooldowns WHERE command_name = $1 and member_id = $2 and time = $3", cooldown.get('command_name'), cooldown.get('member_id'), cooldown.get('time'))
+        random_color_role = ctx.guild.get_role(RandomColorID)
+        if random_color_role is None:
+            return await ctx.send("The role ID provided for the random color role is invalid.")
+        old_hex = '#%06x' % random_color_role.color.value
+        random_int_color = random.randint(0, 0xFFFFFF)
+        str_random_hex_color = '#%06x' % random_int_color
+        data = self.rcdata.split(':')
+        weekday_int = datetime.now().weekday()
+        if len(data) != 2:
+            self.rcdata = f"{weekday_int}:0"
+        else:
+            recorded_weekday_int = int(data[0])
+            if recorded_weekday_int != weekday_int:
+                self.rcdata = f"{weekday_int}:1"
+            else:
+                times = int(data[1])
+                if times > 3:
+                    return await ctx.send(f"The {random_color_role.mention}'s color has been changed 3/3 times today. It will reset at 5:00 AM UTC every day.")
+                else:
+                    self.rcdata = f"{weekday_int}:{times + 1}"
+        await random_color_role.edit(color=random_int_color)
+        embed = discord.Embed(title="Role Color Changed", description=f"{ctx.author.mention} changed the color of {random_color_role.mention} from {old_hex} to {str_random_hex_color}.", color=random_int_color)
+        await ctx.send(embed=embed)
+        await ctx.send(self.rcdata)
