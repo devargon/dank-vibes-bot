@@ -374,6 +374,7 @@ class ItemGames(commands.Cog):
                         await confirmview.response.edit(embed=embed)
                         userconf = await self.client.pool_pg.fetchrow("SELECT * FROM userconfig WHERE user_id = $1", ctx.author.id)
                         if userconf.get('dumbfight_result') is None and await self.get_item_count(itemname, ctx.author) > 0:
+                            remaining = await self.remove_item_count(itemname, ctx.author, 1)
                             msgstatus = await ctx.send(f"{ctx.author} is gulping down the dumbfight potion...")
                             result = random.choice([True, False])
                             if userconf is None:
@@ -382,9 +383,9 @@ class ItemGames(commands.Cog):
                                 await self.client.pool_pg.execute("UPDATE userconfig SET dumbfight_result = $1, dumbfight_rig_duration = $2 WHERE user_id = $3", result, round(time.time())+14400, ctx.author.id)
                             await asyncio.sleep(3.0)
                             if result is True:
-                                await msgstatus.edit(content=f"{ctx.author} finished the dumbfight potion in one gulp.\nThey are now immune from losing dumbfights for 4 hours!")
+                                await msgstatus.edit(content=f"{ctx.author} finished the dumbfight potion in one gulp.\nThey are now immune from losing dumbfights for 4 hours! They now have {remaining} Dumbfight Potions left.")
                             else:
-                                await msgstatus.edit(content=f"Alas! The dumbfight potion that {ctx.author} drank was a bad one, and {ctx.author.name} was poisoned.\nThey will lose all dumbfights for the next 4 hours.")
+                                await msgstatus.edit(content=f"Alas! The dumbfight potion that {ctx.author} drank was a bad one, and {ctx.author.name} was poisoned.\nThey will lose all dumbfights for the next 4 hours. They now have {remaining} Dumbfight Potions left.")
                         else:
                             return await ctx.send("It appears that you already have a active dumbfight potion in effect. (1)")
                 else:
