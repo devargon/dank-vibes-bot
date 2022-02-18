@@ -19,6 +19,7 @@ import os
 from utils import checks
 
 verify_role = 911541857807384677
+level_50_role = 678318507016060948 if os.getenv('state') == '0' else 943883516565942352
 
 class verifyView(discord.ui.View):
     def __init__(self):
@@ -64,11 +65,43 @@ class AutoMod(reminders_, polledition, AutoStatus, timer, NameLogging, timedrole
         self.reminder_check.start()
         self.verifyview = False
         self.status = None
+        self.received_daily_potion = []
+
+    async def add_item_count(self, item, user, amount):
+        does_inventory_exist = await self.client.pool_pg.fetchrow("SELECT * FROM inventories WHERE user_id = $1",
+                                                                  user.id)
+        useritem_query = "SELECT {} FROM inventories WHERE user_id = $1".format(item)
+        useritem = await self.client.pool_pg.fetchval(useritem_query, user.id)
+        if does_inventory_exist:
+            if useritem is None:
+                useritem_query = "UPDATE inventories SET {} = $2 WHERE user_id = $1 RETURNING {}".format(item, item)
+            else:
+                useritem_query = "UPDATE inventories SET {} = {} + $2 WHERE user_id = $1 RETURNING {}".format(item, item, item)
+        else:
+            useritem_query = "INSERT INTO inventories (user_id, {}) VALUES ($1, $2) RETURNING {}".format(item, item)
+        return await self.client.pool_pg.fetchval(useritem_query, user.id, amount, column=item)
 
     @commands.Cog.listener()
     async def on_command(self, ctx: DVVTcontext):
+        if ctx.author.id not in self.received_daily_potion:
+            entry = await self.client.pool_pg.fetchrow("SELECT * FROM userconfig WHERE user_id = $1", ctx.author.id)
+            if entry is None:
+                if discord.utils.get(ctx.author.roles, id=level_50_role):
+                    await self.client.pool_pg.execute("INSERT INTO userconfig (user_id, received_daily_potion) VALUES ($1, $2)", ctx.author.id, True)
+                    self.received_daily_potion = self.received_daily_potion + [ctx.author.id]
+                    await self.add_item_count('dumbfightpotion', ctx.author, 1)
+                    await ctx.reply("You have received `1` Dumbfight Potion as you're currently **Level 50**!")
+            elif entry.get('received_daily_potion') is not True:
+                if discord.utils.get(ctx.author.roles, id=level_50_role):
+                    await self.client.pool_pg.execute("UPDATE userconfig SET received_daily_potion = $1 WHERE user_id = $2", True, ctx.author.id)
+                    await self.add_item_count('dumbfightpotion', ctx.author, 1)
+                    self.received_daily_potion.append(ctx.author.id)
+                    await ctx.reply("You have received `1` Dumbfight Potion as you're currently **Level 50**!")
+            elif entry.get('received_daily_potion') is True:
+                self.received_daily_potion = self.received_daily_potion + [ctx.author.id]
+            else:
+                pass
         if (duration := await self.client.pool_pg.fetchval("SELECT dumbfight_rig_duration FROM userconfig WHERE user_id = $1", ctx.author.id)) is not None:
-            print(duration, time.time())
             if duration < time.time():
                 await self.client.pool_pg.execute("UPDATE userconfig SET dumbfight_rig_duration = NULL, dumbfight_result = NULL WHERE user_id = $1", ctx.author.id)
                 with contextlib.suppress(discord.HTTPException):
