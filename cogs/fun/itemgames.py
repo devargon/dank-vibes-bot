@@ -1,6 +1,9 @@
 import asyncio
 import difflib
 import operator
+import time
+
+from utils.buttons import confirm
 from utils.format import comma_number
 import discord
 from discord.ext import commands
@@ -341,13 +344,58 @@ class ItemGames(commands.Cog):
         embed.set_footer(text=f"You own {quantity} of this item.")
         await ctx.send(embed=embed)
 
-    @checks.has_permissions_or_role(manage_roles=True)
-    @commands.command(name='skullleaderboard', aliases=['slb', 'skulllb'])
-    async def skullleaderboard(self, ctx, *, arg: str = None):
-        """
-        Shows the Skull leaderboard for Dank Vibes.
-        """
-        await ctx.send("This command is deprecated. Use `dv.itemlb` instead!")
+    @commands.command(name="use")
+    async def use(self, ctx, item: str = None):
+        if item is None:
+            return await ctx.send("You need to specify the item you want to know about.")
+        itemname = await self.get_item_name(item)
+        if itemname is None:
+            return await ctx.send(f"There is no item named `{item}`.")
+        itemdata = await self.client.pool_pg.fetchrow("SELECT * FROM iteminfo WHERE name = $1", itemname)
+        if itemdata is None:
+            return await ctx.send("An error occured while trying to get the data for this item.")
+        if itemdata.get('usable') is not True:
+            return await ctx.send(f"**{itemdata.get('fullname')}** isn't a usable item lol")
+        count = await self.get_item_count(itemname, ctx.author)
+        if count < 1:
+            return await ctx.send(f"You don't have any **{itemdata.get('fullname')}**s to use.")
+        if itemdata.get('usable') is True:
+            if itemname == 'dumbfightpotion':
+                if await self.client.pool_pg.fetchval("SELECT dumbfight_result FROM userconfig WHERE user_id = $1", ctx.author.id) is None:
+                    confirmview = confirm(ctx, self.client, 20.0)
+                    embed = discord.Embed(title=f"Are you sure you want to use a {itemdata.get('fullname')}?", description="Drinking a dumbfight potion might cause you to lose or win your dumbfights for the next 4 hours.")
+                    confirmview.response = await ctx.reply(embed=embed, view=confirmview)
+                    await confirmview.wait()
+                    if confirmview.returning_value is not True:
+                        embed.color, embed.description= discord.Color.red(), "You decided not to use the dumbfight potion."
+                        await confirmview.response.edit(embed=embed)
+                    else:
+                        embed.color = discord.Color.green()
+                        await confirmview.response.edit(embed=embed)
+                        userconf = await self.client.pool_pg.fetchrow("SELECT * FROM userconfig WHERE user_id = $1", ctx.author.id)
+                        if userconf.get('dumbfight_result') is None and await self.get_item_count(itemname, ctx.author) > 0:
+                            msgstatus = await ctx.send(f"{ctx.author} is gulping down the dumbfight potion...")
+                            result = random.choice([True, False])
+                            if userconf is None:
+                                await self.client.pool_pg.execute("INSERT INTO userconfig(user_id, dumbfight_result, dumbfight_rig_duration) VALUES($1, $2, $3)", ctx.author.id, result, round(time.time())+14400)
+                            else:
+                                await self.client.pool_pg.execute("UPDATE userconfig SET dumbfight_result = $1, dumbfight_rig_duration = $2 WHERE user_id = $3", result, round(time.time())+14400, ctx.author.id)
+                            await asyncio.sleep(3.0)
+                            if result is True:
+                                await msgstatus.edit(content=f"{ctx.author} finished the dumbfight potion in one gulp.\nThey are now immune from losing dumbfights for 4 hours!")
+                            else:
+                                await msgstatus.edit(content=f"Alas! The dumbfight potion that {ctx.author} drank was a bad one, and {ctx.author.name} was poisoned.\nThey will lose all dumbfights for the next 4 hours.")
+                        else:
+                            return await ctx.send("It appears that you already have a active dumbfight potion in effect. (1)")
+                else:
+                    return await ctx.send("It appears that you already have a active dumbfight potion in effect. (2)")
+            else:
+                return await ctx.send("Invalid")
+        else:
+            return await ctx.send(f"**{itemdata.get('fullname')}** isn't a usable item lol")
+
+
+
 
 
     @checks.has_permissions_or_role(manage_roles=True)
