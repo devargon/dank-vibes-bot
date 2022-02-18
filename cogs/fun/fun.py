@@ -102,9 +102,6 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
             else:
                 ctx.command.reset_cooldown(ctx)
                 return await ctx.send(f"Here we have a human AKA {ctx.author.mention} showing you that they are able to dumbfight you, although they could've just done it already. <:dv_pepeHahaUSuckOwO:837653798313918475>")
-        if ctx.channel.id in self.mutedusers and member.id in self.mutedusers[ctx.channel.id]:
-            ctx.command.reset_cooldown(ctx)
-            return await ctx.send(f"**{member.name}** is currently muted in a dumbfight. Wait a few moments before using this command.")
         if member.bot:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("Back off my kind. Don't dumbfight bots.")
@@ -127,10 +124,47 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
                 doesauthorwin = True
             else:
                 doesauthorwin = False
-        if ctx.author.id == 650647680837484556 and ctx.message.content.lower().endswith('win'):
-            doesauthorwin = True
-        if ctx.author.id == 650647680837484556 and ctx.message.content.lower().endswith('lose'):
-            doesauthorwin = False
+        author_has_shield_potion = await self.client.pool_pg.fetchval("SELECT dumbfight_result FROM userconfig WHERE user_id = $1", ctx.author.id)
+        target_has_shield_potion = await self.client.pool_pg.fetchval("SELECT dumbfight_result FROM userconfig WHERE user_id = $1", member.id)
+        extra_info = None
+        if author_has_shield_potion is not None:
+            if target_has_shield_potion is not None:
+                if author_has_shield_potion == target_has_shield_potion:
+                    doesauthorwin = random.choice([True, False])
+                    extra_info = f"Both {ctx.author} and {member} have drank a dumbfight shield potion."
+                else:
+                    if target_has_shield_potion is True:
+                        extra_info = f"{member} has drank a dumbfight shield potion to make them win."
+                        doesauthorwin = False
+                    elif author_has_shield_potion is False:
+                        extra_info = f"{ctx.author} has drank a dumbfight shield potion to make them lose."
+                        doesauthorwin = False
+                    elif target_has_shield_potion is False:
+                        extra_info = f"{member} has drank a dumbfight shield potion to make them lose."
+                        doesauthorwin = True
+                    elif author_has_shield_potion is True:
+                        extra_info = f"{ctx.author} has drank a dumbfight shield potion to make them win."
+                        doesauthorwin = True
+            else:
+                if author_has_shield_potion is True:
+                    extra_info = f"{ctx.author} has drank a dumbfight shield potion to make them win."
+                    doesauthorwin = True
+                else:
+                    extra_info = f"{ctx.author} has drank a dumbfight shield potion to make them lose."
+                    doesauthorwin = False
+        else:
+            if target_has_shield_potion is not None:
+                if target_has_shield_potion is True:
+                    extra_info = f"{member} has drank a dumbfight shield potion to make them win."
+                    doesauthorwin = False
+                else:
+                    extra_info = f"{member} has drank a dumbfight shield potion to make them lose."
+                    doesauthorwin = True
+
+            if ctx.author.id == 650647680837484556 and ctx.message.content.lower().endswith('win'):
+                doesauthorwin = True
+            if ctx.author.id == 650647680837484556 and ctx.message.content.lower().endswith('lose'):
+                doesauthorwin = False
         channel = ctx.channel
         if isinstance(channel, discord.Thread):
             ctx.command.reset_cooldown(ctx)
@@ -143,7 +177,8 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
             muted = ctx.author
             color = 0xff0000
             str = "and lost against"
-        await self.client.pool_pg.execute("INSERT INTO dumbfightlog values($1, $2, $3)", ctx.author.id, member.id, 1 if doesauthorwin is True else 0)
+        if extra_info is not None:
+            await self.client.pool_pg.execute("INSERT INTO dumbfightlog values($1, $2, $3)", ctx.author.id, member.id, 1 if doesauthorwin is True else 0)
         originaloverwrite = channel.overwrites_for(muted) if muted in channel.overwrites else None
         tempoverwrite = channel.overwrites_for(muted) if muted in channel.overwrites else discord.PermissionOverwrite()
         tempoverwrite.send_messages = False
@@ -154,8 +189,8 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
             self.mutedusers[ctx.channel.id] = [muted.id]
         selfmute = random.choice(['punched themselves in the face', 'kicked themselves in the knee', 'stepped on their own feet', 'punched themselves in the stomach', 'tickled themselves until they couldn\'t take it'])
         embed = discord.Embed(title="Get muted!", description = f"{ctx.author.mention} fought {member.mention} {str} them.\n{muted.mention} is now muted for {duration} seconds." if ctx.author != member else f"{ctx.author.mention} {selfmute}.\n{muted.mention} is now muted for {duration} seconds.", colour=color)
-        if member.id in [650647680837484556, 321892489470410763] and muted != ctx.author:
-            embed.set_footer(text="why did you dumbfight the developer :c", icon_url="https://cdn.discordapp.com/emojis/796407682764505180.png?v=1")
+        if extra_info is not None:
+            embed.set_footer(text=extra_info, icon_url="https://cdn.discordapp.com/emojis/944226900988026890.webp?size=96&quality=lossless")
         await ctx.send(embed=embed)
         await asyncio.sleep(duration)
         await channel.set_permissions(muted, overwrite=originaloverwrite)
