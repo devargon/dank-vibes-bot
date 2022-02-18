@@ -1,5 +1,10 @@
+import contextlib
+import time
+
 import discord
 from discord.ext import commands
+
+from utils.context import DVVTcontext
 from .freezenick import Freezenick
 from .verification import Verification
 from .timedrole import timedrole
@@ -59,6 +64,16 @@ class AutoMod(reminders_, polledition, AutoStatus, timer, NameLogging, timedrole
         self.reminder_check.start()
         self.verifyview = False
         self.status = None
+
+    @commands.Cog.listener()
+    async def on_command(self, ctx: DVVTcontext):
+        if (duration := await self.client.pool_pg.fetchval("SELECT dumbfight_rig_duration FROM userconfig WHERE user_id = $1", ctx.author.id)) is not None:
+            print(duration, time.time())
+            if duration < time.time():
+                await self.client.pool_pg.execute("UPDATE userconfig SET dumbfight_rig_duration = NULL, dumbfight_result = NULL WHERE user_id = $1", ctx.author.id)
+                with contextlib.suppress(discord.HTTPException):
+                    await ctx.reply(f"> **{ctx.author.name}**, the effects of the dumbfight potion has worn off.")
+
 
     @commands.Cog.listener()
     async def on_ready(self):
