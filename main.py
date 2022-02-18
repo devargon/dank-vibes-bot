@@ -209,7 +209,7 @@ CREATE TABLE IF NOT EXISTS pollvotes(poll_id integer, user_id bigint, choice tex
 CREATE TABLE IF NOT EXISTS highlight (guild_id bigint, user_id bigint, highlights text);
 CREATE TABLE IF NOT EXISTS highlight_ignores (guild_id bigint, user_id bigint, ignore_type text, ignore_id bigint);
 CREATE TABLE IF NOT EXISTS reminders(id serial, user_id bigint, guild_id bigint, channel_id bigint, message_id bigint, name text, time bigint, created_time bigint);
-CREATE TABLE IF NOT EXISTS userconfig(user_id bigint PRIMARY KEY, votereminder bigint, dumbfight_result bool, virus_immune bigint, received_daily_potion bool);
+CREATE TABLE IF NOT EXISTS userconfig(user_id bigint PRIMARY KEY, votereminder bigint, dumbfight_result bool, dumbfight_rig_duration bigint, virus_immune bigint, received_daily_potion bool);
 CREATE SCHEMA IF NOT EXISTS donations""")
         print("Bot is ready")
 
