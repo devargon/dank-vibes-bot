@@ -102,6 +102,10 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
             else:
                 ctx.command.reset_cooldown(ctx)
                 return await ctx.send(f"Here we have a human AKA {ctx.author.mention} showing you that they are able to dumbfight you, although they could've just done it already. <:dv_pepeHahaUSuckOwO:837653798313918475>")
+        if ctx.channel.id in self.mutedusers and member.id in self.mutedusers[ctx.channel.id]:
+            ctx.command.reset_cooldown(ctx)
+            return await ctx.send(
+                f"**{member.name}** is currently muted in a dumbfight. Wait a few moments before using this command.")
         if member.bot:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("Back off my kind. Don't dumbfight bots.")
