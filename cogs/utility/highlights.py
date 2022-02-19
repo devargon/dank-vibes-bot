@@ -13,7 +13,7 @@ from main import dvvt
 from utils.errors import ArgumentBaseError
 
 DONATOR_25M_ID = 820011992428707840 if os.getenv('state') == '0' else 943883455610109962
-LEVEL_50_ID = 678318507016060948 if os.getenv('state') == '0' else 943883516565942352
+LEVEL_50_ID = 944519459580821524 if os.getenv('state') == '0' else 943883516565942352
 LEVEL_100_ID = 717120742512394323 if os.getenv('state') == '0' else 943883531573157889
 
 
