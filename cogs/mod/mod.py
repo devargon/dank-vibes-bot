@@ -20,6 +20,8 @@ from collections import Counter
 from datetime import timedelta, datetime
 import time
 
+modlog_channelID = 873616122388299837 if os.getenv('state') == '1' else 640029959213285387
+
 class FrozenNicknames(menus.ListPageSource):
     def __init__(self, entries, title, inline):
         self.title = title
@@ -81,7 +83,7 @@ class ModlogPagination:
                     duration = humanize_timedelta(seconds=duration)
                 else:
                     duration = "4 weeks"
-                value = f"Mod: {moderator}\nDuration: **{duration}**"
+                value = f"Mod: {moderator}\nDuration: **{duration}**\nReason: {entry.get('reason')}"
                 embed.add_field(name=f"#{entry.get('case_id')}: {entry.get('action').capitalize()} (<t:{entry.get('start_time')}:d>)", value=value, inline=True)
         return embed
 
@@ -385,6 +387,8 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
         duration: int = duration
         if duration <= 0:
             return await ctx.send("You can't timeout someone for less than 1 second.")
+        now = round(time.time())
+        ending = now + duration
         td_obj = timedelta(seconds=duration)
         try:
             if reason is None:
@@ -395,12 +399,27 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
         except discord.Forbidden:
             return await ctx.send(f"I do not have permission to put {member} on a timeout.")
         else:
+            await self.client.pool_pg.execute("INSERT INTO modlog (guild_id, moderator_id, offender_id, action, reason, start_time, duration, end_time) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", ctx.guild.id, ctx.author.id, member.id, "timeout", reason, now, duration, ending)
             embed = discord.Embed(title=f"{ctx.author.name} has put {member.name} on a timeout for {humanize_timedelta(seconds=duration)}!", description=f"{member.mention} right now:", color=self.client.embed_color, timestamp=discord.utils.utcnow()+td_obj)
             embed.set_image(url="https://www.charlottesvillepeds.com/wp-content/uploads/2018/12/Timeout.jpg")
             embed.set_footer(text=f"{member}'s timeout will end at")
             if reason is not None:
                 embed.add_field(name="Reason", value=reason, inline=False)
             await ctx.send(embed=embed)
+            if await self.client.pool_pg.fetchval("SELECT enabled FROM serverconfig WHERE guild_id = $1 AND settings = $2", ctx.guild.id, 'timeoutlog') is True:
+                offender = member
+                moderator = ctx.author
+                reason = reason or "NA"
+                duration = humanize_timedelta(seconds=duration)
+                embed = discord.Embed(
+                    title='Timeout',
+                    description=f'**Offender**: {offender} {offender.mention}\n**Reason**: {reason}\n**Duration**: {duration}\n**Responsible Moderator**: {moderator}',
+                    color=discord.Color.orange(), timestamp=discord.utils.utcnow())
+                try:
+                    await self.client.get_channel(modlog_channelID).send(embed=embed)
+                except Exception as e:
+                    print(e)
+
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='untimeout', aliases=['ut', 'uto'])
