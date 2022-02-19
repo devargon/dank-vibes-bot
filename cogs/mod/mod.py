@@ -562,7 +562,7 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
         """
         if list_type is None:
             list_type = 'member'
-        if list_type not in ['role', 'roles', 'member', 'members', 'user', 'users', 'channel', 'channels']:
+        if list_type not in ['role', 'roles', 'member', 'members', 'user', 'users', 'channel', 'channels', 'm', 'u', 'r', 'chan', 'c']:
             return await ctx.send("You need to specify a list type to list. list_type can be `member/user`, `role`, or `channel`.")
         if things_to_list is None:
             return await ctx.send("You need to specify what to list.")
