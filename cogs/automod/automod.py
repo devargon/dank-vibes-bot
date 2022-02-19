@@ -1,8 +1,9 @@
 import contextlib
 import time
+from datetime import timedelta
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from utils.context import DVVTcontext
 from .freezenick import Freezenick
@@ -106,6 +107,19 @@ class AutoMod(reminders_, polledition, AutoStatus, timer, NameLogging, timedrole
                 await self.client.pool_pg.execute("UPDATE userconfig SET dumbfight_rig_duration = NULL, dumbfight_result = NULL WHERE user_id = $1", ctx.author.id)
                 with contextlib.suppress(discord.HTTPException):
                     await ctx.reply(f"> **{ctx.author.name}**, the effects of the dumbfight potion has worn off.")
+
+    @tasks.loop(hours=24)
+    async def daily_potion_reset(self):
+        await self.client.pool_pg.execute("UPDATE userconfig SET received_daily_potion = $1", False)
+
+    @daily_potion_reset.before_loop
+    async def wait_until_8am(self):
+        await self.client.wait_until_ready()
+        now = discord.utils.utcnow()
+        next_run = now.replace(hour=0, minute=0, second=0)
+        if next_run < now:
+            next_run += timedelta(days=1)
+        await discord.utils.sleep_until(next_run)
 
 
     @commands.Cog.listener()
