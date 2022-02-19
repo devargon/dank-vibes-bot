@@ -91,13 +91,13 @@ class AutoMod(reminders_, polledition, AutoStatus, timer, NameLogging, timedrole
                     await self.client.pool_pg.execute("INSERT INTO userconfig (user_id, received_daily_potion) VALUES ($1, $2)", ctx.author.id, True)
                     self.received_daily_potion = self.received_daily_potion + [ctx.author.id]
                     await self.add_item_count('dumbfightpotion', ctx.author, 1)
-                    await ctx.reply("You have received `1` Dumbfight Potion as you're currently **Level 50**!")
+                    await ctx.reply("You have received `1` Dumbfight Potion as you're currently **Level 50** and above!")
             elif entry.get('received_daily_potion') is not True:
                 if discord.utils.get(ctx.author.roles, id=level_50_role):
                     await self.client.pool_pg.execute("UPDATE userconfig SET received_daily_potion = $1 WHERE user_id = $2", True, ctx.author.id)
                     await self.add_item_count('dumbfightpotion', ctx.author, 1)
                     self.received_daily_potion.append(ctx.author.id)
-                    await ctx.reply("You have received `1` Dumbfight Potion as you're currently **Level 50**!")
+                    await ctx.reply("You have received `1` Dumbfight Potion as you're currently **Level 50** and above!")
             elif entry.get('received_daily_potion') is True:
                 self.received_daily_potion = self.received_daily_potion + [ctx.author.id]
             else:
