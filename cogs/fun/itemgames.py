@@ -373,7 +373,7 @@ class ItemGames(commands.Cog):
                         embed.color = discord.Color.green()
                         await confirmview.response.edit(embed=embed)
                         userconf = await self.client.pool_pg.fetchrow("SELECT * FROM userconfig WHERE user_id = $1", ctx.author.id)
-                        if userconf.get('dumbfight_result') is None and await self.get_item_count(itemname, ctx.author) > 0:
+                        if userconf is None or userconf.get('dumbfight_result') is None and await self.get_item_count(itemname, ctx.author) > 0:
                             remaining = await self.remove_item_count(itemname, ctx.author, 1)
                             msgstatus = await ctx.send(f"{ctx.author} is gulping down the dumbfight potion...")
                             result = random.choice([True, False])
