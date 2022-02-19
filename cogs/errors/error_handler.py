@@ -113,7 +113,7 @@ class ErrorHandler(commands.Cog):
             message = f"You're on cooldown. Try again in **{humanize_timedelta(seconds=error.retry_after)}**."
             if ctx.command.name == "dumbfight":
                 message += "\nPeople with **Vibing Investor** will have a cooldown of only **30 minutes**!"
-            if ctx.command.name == "lockgen":
+            if ctx.command.name == "lockgen" or ctx.command.name == 'randomcolor':
                 message = f"This command is currently under a global cooldown of **{humanize_timedelta(seconds=error.retry_after)}** to prevent abuse.\n"
             await send_error(message)
         elif isinstance(error, commands.MemberNotFound):
