@@ -17,7 +17,6 @@ from .editpoll import polledition
 from .reminders import reminders_
 from abc import ABC
 import os
-from utils import checks
 
 verify_role = 911541857807384677
 level_50_role = 944519459580821524 if os.getenv('state') == '0' else 943883516565942352
