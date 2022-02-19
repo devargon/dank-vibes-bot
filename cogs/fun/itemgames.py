@@ -363,7 +363,7 @@ class ItemGames(commands.Cog):
             if itemname == 'dumbfightpotion':
                 if await self.client.pool_pg.fetchval("SELECT dumbfight_result FROM userconfig WHERE user_id = $1", ctx.author.id) is None:
                     confirmview = confirm(ctx, self.client, 20.0)
-                    embed = discord.Embed(title=f"Are you sure you want to use a {itemdata.get('fullname')}?", description="Drinking a dumbfight potion might cause you to lose or win your dumbfights for the next 4 hours.")
+                    embed = discord.Embed(title=f"Are you sure you want to use a {itemdata.get('fullname')}?", description="Drinking a dumbfight potion might cause you to lose or win your dumbfights for the next 2 hours.")
                     confirmview.response = await ctx.reply(embed=embed, view=confirmview)
                     await confirmview.wait()
                     if confirmview.returning_value is not True:
@@ -380,12 +380,12 @@ class ItemGames(commands.Cog):
                             if userconf is None:
                                 await self.client.pool_pg.execute("INSERT INTO userconfig(user_id, dumbfight_result, dumbfight_rig_duration) VALUES($1, $2, $3)", ctx.author.id, result, round(time.time())+14400)
                             else:
-                                await self.client.pool_pg.execute("UPDATE userconfig SET dumbfight_result = $1, dumbfight_rig_duration = $2 WHERE user_id = $3", result, round(time.time())+14400, ctx.author.id)
+                                await self.client.pool_pg.execute("UPDATE userconfig SET dumbfight_result = $1, dumbfight_rig_duration = $2 WHERE user_id = $3", result, round(time.time())+7200, ctx.author.id)
                             await asyncio.sleep(3.0)
                             if result is True:
-                                await msgstatus.edit(content=f"{ctx.author} finished the dumbfight potion in one gulp.\nThey are now immune from losing dumbfights for 4 hours! They now have {remaining} Dumbfight Potions left.")
+                                await msgstatus.edit(content=f"{ctx.author} finished the dumbfight potion in one gulp.\nThey are now immune from losing dumbfights for 2 hours! They now have {remaining} Dumbfight Potions left.")
                             else:
-                                await msgstatus.edit(content=f"Alas! The dumbfight potion that {ctx.author} drank was a bad one, and {ctx.author.name} was poisoned.\nThey will lose all dumbfights for the next 4 hours. They now have {remaining} Dumbfight Potions left.")
+                                await msgstatus.edit(content=f"Alas! The dumbfight potion that {ctx.author} drank was a bad one, and {ctx.author.name} was poisoned.\nThey will lose all dumbfights for the next 2 hours. They now have {remaining} Dumbfight Potions left.")
                         else:
                             return await ctx.send("It appears that you already have a active dumbfight potion in effect. (1)")
                 else:
