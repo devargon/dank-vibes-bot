@@ -130,8 +130,8 @@ class dvvt(commands.AutoShardedBot):
                       'blacklist', 'freezenick', 'autorole', 'giveaways', 'giveawayentrants', 'dankdrops', 'autorole',
                       'donation_categories', 'christmaseventconfig', 'commandaccess', 'ignoredchristmascat',
                       'ignoredchristmaschan', 'perkremoval', 'commandlog', 'timedunlock', 'nickname_changes',
-                      'name_changes', 'timers', 'infections', 'polls', 'pollvotes', 'highlight', 'highlight_ignores', 'reminders',
-                      'userconfig']
+                      'name_changes', 'timers', 'infections', 'polls', 'pollvotes', 'highlight', 'highlight_ignores',
+                      'reminders', 'userconfig', 'modlog']
         tables = await self.pool_pg.fetch("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';")
         tables = [i.get('table_name') for i in tables]
         if tables is None:
@@ -210,6 +210,7 @@ CREATE TABLE IF NOT EXISTS highlight (guild_id bigint, user_id bigint, highlight
 CREATE TABLE IF NOT EXISTS highlight_ignores (guild_id bigint, user_id bigint, ignore_type text, ignore_id bigint);
 CREATE TABLE IF NOT EXISTS reminders(id serial, user_id bigint, guild_id bigint, channel_id bigint, message_id bigint, name text, time bigint, created_time bigint);
 CREATE TABLE IF NOT EXISTS userconfig(user_id bigint PRIMARY KEY, votereminder bigint, dumbfight_result bool, dumbfight_rig_duration bigint, virus_immune bigint, received_daily_potion bool);
+CREATE TABLE IF NOT EXISTS modlog(case_id serial, guild_id bigint not null, moderator_id bigint not null, offender_id bigint not null, action text not null, reason text, start_time bigint, duration bigint, end_time bigint);
 CREATE SCHEMA IF NOT EXISTS donations""")
         print("Bot is ready")
 

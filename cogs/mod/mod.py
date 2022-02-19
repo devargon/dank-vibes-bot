@@ -1,4 +1,4 @@
-from discord.ext import menus
+from discord.ext import menus, pages
 
 from .lockdown import lockdown
 from .censor import censor
@@ -17,7 +17,7 @@ import os
 from selenium import webdriver
 from fuzzywuzzy import process
 from collections import Counter
-from datetime import timedelta
+from datetime import timedelta, datetime
 import time
 
 class FrozenNicknames(menus.ListPageSource):
@@ -55,6 +55,35 @@ class PublicVoteView(discord.ui.View):
             await interaction.response.send_message("<:DVB_True:887589686808309791> **You currently have the <@&683884762997587998> role** and can join the heist!\nIf the heist hasn't started, get <@&758174643814793276> to be notified when it starts!", ephemeral=True, view=GetHeistPing())
         else:
             await interaction.response.send_message("<:DVB_False:887589731515392000> **You do not have the <@&683884762997587998> role.**\n` - ` Vote for Dank Vibes at https://top.gg/servers/595457764935991326/vote, and click on the button again to see if you can join the heist!\n` - ` If you have voted for Dank Vibes but still do not have the role, open a ticket in <#870880772985344010> and inform a Mod there.", ephemeral=True)
+
+class ModlogPagination:
+    def __init__(self, entries, user, per_page, client):
+        self.user = user
+        self.entries = entries
+        self.pages = []
+        self.client = client
+        self.per_page = per_page
+
+    def get_pages(self):
+        while len(self.entries) > self.per_page:
+            self.pages.append(self.format_page(self.entries[:self.per_page]))
+            self.entries = self.entries[self.per_page:]
+        self.pages.append(self.format_page(self.entries))
+        return self.pages
+
+    def format_page(self, page):
+        embed = discord.Embed(color=self.client.embed_color, title="Mod Log", timestamp=discord.utils.utcnow()).set_author(icon_url=self.user.display_avatar.url, name=f"{self.user} ({self.user.id}")
+        for entry in page:
+            if entry.get('action') == 'timeout':
+                mod_id = entry.get('moderator_id')
+                moderator = self.client.get_user(mod_id) or mod_id
+                if (duration := entry.get('duration')) is not None:
+                    duration = humanize_timedelta(seconds=duration)
+                else:
+                    duration = "4 weeks"
+                value = f"Mod: {moderator}\nDuration: **{duration}**"
+                embed.add_field(name=f"#{entry.get('case_id')}: {entry.get('action').capitalize()} (<t:{entry.get('start_time')}:d>)", value=value, inline=True)
+        return embed
 
 class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
     """
@@ -391,7 +420,18 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
         else:
             await ctx.send(f"{member.name}'s timeout successfully removed.")
 
-
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name='modlog', aliases=['ml'])
+    async def modlog(self, ctx, user: discord.User = None):
+        if user is None:
+            return await ctx.send("Whose modlog are you checking??")
+        modlog = await self.client.pool_pg.fetch("SELECT * FROM modlog WHERE offender_id = $1 ORDER BY case_id DESC", user.id)
+        if len(modlog) < 1:
+            embed = discord.Embed(title="Mod Log", description="Nothing to see here, move along 👋").set_author(icon_url=user.display_avatar.url, name=f"{user} ({user.id}")
+            return await ctx.send(embed=embed)
+        else:
+            pag = pages.Paginator(pages=ModlogPagination(modlog, user, 10, self.client).get_pages(), disable_on_timeout=True, use_default_buttons=True)
+            await pag.send(ctx)
 
 
 
