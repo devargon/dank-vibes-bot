@@ -64,6 +64,7 @@ class AutoMod(reminders_, polledition, AutoStatus, timer, NameLogging, timedrole
         self.change_status.start()
         self.edit_polls.start()
         self.reminder_check.start()
+        self.daily_potion_reset.start()
         self.verifyview = False
         self.status = None
         self.received_daily_potion = []
@@ -110,6 +111,7 @@ class AutoMod(reminders_, polledition, AutoStatus, timer, NameLogging, timedrole
 
     @tasks.loop(hours=24)
     async def daily_potion_reset(self):
+        self.received_daily_potion = []
         await self.client.pool_pg.execute("UPDATE userconfig SET received_daily_potion = $1", False)
 
     @daily_potion_reset.before_loop
