@@ -1,6 +1,7 @@
 import asyncio
 import re
 import time
+import os
 
 import discord
 import datetime
@@ -9,6 +10,11 @@ import copy
 from utils.buttons import confirm
 from utils import checks
 from main import dvvt
+from utils.errors import ArgumentBaseError
+
+DONATOR_25M_ID = 820011992428707840 if os.getenv('state') == '0' else 943883455610109962
+LEVEL_50_ID = 678318507016060948 if os.getenv('state') == '0' else 943883516565942352
+LEVEL_100_ID = 717120742512394323 if os.getenv('state') == '0' else 943883531573157889
 
 
 class ChannelOrMember(commands.Converter):
@@ -38,6 +44,24 @@ class Highlight(commands.Cog):
         Adds a text or phrase to your highlight list.
         When you don't talk after 5 minutes, you will be DMed if someone highlights you with said phrase.
         """
+        def get_highlight_limit():
+            donator_25 = ctx.guild.get_role(DONATOR_25M_ID)
+            level_50 = ctx.guild.get_role(LEVEL_50_ID)
+            level_100 = ctx.guild.get_role(LEVEL_100_ID)
+            hl_limit = 0
+            if donator_25 is None:
+                raise ArgumentBaseError(message=f"{DONATOR_25M_ID} is not a valid role ID for donator_25")
+            elif donator_25 in ctx.author.roles:
+                    hl_limit += 1
+            if level_50 is None:
+                raise ArgumentBaseError(message=f"{LEVEL_50_ID} is not a valid role ID for level_50")
+            elif level_50 in ctx.author.roles:
+                hl_limit += 2
+            if level_100 is None:
+                raise ArgumentBaseError(message=f"{LEVEL_100_ID} is not a valid role ID for level_100")
+            elif level_100 in ctx.author.roles:
+                hl_limit += 1000
+            return hl_limit
         if text is None:
             return await ctx.send("You need to specify text that you want to be highlighted for.")
         text = (await commands.clean_content().convert(ctx, text)).lower()
@@ -46,8 +70,22 @@ class Highlight(commands.Cog):
         if len(text) > 50:
             return await ctx.send("The text that you want to be highlighted for can only be 50 characters long.")
         count = await self.client.pool_pg.fetchval("SELECT COUNT(*) FROM highlight WHERE user_id = $1 AND guild_id = $2", ctx.author.id, ctx.guild.id)
-        if count >= 15:
-            return await ctx.send("You can only have a maximum of 15 highlights.")
+        if count >= get_highlight_limit():
+            donator_25 = ctx.guild.get_role(DONATOR_25M_ID)
+            level_50 = ctx.guild.get_role(LEVEL_50_ID)
+            level_100 = ctx.guild.get_role(LEVEL_100_ID)
+            desc = []
+            if donator_25 not in ctx.author.roles:
+                desc.append(f"` - ` You can get `1` highlight by being a **{donator_25.name}**.")
+            if level_50 not in ctx.author.roles:
+                desc.append(f"` - ` You can get `2` highlights by having **{level_50.name}** (Level 50).")
+            if level_100 not in ctx.author.roles:
+                desc.append(f"` - ` You can get **unlimited** highlights by being a **{level_100.name}** (Level 100).")
+            actual_description = "\n".join(desc)
+            if get_highlight_limit() == 0:
+                return await ctx.send(f"You aren't able to get any highlights.\n{actual_description}")
+            else:
+                return await ctx.send(f"You can only have a maximum of {get_highlight_limit()} highlights.\n{actual_description}")
         exising_hl = await self.client.pool_pg.fetchval("SELECT highlights FROM highlight WHERE user_id = $1 AND guild_id = $2 AND highlights = $3", ctx.author.id, ctx.guild.id, text)
         if exising_hl is None:
             await self.client.pool_pg.execute("INSERT INTO highlight(guild_id, user_id, highlights) VALUES ($1, $2, $3)", ctx.guild.id, ctx.author.id, text)
@@ -223,7 +261,7 @@ class Highlight(commands.Cog):
                                         e = await self.generate_context(message, k)
                                         if highlighted_member is not None and message.channel.permissions_for(highlighted_member).view_channel:
                                             try:
-                                                await highlighted_member.send(f"In **{message.guild.name}**'s **{message.channel.name}**, you were highlighted with the phrase \"{k}\".", embed=e)
+                                                await highlighted_member.send(f"A tracked phrase \"{k}\" was mentioned by **{message.author.name}** in **{message.guild.name}**'s **{message.channel.name}**.", embed=e)
                                             except:
                                                 pass
                                             else:

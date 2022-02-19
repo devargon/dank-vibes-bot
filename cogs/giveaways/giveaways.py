@@ -11,6 +11,7 @@ import random
 from utils.buttons import confirm
 
 voteid = 874897331252760586 if os.getenv('state') == '1' else 683884762997587998
+level_100id = 943883531573157889 if os.getenv('state') == '1' else 717120742512394323
 
 import discord
 from discord.ext import commands, tasks, menus
@@ -52,20 +53,48 @@ class GiveawayView(discord.ui.View):
         if is_giveaway_valid == None:
             return await interaction.response.send_message("It appears that this giveaway doesn't exist or has ended.", ephemeral=True)
         voterole = interaction.guild.get_role(voteid)
+        level100 = interaction.guild.get_role(level_100id)
         if voterole is None:
             await interaction.response.send_message("The Vibing Dankster role is invalid.", ephemeral=True)
+            return
+        if level100 is None:
+            await interaction.response.send_message("The Level 100 role is invalid.", ephemeral=True)
             return
         number_of_entries = len(await self.client.pool_pg.fetch("SELECT * FROM giveawayentrants WHERE user_id = $1 and message_id = $2", interaction.user.id, giveawaymessage.id))
         if number_of_entries == 0:
             return await interaction.response.send_message("Join the giveaway first before claiming your extra entry!", ephemeral=True)
-        elif number_of_entries == 1:
-            if voterole not in interaction.user.roles:
-                return await interaction.response.send_message(f"You need to vote for {interaction.guild.name} to have an **extra entry** in this giveaway.\nYou can do so [here](https://top.gg/servers/595457764935991326/vote)!", ephemeral=True)
+        elif number_of_entries < 3:
+            if number_of_entries == 2 and (level100 not in interaction.user.roles or voterole not in interaction.user.roles):
+                return await interaction.response.send_message("You can only claim 1 **extra** entry in this giveaway.\n` - ` You can claim 1 extra entry if you've voted for the server.\n` - ` You can claim 1 extra entry if you're Level 100.", ephemeral=True)
+            if voterole in interaction.user.roles:
+                if level100 in interaction.user.roles:
+                    if number_of_entries == 1:
+                        summary = "You've claimed your `2` extra entries from being Level 100 and voting for the server!"
+                        additional = 2
+                    elif number_of_entries == 2:
+                        additional = 1
+                        summary = "You've claimed your `1` extra entry from being Level 100 and voting for the server!"
+                    else:
+                        summary = None
+                else:
+                    if number_of_entries == 1:
+                        summary = "You've claimed your `2` extra entries from voting for the server! You could've claimed another entry if you were Level 100."
+                        additional = 1
+                    else:
+                        summary = f"You've already claimed your extra entry in this giveaway. You currently have `{number_of_entries}` entries in total."
             else:
-                await self.client.pool_pg.execute("INSERT INTO giveawayentrants VALUES($1, $2)", giveawaymessage.id, interaction.user.id)
-                await interaction.response.send_message("You've claimed your extra entry! You now have **2** entries in this giveaway!", ephemeral=True)
+                if level100 in interaction.user.roles:
+                    additional = 1
+                    summary = f"You've claimed your `1` extra entry from being Level 100! You can claim **one** more entry by voting for {interaction.guild.name} [here](https://top.gg/servers/595457764935991326/vote)."
+                else:
+                    summary = f"You need to vote for {interaction.guild.name} to have an **extra entry** in this giveaway.\nYou can do so [here](https://top.gg/servers/595457764935991326/vote)!"
+            if additional > 0:
+                for i in range(additional):
+                    await self.client.pool_pg.execute("INSERT INTO giveawayentrants VALUES($1, $2)", giveawaymessage.id, interaction.user.id)
+            if summary is not None:
+                await interaction.response.send_message(summary, ephemeral=True)
         else:
-            await interaction.response.send_message("You've already claimed your extra entry in this giveaway.", ephemeral=True)
+            await interaction.response.send_message(f"You've already claimed your extra entry in this giveaway. You currently have `{number_of_entries}` entries in total.", ephemeral=True)
 
 class giveaways(commands.Cog):
     """

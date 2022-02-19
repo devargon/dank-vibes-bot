@@ -105,7 +105,9 @@ class polls(commands.Cog):
         question_and_choices = question_and_choices.split("|")
         if len(question_and_choices) == 0:
             return await ctx.send("You need to provide a question and options. See `dv.help poll` for more information.")
-        question_and_choices = [var.strip() for var in question_and_choices if var != ""]
+        question_and_choices = set([var.strip() for var in question_and_choices if var != ""])
+        if list(set(question_and_choices)) != question_and_choices:
+            return await ctx.send("You cannot have any question and options that have the same name.")
         if len(question_and_choices) == 1:
             return await ctx.send(f"You only provided the question, `{question_and_choices[0]}`. You need to provide at least 2 options. See `dv.help poll` for more information.")
         if len(question_and_choices) < 3:
