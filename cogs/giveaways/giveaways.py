@@ -66,6 +66,7 @@ class GiveawayView(discord.ui.View):
         elif number_of_entries < 3:
             if number_of_entries == 2 and (level100 not in interaction.user.roles or voterole not in interaction.user.roles):
                 return await interaction.response.send_message("You can only claim 1 **extra** entry in this giveaway.\n` - ` You can claim 1 extra entry if you've voted for the server.\n` - ` You can claim 1 extra entry if you're Level 100.", ephemeral=True)
+            additional = 0
             if voterole in interaction.user.roles:
                 if level100 in interaction.user.roles:
                     if number_of_entries == 1:
