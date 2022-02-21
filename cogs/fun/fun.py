@@ -838,11 +838,10 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
                 self.rcdata = f"{weekday_int}:1"
             else:
                 times = int(data[1])
-                if times > 3:
-                    return await ctx.send(f"The {random_color_role.mention}'s color has been changed 3/3 times today. It will reset at 5:00 AM UTC every day.")
+                if times >= 3:
+                    return await ctx.send(f"The **{random_color_role.name}**'s color has been changed 3/3 times today. It will reset at 5:00 AM UTC every day.")
                 else:
                     self.rcdata = f"{weekday_int}:{times + 1}"
         await random_color_role.edit(color=random_int_color)
         embed = discord.Embed(title="Role Color Changed", description=f"{ctx.author.mention} changed the color of {random_color_role.mention} from {old_hex} to {str_random_hex_color}.", color=random_int_color)
         await ctx.send(embed=embed)
-        await ctx.send(self.rcdata)
