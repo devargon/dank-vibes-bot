@@ -105,7 +105,10 @@ class polls(commands.Cog):
         question_and_choices = question_and_choices.split("|")
         if len(question_and_choices) == 0:
             return await ctx.send("You need to provide a question and options. See `dv.help poll` for more information.")
-        question_and_choices = set([var.strip() for var in question_and_choices if var != ""])
+        another_question_and_choices: list = []
+        for op in question_and_choices:
+            if op not in another_question_and_choices:
+                another_question_and_choices.append(op)
         if list(set(question_and_choices)) != question_and_choices:
             return await ctx.send("You cannot have any question and options that have the same name.")
         if len(question_and_choices) == 1:
@@ -114,8 +117,8 @@ class polls(commands.Cog):
             return await ctx.send("You provided a question and less than 2 options. You need to provide at least 2 options. See `dv.help poll` for more information.")
         if len(question_and_choices) > 6:
             return await ctx.send("You provided a question and more than 5 options. You can only have a maximum of 5 options. See `dv.help poll` for more information.")
-        question = question_and_choices[0]
-        choices = question_and_choices[1:]
+        question = another_question_and_choices[0]
+        choices = another_question_and_choices[1:]
         choices_dict = {}
         for option in choices:
             choices_dict[option] = 0
