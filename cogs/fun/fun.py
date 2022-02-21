@@ -812,7 +812,7 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
             print('nooo')
 
     @checks.perm_insensitive_roles()
-    @commands.cooldown(1, 1800, commands.BucketType.user)
+    @commands.cooldown(1, 1800, commands.BucketType.guild)
     @commands.command(name="randomcolor", aliases=['rc'])
     async def randomcolor(self, ctx: DVVTcontext):
         timenow = round(time.time())
