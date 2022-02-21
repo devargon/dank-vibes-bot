@@ -187,7 +187,7 @@ class Role(commands.Cog):
         success = 0
         original_count = len(role.members)
         failed = {}
-        split = math.ceil(len(role.members)/10) if len(role.members) > 30 else 1
+        split = math.ceil(len(role.members)/10) if len(role.members) > 30 else 5
         def generate_embed():
             embed = discord.Embed(title="Removing roles...", description=f"{success} of {original_count} members processed.", color=discord.Color.green())
             embed.add_field(name="Progress", value=f"{generate_loadbar(percentage=success/original_count, length=10)} {round(success/original_count*100)}%", inline=False)
