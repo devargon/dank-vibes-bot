@@ -380,7 +380,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                         if member is None or channel is None:
                             pass
                         elif config.get('method') == 1:  # DMs or is lottery/daily reminder
-                            if result.get('remindertype') in [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21, 22, 23]:
+                            if result.get('remindertype') in [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21]:
                                 try:
                                     await channel.send(f"{member.mention} You can now {message(result.get('remindertype'))}")  # DM
                                 except:
