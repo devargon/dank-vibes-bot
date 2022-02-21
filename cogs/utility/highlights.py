@@ -341,9 +341,9 @@ class Highlight(commands.Cog):
                 return await ctx.send("**Carl-bot's highlight settings were not in the expected format. (It is missing the tracked phrases.)** Please try again.")
             embed = discord.Embed(title="These are the settings that will be imported over from Carl-bot's highlight settings.", color=self.client.embed_color)
             embed.add_field(name="Tracked Phrases", value='\n'.join(tracked))
-            if ignored_channels is not None:
+            if len(ignored_channels) > 0:
                 embed.add_field(name="Ignored Channels", value='\n'.join([x.mention for x in ignored_channels]))
-            if ignored_members is not None:
+            if len(ignored_members) > 0:
                 embed.add_field(name="Ignored Members", value='\n'.join([str(x) for x in ignored_members]))
         confirmview = confirm(ctx, self.client, 20.0)
         confirmview.response = await ctx.send("**Step 2 of 2**\n**Confirm that I have read your highlight settings correctly.** Click `yes` if you've ensured they're imported correctly.", embed=embed, view=confirmview)
