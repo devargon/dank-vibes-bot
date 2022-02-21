@@ -135,7 +135,7 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
             if target_has_shield_potion is not None:
                 if author_has_shield_potion == target_has_shield_potion:
                     doesauthorwin = random.choice([True, False])
-                    extra_info = f"Both {ctx.author} and {member} have drank a dumbfight shield potion."
+                    extra_info = f"Both {ctx.author} and {member} have drank a dumbfight shield potion, so the result was randomly decided."
                 else:
                     if target_has_shield_potion is True:
                         extra_info = f"{member} has drank a dumbfight shield potion to make them win."
@@ -175,12 +175,60 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
             return await ctx.send("Dumbfight is not supported in threads yet. Sorry >.<")
         if doesauthorwin:
             muted = member
+            winmen = ctx.author.mention
+            losemen = muted.mention
             color = 0x00ff00
             str = "and won against"
+            action = random.choice([f"{winmen} reported the impostor {losemen}.",
+                                    f"{winmen} fought {losemen}.", f"{winmen} farted on {losemen}.",
+                                    f"{winmen} rickrolled {losemen}.", f"{winmen} took a huge dump on {losemen}.",
+                                    f"{winmen} landed a soft punch on {losemen}.", f"{winmen} kicked {losemen} in *that* area.",
+                                    f"{winmen} didn't need to do anything; {losemen} saw the simps in this server and fainted.",
+                                    f"{winmen} used the 6 Infinity Stones to fight {losemen}.",
+                                    f"{winmen} was a coward and got Thanos to fight {losemen}.",
+                                    f"{losemen} cheated on {winmen} and lost the court case.", f"{winmen} freeze-rayed {losemen}.",
+                                    f"{winmen} won a game of Fortnite against {losemen}.", f"{losemen} lagged and took the W.",
+                                    f"{losemen} saw {winmen} vent and die.", f"{winmen} did {losemen}'s mom.",
+                                    f"{losemen} slipped on {winmen}'s banana.", f"{winmen} caught {losemen} in 4K while fighting. 😳",
+                                    f"{winmen} turned hacks on.", f"{winmen} fed {losemen} foot lettuce and {losemen} died.",
+                                    f"{winmen} made {losemen} look at the mirror.",
+                                    f"{winmen} told {losemen} that their dad went out to get milk.",
+                                    f"{winmen} exposed {losemen}'s speedrun.", f"{losemen} tried to ratio {winmen}.",
+                                    f"{winmen} told {losemen} that their Discord kitten doesn't love them.",
+                                    f"{winmen} touched grass and became a god.", f"{winmen} said {losemen}'s memes suck.",
+                                    f"{winmen} scammed {losemen} out of their life insurance."])
+
+
+
         else:
             muted = ctx.author
             color = 0xff0000
             str = "and lost against"
+            winmen = member.mention
+            losemen = muted.mention
+            action = random.choice([f"{losemen} got head-shot by {winmen}.",
+                                    f"{losemen} looked at {winmen}'s search history.",
+                                    f"{losemen} tried insulting {winmen}'s grandma."
+                                    f"> {winmen}: We don't talk about {losemen}, no, no, no!",
+                                    f"{winmen} forced {losemen} to sleep.",
+                                    f"{losemen} got stuck in the backrooms.",
+                                    f"{losemen} ate a fishbone and died.",
+                                    f"{losemen} tried making out with {winmen}'s wife.",
+                                    f"{losemen} took a shower after 3 years.",
+                                    f"{losemen} thought they were cool and tried hitting on {winmen}.",
+                                    f"{losemen} put milk before cereal in front of {winmen}.",
+                                    f"{winmen} EMOTIONALLY DAMAGED {losemen}.",
+                                    f"{losemen} raged over a game because {winmen} tilted them so bad.",
+                                    f"{losemen} tried listening to to {winmen}'s instructions and breathe but died.",
+                                    f"{losemen} became a Discord Mod.",
+                                    f"{losemen} raged over video games while playing with {winmen}.",
+                                    f"{losemen} sent sus images to {winmen}. 🤨",
+                                    f"{losemen} leaned too much on the chair.",
+                                    f"{losemen} missed the ender pearl shot because {winmen} distracted them.",
+                                    f"{losemen} put their socks in water in front of {winmen}.",
+                                    f"{losemen} mined straight into the desert temple as he was distracted by {winmen}.",
+                                    f"{winmen} told {losemen} to mine straight down in Minecraft.",
+                                    f"{losemen} tried to crack 90s in front of {winmen} and died."])
         if extra_info is not None:
             await self.client.pool_pg.execute("INSERT INTO dumbfightlog values($1, $2, $3)", ctx.author.id, member.id, 1 if doesauthorwin is True else 0)
         originaloverwrite = channel.overwrites_for(muted) if muted in channel.overwrites else None
@@ -191,8 +239,11 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
             self.mutedusers[ctx.channel.id] = self.mutedusers[ctx.channel.id] + [muted.id]
         else:
             self.mutedusers[ctx.channel.id] = [muted.id]
-        selfmute = random.choice(['punched themselves in the face', 'kicked themselves in the knee', 'stepped on their own feet', 'punched themselves in the stomach', 'tickled themselves until they couldn\'t take it'])
-        embed = discord.Embed(title="Get muted!", description = f"{ctx.author.mention} fought {member.mention} {str} them.\n{muted.mention} is now muted for {duration} seconds." if ctx.author != member else f"{ctx.author.mention} {selfmute}.\n{muted.mention} is now muted for {duration} seconds.", colour=color)
+        if ctx.author == member:
+            lst = ['punched themselves in the face', 'kicked themselves in the knee', 'stepped on their own feet', 'punched themselves in the stomach', 'tickled themselves until they couldn\'t take it']
+            embed = discord.Embed(title="Get muted!", description=f"{random.choice(lst)}.\n{muted.mention} is now muted for {duration} seconds.", colour=color)
+        else:
+            embed = discord.Embed(title="Get muted!", description=f"{action}\n{muted.mention} lost and is now muted for {duration} seconds.", colour=color)
         if extra_info is not None:
             embed.set_footer(text=extra_info, icon_url="https://cdn.discordapp.com/emojis/944226900988026890.webp?size=96&quality=lossless")
         await ctx.send(embed=embed)
