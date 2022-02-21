@@ -162,9 +162,10 @@ class OwO(commands.Cog, name='owo'):
                 query = "SELECT member_id, weekly_count FROM owocount ORDER BY weekly_count DESC LIMIT $1"
                 embed = await self.get_leaderboard(guild, query, top=5)
                 embed.title = "This week's OwO leaderboard"
-                if channel is not None:
+                weeklychan = self.client.get_channel(937236577673945109)
+                if weeklychan is not None:
                     with contextlib.suppress(discord.HTTPException):
-                        await channel.send(embed=embed)
+                        await weeklychan.send(embed=embed)
             weekly_res = await self.client.pool_pg.fetch("SELECT member_id, weekly_count FROM owocount")
             reset_values = []
             for res in weekly_res:
