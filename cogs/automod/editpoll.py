@@ -1,3 +1,5 @@
+import asyncio
+
 import discord
 from discord.ext import commands, tasks
 import time
@@ -61,3 +63,4 @@ class polledition(commands.Cog):
                         await partial_message.edit(embed=embed)
                     except discord.NotFound:
                         await self.client.pool_pg.execute("DELETE FROM polls WHERE poll_id = $1", poll_id)
+                    await asyncio.sleep(1.5)

@@ -1,3 +1,5 @@
+import asyncio
+
 import discord
 from discord.ext import commands, tasks
 
@@ -63,6 +65,7 @@ class timer(commands.Cog):
                         await message.edit(embed=embed)
                     except (discord.NotFound, discord.Forbidden, discord.HTTPException):
                         pass
+                await asyncio.sleep(1.5)
 
     @timer_loop.before_loop
     async def before_timer_loop(self):
