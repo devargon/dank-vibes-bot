@@ -37,10 +37,12 @@ class DisboardAutoLock(commands.Cog):
                 result = re.findall(regex2, embed.description)
                 if result:
                     if not message.channel.id == disboard_channel:
-                        await dischannel.send(f"This server has been bumped by someone in another channel! Thank you for bumping the server <#")
+                        await dischannel.send(f"This server has been bumped by someone in another channel! Thank you for bumping the server!")
                     else:
                         await dischannel.send(f"Thank you for bumping the server ❤️ <3")
                 now = round(time.time())
+                if len(result) < 1:
+                    return
                 timetobump = now + int(result[0]) * 60
             overwrite.send_messages = False
             await dischannel.set_permissions(message.guild.default_role, overwrite=overwrite, reason=f"Disboard Auto Lock from bump by {message.author}")
