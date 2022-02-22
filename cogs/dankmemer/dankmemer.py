@@ -842,7 +842,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
             member = get_member()
             if not member:
                 return
-            if "You can't increase a stat" in beforeembed.footer.text:
+            if isinstance(beforeembed.footer.text, str) and "You can't increase a stat" in beforeembed.footer.text:
                 beforeview = discord.ui.View.from_message(beforemsg)
                 afterview = discord.ui.View.from_message(aftermsg)
                 if beforeview is None or afterview is None:
