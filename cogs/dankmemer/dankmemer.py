@@ -856,8 +856,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                         try:
                             item = beforeview.children[button]
                         except IndexError:
-                            await self.client.get_channel(871737028105109574).send(f"<@650647680837484556> {beforemsg.jump_url} index error here")
-                            return
+                            return False
                         if not isinstance(item, discord.ui.Button):
                             return False
                         if item.label != buttons[button]:
@@ -873,8 +872,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                         try:
                             item = afterview.children[button]
                         except IndexError:
-                            await self.client.get_channel(871737028105109574).send(f"<@650647680837484556> {beforemsg.jump_url} index error here")
-                            return
+                            return False
                         if not isinstance(item, discord.ui.Button):
                             return False
                         if item.label != buttons[button]:
