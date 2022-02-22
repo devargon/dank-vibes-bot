@@ -170,6 +170,8 @@ class reminders(commands.Cog):
         Copy another person's reminder and make it your own reminder!
         """
         reminder: Reminder = reminder_id
+        if reminder is None:
+            return await ctx.send("You need to specify a reminder to copy.")
         remind_time = reminder.time
         name = reminder.name
         if reminder.user == ctx.author.id:
