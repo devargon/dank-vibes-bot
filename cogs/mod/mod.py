@@ -124,10 +124,21 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
             else:
                 member_who_opened = ticketmessage.mentions[0]
                 try:
-                    await self.client.wait_for('message', check=lambda m: m.channel.id == channel.id and m.author.id == member_who_opened.id, timeout=180)
+                    usrmsg = await self.client.wait_for('message', check=lambda m: m.channel.id == channel.id and m.author.id == member_who_opened.id, timeout=180)
                 except:
                     if isinstance(self.client.get_channel(channel.id), discord.TextChannel):
                         await channel.send(f"Hey {member_who_opened.name}, ask your question here and a Moderator will be here to assist you as soon as possible! {member_who_opened.mention}")
+                else:
+                    cont = usrmsg.content
+                    #see if user said hi
+                    if cont.lower().startswith("hi") or cont.lower().startswith("hello"):
+                        splitted = cont.split(" ")
+                        if len(splitted) < 3:
+                            return await channel.send(f"Hey {member_who_opened.mention}, please describe your issue or question here, and not just simply say Hi. This allows our Mods to deal with your issue quickly.\nhttps://nohello.net/en/")
+
+
+
+
 
 
 
