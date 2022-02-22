@@ -130,10 +130,9 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
                         await channel.send(f"Hey {member_who_opened.name}, ask your question here and a Moderator will be here to assist you as soon as possible! {member_who_opened.mention}")
                 else:
                     cont = usrmsg.content
-                    #see if user said hi
                     if cont.lower().startswith("hi") or cont.lower().startswith("hello"):
                         splitted = cont.split(" ")
-                        if len(splitted) < 3:
+                        if len(splitted) <= 3:
                             return await channel.send(f"Hey {member_who_opened.mention}, please describe your issue or question here, and not just simply say Hi. This allows our Mods to deal with your issue quickly.\nhttps://nohello.net/en/")
 
 
