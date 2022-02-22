@@ -121,24 +121,28 @@ class giveaways(commands.Cog):
             giveaways = await self.client.pool_pg.fetch("SELECT * FROM giveaways WHERE time > $1", round(time()))
             if len(giveaways) > 0:
                 for giveaway in giveaways:
-                    message = self.client.get_channel(giveaway.get("channel_id")).get_partial_message(giveaway.get("message_id"))
-                    entrant_no = await self.client.pool_pg.fetchval("SELECT COUNT(DISTINCT user_id) FROM giveawayentrants WHERE message_id = $1", giveaway.get("message_id"))
-                    prize = giveaway.get("name")
-                    if (hoster := self.client.get_user(giveaway.get('host_id'))) is not None:
-                        hoster = hoster.mention
+                    guild = self.client.get_guild(giveaway.get("guild_id"))
+                    if guild is not None:
+                        message = guild.get_channel(giveaway.get("channel_id")).get_partial_message(giveaway.get("message_id"))
+                        entrant_no = await self.client.pool_pg.fetchval("SELECT COUNT(DISTINCT user_id) FROM giveawayentrants WHERE message_id = $1", giveaway.get("message_id"))
+                        prize = giveaway.get("name")
+                        if (hoster := self.client.get_user(giveaway.get('host_id'))) is not None:
+                            hoster = hoster.mention
+                        else:
+                            hoster = giveaway.get('host_id')
+                        ends_at = giveaway.get('time')
+                        duration = ends_at - round(time())
+                        end_at_datetime = datetime.fromtimestamp(ends_at)
+                        description = f"Press the button to enter!\nHosted by: {hoster}\nDuration: **{humanize_timedelta(seconds=duration)}**\nEnds <t:{ends_at}:F> (<t:{ends_at}:R>)"
+                        embed = discord.Embed(title=prize, description=description, color=self.client.embed_color, timestamp=end_at_datetime)
+                        embed.add_field(name="Entrants", value=entrant_no)
+                        winner = giveaway.get('winners')
+                        if prize == "<a:dv_iconOwO:837943874973466664> 1 Pepe Trophy":
+                            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/718136428219072662.gif")
+                        embed.set_footer(text=f"{plural(winner):winner} can win this giveaway, which ends")
+                        await message.edit(embed=embed)
                     else:
-                        hoster = giveaway.get('host_id')
-                    ends_at = giveaway.get('time')
-                    duration = ends_at - round(time())
-                    end_at_datetime = datetime.fromtimestamp(ends_at)
-                    description = f"Press the button to enter!\nHosted by: {hoster}\nDuration: **{humanize_timedelta(seconds=duration)}**\nEnds <t:{ends_at}:F> (<t:{ends_at}:R>)"
-                    embed = discord.Embed(title=prize, description=description, color=self.client.embed_color, timestamp=end_at_datetime)
-                    embed.add_field(name="Entrants", value=entrant_no)
-                    winner = giveaway.get('winners')
-                    if prize == "<a:dv_iconOwO:837943874973466664> 1 Pepe Trophy":
-                        embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/718136428219072662.gif")
-                    embed.set_footer(text=f"{plural(winner):winner} can win this giveaway, which ends")
-                    await message.edit(embed=embed)
+                        continue
         except Exception as e:
             print(e)
 
