@@ -37,7 +37,10 @@ def truefalse(value):  # shows the enabled or disabled emoji for 0 or 1 values
 
 
 async def crossmark(msg):
-    await msg.add_reaction("<:crossmark:841186660662247444>")
+    try:
+        await msg.add_reaction("<:crossmark:841186660662247444>")
+    except Exception as e:
+        pass
 
 
 def numberswitcher(no):
