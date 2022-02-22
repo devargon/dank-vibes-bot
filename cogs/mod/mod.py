@@ -133,7 +133,7 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
                     if cont.lower().startswith("hi") or cont.lower().startswith("hello"):
                         splitted = cont.split(" ")
                         if len(splitted) <= 3:
-                            return await channel.send(f"Hey {member_who_opened.mention}, please describe your issue or question here, and not just simply say Hi. This allows our Mods to deal with your issue quickly.\nhttps://nohello.net/en/")
+                            return await channel.send(f"Hey {member_who_opened.mention}, please describe your issue or question here, and not just simply say Hi/Hello. This allows our Mods to deal with your issue quickly.\nhttps://nohello.net/en/")
 
 
 
