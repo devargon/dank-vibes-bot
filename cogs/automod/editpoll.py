@@ -31,36 +31,39 @@ class polledition(commands.Cog):
 
     @tasks.loop(seconds=15)
     async def edit_polls(self):
-        await self.client.wait_until_ready()
-        time_past_expiry = round(time.time()) - 30*24*60*60
-        polls = await self.client.pool_pg.fetch("SELECT * FROM polls WHERE created > $1", time_past_expiry)
-        for poll in polls:
-            creator_id = poll.get('creator_id')
-            guild_id = poll.get('guild_id')
-            channel_id = poll.get('channel_id')
-            message_id = poll.get('message_id')
-            poll_id = poll.get('poll_id')
-            creator = self.client.get_user(creator_id)
-            guild: discord.Guild = self.client.get_guild(guild_id)
-            if guild is not None:
-                channel: discord.TextChannel = guild.get_channel(channel_id)
-                if channel is not None:
-                    if creator is None:
-                        author_icon, author_name = None, "Poll"
-                    else:
-                        author_icon, author_name = creator.display_avatar.url, f"{creator}'s Poll"
-                    question = poll.get('poll_name')
-                    choices = poll.get('choices').split('|')
-                    polldata = await self.client.pool_pg.fetch("SELECT * FROM pollvotes WHERE poll_id = $1", poll_id)
-                    poll_dict = {}
-                    for choice in choices:
-                        poll_dict[choice] = 0
-                    for polled in polldata:
-                        poll_dict[polled.get('choice')] += 1
-                    embed = self.generate_embed(author_name, author_icon, question, poll_dict)
-                    partial_message = channel.get_partial_message(message_id)
-                    try:
-                        await partial_message.edit(embed=embed)
-                    except discord.NotFound:
-                        await self.client.pool_pg.execute("DELETE FROM polls WHERE poll_id = $1", poll_id)
-                    await asyncio.sleep(1.5)
+        try:
+            await self.client.wait_until_ready()
+            time_past_expiry = round(time.time()) - 30*24*60*60
+            polls = await self.client.pool_pg.fetch("SELECT * FROM polls WHERE created > $1", time_past_expiry)
+            for poll in polls:
+                creator_id = poll.get('creator_id')
+                guild_id = poll.get('guild_id')
+                channel_id = poll.get('channel_id')
+                message_id = poll.get('message_id')
+                poll_id = poll.get('poll_id')
+                creator = self.client.get_user(creator_id)
+                guild: discord.Guild = self.client.get_guild(guild_id)
+                if guild is not None:
+                    channel: discord.TextChannel = guild.get_channel(channel_id)
+                    if channel is not None:
+                        if creator is None:
+                            author_icon, author_name = None, "Poll"
+                        else:
+                            author_icon, author_name = creator.display_avatar.url, f"{creator}'s Poll"
+                        question = poll.get('poll_name')
+                        choices = poll.get('choices').split('|')
+                        polldata = await self.client.pool_pg.fetch("SELECT * FROM pollvotes WHERE poll_id = $1", poll_id)
+                        poll_dict = {}
+                        for choice in choices:
+                            poll_dict[choice] = 0
+                        for polled in polldata:
+                            poll_dict[polled.get('choice')] += 1
+                        embed = self.generate_embed(author_name, author_icon, question, poll_dict)
+                        partial_message = channel.get_partial_message(message_id)
+                        try:
+                            await partial_message.edit(embed=embed)
+                        except discord.NotFound:
+                            await self.client.pool_pg.execute("DELETE FROM polls WHERE poll_id = $1", poll_id)
+                        await asyncio.sleep(1.5)
+        except Exception as e:
+            print(e)

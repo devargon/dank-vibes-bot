@@ -110,8 +110,11 @@ class AutoMod(reminders_, polledition, AutoStatus, timer, NameLogging, timedrole
 
     @tasks.loop(hours=24)
     async def daily_potion_reset(self):
-        self.received_daily_potion = []
-        await self.client.pool_pg.execute("UPDATE userconfig SET received_daily_potion = $1", False)
+        try:
+            self.received_daily_potion = []
+            await self.client.pool_pg.execute("UPDATE userconfig SET received_daily_potion = $1", False)
+        except Exception as e:
+            print(e)
 
     @daily_potion_reset.before_loop
     async def wait_until_8am(self):
