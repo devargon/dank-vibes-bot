@@ -172,65 +172,68 @@ class VoteTracker(commands.Cog, name='votetracker'):
 
     @commands.Cog.listener()
     async def on_dsl_vote(self, data):
-        timenow = round(time.time())
-        timetoremove = timenow + 86400
-        timetoremind = timenow + 43200
-        userid = int(data['user'])
-        guildid = int(data['guild'])
-        if data['type'] != 'upvote':
-            return
-        votingchannel = self.client.get_channel(channelid)
-        guild = self.client.get_guild(guildid)
-        member = guild.get_member(userid)
-        if member is None or votingchannel is None or guild is None:
-            return f"Some variables not found:\nMember: {member}\nVoting Channel: {votingchannel}\nGuild: {guild}"
-        vdankster = guild.get_role(vdanksterid)
-        rolesummary = "\u200b"  # If no roles are added, this will be in the section where the roles added are displayed.
-        result = await self.client.pool_pg.fetchrow("SELECT count FROM votecount WHERE member_id = $1", userid)
-        votecount = 1 if result is None else result.get('count') + 1
-        if result is None:
-            await self.client.pool_pg.execute("INSERT INTO votecount VALUES($1, $2)", userid, votecount)
-        else:
-            await self.client.pool_pg.execute("UPDATE votecount SET count = $1 where member_id = $2", votecount, userid)
         try:
-            await member.add_roles(vdankster, reason="Voted for the server")
-            rolesummary = f"You've received the role {vdankster.mention} for 24 hours."
-        except discord.Forbidden:
-            pass
-        existing_remind = await self.client.pool_pg.fetchrow("SELECT * from roleremove where member_id = $1", userid)
-        if existing_remind is None:
-            await self.client.pool_pg.execute("INSERT INTO roleremove VALUES($1, $2, $3)", userid, timetoremind, timetoremove)
-        else:
-            await self.client.pool_pg.execute("UPDATE roleremove SET rmtime = $1, roletime = $2 WHERE member_id = $3", timetoremind, timetoremove, userid)
-        existing_remove = await self.client.pool_pg.fetchrow("SELECT * FROM autorole WHERE member_id = $1 and role_id = $2", userid, vdanksterid)
-        if existing_remove is None:
-            await self.client.pool_pg.execute("INSERT INTO autorole VALUES($1, $2, $3, $4)", userid, guildid, vdanksterid, timetoremove)
-        else:
-            await self.client.pool_pg.execute("UPDATE autorole SET time = $1 WHERE member_id = $2 and role_id = $3", timetoremove, userid, vdanksterid)
-        milestones = await self.client.pool_pg.fetch("SELECT * FROM milestones")
-        if len(milestones) != 0:
-            for milestone in milestones:
-                role = guild.get_role(milestone.get('roleid'))
-                if (
-                    role is not None
-                    and votecount >= milestone.get('votecount')
-                    and role not in member.roles
-                ):
-                    try:
-                        await member.add_roles(role, reason=f"Milestone reached for user")
-                        rolesummary += f"\n**You've also gotten the role {role.mention} for voting {milestone[0]} times!** 🥳"
-                    except discord.Forbidden:
-                        pass
-        embed = discord.Embed(title=f"Thank you for voting for {guild.name}, {member.name}!", description=f"You've voted **{plural(votecount):time}** so far.\n[You can vote for Dank Vibes on top.gg here!](https://top.gg/servers/595457764935991326/vote)", timestamp=discord.utils.utcnow(), color=self.client.embed_color)
-        embed.set_author(name=f"{member.name}#{member.discriminator} ({member.id})", icon_url=member.display_avatar.url)
-        embed.set_footer(text=guild.name, icon_url=guild.icon.url)
-        qbemojis = ["https://cdn.discordapp.com/emojis/869579459420913715.gif?v=1", "https://cdn.discordapp.com/emojis/869579448708653066.gif?v=1", "https://cdn.discordapp.com/emojis/869579493776457838.gif?v=1", "https://cdn.discordapp.com/emojis/869579480509841428.gif?v=1", "https://cdn.discordapp.com/emojis/873643650607894548.gif?v=1", "https://cdn.discordapp.com/emojis/871970548576559155.gif?v=1", "https://cdn.discordapp.com/emojis/872470665607909417.gif?v=1", "https://cdn.discordapp.com/emojis/830920902019514408.gif?v=1"]
-        embed.set_thumbnail(url=random.choice(qbemojis))
-        embed.add_field(name="\u200b", value=rolesummary)
-        try:
-            await votingchannel.send(embed=embed)
-        except discord.Forbidden:
-            pass
+            timenow = round(time.time())
+            timetoremove = timenow + 86400
+            timetoremind = timenow + 43200
+            userid = int(data['user'])
+            guildid = int(data['guild'])
+            if data['type'] != 'upvote':
+                return
+            votingchannel = self.client.get_channel(channelid)
+            guild = self.client.get_guild(guildid)
+            member = guild.get_member(userid)
+            if member is None or votingchannel is None or guild is None:
+                return f"Some variables not found:\nMember: {member}\nVoting Channel: {votingchannel}\nGuild: {guild}"
+            vdankster = guild.get_role(vdanksterid)
+            rolesummary = "\u200b"  # If no roles are added, this will be in the section where the roles added are displayed.
+            result = await self.client.pool_pg.fetchrow("SELECT count FROM votecount WHERE member_id = $1", userid)
+            votecount = 1 if result is None else result.get('count') + 1
+            if result is None:
+                await self.client.pool_pg.execute("INSERT INTO votecount VALUES($1, $2)", userid, votecount)
+            else:
+                await self.client.pool_pg.execute("UPDATE votecount SET count = $1 where member_id = $2", votecount, userid)
+            try:
+                await member.add_roles(vdankster, reason="Voted for the server")
+                rolesummary = f"You've received the role {vdankster.mention} for 24 hours."
+            except discord.Forbidden:
+                pass
+            existing_remind = await self.client.pool_pg.fetchrow("SELECT * from roleremove where member_id = $1", userid)
+            if existing_remind is None:
+                await self.client.pool_pg.execute("INSERT INTO roleremove VALUES($1, $2, $3)", userid, timetoremind, timetoremove)
+            else:
+                await self.client.pool_pg.execute("UPDATE roleremove SET rmtime = $1, roletime = $2 WHERE member_id = $3", timetoremind, timetoremove, userid)
+            existing_remove = await self.client.pool_pg.fetchrow("SELECT * FROM autorole WHERE member_id = $1 and role_id = $2", userid, vdanksterid)
+            if existing_remove is None:
+                await self.client.pool_pg.execute("INSERT INTO autorole VALUES($1, $2, $3, $4)", userid, guildid, vdanksterid, timetoremove)
+            else:
+                await self.client.pool_pg.execute("UPDATE autorole SET time = $1 WHERE member_id = $2 and role_id = $3", timetoremove, userid, vdanksterid)
+            milestones = await self.client.pool_pg.fetch("SELECT * FROM milestones")
+            if len(milestones) != 0:
+                for milestone in milestones:
+                    role = guild.get_role(milestone.get('roleid'))
+                    if (
+                        role is not None
+                        and votecount >= milestone.get('votecount')
+                        and role not in member.roles
+                    ):
+                        try:
+                            await member.add_roles(role, reason=f"Milestone reached for user")
+                            rolesummary += f"\n**You've also gotten the role {role.mention} for voting {milestone[0]} times!** 🥳"
+                        except discord.Forbidden:
+                            pass
+            embed = discord.Embed(title=f"Thank you for voting for {guild.name}, {member.name}!", description=f"You've voted **{plural(votecount):time}** so far.\n[You can vote for Dank Vibes on top.gg here!](https://top.gg/servers/595457764935991326/vote)", timestamp=discord.utils.utcnow(), color=self.client.embed_color)
+            embed.set_author(name=f"{member.name}#{member.discriminator} ({member.id})", icon_url=member.display_avatar.url)
+            embed.set_footer(text=guild.name, icon_url=guild.icon.url)
+            qbemojis = ["https://cdn.discordapp.com/emojis/869579459420913715.gif?v=1", "https://cdn.discordapp.com/emojis/869579448708653066.gif?v=1", "https://cdn.discordapp.com/emojis/869579493776457838.gif?v=1", "https://cdn.discordapp.com/emojis/869579480509841428.gif?v=1", "https://cdn.discordapp.com/emojis/873643650607894548.gif?v=1", "https://cdn.discordapp.com/emojis/871970548576559155.gif?v=1", "https://cdn.discordapp.com/emojis/872470665607909417.gif?v=1", "https://cdn.discordapp.com/emojis/830920902019514408.gif?v=1"]
+            embed.set_thumbnail(url=random.choice(qbemojis))
+            embed.add_field(name="\u200b", value=rolesummary)
+            try:
+                await votingchannel.send(embed=embed)
+            except discord.Forbidden:
+                pass
+        except Exception as e:
+            await self.client.get_user(650647680837484556).send(f"Error in DSL Vote: ```py\n{e}\n```\nData: ```json\n{data}\n```")
 
     @commands.command(name="votereminder", aliases=["vrm"])
     @checks.not_in_gen()
