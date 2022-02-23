@@ -68,7 +68,7 @@ class timer(commands.Cog):
                             pass
                     await asyncio.sleep(1.5)
         except Exception as e:
-            print(e)
+            print(f"Timer task caught an error: {e}")
 
     @timer_loop.before_loop
     async def before_timer_loop(self):

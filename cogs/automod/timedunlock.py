@@ -35,7 +35,7 @@ class TimedUnlock(commands.Cog):
                             pass
                 await self.client.pool_pg.execute("DELETE FROM timedunlock WHERE channel_id = $1 AND time = $2", row.get('channel_id'), row.get('time'))
         except Exception as e:
-            print(e)
+            print(f"timedunlock task caught a error: {e}")
 
     @commands.Cog.listener()
     async def on_ready(self):

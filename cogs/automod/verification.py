@@ -38,7 +38,7 @@ class Verification(commands.Cog):
                             except:
                                 await self.client.get_channel(910425487103365160).send(f"{member.mention}", delete_after = 1.0)
         except Exception as e:
-            print(e)
+            print(f"verification task caught a error: {e}")
 
     @commands.Cog.listener()
     async def on_member_update(self, member_before, member_after):

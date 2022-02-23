@@ -140,11 +140,14 @@ class giveaways(commands.Cog):
                         if prize == "<a:dv_iconOwO:837943874973466664> 1 Pepe Trophy":
                             embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/718136428219072662.gif")
                         embed.set_footer(text=f"{plural(winner):winner} can win this giveaway, which ends")
-                        await message.edit(embed=embed)
+                        try:
+                            await message.edit(embed=embed)
+                        except discord.NotFound:
+                            await self.client.pool_pg.execute("UPDATE giveaways SET active = $1 WHERE message_id = $2", False, giveaway.get("message_id"))
                     else:
                         continue
         except Exception as e:
-            print(e)
+            print(f"giveaway task caught a error: {e}")
 
 
     @tasks.loop(seconds=3.0)

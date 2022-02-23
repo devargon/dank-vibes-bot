@@ -66,4 +66,4 @@ class polledition(commands.Cog):
                             await self.client.pool_pg.execute("DELETE FROM polls WHERE poll_id = $1", poll_id)
                         await asyncio.sleep(1.5)
         except Exception as e:
-            print(e)
+            print(f"timer task caught a error: {e}")

@@ -35,5 +35,5 @@ class AutoStatus(commands.Cog):
                 um = discord.Status.online
             await self.client.change_presence(status=um, activity=self.status)
         except Exception as e:
-            print(e)
+            print(f"status task caught a error: {e}")
 

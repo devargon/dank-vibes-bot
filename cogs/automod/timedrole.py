@@ -28,4 +28,4 @@ class timedrole(commands.Cog):
                                 pass
                 await self.client.pool_pg.execute("DELETE FROM autorole WHERE member_id = $1 and guild_id = $2 and role_id = $3 and time = $4", row.get('member_id'), row.get('guild_id'), row.get('role_id'), row.get('time'))
         except Exception as e:
-            print(e)
+            print(f"timedrole task caught an error: {e}")
