@@ -409,20 +409,18 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
         except discord.Forbidden:
             return await ctx.send(f"I do not have permission to put {member} on a timeout.")
         else:
-            await self.client.pool_pg.execute("INSERT INTO modlog (guild_id, moderator_id, offender_id, action, reason, start_time, duration, end_time) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", ctx.guild.id, ctx.author.id, member.id, "timeout", reason, now, duration, ending)
-            embed = discord.Embed(title=f"{ctx.author.name} has put {member.name} on a timeout for {humanize_timedelta(seconds=duration)}!", description=f"{member.mention} right now:", color=self.client.embed_color, timestamp=discord.utils.utcnow()+td_obj)
-            embed.set_image(url="https://www.charlottesvillepeds.com/wp-content/uploads/2018/12/Timeout.jpg")
-            embed.set_footer(text=f"{member}'s timeout will end at")
+            case_id = await self.client.pool_pg.fetchval("INSERT INTO modlog (guild_id, moderator_id, offender_id, action, reason, start_time, duration, end_time) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING case_id", ctx.guild.id, ctx.author.id, member.id, "timeout", reason, now, duration, ending, column='case_id')
+            msg = f"{ctx.author} has put {member} on a timeout for {humanize_timedelta(seconds=duration)}, until <t:{ending}>."
             if reason is not None:
-                embed.add_field(name="Reason", value=reason, inline=False)
-            await ctx.send(embed=embed)
+                msg += f"\nReason: {reason}"
+            await ctx.send(msg)
             if await self.client.pool_pg.fetchval("SELECT enabled FROM serverconfig WHERE guild_id = $1 AND settings = $2", ctx.guild.id, 'timeoutlog') is True:
                 offender = member
                 moderator = ctx.author
                 reason = reason or "NA"
                 duration = humanize_timedelta(seconds=duration)
                 embed = discord.Embed(
-                    title='Timeout',
+                    title=f"Timeout (#{case_id})",
                     description=f'**Offender**: {offender} {offender.mention}\n**Reason**: {reason}\n**Duration**: {duration}\n**Responsible Moderator**: {moderator}',
                     color=discord.Color.orange(), timestamp=discord.utils.utcnow())
                 try:
