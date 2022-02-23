@@ -84,7 +84,12 @@ class ModlogPagination:
                 else:
                     duration = "4 weeks"
                 value = f"Mod: {moderator}\nDuration: **{duration}**\nReason: {entry.get('reason')}"
-                embed.add_field(name=f"#{entry.get('case_id')}: {entry.get('action').capitalize()} (<t:{entry.get('start_time')}:d>)", value=value, inline=True)
+                embed.add_field(name=f"#{entry.get('case_id')}: {entry.get('action').capitalize()} (<t:{entry.get('start_time')}:d>)", value=value, inline=False)
+            elif entry.get('action') == 'ban':
+                mod_id = entry.get('moderator_id')
+                moderator = self.client.get_user(mod_id) or mod_id
+                value = f"Mod: {moderator}\nReason: {entry.get('reason')}"
+                embed.add_field(name=f"#{entry.get('case_id')}: {entry.get('action').capitalize()} (<t:{entry.get('start_time')}:d>)", value=value, inline=False)
         return embed
 
 class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
@@ -392,6 +397,10 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
     async def timeout(self, ctx, member: discord.Member = None, duration: BetterTimeConverter = None, *, reason: str = None):
         if member is None:
             return await ctx.send("You need to tell me who you want to timeout.")
+        if member.role >= ctx.me.top_role:
+            return await ctx.send(f"I cannot put **{member}** on a time-out as their highest role is higher than or the same as **my** highest role.")
+        if member.role >= ctx.author.top_role:
+            return await ctx.send("You **cannot** timeout a user that has a higher role than you.")
         if duration is None:
             return await ctx.send("You need to tell me how long you want to timeout the user for.")
         duration: int = duration
@@ -410,7 +419,7 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
             return await ctx.send(f"I do not have permission to put {member} on a timeout.")
         else:
             case_id = await self.client.pool_pg.fetchval("INSERT INTO modlog (guild_id, moderator_id, offender_id, action, reason, start_time, duration, end_time) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING case_id", ctx.guild.id, ctx.author.id, member.id, "timeout", reason, now, duration, ending, column='case_id')
-            msg = f"{ctx.author} has put {member} on a timeout for {humanize_timedelta(seconds=duration)}, until <t:{ending}>."
+            msg = f"**{ctx.author}** has put **{member}** on a timeout for {humanize_timedelta(seconds=duration)}, until <t:{ending}>."
             if reason is not None:
                 msg += f"\nReason: {reason}"
             await ctx.send(msg)
@@ -427,6 +436,42 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
                     await self.client.get_channel(modlog_channelID).send(embed=embed)
                 except Exception as e:
                     print(e)
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name='ban', aliases=['b'])
+    async def ban(self, ctx, member: Union[discord.Member, discord.User] = None, *, reason: str = None):
+        if member == ctx.me:
+            return await ctx.send("bye im not banning myself")
+        if member == ctx.author:
+            return await ctx.send("Why on earth would you want to ban yourself?")
+        if member is None:
+            return await ctx.send("You need to tell me who you want to ban.")
+        if isinstance(member, discord.Member):
+            if member.top_role >= ctx.author.top_role:
+                return await ctx.send("You **cannot** ban a user that has a higher role than you.")
+            if member.top_role >= ctx.me.top_role:
+                return await ctx.send(f"I cannot ban **{member}** as their highest role is higher than or the same as **my** highest role.")
+        if reason is None:
+            auditreason = f"Requested by {ctx.author.name}#{ctx.author.discriminator} ({ctx.author.id}"
+        else:
+            auditreason = reason + f" | Requested by {ctx.author.name}#{ctx.author.discriminator} ({ctx.author.id}"
+        if isinstance(member, discord.Member):
+            embed = discord.Embed(title="You were banned by a Karuta Senpai!", description=f"Reason: **{reason}**\n\n> If you would like to appeal against your ban, submit an appeal [here](https://kable.lol/DankVibesAppeals/). Specify that you were banned by a Karuta Senpai in the `Other` question.", timestamp=discord.utils.utcnow(), color=discord.Color.red()).set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url, url="https://discord.gg/dankmemer")
+            try:
+                await member.send(embed=embed)
+            except Exception as e:
+                await ctx.send(f"I couldn't inform {member.mention} on why they were banned.")
+        try:
+            await ctx.guild.ban(member, reason=auditreason)
+        except Exception as e:
+            await ctx.send(f"An error occured while trying to ban the user.\n{e}")
+        else:
+            now = round(time.time())
+            await self.client.pool_pg.execute("INSERT INTO modlog (guild_id, moderator_id, offender_id, action, reason, start_time) VALUES ($1, $2, $3, $4, $5, $6)", ctx.guild.id, ctx.author.id, member.id, "ban", reason, now)
+            msg = f"**{ctx.author}** has banned **{member}**."
+            if reason is not None:
+                msg += f"\nReason: {reason}"
+            await ctx.send(msg)
 
 
     @checks.has_permissions_or_role(manage_roles=True)
