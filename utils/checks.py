@@ -3,6 +3,7 @@ from typing import Callable, Optional
 from discord.ext import commands
 from utils.errors import NotInBanBattle, ArgumentBaseError
 from utils.format import get_command_name
+from utils.context import DVVTcontext
 
 
 def is_dory():
@@ -18,7 +19,7 @@ def is_dory():
 
 def has_permissions_or_role(**perms):
         perms = commands.has_guild_permissions(**perms).predicate
-        async def predicate(ctx):
+        async def predicate(ctx: DVVTcontext):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
             enabled = await ctx.bot.pool_pg.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
@@ -39,19 +40,22 @@ def has_permissions_or_role(**perms):
 
 
 def perm_insensitive_roles() -> callable:
-    async def predicate(ctx):
+    async def predicate(ctx: DVVTcontext):
         if ctx.guild is None:
             raise commands.NoPrivateMessage()
         enabled = await ctx.bot.pool_pg.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
         if enabled == True:
             return True
-        if await ctx.bot.pool_pg.fetchval("SELECT member_id FROM commandaccess WHERE command = $1 AND member_id = $2", get_command_name(ctx.command), ctx.author.id):
-            return True
         roles = await ctx.bot.pool_pg.fetch("SELECT role_id, whitelist FROM rules WHERE guild_id=$1 AND command=$2", ctx.guild.id, get_command_name(ctx.command))
         if ctx.author.guild_permissions.manage_roles:
             return True
         if not roles:
-            return True
+            if ctx.command.parent:
+                roles = await ctx.bot.pool_pg.fetch("SELECT role_id, whitelist FROM rules WHERE guild_id=$1 AND command=$2", ctx.guild.id, str(ctx.command.parent))
+                if not roles:
+                    return True
+            else:
+                return True
         rolenames = []
         for role in roles:
             roleobj = ctx.guild.get_role(role.get('role_id'))
@@ -59,16 +63,21 @@ def perm_insensitive_roles() -> callable:
                 rolenames.append(roleobj.name)
             if not role.get('whitelist'):
                 if discord.utils.get(ctx.author.roles, id=role.get('role_id')):
+                    parsed = True
                     return False
             else:
                 if discord.utils.get(ctx.author.roles, id=role.get('role_id')):
+                    parsed = True
                     return True
-        raise ArgumentBaseError(message="You need to have one of the following roles to use this command: **{}**".format(", ".join(rolenames)))
+        if len(rolenames) > 0:
+            raise ArgumentBaseError(message="You need to have one of the following roles to use this command: **{}**".format(", ".join(rolenames)))
+        else:
+            return True
     return commands.check(predicate=predicate)
 
 def is_owner_or_perms(**perms):
     base_check = commands.has_guild_permissions(**perms).predicate
-    async def predicate(ctx):
+    async def predicate(ctx: DVVTcontext):
         if ctx.guild is None and ctx.author.id != 321892489470410763 or ctx.guild is None and ctx.author.id != 650647680837484556:
             raise commands.NoPrivateMessage()
         enabled = await ctx.bot.pool_pg.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
@@ -78,7 +87,7 @@ def is_owner_or_perms(**perms):
     return commands.check(predicate=predicate)
 
 def in_beta() -> Callable:
-    async def predicate(ctx):
+    async def predicate(ctx: DVVTcontext):
         if ctx.author.id in [515725341910892555, 366069251137863681, 650647680837484556, 321892489470410763,
                                  602066975866355752]:
             return True
@@ -87,7 +96,7 @@ def in_beta() -> Callable:
     return commands.check(predicate)
 
 def is_not_blacklisted() -> callable:
-    async def predicate(ctx):
+    async def predicate(ctx: DVVTcontext):
         blacklisted_users = await ctx.bot.pool_pg.fetchrow("SELECT * FROM blacklist WHERE user_id = $1 and blacklist_active = $2", ctx.author.id, True)
         if blacklisted_users:
             if ctx.message.author.id in [321892489470410763, 650647680837484556, 515725341910892555]:
@@ -97,7 +106,7 @@ def is_not_blacklisted() -> callable:
     return commands.check(predicate=predicate)
 
 def base_dev() -> callable:
-    async def predicate(ctx):
+    async def predicate(ctx: DVVTcontext):
         if await ctx.is_bot_dev():
             return True
         else:
@@ -105,7 +114,7 @@ def base_dev() -> callable:
     return commands.check(predicate)
 
 def dev() -> callable:
-    async def predicate(ctx):
+    async def predicate(ctx: DVVTcontext):
         enabled = await ctx.bot.pool_pg.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
         if enabled != True:
             raise ArgumentBaseError(message="Only developers can use this command. If you are a developer, turn on Developer mode.")
@@ -113,7 +122,7 @@ def dev() -> callable:
     return commands.check(predicate)
 
 def admoon() -> Callable:
-    async def predicate(ctx):
+    async def predicate(ctx: DVVTcontext):
         if (ctx.message.author.id == 321892489470410763) or (ctx.message.author.id == 515725341910892555) or (ctx.message.author.id == 650647680837484556):
             return True
         else:
@@ -121,7 +130,7 @@ def admoon() -> Callable:
     return commands.check(predicate)
 
 def is_dvbm(silent: Optional[bool] = False) -> Callable:
-    async def predicate(ctx):
+    async def predicate(ctx: DVVTcontext):
         if ctx.guild and ctx.guild.id == 813865065593176145:
             return True
         else:
@@ -130,7 +139,7 @@ def is_dvbm(silent: Optional[bool] = False) -> Callable:
     return commands.check(predicate)
 
 def is_bav_or_mystic() -> Callable:
-    async def predicate(ctx):
+    async def predicate(ctx: DVVTcontext):
         if not ctx.guild:
             raise commands.NoPrivateMessage()
         if ctx.author.guild_permissions.manage_roles == True:
@@ -139,7 +148,7 @@ def is_bav_or_mystic() -> Callable:
     return commands.check(predicate)
 
 def not_in_gen():
-    async def predicate(ctx):
+    async def predicate(ctx: DVVTcontext):
         channel_id = 608498967474601995
         if ctx.guild:
             if not ctx.author.guild_permissions.manage_roles or await ctx.is_bot_dev():
