@@ -145,4 +145,6 @@ class ServerRule(commands.Cog):
             embed.add_field(name='Whitelisted Roles', value="\n".join([ctx.guild.get_role(r).mention if ctx.guild.get_role(r) is not None else f'Deleted role: {r}' for r in whitelist]), inline=True)
         if blacklist:
             embed.add_field(name='Blacklisted Roles', value="\n".join([ctx.guild.get_role(r).mention if ctx.guild.get_role(r) is not None else f'Deleted role: {r}' for r in blacklist]), inline=True)
+        if command.parent:
+            embed.add_field(name="No Serverrules detected for this command", value=f"Since this is a subcommand, the permissions are inherited from the parent command, if any.")
         await ctx.send(embed=embed)
