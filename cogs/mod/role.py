@@ -107,7 +107,7 @@ class Role(commands.Cog):
                     f"Your argument needs to be of (in order) an Attachment, Custom Emoji, Unicode Emoji or URL. If you are removing the role icon, run `role icon @{role.name} None`.")
         else:
             argumenttype = "EMOJI"
-        if argument is None:
+        if argument is None and argumenttype != "NONE":
             return await ctx.send("You need to specify an argument (an entity) to set the role icon to. It can be an Attachment, Custom Emoji, Unicode Emoji, or URL.")
         try:
             if argumenttype == "NONE":
