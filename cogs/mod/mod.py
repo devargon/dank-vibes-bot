@@ -397,9 +397,9 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
     async def timeout(self, ctx, member: discord.Member = None, duration: BetterTimeConverter = None, *, reason: str = None):
         if member is None:
             return await ctx.send("You need to tell me who you want to timeout.")
-        if member.role >= ctx.me.top_role:
+        if member.top_role >= ctx.me.top_role:
             return await ctx.send(f"I cannot put **{member}** on a time-out as their highest role is higher than or the same as **my** highest role.")
-        if member.role >= ctx.author.top_role:
+        if member.top_role >= ctx.author.top_role:
             return await ctx.send("You **cannot** timeout a user that has a higher role than you.")
         if duration is None:
             return await ctx.send("You need to tell me how long you want to timeout the user for.")
