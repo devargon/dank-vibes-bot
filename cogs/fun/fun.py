@@ -128,8 +128,16 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
                 doesauthorwin = True
             else:
                 doesauthorwin = False
-        author_has_shield_potion = await self.client.pool_pg.fetchval("SELECT dumbfight_result FROM userconfig WHERE user_id = $1", ctx.author.id)
-        target_has_shield_potion = await self.client.pool_pg.fetchval("SELECT dumbfight_result FROM userconfig WHERE user_id = $1", member.id)
+        author_df_details = await self.client.pool_pg.fetchrow("SELECT dumbfight_result, dumbfight_rig_duration FROM userconfig WHERE user_id = $1", ctx.author.id)
+        if author_df_details is not None and author_df_details.get('dumbfight_rig_duration') is not None and author_df_details.get('dumbfight_rig_duration') > round(time.time()):
+            author_has_shield_potion = author_df_details.get('dumbfight_result')
+        else:
+            author_has_shield_potion = None
+        target_df_details = await self.client.pool_pg.fetchrow("SELECT dumbfight_result, dumbfight_rig_duration FROM userconfig WHERE user_id = $1", member.id)
+        if target_df_details is not None and target_df_details.get('dumbfight_rig_duration') is not None and target_df_details.get('dumbfight_rig_duration') > round(time.time()):
+            target_has_shield_potion = target_df_details.get('dumbfight_result')
+        else:
+            target_has_shield_potion = None
         extra_info = None
         if author_has_shield_potion is not None:
             if target_has_shield_potion is not None:
@@ -179,24 +187,6 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
             losemen = muted.mention
             color = 0x00ff00
             str = "and won against"
-            action = random.choice([f"{winmen} reported the impostor {losemen}.",
-                                    f"{winmen} fought {losemen}.", f"{winmen} farted on {losemen}.",
-                                    f"{winmen} rickrolled {losemen}.", f"{winmen} took a huge dump on {losemen}.",
-                                    f"{winmen} landed a soft punch on {losemen}.", f"{winmen} kicked {losemen} in *that* area.",
-                                    f"{winmen} didn't need to do anything; {losemen} saw the simps in this server and fainted.",
-                                    f"{winmen} used the 6 Infinity Stones to fight {losemen}.",
-                                    f"{winmen} was a coward and got Thanos to fight {losemen}.",
-                                    f"{losemen} cheated on {winmen} and lost the court case.", f"{winmen} freeze-rayed {losemen}.",
-                                    f"{winmen} won a game of Fortnite against {losemen}.", f"{losemen} lagged and took the W.",
-                                    f"{losemen} saw {winmen} vent and die.", f"{winmen} did {losemen}'s mom.",
-                                    f"{losemen} slipped on {winmen}'s banana.", f"{winmen} caught {losemen} in 4K while fighting. 😳",
-                                    f"{winmen} turned hacks on.", f"{winmen} fed {losemen} foot lettuce and {losemen} died.",
-                                    f"{winmen} made {losemen} look at the mirror.",
-                                    f"{winmen} told {losemen} that their dad went out to get milk.",
-                                    f"{winmen} exposed {losemen}'s speedrun.", f"{losemen} tried to ratio {winmen}.",
-                                    f"{winmen} told {losemen} that their Discord kitten doesn't love them.",
-                                    f"{winmen} touched grass and became a god.", f"{winmen} said {losemen}'s memes suck.",
-                                    f"{winmen} scammed {losemen} out of their life insurance."])
 
 
 
@@ -206,29 +196,52 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
             str = "and lost against"
             winmen = member.mention
             losemen = muted.mention
-            action = random.choice([f"{losemen} got head-shot by {winmen}.",
-                                    f"{losemen} looked at {winmen}'s search history.",
-                                    f"{losemen} tried insulting {winmen}'s grandma."
-                                    f"> {winmen}: We don't talk about {losemen}, no, no, no!",
-                                    f"{winmen} forced {losemen} to sleep.",
-                                    f"{losemen} got stuck in the backrooms.",
-                                    f"{losemen} ate a fishbone and died.",
-                                    f"{losemen} tried making out with {winmen}'s wife.",
-                                    f"{losemen} took a shower after 3 years.",
-                                    f"{losemen} thought they were cool and tried hitting on {winmen}.",
-                                    f"{losemen} put milk before cereal in front of {winmen}.",
-                                    f"{winmen} EMOTIONALLY DAMAGED {losemen}.",
-                                    f"{losemen} raged over a game because {winmen} tilted them so bad.",
-                                    f"{losemen} tried listening to to {winmen}'s instructions and breathe but died.",
-                                    f"{losemen} became a Discord Mod.",
-                                    f"{losemen} raged over video games while playing with {winmen}.",
-                                    f"{losemen} sent sus images to {winmen}. 🤨",
-                                    f"{losemen} leaned too much on the chair.",
-                                    f"{losemen} missed the ender pearl shot because {winmen} distracted them.",
-                                    f"{losemen} put their socks in water in front of {winmen}.",
-                                    f"{losemen} mined straight into the desert temple as he was distracted by {winmen}.",
-                                    f"{winmen} told {losemen} to mine straight down in Minecraft.",
-                                    f"{losemen} tried to crack 90s in front of {winmen} and died."])
+        action = random.choice([f"{winmen} reported the impostor {losemen}.",
+                                f"{winmen} fought {losemen}.", f"{winmen} farted on {losemen}.",
+                                f"{winmen} rickrolled {losemen}.", f"{winmen} took a huge dump on {losemen}.",
+                                f"{winmen} landed a soft punch on {losemen}.",
+                                f"{winmen} kicked {losemen} in *that* area.",
+                                f"{winmen} didn't need to do anything; {losemen} saw the simps in this server and fainted.",
+                                f"{winmen} used the 6 Infinity Stones to fight {losemen}.",
+                                f"{winmen} was a coward and got Thanos to fight {losemen}.",
+                                f"{losemen} cheated on {winmen} and lost the court case.",
+                                f"{winmen} freeze-rayed {losemen}.",
+                                f"{winmen} won a game of Fortnite against {losemen}.",
+                                f"{losemen} lagged and took the W.",
+                                f"{losemen} saw {winmen} vent and die.", f"{winmen} did {losemen}'s mom.",
+                                f"{losemen} slipped on {winmen}'s banana.",
+                                f"{winmen} caught {losemen} in 4K while fighting. 😳",
+                                f"{winmen} turned hacks on.",
+                                f"{winmen} fed {losemen} foot lettuce and {losemen} died.",
+                                f"{winmen} made {losemen} look at the mirror.",
+                                f"{winmen} told {losemen} that their dad went out to get milk.",
+                                f"{winmen} exposed {losemen}'s speedrun.", f"{losemen} tried to ratio {winmen}.",
+                                f"{winmen} told {losemen} that their Discord kitten doesn't love them.",
+                                f"{winmen} touched grass and became a god.", f"{winmen} said {losemen}'s memes suck.",
+                                f"{winmen} scammed {losemen} out of their life insurance.",
+                                f"{losemen} got head-shot by {winmen}.",
+                                f"{losemen} looked at {winmen}'s search history.",
+                                f"{losemen} tried insulting {winmen}'s grandma.",
+                                f"> {winmen}: We don't talk about {losemen}, no, no, no!",
+                                f"{winmen} forced {losemen} to sleep.",
+                                f"{losemen} got stuck in the backrooms.",
+                                f"{losemen} ate a fishbone and died.",
+                                f"{losemen} tried making out with {winmen}'s wife.",
+                                f"{losemen} took a shower after 3 years.",
+                                f"{losemen} thought they were cool and tried hitting on {winmen}.",
+                                f"{losemen} put milk before cereal in front of {winmen}.",
+                                f"{winmen} EMOTIONALLY DAMAGED {losemen}.",
+                                f"{losemen} raged over a game because {winmen} tilted them so bad.",
+                                f"{losemen} tried listening to to {winmen}'s instructions and breathe but died.",
+                                f"{losemen} became a Discord Mod.",
+                                f"{losemen} raged over video games while playing with {winmen}.",
+                                f"{losemen} sent sus images to {winmen}. 🤨",
+                                f"{losemen} leaned too much on the chair.",
+                                f"{losemen} missed the ender pearl shot because {winmen} distracted them.",
+                                f"{losemen} put their socks in water in front of {winmen}.",
+                                f"{losemen} mined straight into the desert temple as he was distracted by {winmen}.",
+                                f"{winmen} told {losemen} to mine straight down in Minecraft.",
+                                f"{losemen} tried to crack 90s in front of {winmen} and died."])
         if extra_info is not None:
             await self.client.pool_pg.execute("INSERT INTO dumbfightlog values($1, $2, $3)", ctx.author.id, member.id, 1 if doesauthorwin is True else 0)
         originaloverwrite = channel.overwrites_for(muted) if muted in channel.overwrites else None
