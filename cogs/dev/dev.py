@@ -30,7 +30,7 @@ from utils.context import DVVTcontext
 class Suggestion(menus.ListPageSource):
     def __init__(self, entries, title):
         self.title = title
-        super().__init__(entries, per_page=10)
+        super().__init__(entries, per_page=6)
 
     async def format_page(self, menu, entries):
         embed = discord.Embed(title=self.title, color=menu.ctx.bot.embed_color, timestamp=discord.utils.utcnow())
@@ -498,7 +498,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
             member = self.client.get_user(suggestion.get('user_id'))
             name = f"{suggestion.get('suggestion_id')}. {member} ({member.id})" if member is not None else f"{suggestion.get('suggestion_id')}. {suggestion.get('user_id')}"
             suggestions.append((name, suggestion.get('suggestion')))
-        if len(suggestions) <= 10:
+        if len(suggestions) <= 6:
             embed = discord.Embed(title=title, color=self.client.embed_color, timestamp=discord.utils.utcnow())
             for suggestion in suggestions:
                 embed.add_field(name=suggestion[0], value=suggestion[1], inline=False)
