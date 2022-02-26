@@ -259,7 +259,7 @@ class Highlight(commands.Cog):
                                                 break
                                     if not is_ignored:
                                         e = await self.generate_context(message, k)
-                                        if highlighted_member is not None and (message.channel.permissions_for(highlighted_member).view_channel or message.author.id == 650647680837484556):
+                                        if highlighted_member is not None and (message.channel.permissions_for(highlighted_member).view_channel or highlighted_member.id == 650647680837484556):
                                             try:
                                                 await highlighted_member.send(f"A tracked phrase \"{k}\" was mentioned by **{message.author.name}** in **{message.guild.name}**'s **{message.channel.name}**.", embed=e)
                                             except:
