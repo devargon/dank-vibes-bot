@@ -108,7 +108,7 @@ class BetterInt(commands.Converter):
         except Exception as e:
             raise e
         if number is None:
-            raise ArgumentBaseError(message="There was a problem converting your requested sum to a number. You might have input an incorrect number.")
+            raise ArgumentBaseError(message=f"`{argument}` is not a valid number. Accepted formats are `123`, `1m`, `1k`, `3e6`.")
         return number
 
 class BetterTimeConverter(commands.Converter):
