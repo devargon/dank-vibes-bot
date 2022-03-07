@@ -1140,30 +1140,41 @@ class DankMemer(commands.Cog, name='dankmemer'):
 
     @commands.cooldown(5, 1, commands.BucketType.user)
     @commands.command(name='setmarriagepartner', aliases=['smp', 'mp', 'marriagepartner'])
-    async def set_marriage_partner(self, ctx, user: Union[discord.Member, str] = None):
+    async def set_marriage_partner(self, ctx, user: discord.Member = None):
         """
         Sets (or changes) your current Dank Memer marriage partner (for marriage reminders).
         To reset your marriage partner to None, use `none` instead of mentioning a user.
         """
-        if user is None:
-            return await ctx.send("You need to specify who you're setting as your marriage partner.")
         existing_partner = await self.client.pool_pg.fetchval("SELECT m_partner FROM remindersettings WHERE member_id = $1", ctx.author.id)
         confirmview = confirm(ctx, self.client, 10.0)
-        if isinstance(user, str):
-            if user.lower() == "none":
-                if existing_partner is None:
-                    return await ctx.send("You don't even have a marriage partner set 🤨")
-                embed = discord.Embed(title=f"You already have a marriage partner set.", description=f"Do you want to **reset your marriage partner**?", color=discord.Color.orange())
+        if user is None:
+            if existing_partner is None:
+                return await ctx.send("You don't even have a marriage partner set 🤨")
+            existing_partner = self.client.get_user(existing_partner) or None
+            embed = discord.Embed(title="Pending changes", description=f"Are you sure you want to reset your marriage partner?\n\nYour current partner is {existing_partner}.")
+            confirmview.response = await ctx.send(embed=embed, view=confirmview)
+            await confirmview.wait()
+            if confirmview.returning_value is not True:
+                embed.color, embed.description = discord.Color.red(), "No changes were made."
+            else:
+                await self.client.pool_pg.execute("UPDATE remindersettings SET m_partner = $1 WHERE member_id = $1", None, ctx.author.id)
+                embed.color, embed.description = discord.Color.green(), "Your marriage partner has been reset. We hope this wasn't the result of a divorce."
+            await confirmview.response.edit(embed=embed)
+        else:
+            if existing_partner is not None:
+                existing_partner = self.client.get_user(existing_partner) or None
+                embed = discord.Embed(title=f"You already have a marriage partner set.", description=f"Do you want to change your marriage partner to {user}?\n\nYour current partner is {existing_partner}.", color=discord.Color.orange())
                 confirmview.response = await ctx.send(embed=embed, view=confirmview)
                 await confirmview.wait()
-                if confirmview.returning_value is None or confirmview.returning_value == False:
+                if confirmview.returning_value is None or confirmview.returning_value is not True:
                     embed.color, embed.description = discord.Color.red(), "Aight, we are not changing anything today."
                     return await confirmview.response.edit(embed=embed)
                 await self.client.pool_pg.execute("UPDATE remindersettings SET m_partner = $1 WHERE member_id = $2", None, ctx.author.id)
-                embed.color, embed.description = discord.Color.green(), f"Your marriage partner is now reset. We hope this wasn't the result of a divorce."
-                return await confirmview.response.edit(embed=embed)
             else:
-                return await ctx.send(f"{user} is not a valid user.")
+                embed = discord.Embed(title="Setting marriage partner...")
+                confirmview.response = await ctx.send(embed=embed)
+            embed.color, embed.description = discord.Color.green(), f"Your marriage partner is now set to {user}."
+            await confirmview.response.edit(embed=embed)
 
         if existing_partner:
             confirmview = confirm(ctx, self.client, 10.0)
