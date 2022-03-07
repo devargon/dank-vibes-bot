@@ -1143,7 +1143,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
     async def set_marriage_partner(self, ctx, user: discord.Member = None):
         """
         Sets (or changes) your current Dank Memer marriage partner (for marriage reminders).
-        To reset your marriage partner to None, use `none` instead of mentioning a user.
+        To reset your marriage partner to None, do not specify a user.
         """
         existing_partner = await self.client.pool_pg.fetchval("SELECT m_partner FROM remindersettings WHERE member_id = $1", ctx.author.id)
         confirmview = confirm(ctx, self.client, 10.0)
@@ -1211,7 +1211,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
     @commands.command(name="dankcooldowns", aliases=["dankcd", "dcd"])
     async def dankcooldowns(self, ctx):
         """
-        Shows the existing reminders for Dank memer.
+        Shows the existing reminders for Dank Memer.
         """
         reminders = await self.client.pool_pg.fetch("SELECT * FROM dankreminders WHERE member_id = $1 and guild_id = $2", ctx.author.id, ctx.guild.id)  # gets user's reminders
         dailytime, lotterytime, worktime, redeemtime, weeklytime, monthlytime, hunttime, fishtime, digtime, highlowtime, snakeeyestime, searchtime, crimetime, begtime, dailyboxtime, horseshoetime, pizzatime, streamtime, pmtime, marriagetime, pettime, adventuretime = None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
