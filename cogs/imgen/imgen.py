@@ -230,6 +230,7 @@ class Imgen(commands.Cog, name='imgen'):
         image_bytes = await image.read()
         await ctx.send(file=discord.File(fp=image_bytes, filename="WHAT.png"))
 
+    @checks.perm_insensitive_roles()
     @commands.command(name="spam")
     async def spam(self, ctx):
         """
