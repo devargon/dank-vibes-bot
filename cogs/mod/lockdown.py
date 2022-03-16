@@ -201,8 +201,7 @@ This will set a message for the lockdown profile when it is used to lock channel
         """
         if profile_name is not None:
             profile_name = profile_name.lower()
-            lockdown_profile = await self.client.pool_pg.fetch(
-                "SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
+            lockdown_profile = await self.client.pool_pg.fetch("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
             if len(lockdown_profile) == 0:
                 return await ctx.send(f"There is no such lockdown profile with the name **{profile_name}**.")
             channel_list = []
@@ -241,7 +240,29 @@ This will set a message for the lockdown profile when it is used to lock channel
                     profiles[result.get('profile_name')] += 1
             msgcontent = ""
             for profile in profiles:
-                msgcontent += f"{profile}\n<:Reply:871808167011549244> `{profiles[profile]}` channels\n"
+                channels = await self.client.pool_pg.fetch("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile, ctx.guild.id)
+                unlocked = "<:DVB_True:887589686808309791>"
+                locked = "<:DVB_False:887589731515392000>"
+                neutral = "<:DVB_Neutral:887589643686670366>"
+                channel_list = {}
+                channel_list[unlocked] = 0
+                channel_list[locked] = 0
+                channel_list[neutral] = 0
+                for channel in channels:
+                    channel = self.client.get_channel(channel.get('channel_id'))
+                    if channel is None:
+                        channel_list[neutral] += 1
+                    else:
+                        peepo = ctx.guild.default_role if os.getenv('state') == '1' else ctx.guild.get_role(649499248320184320)
+                        able_to_speak = channel.permissions_for(peepo).send_messages
+                        if able_to_speak:
+                            channel_list[unlocked] += 1
+                        elif able_to_speak == False:
+                            channel_list[locked] += 1
+                        else:
+                            channel_list[neutral] += 1
+                msgcontent += f"**{profile}**\n<:ReplyCont:871807889587707976>`{profiles[profile]}` channels\n<:Reply:871808167011549244> {unlocked} {channel_list[unlocked]} {locked} {channel_list[locked]}"
+                msgcontent += f"{neutral} {channel_list[neutral]}\n" if channel_list[neutral] > 0 else "\n"
             embed = discord.Embed(title=f"Lockdown profiles in {ctx.guild.name}", description=msgcontent, color=self.client.embed_color)
             embed.add_field(name="Tips", value="Use `lockdown start <profile_name>` to lock down channels in a lockdown profile.\nUse `lockdown view <profile_name>` to view the channels in a lockdown profile.", inline=False)
             embed.set_footer(text="By using Dank Vibes Bot's lockdown utility, you agree that WICKED should not be bullying members.")
