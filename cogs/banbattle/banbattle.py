@@ -97,7 +97,7 @@ class BanBattle(commands.Cog, name='banbattle'):
         Starts a banbattle.
 
         It'll add the shield role to all participants.
-        You need atleast 2 participants to start a banbattle.
+        You need at least 2 participants to start a banbattle.
         """
         if ctx.guild.id != 813865065593176145:
             return

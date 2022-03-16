@@ -235,14 +235,6 @@ class VoteTracker(commands.Cog, name='votetracker'):
         except Exception as e:
             await self.client.get_user(650647680837484556).send(f"Error in DSL Vote: ```py\n{e}\n```\nData: ```json\n{data}\n```")
 
-    @commands.command(name="votereminder", aliases=["vrm"])
-    @checks.not_in_gen()
-    async def votereminder(self, ctx):
-        """
-        Manage your vote reminder here! This command will be deprecated in a later update.
-        """
-        return await ctx.send("This command's functions have been merged with `dv.myv`.")
-
     @commands.group(invoke_without_command=True, name="voteroles")
     @commands.has_guild_permissions(manage_roles=True)
     async def voteroles(self, ctx):

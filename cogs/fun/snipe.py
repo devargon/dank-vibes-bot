@@ -129,7 +129,7 @@ class snipe(commands.Cog):
     @commands.command(name='editsnipe', aliases=['esnipe', 'es'])
     async def editsnipe(self, ctx, channel: Optional[discord.TextChannel]):
         """
-        "snipes" a edited message, showing its content. Does not support `snipe <num>`.
+        "snipes" an edited message, showing its unedited content. Does not support `snipe <num>`.
         """
         if channel is None:
             channel = ctx.channel

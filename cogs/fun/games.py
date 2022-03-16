@@ -22,7 +22,8 @@ class games(commands.Cog):
     @commands.command(name='guessthenumber', aliases=['gtn', 'numberevent'])
     async def guessthenumber(self, ctx):
         """
-        Sets up an interactiive guess the number game. This command can only be run in <#735477033949462578>, by the event host or sponsor.
+        Sets up an interactive guess the number game. This command can only be run in <#735477033949462578>, by the event host or sponsor.
+        Running this command will start an interactive setup to be completed in your DMs.
         """
         if ctx.channel.id != 735477033949462578:
             return await ctx.send("This command can only be run in <#735477033949462578>, by the event host or sponsor.")

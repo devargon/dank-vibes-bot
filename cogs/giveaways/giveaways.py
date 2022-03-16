@@ -374,7 +374,7 @@ class giveaways(commands.Cog):
     @giveaway.command(name="reroll", aliases=["r"])
     async def giveaway_reroll(self, ctx, message_ID: BetterMessageID = None, winner: int = None):
         """
-        Rerolls a giveaway.
+        Rerolls the winner for a giveaway.
         """
         giveaway = await self.client.pool_pg.fetchrow("SELECT * FROM giveaways WHERE message_id = $1", message_ID)
         if winner is None:

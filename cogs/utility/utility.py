@@ -488,7 +488,7 @@ class Utility(TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois,
     @commands.command(name='avatar', aliases=['av', 'pfp', 'banner', 'bn', 'sav'])
     async def avatar(self, ctx, user: typing.Optional[discord.Member] = None):
         """
-        Shows you a user's avatar, banner or server banner.
+        Shows you or a user's avatar, banner or server banner.
         """
         if user is None:
             user = ctx.author

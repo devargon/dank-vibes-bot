@@ -4,6 +4,7 @@ import operator
 import time
 
 from utils.buttons import confirm
+from utils.converters import BetterInt
 from utils.format import comma_number
 import discord
 from discord.ext import commands
@@ -213,7 +214,7 @@ class ItemGames(commands.Cog):
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="give", aliases=['share', 'trade'])
-    async def item_give(self, ctx, member: discord.Member = None, item: str = None, num: int = None):
+    async def item_give(self, ctx, member: discord.Member = None, item: str = None, num: BetterInt = None):
         """
         Share some of your items with someone! During events, this command may not work for certain items.
         """
@@ -273,7 +274,10 @@ class ItemGames(commands.Cog):
         embed = discord.Embed(title=f"You gave {member} {num} of your {name or itemname}!", description=f"You now have `{usernewcount}` {name or itemname}.\n{member} now has `{membernewcount}` {name or itemname}.", color=discord.Color.green(), timestamp=discord.utils.utcnow())
         if item_url:
             embed.set_thumbnail(url=item_url)
-        await ctx.message.reply(embed=embed)
+        try:
+            await ctx.message.reply(embed=embed)
+        except:
+            await ctx.send(embed=embed)
 
 
     @checks.dev()
@@ -305,7 +309,7 @@ class ItemGames(commands.Cog):
     @inventory.command(name="items")
     async def items(self, ctx):
         """
-        Get a list of items in the database.
+        See all the items that you can get in Dank Vibes Bot!
         """
         count = await self.client.pool_pg.fetchval("SELECT COUNT(*) FROM iteminfo")
         if count == 0:
@@ -346,6 +350,9 @@ class ItemGames(commands.Cog):
 
     @commands.command(name="use")
     async def use(self, ctx, item: str = None):
+        """
+        Use an item in your inventory.
+        """
         if item is None:
             return await ctx.send("You need to specify the item you want to know about.")
         itemname = await self.get_item_name(item)

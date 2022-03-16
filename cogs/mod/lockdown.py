@@ -197,7 +197,7 @@ This will set a message for the lockdown profile when it is used to lock channel
     @lockdown.command(name="view")
     async def lockdown_view(self, ctx, *, profile_name=None):
         """
-        View the channels in a lockdown profile. When executed without any arguments, it will show the list of profiles instead.
+        View the channels in a lockdown profile (and whether they're locked). When executed without any arguments, it will show the list of profiles instead.
         """
         if profile_name is not None:
             profile_name = profile_name.lower()
@@ -458,7 +458,7 @@ This will set a message for the lockdown profile when it is used to lock channel
     async def lockdown_message(self, ctx, profile_name = None, *, message = None):
         """
         Changes the lockdown message for a specific lockdown profile. You can add a embed as the lockdown message by getting the JSON code of an embed via Carlbot. Otherwise, a normal message will be shown in a generic embed's description.
-        ⚠️ This only applies to lockdown messages, and not unlock messages.
+        You can choose whether to send the message when a lockdown starts or ends.
         To view the message for a lockdown profile, just use the command without a message.
         """
         if not ctx.author.guild_permissions.manage_roles:

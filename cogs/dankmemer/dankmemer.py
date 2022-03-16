@@ -1157,9 +1157,10 @@ class DankMemer(commands.Cog, name='dankmemer'):
             if confirmview.returning_value is not True:
                 embed.color, embed.description = discord.Color.red(), "No changes were made."
             else:
-                await self.client.pool_pg.execute("UPDATE remindersettings SET m_partner = $1 WHERE member_id = $1", None, ctx.author.id)
+                await self.client.pool_pg.execute("UPDATE remindersettings SET m_partner = $1 WHERE member_id = $2", None, ctx.author.id)
                 embed.color, embed.description = discord.Color.green(), "Your marriage partner has been reset. We hope this wasn't the result of a divorce."
             await confirmview.response.edit(embed=embed)
+            return
         else:
             if existing_partner is not None:
                 existing_partner = self.client.get_user(existing_partner) or None
@@ -1169,29 +1170,14 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 if confirmview.returning_value is None or confirmview.returning_value is not True:
                     embed.color, embed.description = discord.Color.red(), "Aight, we are not changing anything today."
                     return await confirmview.response.edit(embed=embed)
-                await self.client.pool_pg.execute("UPDATE remindersettings SET m_partner = $1 WHERE member_id = $2", None, ctx.author.id)
+                await self.client.pool_pg.execute("UPDATE remindersettings SET m_partner = $1 WHERE member_id = $2", user.id, ctx.author.id)
             else:
+                await self.client.pool_pg.execute("INSERT INTO remindersettings(member_id, m_partner) VALUES($1, $2) ON CONFLICT(member_id) DO UPDATE SET m_partner=$2", ctx.author.id, user.id)
                 embed = discord.Embed(title="Setting marriage partner...")
                 confirmview.response = await ctx.send(embed=embed)
-            embed.color, embed.description = discord.Color.green(), f"Your marriage partner is now set to {user}."
+            embed.color, embed.description = discord.Color.green(), f"Your marriage partner is now set to **{user}**! When you share coins with or gift items to your partner, I will remind you to do it again in a few hours."
+            embed.set_footer(text="Make sure you have enabled marriage reminders via the `dankreminders` command.")
             await confirmview.response.edit(embed=embed)
-
-        if existing_partner:
-            confirmview = confirm(ctx, self.client, 10.0)
-            embed = discord.Embed(title=f"You already have a marriage partner set.", description=f"Do you want to change your marriage partner to **{user.name}**?", color=discord.Color.orange())
-            confirmview.response = await ctx.send(embed=embed, view=confirmview)
-            await confirmview.wait()
-            if confirmview.returning_value is None or confirmview.returning_value == False:
-                embed.color, embed.description = discord.Color.red(), "Aight, we are not changing anything today."
-                return await confirmview.response.edit(embed=embed)
-            await self.client.pool_pg.execute("UPDATE remindersettings SET m_partner = $1 WHERE member_id = $2", user.id, ctx.author.id)
-            embed.color, embed.description = discord.Color.green(), f"Your marriage partner is now set to **{user.name}**! When you share coins with or gift items to your partner, I will remind you to do it again in a few hours."
-            return await confirmview.response.edit(embed=embed)
-        else:
-            await self.client.pool_pg.execute("INSERT INTO remindersettings (member_id, m_partner) VALUES ($1, $2) ON CONFLICT (member_id) DO update SET m_partner = $2", ctx.author.id, user.id)
-            embed = discord.Embed(title="Success!", description=f"Your marriage partner is now set to **{user.name}**! When you share coins with or gift items to your partner, I will remind you to do it again in a few hours.", color=discord.Color.green()).set_footer(text="Make sure you have enabled marriage reminders via the `dankreminders` command.")
-            return await ctx.send(embed=embed)
-
 
 
 

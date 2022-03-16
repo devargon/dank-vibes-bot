@@ -100,7 +100,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
     @commands.command(name='grindercheck', usage='[member]', aliases=['gcheck', 'gc'])
     async def grindercheck(self, ctx, member: discord.Member = None):
         """
-        Shows your or a member's grinder statistics.
+        Shows you or a member's grinder statistics.
         """
         if member is None:
             member = ctx.author
@@ -148,7 +148,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
     @commands.command(name="gedit")
     async def grinder_edit(self, ctx, member: discord.Member = None, number: BetterInt = None):
         """
-        Adds or removes a certain amount of coins from a grinder's data. To change it to a specific amount, use `g set` instead.
+            Adds or removes a certain amount of coins from a grinder's data. To change it to a specific amount, use `gset` instead.
         """
         if member is None or number is None:
             return await ctx.send("The correct usage of this command is `gedit [member] [amount to add]`.")
@@ -182,7 +182,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
     @commands.command(name="gset")
     async def grinder_set(self, ctx, member: discord.Member = None, number: BetterInt = None):
         """
-        Sets the coins a grinder has donated to a specific amount. To add or remove coins, use `g edit` instead.
+        Sets the coins a grinder has donated to a specific amount. To add or remove coins, use `gedit` instead.
         """
         if member is None or number is None:
             return await ctx.send("The correct usage of this command is `gset [member] [amount to add]`.")

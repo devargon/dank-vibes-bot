@@ -153,7 +153,7 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
     @commands.command(name="self", aliases=["selfroles"], usage="--roles (role names separated by commas) (optional)")
     async def selfroles(self, ctx, channel:Optional[discord.TextChannel] = None, *, flags:RoleFlags):
         """
-        Sends a message showing the 5 self roles which can be gotten via buttons.
+        Sends a message showing the 5 self roles which can be obtained via buttons.
         To highlight a role in green, use `--roles the **full names** of the roles` separated in commas. They are not case sensitive.
         """
         roleids = [895815546292035625, 895815588289581096, 895815773208051763, 895815799812521994, 895815832465190933, 923885874662502451] if os.getenv('state') == '1' else [859493857061503008, 758174135276142593, 758174643814793276, 680131933778346011, 713477937130766396, 846254068434206740]#[895815546292035625, 895815588289581096, 895815773208051763, 895815799812521994, 895815832465190933]
@@ -306,7 +306,6 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
     async def freezenick(self, ctx, member:discord.Member = None, *, nickname:str = None):
         """
         Freezes a user's nickname, causing their nickname to always display the nickname that you state in the command.
-        To specify a duration, add --duration [duration] at the end.
         """
         if member is None:
             return await ctx.send("You need to tell me who you want to freezenick.")
@@ -395,6 +394,9 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='timeout', aliases=['to'])
     async def timeout(self, ctx, member: discord.Member = None, duration: BetterTimeConverter = None, *, reason: str = None):
+        """
+        Timeouts a member for a specified amount of time.
+        """
         if member is None:
             return await ctx.send("You need to tell me who you want to timeout.")
         if member.top_role >= ctx.me.top_role:
@@ -406,6 +408,8 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
         duration: int = duration
         if duration <= 0:
             return await ctx.send("You can't timeout someone for less than 1 second.")
+        if duration > 2419200:
+            return await ctx.send("You can't timeout someone for more than 4 weeks (28 days).")
         now = round(time.time())
         ending = now + duration
         td_obj = timedelta(seconds=duration)
@@ -477,6 +481,9 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='untimeout', aliases=['ut', 'uto'])
     async def untimeout(self, ctx, member: discord.Member = None, reason: str = None):
+        """
+        Removes a member's timeout.
+        """
         if member is None:
             return await ctx.send("You need to tell me who you want to untimeout.")
         if member.communication_disabled_until is None or member.communication_disabled_until < discord.utils.utcnow():
@@ -495,6 +502,9 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='modlog', aliases=['ml'])
     async def modlog(self, ctx, user: discord.User = None):
+        """
+        Shows a user's mod log.
+        """
         if user is None:
             return await ctx.send("Whose modlog are you checking??")
         modlog = await self.client.pool_pg.fetch("SELECT * FROM modlog WHERE offender_id = $1 ORDER BY case_id DESC", user.id)
@@ -520,7 +530,7 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
         try:
             await channel.edit(slowmode_delay=duration)
         except discord.Forbidden:
-            return await ctx.send(f"I don't have permission to {channel.mention}'s slowmode.")
+            return await ctx.send(f"I don't have permission to change {channel.mention}'s slowmode.")
         if duration > 0:
             await ctx.send(f"{channel.mention}'s slowmode has been set to **{humanize_timedelta(seconds=duration)}.**")
         else:
@@ -536,6 +546,9 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="roleinfo", aliases=['ri'])
     async def roleinfo(self, ctx, *, role: BetterRoles = None):
+        """
+        Provides information about a role, including its position, number of members, color, and its role icon.
+        """
         if role is None:
             return await ctx.send("What role do you want to know about?")
         role: discord.Role = role

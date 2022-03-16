@@ -153,7 +153,7 @@ class donations(commands.Cog):
         """
         Shows the donation leaderboard of a category.
 
-        You can say how many users
+        You can specify how many users to show on the leaderboard.
         """
         if category_name is None:
             return await ctx.send("Please enter a category name.")
