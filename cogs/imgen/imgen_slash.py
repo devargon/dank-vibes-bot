@@ -1,12 +1,25 @@
+import imghdr
+import re
+from symbol import argument
+
+import aiohttp
 import discord
 from discord.ext import commands
+
 from utils import checks
 import asyncio
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from io import BytesIO
 import numpy as np
 import random
 import os
+
+url_regex = re.compile(
+        r'^(?:http|ftp)s?://' # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #normal urls
+        r'localhost|)' #localhoar
+        r'(?::\d+)?' # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
 
 
 class ImgenSlash(commands.Cog):
@@ -185,3 +198,73 @@ class ImgenSlash(commands.Cog):
             if str(imageint) in file:
                 image = file
         await ctx.respond(file=discord.File(f"assets/spams/{image}"))
+
+    @checks.perm_insensitive_roles()
+    @commands.cooldown(10, 1, commands.BucketType.user)
+    @commands.slash_command(name="spoiler", description="Image generation| Generates an image with a fake spoiler filter.", guild_ids = [871734809154707467])
+    async def spoiler_tag(self, ctx,
+                      member: discord.Option(discord.Member, "Spoiler someone's avatar!") = None,
+                      link: discord.Option(str, "Spoiler an image via a link!") = None,
+                      attachment: discord.Option(discord.Attachment, "Spoiler an image provided as an attachment!") = None):
+        """
+        Generates an image with a fake spoiler filter.
+        """
+        base_argument = None
+        if member:
+            base_argument = member
+        if link:
+            if base_argument is not None:
+                return await ctx.respond("Do not provide more than one argument. Only enter a **member**, **link** or **attachment**.", ephemeral=True)
+            base_argument = link
+        if attachment:
+            if base_argument is not None:
+                return await ctx.respond("Do not provide more than one argument. Only enter a **member**, **link** or **attachment**.", ephemeral=True)
+            base_argument = attachment
+        if isinstance(base_argument, str):
+            if re.match(url_regex, base_argument):
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(base_argument) as resp:
+                        if resp.status != 200:
+                            return await ctx.send("The URL you provided is not valid.")
+                        imagebytes = await resp.read()
+                imagetype = imghdr.what(None, imagebytes)
+                if imagetype is None:
+                    return await ctx.send("The URL you provided is not an image.")
+                return imagebytes
+            else:
+                return await ctx.send("You need to provide an image URL.")
+        elif isinstance(base_argument, discord.Member):
+            imagebytes = await argument.avatar.with_format("png").read()
+        elif isinstance(base_argument, discord.Attachment):
+            imagebytes = await base_argument.read()
+            imagetype = imghdr.what(None, imagebytes)
+            if imagetype is None:
+                return await ctx.send("The image you provided is not valid.")
+        else:
+            return await ctx.send("An error occured, please try again.")
+        im = Image.open(BytesIO(imagebytes)).convert('RGBA')
+        im = im.filter(ImageFilter.GaussianBlur(radius=30))
+        spoilerimage = Image.open('assets/spoilertag.png').convert('RGBA')
+        s_width, s_height = spoilerimage.size
+        width, height = im.size
+        base_multiplier = 3.0
+        multiplier = base_multiplier + ((width - 250) / 100 * 0.10)
+        tag_width = int(width / multiplier)
+        supposed_height = int(tag_width / s_width * s_height)
+        if supposed_height > height:
+            im.close()
+            spoilerimage.close()
+            return await ctx.send("The dimentions of this image make it impossible to add the spoiler tag.")
+        else:
+            center_x = width / 2
+            center_y = height / 2
+            spoilerimage = spoilerimage.resize((int(tag_width), int(supposed_height)))
+            tag_position = (int(center_x - spoilerimage.size[0] / 2), int(center_y - spoilerimage.size[1] / 2))
+            print(tag_position)
+            im.paste(spoilerimage, tag_position, spoilerimage)
+            b = BytesIO()
+            im.save(b, 'png')
+            b.seek(0)
+            await ctx.respond(file=discord.File(fp=b, filename="spoiler.png"))
+            im.close()
+            spoilerimage.close()
