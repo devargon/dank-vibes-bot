@@ -16,6 +16,7 @@ import numpy as np
 import os
 import alexflipnote
 
+from utils.errors import ArgumentBaseError
 from .imgen_slash import ImgenSlash
 url_regex = re.compile(
         r'^(?:http|ftp)s?://' # http:// or https://
@@ -281,7 +282,6 @@ class Imgen(ImgenSlash, commands.Cog, name='imgen'):
                 imagetype = imghdr.what(None, imagebytes)
                 if imagetype is None:
                     return await ctx.send("The URL you provided is not an image.")
-                return imagebytes
             else:
                 return await ctx.send("You need to provide an custom emoji, image (as an attachment or URL), or mention someone.")
         elif isinstance(argument, discord.Emoji) or isinstance(argument, discord.PartialEmoji):
@@ -291,29 +291,34 @@ class Imgen(ImgenSlash, commands.Cog, name='imgen'):
         imagetype = imghdr.what(None, imagebytes)
         if imagetype is None:
             return await ctx.send("The image you provided is not valid.")
-        im = Image.open(BytesIO(imagebytes)).convert('RGBA')
-        im = im.filter(ImageFilter.GaussianBlur(radius=30))
-        spoilerimage = Image.open('assets/spoilertag.png').convert('RGBA')
-        s_width, s_height = spoilerimage.size
-        width, height = im.size
-        base_multiplier = 3.0
-        multiplier = base_multiplier + ((width - 250)/100*0.10)
-        tag_width = int(width / multiplier)
-        supposed_height = int(tag_width/s_width * s_height)
-        if supposed_height > height:
-            im.close()
-            spoilerimage.close()
-            return await ctx.send("The dimentions of this image make it impossible to add the spoiler tag.")
-        else:
-            center_x = width / 2
-            center_y = height / 2
-            spoilerimage = spoilerimage.resize((int(tag_width), int(supposed_height)))
-            tag_position = (int(center_x - spoilerimage.size[0] / 2), int(center_y - spoilerimage.size[1] / 2))
-            print(tag_position)
-            im.paste(spoilerimage, tag_position, spoilerimage)
-            b = BytesIO()
-            im.save(b, 'png')
-            b.seek(0)
-            await ctx.send(file=discord.File(fp=b, filename="spoiler.png"))
-            im.close()
-            spoilerimage.close()
+        def generate():
+            im = Image.open(BytesIO(imagebytes)).convert('RGBA')
+            im = im.filter(ImageFilter.GaussianBlur(radius=30))
+            spoilerimage = Image.open('assets/spoilertag.png').convert('RGBA')
+            s_width, s_height = spoilerimage.size
+            width, height = im.size
+            base_multiplier = 3.0
+            multiplier = base_multiplier + ((width - 250)/100*0.10)
+            tag_width = int(width / multiplier)
+            supposed_height = int(tag_width/s_width * s_height)
+            if supposed_height > height:
+                im.close()
+                spoilerimage.close()
+                raise ArgumentBaseError(message="the dimensions of the image you provided make it impossible to add the spoiler tag.")
+            else:
+                center_x = width / 2
+                center_y = height / 2
+                spoilerimage = spoilerimage.resize((int(tag_width), int(supposed_height)))
+                tag_position = (int(center_x - spoilerimage.size[0] / 2), int(center_y - spoilerimage.size[1] / 2))
+                print(tag_position)
+                im.paste(spoilerimage, tag_position, spoilerimage)
+                b = BytesIO()
+                im.save(b, 'png')
+                b.seek(0)
+                im.close()
+                spoilerimage.close()
+                file = discord.File(b, filename="spoiler.png")
+                return file
+        loop = asyncio.get_event_loop()
+        file = await loop.run_in_executor(None, generate)
+        await ctx.send(file=file)
