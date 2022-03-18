@@ -310,7 +310,6 @@ class Imgen(ImgenSlash, commands.Cog, name='imgen'):
                 center_y = height / 2
                 spoilerimage = spoilerimage.resize((int(tag_width), int(supposed_height)))
                 tag_position = (int(center_x - spoilerimage.size[0] / 2), int(center_y - spoilerimage.size[1] / 2))
-                print(tag_position)
                 im.paste(spoilerimage, tag_position, spoilerimage)
                 b = BytesIO()
                 im.save(b, 'png')
