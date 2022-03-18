@@ -235,7 +235,7 @@ class ImgenSlash(commands.Cog):
             else:
                 return await ctx.respond("You need to provide an image URL.", ephemeral=True)
         elif isinstance(base_argument, discord.Member):
-            imagebytes = await argument.avatar.with_format("png").read()
+            imagebytes = await base_argument.avatar.with_format("png").read()
         elif isinstance(base_argument, discord.Attachment):
             imagebytes = await base_argument.read()
             imagetype = imghdr.what(None, imagebytes)
@@ -243,11 +243,6 @@ class ImgenSlash(commands.Cog):
                 return await ctx.respond("The image you provided is not valid.", ephemeral=True)
         else:
             return await ctx.respond("An error occured, please try again.", ephemeral=True)
-        im = Image.open(BytesIO(imagebytes)).convert('RGBA')
-        im = im.filter(ImageFilter.GaussianBlur(radius=30))
-        spoilerimage = Image.open('assets/spoilertag.png').convert('RGBA')
-        s_width, s_height = spoilerimage.size
-        width, height = im.size
         def generate():
             im = Image.open(BytesIO(imagebytes)).convert('RGBA')
             im = im.filter(ImageFilter.GaussianBlur(radius=30))
