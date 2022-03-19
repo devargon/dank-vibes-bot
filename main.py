@@ -39,7 +39,7 @@ user = os.getenv('dbUSER')
 password = os.getenv('dbPASSWORD')
 
 
-intents = discord.Intents(guilds = True, members = True, presences = True, messages = True, reactions = True, emojis = True, invites = True, voice_states = True, message_content = True)
+intents = discord.Intents(guilds = True, members = True, presences = True, messages = True, reactions = True, emojis = True, invites = True, voice_states = True)
 allowed_mentions = discord.AllowedMentions(everyone=False, roles=False)
 
 class dvvt(commands.AutoShardedBot):
