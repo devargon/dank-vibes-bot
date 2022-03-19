@@ -100,7 +100,7 @@ class snipe(commands.Cog):
             blacklisted_words = await self.client.pool_pg.fetch("SELECT * FROM blacklisted_words")
             if any([i.get('string') in snipedata['content'] for i in blacklisted_words]):
                 return "This message has a blacklisted word and cannot be shown."
-            if 'dv.hp' in snipedata['content'].lower() or 'dv.hideping' in snipedata['content'].lower() or 'uwu hideping' in snipedata['content'].lower() or 'uwu hp' in snipedata['content'].lower():
+            if snipedata['content'].lower().startswith('dv.hp') or snipedata['content'].lower().startswith('dv.hideping'):
                 return "Ha, you got hidepinged!"
             else:
                 content = snipedata['content']
@@ -111,7 +111,7 @@ class snipe(commands.Cog):
                     return '\n'.join(splitlines[:len(splitlines)]) if len(splitlines) < 20 else '\n'.join(splitlines[:20]) + "\n" + f"**... and another {len(splitlines) - 20} lines**"
         desc = await desc()
         embed = discord.Embed(title=f"Sniped message from {snipedata['author'].name} 🔫", description=desc, color=self.client.embed_color)
-        if 'dv.hp' in snipedata['content'].lower() or 'dv.hideping' in snipedata['content'].lower() or 'uwu hideping' in snipedata['content'].lower() or 'uwu hp' in snipedata['content'].lower():
+        if snipedata['content'].lower().startswith('dv.hp') or snipedata['content'].lower().startswith('dv.hideping'):
             embed.title = "Sniped message from someone..."
             embed.set_author(name='Someone...')
         else:
