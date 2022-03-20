@@ -12,7 +12,7 @@ import time
 from utils.format import comma_number, stringnum_toint
 from utils.buttons import confirm
 from utils.converters import BetterInt
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 guildid = 871734809154707467 if os.getenv('state') == '1' else 595457764935991326
@@ -118,23 +118,23 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             embed.add_field(name='Grinder contributions', value=f"{tier or ''}Today: `⏣ {comma_number(result.get('today')) if result else 0}` \nThis Week: `⏣ {comma_number(result.get('past_week')) if result else 0}`\nLast Week: `⏣ {comma_number(result.get('last_week')) if result else 0}`\nThis Month: `⏣ {comma_number(result.get('past_month')) if result else 0}`\nAll Time: `⏣ {comma_number(result.get('all_time')) if result else 0}`", inline=True)
         embed.add_field(name='Last Logged', value=f"<t:{result.get('last_dono_time')}>\n[Jump to logged message]({result.get('last_dono_msg')})" if result else "[<t:0>](https://www.youtube.com/watch?v=dQw4w9WgXcQ)", inline=True)
         if self.is_5m_grinder(member):
-            if result and result.get('today') >= 5000000:
+            if result and result.get('today') >= 35000000:
                 value = f"<:DVB_True:887589686808309791> Yes"
             else:
-                value = f"<:DVB_False:887589731515392000> No\nTo complete your requirement, you have to send `⏣ {comma_number(5000000 - result.get('today') if result else 5000000)}` to {self.client.get_user(holder)}."
+                value = f"<:DVB_False:887589731515392000> No\nTo complete your requirement, you have to send `⏣ {comma_number(35000000 - result.get('today') if result else 35000000)}` to {self.client.get_user(holder)}."
         elif self.is_3m_grinder(member):
-            if result and result.get('today') >= 3000000:
+            if result and result.get('today') >= 21000000:
                 value = f"<:DVB_True:887589686808309791> Yes"
             else:
-                value = f"<:DVB_False:887589731515392000> No\nTo complete your requirement, you have to send `⏣ {comma_number(3000000 - result.get('today') if result else 3000000)}` to {self.client.get_user(holder)}."
+                value = f"<:DVB_False:887589731515392000> No\nTo complete your requirement, you have to send `⏣ {comma_number(21000000 - result.get('today') if result else 21000000)}` to {self.client.get_user(holder)}."
         elif self.is_trial_grinder(member):
-            if result and result.get('today') >= 3000000:
+            if result and result.get('today') >= 21000000:
                 if result.get('today') >= 5000000:
                     value = f"<:DVB_True:887589686808309791> Yes"
                 else:
                     value = f"<:DVB_True:887589686808309791> Yes **if on 3M Tier**"
             else:
-                value=f"<:DVB_False:887589731515392000> No\nTo complete your requirement, you have to send `⏣ {comma_number(5000000-result.get('today') if result else 5000000)}`, or `⏣ {comma_number(3000000-result.get('today') if result else 3000000)}` (if you're on the 3M Tier) to {self.client.get_user(holder)}."
+                value=f"<:DVB_False:887589731515392000> No\nTo complete your requirement, you have to send `⏣ {comma_number(35000000-result.get('today') if result else 35000000)}`, or `⏣ {comma_number(21000000-result.get('today') if result else 21000000)}` (if you're on the 3M Tier) to {self.client.get_user(holder)}."
         else:
             value = "You are not a Grinder."
         embed.add_field(name='Has fulfilled requirement?', value=value, inline=False)
@@ -143,6 +143,31 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         embed.set_author(name=str(member), icon_url=member.display_avatar.url)
         embed.set_thumbnail(url=ctx.guild.icon.url)
         await ctx.send(embed=embed)
+
+    @checks.is_bav_or_mystic()
+    @commands.command(name="glog")
+    async def grinder_log(self, ctx, member: discord.Member = None, number: BetterInt = None):
+        """
+            Adds or removes a certain amount of coins from a grinder's data. To change it to a specific amount, use `gset` instead.
+        """
+        if member is None or number is None:
+            return await ctx.send("The correct usage of this command is `glog [member] [amount to add]`.")
+        if number is None:
+            return await ctx.send("There was a problem converting your requested sum to a number. You might have input an incorrect number.")
+        result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
+        if result is None:
+            await self.client.pool_pg.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)",
+                                              member.id, number, number, 0, number, number, round(time.time()),
+                                              ctx.message.jump_url)
+            today = number
+        else:
+            today = await self.client.pool_pg.fetchval(
+                "UPDATE grinderdata SET today = $1, past_week = $2, last_week = $3, past_month = $4, all_time = $5, last_dono_time = $6, last_dono_msg = $7 WHERE user_id = $8 RETURNING today",
+                result.get('today') + number, result.get('past_week') + number, result.get('last_week'),
+                result.get('past_month') + number, result.get('all_time') + number, round(time.time()),
+                ctx.message.jump_url, member.id, column='today')
+        await ctx.send(f"<:checkmark:841187106654519296> `⏣ {comma_number(number)}` successfully logged for **{member}** ({member.id})!\nNew value: `⏣ {comma_number(today)}`")
+
 
     @checks.is_bav_or_mystic()
     @commands.command(name="gedit")
@@ -262,11 +287,11 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                 old = 0
             else:
                 old = result.get('today')
-            if old + amt >= 3000000:
+            if old + amt >= 21000000:
                 has_completed_3m = True
             else:
                 has_completed_3m = False
-            if old + amt >= 5000000:
+            if old + amt >= 335000000:
                 has_completed_5m = True
             else:
                 has_completed_5m = False
@@ -330,18 +355,18 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                     result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", grinder.id)
                 today = result.get('today') or 0
                 if self.is_5m_grinder(grinder):
-                    if today < 5000000:
-                        not_complete.append((grinder, today, result, 5000000, ""))
+                    if today < 35000000:
+                        not_complete.append((grinder, today, result, 35000000, ""))
                     else:
                         completed_req.append((grinder, today, ""))
                 elif self.is_3m_grinder(grinder):
-                    if today < 3000000:
-                        not_complete.append((grinder, today, result, 3000000, ""))
+                    if today < 21000000:
+                        not_complete.append((grinder, today, result, 21000000, ""))
                     else:
                         completed_req.append((grinder, today, ""))
                 elif self.is_trial_grinder(grinder):
-                    if today < 3000000:
-                        not_complete.append((grinder, today, result, 3000000, ""))
+                    if today < 21000000:
+                        not_complete.append((grinder, today, result, 21000000, ""))
                     else:
                         completed_req.append((grinder, today, ""))
             if len(not_complete) > 0:
@@ -387,8 +412,14 @@ class Grinderutils(commands.Cog, name='grinderutils'):
 <:DVB_start_complete:895172800627769447> Checking daily requirement 
 <:DVB_middle_complete:895172800627769444> Updating statistics
 <:DVB_end_incomplete:895172799923109919> <a:typing:839487089304141875> **Notifying grinders and sending a summary**""")
+            now = discord.utils.utcnow()
+            thursday = now + timedelta(days=3 - now.weekday())
+            thursday = thursday.replace(hour=7, minute=0, second=0)
+            if thursday < now:
+                thursday += timedelta(weeks=1)
+            timestamp = f"<t:{round(thursday.timestamp())}>"
             embed = discord.Embed(title="DV Grinders Team",
-                                  description=f"<a:dv_pointArrowOwO:837656328482062336> The daily grinder requirement has been checked.\n<a:dv_pointArrowOwO:837656328482062336> <#862574856846704661> is now unlocked and you may send the cash to `Dank Vibes Holder#2553`\n<a:dv_pointArrowOwO:837656328482062336> The next requirement check will take place in about <t:{round(time.time()) + 86400}:R> ( i.e between 1:30PM and 3:30PM GMT)",
+                                  description=f"<a:dv_pointArrowOwO:837656328482062336> The weekly grinder requirement has been checked.\n<a:dv_pointArrowOwO:837656328482062336> <#862574856846704661> is now unlocked and you may send the cash (21M/35M) to `Dank Vibes Holder#2553` or 1 Trophy to `@{self.client.get_user(542905463541465088)}`\n<a:dv_pointArrowOwO:837656328482062336> The next requirement check will take place at {timestamp}.",
                                   color=self.client.embed_color)
             embed.set_thumbnail(url="https://cdn.discordapp.com/icons/595457764935991326/a_58b91a8c9e75742d7b423411b0205b2b.gif")
             embed.set_footer(text="DM/Ping Ari#0005 if you have any queries.", icon_url=ctx.guild.icon.url)
