@@ -346,7 +346,7 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
             return
         if message is not None and len(message) > 180:
             ctx.command.reset_cooldown(ctx)
-            return await ctx.send("Your accompanying message can only be at most 180 characters.")
+            return await ctx.send(f"Your accompanying message is currently {len(message)} characters long; it can only be at most 180 characters.")
         try:
             await ctx.message.delete() # hides the ping so it has to delete the message that was sent to ping user
         except (discord.HTTPException, discord.Forbidden):
