@@ -9,6 +9,17 @@ from discord.ext import commands, tasks
 from utils.context import DVVTcontext
 from utils.format import print_exception
 
+class EditContent:
+    __slots__ = ('content', 'embed', 'embeds')
+
+    def __init__(self, content, embed, embeds):
+        self.content: str = content
+        self.embed: discord.Embed = embed
+        self.embeds: list = embeds
+
+    def __repr__(self) -> str:
+        return f"<EditContent content={self.content} embed={self.embed} embeds={self.embeds}>"
+
 AVAILABLE_EXTENSIONS = ['cogs.dev',
 'cogs.errors',
 'cogs.admin',
@@ -53,9 +64,39 @@ class dvvt(commands.AutoShardedBot):
         self.maintenance_message = {}
         self.available_extensions = AVAILABLE_EXTENSIONS
         self.blacklist = {}
+        self.editqueue = []
+        self.deleted_edit_messages = []
 
         for ext in self.available_extensions:
             self.load_extension(ext)
+
+    @tasks.loop(seconds=0.1)
+    async def edit_message(self):
+        await self.wait_until_ready()
+        # For some reason I am unable to edit the message if the embed is enclosed in another object, for now this function will be used for embeds only
+        if len(self.editqueue) > 0:
+            #print(self.editqueue)
+            tup = self.editqueue.pop(0)
+            m: discord.PartialMessage = tup[0]
+            editable: discord.Embed = tup[1]
+            #print(editable)
+            if m.id in self.deleted_edit_messages:
+                return None
+            try:
+                await m.edit(embed=editable)
+                #await self.get_channel(871737314831908974).send(embed=editable.embed)
+            except discord.NotFound:
+                self.deleted_edit_messages.append(m.id)
+            except Exception as e:
+                print(e)
+            else:
+
+        else:
+            pass
+            #print('nothing in queue')
+
+
+
 
     @tasks.loop(seconds=5)
     async def update_blacklist(self):
@@ -294,6 +335,7 @@ CREATE SCHEMA IF NOT EXISTS donations""")
             self.loop.create_task(self.after_ready())
             self.loop.create_task(self.load_maintenance_data())
             self.loop.create_task(self.get_all_blacklisted_users())
+            self.edit_message.start()
             self.update_blacklist.start()
             self.run(token)
 
