@@ -89,7 +89,6 @@ class dvvt(commands.AutoShardedBot):
                 self.deleted_edit_messages.append(m.id)
             except Exception as e:
                 print(e)
-            else:
 
         else:
             pass
