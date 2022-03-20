@@ -583,4 +583,40 @@ class Utility(TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois,
         avatarview.response = await ctx.send(embed=embed, view=avatarview)
         await avatarview.wait()
 
+    @commands.command(name="changelog")
+    async def changelog(self, ctx):
+        """
+        Shows the changelog.
+        """
+        changelogs = await self.client.pool_pg.fetch("SELECT version_str, changelog FROM changelog ORDER BY version_number DESC")
+        pages = []
+        for changelog in changelogs:
+            embed = discord.Embed(color=self.client.embed_color, title=f"{changelog.get('version_str')}").set_author(name=f"{self.client.user.name} Changelog", icon_url=self.client.user.avatar.url)
+            is_continued = False
+            changelog_text = changelog.get('changelog')
+            if len(changelog_text) > 3000:
+                changelog_split = changelog_text.split('\n')
+                existing_text = ''
+                while len(changelog_split) > 0:
+                    if len(existing_text + changelog_split[0] + '\n') > 3000:
+                        embed.title += "(Continued)" if is_continued else ""
+                        embed.description = existing_text + "\n*Continued...* ➡️"
+                        pages.append(embed)
+                        embed = discord.Embed(color=self.client.embed_color, title=f"{changelog.get('version_str')}").set_author(name=f"{self.client.user.name} Changelog", icon_url=self.client.user.avatar.url)
+                        existing_text = changelog_split[0]
+                        is_continued = True
+                        del changelog_split[0]
+                    else:
+                        existing_text += changelog_split[0] + '\n'
+                        del changelog_split[0]
+                embed.title += "(Continued)" if is_continued else ""
+                embed.description = existing_text
+                pages.append(embed)
+            else:
+                embed.description = changelog_text
+                pages.append(embed)
+        paginator = discord.ext.pages.Paginator(pages=pages)
+        await paginator.send(ctx)
+
+
 

@@ -251,6 +251,7 @@ CREATE TABLE IF NOT EXISTS highlight_ignores (guild_id bigint, user_id bigint, i
 CREATE TABLE IF NOT EXISTS reminders(id serial, user_id bigint, guild_id bigint, channel_id bigint, message_id bigint, name text, time bigint, created_time bigint);
 CREATE TABLE IF NOT EXISTS userconfig(user_id bigint PRIMARY KEY, votereminder bigint, dumbfight_result bool, dumbfight_rig_duration bigint, virus_immune bigint, received_daily_potion bool);
 CREATE TABLE IF NOT EXISTS modlog(case_id serial, guild_id bigint not null, moderator_id bigint not null, offender_id bigint not null, action text not null, reason text, start_time bigint, duration bigint, end_time bigint);
+CREATE TABLE IF NOT EXISTS changelog(version_number serial, version_str text, changelog text);
 CREATE SCHEMA IF NOT EXISTS donations""")
         print("Bot is ready")
 
