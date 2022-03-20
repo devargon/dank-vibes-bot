@@ -47,7 +47,7 @@ class polledition(commands.Cog):
     async def edit_polls(self):
         try:
             await self.client.wait_until_ready()
-            time_past_expiry = round(time.time()) - 30*24*60*60
+            time_past_expiry = round(time.time()) - 20*24*60*60
             polls = await self.client.pool_pg.fetch("SELECT * FROM polls WHERE created > $1", time_past_expiry)
             for poll in polls:
                 creator_id = poll.get('creator_id')
