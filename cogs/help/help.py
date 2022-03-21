@@ -237,7 +237,10 @@ class DVBotHelp(commands.DefaultHelpCommand):
         cog_names = [{"selected": ch.name} for ch in sort_cog]
         buttons = discord.utils.as_chunks(cog_names, 5)
         menu_view = HelpMenuView(*buttons, **loads)
-        await ctx.reply(embed=embed, view=menu_view)
+        try:
+            await ctx.reply(embed=embed, view=menu_view)
+        except Exception as e:
+            await ctx.send(embed=embed, view=menu_view)
 
     async def get_command_help(self, command):
         """
@@ -306,10 +309,17 @@ class DVBotHelp(commands.DefaultHelpCommand):
     async def handle_help(self, command):
         with contextlib.suppress(commands.CommandError):
             await command.can_run(self.context)
-            return await self.context.reply(embed=await self.get_command_help(command), mention_author=False)
+            try:
+                return await self.context.reply(embed=await self.get_command_help(command), mention_author=False)
+            except Exception as e:
+                return await self.context.send(embed=await self.get_command_help(command), mention_author=False)
         if command.cog.qualified_name.lower() in ['admin', 'dev', 'mod']:
             raise ArgumentBaseError(message="You don't have enough permission to see this help.") from None
-        return await self.context.reply(embed=await self.get_command_help(command), mention_author=False)
+        try:
+            return await self.context.reply(embed=await self.get_command_help(command), mention_author=False)
+        except Exception as e:
+            return await self.context.send(embed=await self.get_command_help(command), mention_author=False)
+
 
     async def send_command_help(self, command):
         """
@@ -338,7 +348,10 @@ class DVBotHelp(commands.DefaultHelpCommand):
         for subcommand in list_commands:
             name = get_command_name(subcommand)
             view.add_item(HelpSearchButton(style=discord.ButtonStyle.secondary, label=subcommand.name, selected=name, row=None))
-        await self.context.reply(embed=embed, view=view)
+        try:
+            await self.context.reply(embed=embed, view=view)
+        except Exception as e:
+            await self.context.send(embed=embed, view=view)
 
     async def send_cog_help(self, cog):
         """
@@ -367,7 +380,10 @@ class DVBotHelp(commands.DefaultHelpCommand):
         return f'Oops, looks like command "{string}" doesn\'t exist!'
 
     async def send_error_message(self, error):
-        return await self.context.reply(error, delete_after=10, mention_author=False)
+        try:
+            return await self.context.reply(error, delete_after=10, mention_author=False)
+        except Exception as e:
+            return await self.context.send(error, delete_after=10, mention_author=False)
 
 class Help(commands.Cog, name='help'):
     def __init__(self, client):
