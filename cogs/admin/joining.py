@@ -179,5 +179,3 @@ class Joining(commands.Cog):
         elif confirmview.returning_value == None:
             embed.color, embed.description = discord.Color.red(), "You didn't respond. Please start over."
         return await message.edit(embed=embed)
-
-

@@ -245,7 +245,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
             return
         self.sessions.add(ctx.channel.id)
         await ctx.send('Enter code to execute or evaluate. `exit()` or `quit` to exit.')
-        await ctx.message.add_reaction('<a:typing:839487089304141875>')
+        await ctx.message.add_reaction('<a:DVB_typing:955345484648710154>')
         def check(m):
             return m.author.id == ctx.author.id and \
                    m.channel.id == ctx.channel.id
@@ -253,7 +253,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
             try:
                 response = await self.client.wait_for('message', check=check, timeout=10.0 * 60.0)
             except asyncio.TimeoutError:
-                await ctx.message.clear_reaction('<a:typing:839487089304141875>')
+                await ctx.message.clear_reaction('<a:DVB_typing:955345484648710154>')
                 await ctx.checkmark()
                 await ctx.send('Exiting REPL session.')
                 self.sessions.remove(ctx.channel.id)
@@ -262,7 +262,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
             cleaned = self.cleanup_code(response.content)
 
             if cleaned in ('quit', 'exit', 'exit()'):
-                await ctx.message.clear_reaction('<a:typing:839487089304141875>')
+                await ctx.message.clear_reaction('<a:DVB_typing:955345484648710154>')
                 await ctx.checkmark()
                 await ctx.send('Exiting.')
                 self.sessions.remove(ctx.channel.id)

@@ -9,7 +9,7 @@ from discord.ext import commands, pages
 from utils.menus import CustomMenu
 import json
 from utils.buttons import *
-emojis = ["<:checkmark:841187106654519296>", "<:crossmark:841186660662247444>"]
+emojis = ["<:DVB_checkmark:955345523139805214>", "<:DVB_crossmark:955345521151737896>"]
 
 class start_or_end(discord.ui.View):
     def __init__(self, ctx: DVVTcontext, client, timeout):

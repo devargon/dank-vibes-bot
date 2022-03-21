@@ -11,7 +11,7 @@ from utils.buttons import *
 
 async def checkmark(message:discord.Message):
     try:
-        await message.add_reaction("<:checkmark:841187106654519296>")
+        await message.add_reaction("<:DVB_checkmark:955345523139805214>")
     except discord.NotFound:
         return None
 
@@ -38,7 +38,7 @@ def truefalse(value):  # shows the enabled or disabled emoji for 0 or 1 values
 
 async def crossmark(msg):
     try:
-        await msg.add_reaction("<:crossmark:841186660662247444>")
+        await msg.add_reaction("<:DVB_crossmark:955345521151737896>")
     except Exception as e:
         pass
 
@@ -492,7 +492,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 if not message.embeds[0].title:
                     return
                 if message.embeds[0].title == "Action Canceled" or message.embeds[0].title == "Action Canceled":
-                    return await message.add_reaction("<:crossmark:841186660662247444>")
+                    return await message.add_reaction("<:DVB_crossmark:955345521151737896>")
                 if message.embeds[0].title == "Action Confirmed":
                     nextlotterytime = round(time.time())
                     while nextlotterytime % 3600 != 0:

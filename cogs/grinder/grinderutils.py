@@ -166,7 +166,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                 result.get('today') + number, result.get('past_week') + number, result.get('last_week'),
                 result.get('past_month') + number, result.get('all_time') + number, round(time.time()),
                 ctx.message.jump_url, member.id, column='today')
-        await ctx.send(f"<:checkmark:841187106654519296> `⏣ {comma_number(number)}` successfully logged for **{member}** ({member.id})!\nNew value: `⏣ {comma_number(today)}`")
+        await ctx.send(f"<:DVB_checkmark:955345523139805214> `⏣ {comma_number(number)}` successfully logged for **{member}** ({member.id})!\nNew value: `⏣ {comma_number(today)}`")
 
 
     @checks.is_bav_or_mystic()
@@ -343,7 +343,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             return await message.edit(content="Command stopped.", embed=embed)
         if confirmview.returning_value == True:
             msg = await ctx.send("""
-<:DVB_start_incomplete:895172799981817938> <a:typing:839487089304141875> **Checking daily requirement** 
+<:DVB_start_incomplete:895172799981817938> <a:DVB_typing:955345484648710154> **Checking daily requirement** 
 <:DVB_middle_incomplete:895172800430620742> Updating statistics 
 <:DVB_end_incomplete:895172799923109919> Notifying grinders and sending a summary""")
             completed_req = []
@@ -393,7 +393,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
 
             await msg.edit(content="""
 <:DVB_start_complete:895172800627769447> Checking daily requirement 
-<:DVB_middle_incomplete:895172800430620742> <a:typing:839487089304141875> **Updating statistics** 
+<:DVB_middle_incomplete:895172800430620742> <a:DVB_typing:955345484648710154> **Updating statistics** 
 <:DVB_end_incomplete:895172799923109919> Notifying grinders and sending a summary""")
             if discord.utils.utcnow().day == 1:
                 await self.client.pool_pg.execute("UPDATE grinderdata SET past_month = $1", 0)
@@ -411,7 +411,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             await msg.edit(content="""
 <:DVB_start_complete:895172800627769447> Checking daily requirement 
 <:DVB_middle_complete:895172800627769444> Updating statistics
-<:DVB_end_incomplete:895172799923109919> <a:typing:839487089304141875> **Notifying grinders and sending a summary**""")
+<:DVB_end_incomplete:895172799923109919> <a:DVB_typing:955345484648710154> **Notifying grinders and sending a summary**""")
             now = discord.utils.utcnow()
             thursday = now + timedelta(days=3 - now.weekday())
             thursday = thursday.replace(hour=7, minute=0, second=0)

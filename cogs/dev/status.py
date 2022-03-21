@@ -3,12 +3,12 @@ from utils import checks
 from discord.ext import commands
 
 status_emojis = {
-    discord.Status.dnd: "<:status_dnd:840918521918783508>",
-    discord.Status.idle: "<:status_idle:840918469327192096>",
-    discord.Status.online: "<:status_online:840918419246415873>",
-    discord.Status.offline: "<:status_offline:840918448560930867>",
-    discord.Status.invisible: "<:status_offline:840918448560930867>",
-    discord.Status.do_not_disturb: "<:status_dnd:840918521918783508>",
+    discord.Status.dnd: "<:DVB_status_dnd:955345506228392056>",
+    discord.Status.idle: "<:DVB_status_idle:955345504630374400>",
+    discord.Status.online: "<:DVB_status_online:955345501392359454>",
+    discord.Status.offline: "<:DVB_status_offline:955345502868734023>",
+    discord.Status.invisible: "<:DVB_status_offline:955345502868734023>",
+    discord.Status.do_not_disturb: "<:DVB_status_dnd:955345506228392056>",
 }
 
 class Status(commands.Cog):
@@ -177,7 +177,7 @@ class Status(commands.Cog):
         await self.client.change_presence(status=status, activity=activity)
         if streaming:
             await ctx.checkmark()
-            await ctx.send("Status set to <:status_streaming:840918373557600257> | `Streaming {streaming}`".format(streaming=streaming), delete_after=5)
+            await ctx.send("Status set to <:DVB_status_streaming:955345499878195250> | `Streaming {streaming}`".format(streaming=streaming), delete_after=5)
         else:
             await ctx.checkmark()
             await ctx.send("Status cleared.", delete_after=5)

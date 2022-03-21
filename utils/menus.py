@@ -17,23 +17,23 @@ class MenuBase(menus.MenuPages):
 
         EmojiB = namedtuple("EmojiB", "emoji position explain")
         def_dict_emoji = {'\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\ufe0f':
-                          EmojiB("<:first_check:843858924100517968>", First(0),
+                          EmojiB("<:DVB_first_check:955345524519759903>", First(0),
                                  "Goes to the first page."),
 
                           '\N{BLACK LEFT-POINTING TRIANGLE}\ufe0f':
-                          EmojiB("<:prev_check:843859502843035688>", First(1),
+                          EmojiB("<:DVB_prev_check:955345544623038484>", First(1),
                                  "Goes to the previous page."),
 
                           '\N{BLACK RIGHT-POINTING TRIANGLE}\ufe0f':
-                          EmojiB("<:next_check:843859461683544074>", Last(1),
+                          EmojiB("<:DVB_next_check:955345527610945536>", Last(1),
                                  "Goes to the next page."),
 
                           '\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\ufe0f':
-                          EmojiB("<:last_check:843859408488628304>", Last(2),
+                          EmojiB("<:DVB_last_check:955345526302318622>", Last(2),
                                  "Goes to the last page."),
 
                           '\N{BLACK SQUARE FOR STOP}\ufe0f':
-                          EmojiB("<:stop_check:843859572741111859>", Last(0),
+                          EmojiB("<:DVB_stop_check:955345546103631902>", Last(0),
                                  "Removes this message.")
                           }
         self.dict_emoji = dict_emoji or def_dict_emoji
@@ -86,27 +86,27 @@ class HelpMenuBase(MenuBase):
     def __init__(self, source, **kwargs):
         EmojiB = namedtuple("EmojiB", "emoji position explain")
         help_dict_emoji = {'\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\ufe0f':
-                           EmojiB("<:first_check:843858924100517968>", First(0),
+                           EmojiB("<:DVB_first_check:955345524519759903>", First(0),
                                   "Goes to the first page."),
 
                            '\N{BLACK LEFT-POINTING TRIANGLE}\ufe0f':
-                           EmojiB("<:prev_check:843859502843035688>", First(1),
+                           EmojiB("<:DVB_prev_check:955345544623038484>", First(1),
                                   "Goes to the previous page."),
 
                            '\N{BLACK RIGHT-POINTING TRIANGLE}\ufe0f':
-                           EmojiB("<:next_check:843859461683544074>", Last(1),
+                           EmojiB("<:DVB_next_check:955345527610945536>", Last(1),
                                   "Goes to the next page."),
 
                            '\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\ufe0f':
-                           EmojiB("<:last_check:843859408488628304>", Last(2),
+                           EmojiB("<:DVB_last_check:955345526302318622>", Last(2),
                                   "Goes to the last page."),
 
                            '\N{BLACK SQUARE FOR STOP}\ufe0f':
-                           EmojiB("<:stop_check:843859572741111859>", Last(0),
+                           EmojiB("<:DVB_stop_check:955345546103631902>", Last(0),
                                   "Removes this message."),
 
-                           '<:information_check:843859623874396232>':
-                           EmojiB("<:information_check:843859623874396232>", Last(4),
+                           '<:DVB_information_check:955345547542294559>':
+                           EmojiB("<:DVB_information_check:955345547542294559>", Last(4),
                                   "Shows this infomation message.")
                             }
         super().__init__(source, dict_emoji=help_dict_emoji, **kwargs)
@@ -115,7 +115,7 @@ class HelpMenuBase(MenuBase):
         self.info = False
         await super().show_page(page_number)
 
-    @menus.button('<:information_check:843859623874396232>', position=Last(4))
+    @menus.button('<:DVB_information_check:955345547542294559>', position=Last(4))
     async def on_information(self, payload):
         if info := not self.info:
             await self.on_information_show(payload)

@@ -11,11 +11,11 @@ class DVVTcontext(commands.Context):
 
     async def checkmark(self):
         with contextlib.suppress(discord.HTTPException):
-            await self.message.add_reaction("<:checkmark:841187106654519296>")
+            await self.message.add_reaction("<:DVB_checkmark:955345523139805214>")
 
     async def crossmark(self):
         with contextlib.suppress(discord.HTTPException):
-            await self.message.add_reaction("<:crossmark:841186660662247444>")
+            await self.message.add_reaction("<:DVB_crossmark:955345521151737896>")
 
     async def send_interactive(
         self, messages: Iterable[str], box_lang: str = None, timeout: int = 15
@@ -80,15 +80,15 @@ class DVVTcontext(commands.Context):
             if payload.message_id != msg.id or payload.user_id != self.message.author.id:
                 return False
             emoji = str(payload.emoji)
-            if emoji == '<:checkmark:841187106654519296>':
+            if emoji == '<:DVB_checkmark:955345523139805214>':
                 confirm = True
                 return True
-            elif emoji == '<:crossmark:841186660662247444>':
+            elif emoji == '<:DVB_crossmark:955345521151737896>':
                 confirm = False
                 return True
             return False
 
-        for emoji in ['<:checkmark:841187106654519296>','<:crossmark:841186660662247444>']:
+        for emoji in ['<:DVB_checkmark:955345523139805214>','<:DVB_crossmark:955345521151737896>']:
             await msg.add_reaction(emoji)
         try:
             await self.bot.wait_for('raw_reaction_add', check=check, timeout=timeout)

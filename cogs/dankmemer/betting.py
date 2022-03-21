@@ -6,7 +6,7 @@ from utils import checks
 import random
 from utils.menus import CustomMenu
 
-emojis = ["<:checkmark:841187106654519296>", "<:crossmark:841186660662247444>"]
+emojis = ["<:DVB_checkmark:955345523139805214>", "<:DVB_crossmark:955345521151737896>"]
 
 class betcheck_pagination(menus.ListPageSource):
     def __init__(self, entries, title):
@@ -124,5 +124,3 @@ class betting(commands.Cog):
                 joined_members.append(f"**{member}**")
 
         await ctx.send(embed=discord.Embed(title="A new fighting match has started!", description=f"The fighting list has been cleared. You can now vote for these people: {', '.join(joined_members)}", color = self.client.embed_color, timestamp=discord.utils.utcnow()))
-
-
