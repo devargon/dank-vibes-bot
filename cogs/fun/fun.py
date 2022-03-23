@@ -813,3 +813,20 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
         await random_color_role.edit(color=random_int_color)
         embed = discord.Embed(title="Role Color Changed", description=f"{ctx.author.mention} changed the color of {random_color_role.mention} from {old_hex} to {str_random_hex_color}.", color=random_int_color)
         await ctx.send(embed=embed)
+
+    @commands.command(name="active", aliases=['activeitems'])
+    async def active_items(self, ctx: DVVTcontext):
+        results = await self.client.pool_pg.fetchrow("SELECT dumbfight_rig_duration, dumbfight_result FROM userconfig WHERE user_id = $1", ctx.author.id)
+        dumbfight_result, dumbfight_duration = results.get('dumbfight_result'), results.get('dumbfight_rig_duration')
+        reply_emoji = "<:Reply:871808167011549244>"
+        dumbfight_potion_emoji = "<:DVB_DumbfightPotion:944226900988026890>"
+        summary = []
+        if dumbfight_result is not None:
+            if dumbfight_duration is None:
+                dumbfight_duration = 0
+            result = "lose all dumbfights" if dumbfight_result is not True else "win all dumbfights"
+            duration = f"{reply_emoji} Removed <t:{dumbfight_duration}:R>" if dumbfight_duration > 0 else ""
+            text = f"{dumbfight_potion_emoji} **Dumbfight Potion**: {result}\n{duration}"
+            summary.append(text)
+        embed = discord.Embed(title="Active items", description="\n\n".join(summary), color=self.client.embed_color, timestamp=discord.utils.utcnow())
+        await ctx.send(embed=embed)
