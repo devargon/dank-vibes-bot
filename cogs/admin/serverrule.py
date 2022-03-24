@@ -140,7 +140,7 @@ class ServerRule(commands.Cog):
         if not (command := self.client.get_command(cmd) or self.client.get_application_command(cmd)):
             return await ctx.send(f"Oops, looks like command \"{cmd}\" doesn't exist!")
         command_type = "Prefixed command" if isinstance(command,
-                                                        commands.Command) else "Application command (Slash, User/Mesasge context menu)"
+                                                        commands.Command) else "Application command"
         roles = await self.get_command_rule(ctx.guild, get_command_name(command))
         if not roles:
             return await ctx.send("I couldn't find a server rule for that command.")
