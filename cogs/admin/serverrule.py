@@ -92,6 +92,7 @@ class ServerRule(commands.Cog):
             return await ctx.send('Command is a required argument.')
         if not (command := self.client.get_command(cmd) or self.client.get_application_command(cmd)):
             return await ctx.send(f"Oops, looks like command \"{cmd}\" doesn't exist!")
+
         if role is None:
             return await ctx.send("Role is a required argument.")
         command = get_command_name(command)
@@ -138,11 +139,13 @@ class ServerRule(commands.Cog):
             return await ctx.send("Command is a required argument.")
         if not (command := self.client.get_command(cmd) or self.client.get_application_command(cmd)):
             return await ctx.send(f"Oops, looks like command \"{cmd}\" doesn't exist!")
+        command_type = "Prefixed command" if isinstance(command,
+                                                        commands.Command) else "Application command (Slash, User/Mesasge context menu)"
         roles = await self.get_command_rule(ctx.guild, get_command_name(command))
         if not roles:
             return await ctx.send("I couldn't find a server rule for that command.")
         whitelist, blacklist = roles
-        embed = discord.Embed(color=self.client.embed_color, title=f"Permissions for `{command}`")
+        embed = discord.Embed(color=self.client.embed_color, title=f"Permissions for `{command}` ({command_type})")
         if whitelist:
             embed.add_field(name='Whitelisted Roles', value="\n".join([ctx.guild.get_role(r).mention if ctx.guild.get_role(r) is not None else f'Deleted role: {r}' for r in whitelist]), inline=True)
         if blacklist:
