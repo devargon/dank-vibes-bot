@@ -1,4 +1,6 @@
 import discord
+
+from main import dvvt
 from utils import checks
 from discord.ext import commands
 from utils.format import get_command_name
@@ -6,7 +8,7 @@ from utils.converters import BetterRoles, AllowDeny
 
 class ServerRule(commands.Cog):
     def __init__(self, client):
-        self.client= client
+        self.client: dvvt = client
 
     async def get_command_rule(self, guild: discord.Guild, command_name: str):
         query = "SELECT role_id, whitelist FROM rules WHERE guild_id=$1 AND command=$2"
@@ -44,7 +46,7 @@ class ServerRule(commands.Cog):
             return await ctx.help()
         if cmd is None:
             return await ctx.send('Command is a required argument.')
-        if not (command := self.client.get_command(cmd)):
+        if not (command := self.client.get_command(cmd) or self.client.get_application_command(cmd)):
             return await ctx.send(f"Oops, looks like command \"{cmd}\" doesn't exist!")
         if role is None:
             return await ctx.send("Role is a required argument.")
@@ -88,7 +90,7 @@ class ServerRule(commands.Cog):
         """
         if cmd is None:
             return await ctx.send('Command is a required argument.')
-        if not (command := self.client.get_command(cmd)):
+        if not (command := self.client.get_command(cmd) or self.client.get_application_command(cmd)):
             return await ctx.send(f"Oops, looks like command \"{cmd}\" doesn't exist!")
         if role is None:
             return await ctx.send("Role is a required argument.")
@@ -114,7 +116,7 @@ class ServerRule(commands.Cog):
         """
         if cmd is None:
             return await ctx.send("Command is a required argument.")
-        if not (command := self.client.get_command(cmd)):
+        if not (command := self.client.get_command(cmd) or self.client.get_application_command(cmd)):
             return await ctx.send(f"Oops, looks like command \"{cmd}\" doesn't exist!")
         command = get_command_name(command)
         command_rule = await self.get_command_rule(ctx.guild, command)
@@ -134,7 +136,7 @@ class ServerRule(commands.Cog):
         """
         if cmd is None:
             return await ctx.send("Command is a required argument.")
-        if not (command := self.client.get_command(cmd)):
+        if not (command := self.client.get_command(cmd) or self.client.get_application_command(cmd)):
             return await ctx.send(f"Oops, looks like command \"{cmd}\" doesn't exist!")
         roles = await self.get_command_rule(ctx.guild, get_command_name(command))
         if not roles:
