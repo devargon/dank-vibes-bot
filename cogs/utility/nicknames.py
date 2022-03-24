@@ -182,4 +182,7 @@ class nicknames(commands.Cog):
         authorembed.add_field(name="Nickname", value=nickname, inline=True)
         authorembed.add_field(name="Request ID", value=str(ID), inline=True)
         authorembed.set_footer(text="Your nickname will be denied if it is blatantly inappropriate and/or unmentionable.")
-        await ctx.reply(embed=authorembed)
+        try:
+            await ctx.reply(embed=authorembed)
+        except Exception as e:
+            await ctx.send(embed=authorembed)

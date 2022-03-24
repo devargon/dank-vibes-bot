@@ -785,7 +785,10 @@ class DankMemer(commands.Cog, name='dankmemer'):
                         return True
                     if check_start_selecting_stream():
                         if self.trending_game is not None:
-                            return await beforemsg.reply("The current trending game to stream is **{}**!".format(self.trending_game), delete_after=10.0)
+                            try:
+                                return await beforemsg.reply("The current trending game to stream is **{}**!".format(self.trending_game), delete_after=10.0)
+                            except Exception as e:
+                                await beforemsg.channel.send("The current trending game to stream is **{}**!".format(self.trending_game), delete_after=10.0)
                     return
                 def check_after_view():
                     for button in afterview.children:

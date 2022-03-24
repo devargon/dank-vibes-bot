@@ -49,6 +49,9 @@ class MessageTracking(commands.Cog, name='MessageTracking'):
                     except discord.Forbidden:
                         pass
             if rolesummary:
-                await message.reply(rolesummary)
+                try:
+                    await message.reply(rolesummary)
+                except Exception as e:
+                    await message.channel.send(rolesummary)
         await asyncio.sleep(8)
         self.queue.remove(message.author)

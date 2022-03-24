@@ -404,7 +404,10 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
             return await ctx.send("There's no message count to be removed.")
         totalvote = sum(userentry.get('messagecount') for userentry in messagecount)
         embed = discord.Embed(title="Action awaiting confirmation", description=f"There are {len(messagecount)} people who have chatted, amounting to a total of {totalvote} messages. Are you sure you want to reset the message count?", color=self.client.embed_color, timestamp=discord.utils.utcnow())
-        msg = await ctx.reply(embed=embed, view=confirm_view)
+        try:
+            msg = await ctx.reply(embed=embed, view=confirm_view)
+        except Exception as e:
+            msg = await ctx.send(embed=embed, view=confirm_view)
         confirm_view.response = msg
         await confirm_view.wait()
         if confirm_view.returning_value is None:

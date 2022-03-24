@@ -371,7 +371,10 @@ class ItemGames(commands.Cog):
                 if await self.client.pool_pg.fetchval("SELECT dumbfight_result FROM userconfig WHERE user_id = $1", ctx.author.id) is None:
                     confirmview = confirm(ctx, self.client, 20.0)
                     embed = discord.Embed(title=f"Are you sure you want to use a {itemdata.get('fullname')}?", description="Drinking a dumbfight potion might cause you to lose or win your dumbfights for the next 2 hours.")
-                    confirmview.response = await ctx.reply(embed=embed, view=confirmview)
+                    try:
+                        confirmview.response = await ctx.reply(embed=embed, view=confirmview)
+                    except:
+                        confirmview.response = await ctx.send(embed=embed, view=confirmview)
                     await confirmview.wait()
                     if confirmview.returning_value is not True:
                         embed.color, embed.description= discord.Color.red(), "You decided not to use the dumbfight potion."

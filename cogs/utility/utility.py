@@ -317,7 +317,10 @@ class Utility(TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois,
         embed.set_author(name=member, icon_url=member.display_avatar.url)
         embed.add_field(name="Message count", value=user.get('messagecount'), inline=True)
         embed.add_field(name="Position", value=f"{position} {'🏆' if all.index(user2) < 10 else ''}", inline=True)
-        await ctx.reply(embed=embed)
+        try:
+            await ctx.reply(embed=embed)
+        except:
+            await ctx.send(embed=embed)
 
     @commands.command(name="cooldowns", aliases = ['mycooldowns', 'cds', 'mycds', 'cd'])
     async def cooldowns(self, ctx):

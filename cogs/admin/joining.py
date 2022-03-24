@@ -165,7 +165,10 @@ class Joining(commands.Cog):
         embed = discord.Embed(title="Action awaiting confirmation",
                               description=f"Please check if this is how you want the message to be presented. If everything is in order, select Yes.",
                               color=self.client.embed_color, timestamp=discord.utils.utcnow())
-        message = await templatemessage.reply(embed=embed, view=confirmview)
+        try:
+            message = await templatemessage.reply(embed=embed, view=confirmview)
+        except Exception as e:
+            message = await ctx.send(embed=embed, view=confirmview)
         confirmview.response = message
         await confirmview.wait()
         if confirmview.returning_value == True:
