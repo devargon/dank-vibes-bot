@@ -122,6 +122,8 @@ class reminders(commands.Cog):
     @remind.command(name='delete', aliases=['remove', 'del', 'rm'])
     async def remind_delete(self, ctx, *, reminder_id: OwnReminderConverter = None):
         """Deletes a reminder."""
+        if reminder_id is None:
+            return await ctx.send("You need to specify a reminder's ID to delete.")
         reminder: Reminder = reminder_id
         await self.client.pool_pg.execute("DELETE FROM reminders WHERE id=$1 AND user_id=$2 AND guild_id=$3", reminder.id, ctx.author.id, ctx.guild.id)
         await ctx.send(f"Your reminder **{reminder.name}** with ID `{reminder.id}` has been deleted.")
@@ -148,11 +150,13 @@ class reminders(commands.Cog):
 
     @checks.perm_insensitive_roles()
     @commands.guild_only()
-    @remind.command(name='when', aliases=['what', 'details'])
+    @remind.command(name='when', aliases=['what', 'details', 'show'])
     async def remind_when(self, ctx, *, reminder_id: OwnReminderConverter = None):
         """
         Shows you details about a reminder and when it ends.
         """
+        if reminder_id is None:
+            return await ctx.send("You need to specify a reminder's ID to show.")
         reminder: Reminder = reminder_id
         channel_id = reminder.channel
         message_id = reminder.message
