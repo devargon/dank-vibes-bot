@@ -153,7 +153,7 @@ class reminders(commands.Cog):
 
     @checks.perm_insensitive_roles()
     @commands.guild_only()
-    @remind.command(name='when', aliases=['what', 'details', 'show'])
+    @remind.command(name='when', aliases=['what', 'details'])
     async def remind_when(self, ctx, *, reminder_id: OwnReminderConverter = None):
         """
         Shows you details about a reminder and when it ends.
