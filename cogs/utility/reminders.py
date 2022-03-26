@@ -1,3 +1,6 @@
+import os
+from typing import Optional, Union
+
 import discord
 from discord.ext import commands
 
@@ -7,23 +10,11 @@ import asyncio
 
 from main import dvvt
 from utils.buttons import confirm
+from utils.converters import TimedeltaConverter, BetterTimeConverter
 from utils.errors import ArgumentBaseError
 from utils.time import humanize_timedelta, UserFriendlyTime
 from utils import checks
-
-
-class Reminder:
-    __slots__ = ('time', 'name', 'channel', 'guild', 'message', 'id', 'user', 'created_time')
-
-    def __init__(self, *, record):
-        self.id = record.get('id')
-        self.user = record.get('user_id')
-        self.guild = record.get('guild_id')
-        self.channel = record.get('channel_id')
-        self.message = record.get('message_id')
-        self.created_time = record.get('created_time')
-        self.time = record.get('time')
-        self.name = record.get('name')
+from utils.specialobjects import Reminder
 
 
 class reminders(commands.Cog):
@@ -52,7 +43,7 @@ class reminders(commands.Cog):
                 raise ArgumentBaseError(message="You don't have a reminder with that ID.")
             return Reminder(record=reminder)
 
-    async def add_reminder(self, user_id, guild_id, channel_id, message_id, name, end_time):
+    async def add_reminder(self, user_id, guild_id, channel_id, message_id, name, end_time, repeat: Optional[bool] = False):
         now = round(time.time())
         rm_id = await self.client.pool_pg.fetchval("INSERT INTO reminders(user_id, guild_id, channel_id, message_id, name, time, created_time) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id", user_id, guild_id, channel_id, message_id, name, end_time, round(time.time()), column='id')
         return rm_id
@@ -86,6 +77,31 @@ class reminders(commands.Cog):
             await ctx.message.reply(f"Alright! I'll remind you about **{reminder}** in **{humanize_timedelta(seconds=round(remind_dt.timestamp()-time.time()))}** (on <t:{round(remind_dt.timestamp())}:f>).\nThis reminder's ID is `{rm_id}`.")
         except Exception as e:
             await ctx.send(f"Alright! I'll remind you about **{reminder}** in **{humanize_timedelta(seconds=round(remind_dt.timestamp() - time.time()))}** (on <t:{round(remind_dt.timestamp())}:f>).\nThis reminder's ID is `{rm_id}`.")
+
+    @checks.perm_insensitive_roles()
+    @commands.guild_only()
+    @remind.command(name='repeat')
+    async def remind_repeat(self, ctx, reminder_id: OwnReminderConverter, repeating_interval: Optional[Union[int, BetterTimeConverter]] = None):
+        """
+        Repeats/loops a reminder, making it reoccuring with a set interval
+        If no interval is provided, the reminder will repeat based on its original duration.
+
+        To stop a reminder from repeating, use `remind repeat <id> -1`.
+        """
+        reminder: Reminder = reminder_id
+        if reminder is None:
+            return await ctx.send("You need to specify the ID of the reminder that you'd want to repeat.")
+        if repeating_interval is None:
+            repeating_interval = reminder.time - reminder.created_time
+        if isinstance(repeating_interval, int) and repeating_interval == -1:
+            await self.client.pool_pg.execute("UPDATE reminders SET repeat = $1, interval = $2 WHERE id = $3", False, 0, reminder.id)
+            return await ctx.send(f"Alright, I won't repeat this reminder (**{reminder.name}**) anymore.")
+        minimum_interval = 1 if os.getenv('state') == '1' else 300
+        if repeating_interval < minimum_interval:
+            return await ctx.send("Repeating reminders require a minimum of 5 minutes between each reminder.")
+        else:
+            await self.client.pool_pg.execute("UPDATE reminders SET repeat = $1, interval = $2 WHERE id = $3", True, repeating_interval, reminder.id)
+            await ctx.send(f"Alright! Your reminder **{reminder.name}** will repeat **every {humanize_timedelta(seconds=repeating_interval)}**. This will take place only after you get reminded about this reminder.")
 
     @checks.perm_insensitive_roles()
     @commands.guild_only()
