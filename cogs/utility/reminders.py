@@ -80,7 +80,7 @@ class reminders(commands.Cog):
 
     @checks.perm_insensitive_roles()
     @commands.guild_only()
-    @remind.command(name='repeat')
+    @remind.command(name='repeat', aliases=['loop'])
     async def remind_repeat(self, ctx, reminder_id: OwnReminderConverter, repeating_interval: Optional[Union[int, BetterTimeConverter]] = None):
         """
         Repeats/loops a reminder, making it reoccuring with a set interval
