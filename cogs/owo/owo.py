@@ -1,10 +1,12 @@
 import asyncio
+import typing
+
 import discord
 import contextlib
 from typing import Optional
 from datetime import datetime, timedelta
 from utils.menus import CustomMenu
-from discord.ext import commands, menus, tasks
+from discord.ext import commands, menus, tasks, pages
 from utils import checks
 
 owo50_id = 847877497634553856
@@ -48,7 +50,7 @@ class OwO(commands.Cog, name='owo'):
             return True
         return False
 
-    async def get_leaderboard(self, guild, query, top):
+    async def get_leaderboard(self, guild, query, top) -> typing.Union[discord.Embed, list]:
         leaderboard = []
         counts = await self.client.pool_pg.fetch(query, top)
         for count in counts:
@@ -124,31 +126,40 @@ class OwO(commands.Cog, name='owo'):
         `dv.owoleaderboard last week` for last week's OwO leaderboard.
         """
         async with ctx.typing():
-            arg = "total 5" if arg is None else arg
-            number = [int(i) for i in arg.split() if i.isdigit()]
-            top = 5 if len(number) == 0 else number[0]
-            if 'daily' in arg.lower() or 'today' in arg.lower():
-                title = "Today's OwO leaderboard"
-                query = "SELECT member_id, daily_count FROM owocount ORDER BY daily_count DESC LIMIT $1"
-            elif 'last week' in arg.lower():
-                title = "Last week's OwO leaderboard"
-                query = "SELECT member_id, last_week FROM owocount ORDER BY last_week DESC LIMIT $1"
-            elif 'weekly' in arg.lower() or 'week' in arg.lower():
-                title = "This week's OwO leaderboard"
-                query = "SELECT member_id, weekly_count FROM owocount ORDER BY weekly_count DESC LIMIT $1"
-            elif 'yesterday' in arg.lower():
-                title = "Yesterday's OwO leaderboard"
-                query = "SELECT member_id, yesterday FROM owocount ORDER BY yesterday DESC LIMIT $1"
+            if arg is None:
+                arg = 5
+            try:
+                arg = int(arg)
+            except ValueError:
+                arg = 5
+            top = arg
+            title_and_queries = [
+                ("Today's OwO leaderboard", "The number of OwOs sent since the last OwO reset.", "SELECT member_id, daily_count FROM owocount ORDER BY daily_count DESC LIMIT $1"),
+                ("Yesterday's OwO leaderboard", "The number of OwOs sent yesterday.", "SELECT member_id, yesterday FROM owocount ORDER BY yesterday DESC LIMIT $1"),
+                ("This week's OwO leaderboard", "The number of OwOs sent this week.", "SELECT member_id, weekly_count FROM owocount ORDER BY weekly_count DESC LIMIT $1"),
+                ("Last week's OwO leaderboard", "The number of OwOs sent last week.", "SELECT member_id, last_week FROM owocount ORDER BY last_week DESC LIMIT $1"),
+                (f"OwO leaderboard for {ctx.guild.name}", "The number of OwOs sent all time.", "SELECT member_id, total_count FROM owocount ORDER BY total_count DESC LIMIT $1")
+            ]
+            pagegroups = []
+            for title, description, query in title_and_queries:
+                leaderboard = await self.get_leaderboard(ctx.guild, query, top)
+                if isinstance(leaderboard, discord.Embed):
+                    leaderboard.title = title
+                    embeds = [leaderboard]
+                    leaderboard.title = title
+                else:
+                    embeds = []
+                    for chunks in discord.utils.as_chunks(leaderboard, 10):
+                            embed = discord.Embed(title=title, color=self.client.embed_color, timestamp=discord.utils.utcnow())
+                            for entry in chunks:
+                                embed.add_field(name=f"{entry[0]}", value=f"**{entry[1]}** OwOs", inline=False)
+                            embeds.append(embed)
+                pagegroups.append(discord.ext.pages.PageGroup(pages=embeds, label=title, description=description, author_check=True, disable_on_timeout=True))
+            if discord.__version__ == '2.0.0b6':
+                paginator = pages.Paginator(pages=pagegroups, show_menu=True, menu_placeholder="View all OwO leaderboards...")
             else:
-                title = f"OwO leaderboard for {ctx.guild.name}"
-                query = "SELECT member_id, total_count FROM owocount ORDER BY total_count DESC LIMIT $1"
-            leaderboard = await self.get_leaderboard(ctx.guild, query, top)
-            if isinstance(leaderboard, discord.Embed):
-                leaderboard.title = title                
-                return await ctx.send(embed=leaderboard)
-            else:
-                pages = CustomMenu(source=Leaderboard(leaderboard, title), clear_reactions_after=True, timeout=60)
-                return await pages.start(ctx)
+                paginator = pages.Paginator(pages=pagegroups, show_menu=True)
+            await paginator.send(ctx)
 
     @tasks.loop(hours=24)
     async def daily_owo_reset(self):
