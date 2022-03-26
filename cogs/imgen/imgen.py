@@ -287,7 +287,7 @@ class Imgen(ImgenSlash, commands.Cog, name='imgen'):
         elif isinstance(argument, discord.Emoji) or isinstance(argument, discord.PartialEmoji):
             imagebytes = await argument.read()
         else:
-            imagebytes = await argument.avatar.with_format("png").read()
+            imagebytes = await argument.display_avatar.with_format("png").read()
         imagetype = imghdr.what(None, imagebytes)
         if imagetype is None:
             return await ctx.send("The image you provided is not valid.")

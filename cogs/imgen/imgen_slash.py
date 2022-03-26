@@ -203,7 +203,7 @@ class ImgenSlash(commands.Cog):
 
     @checks.perm_insensitive_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
-    @commands.slash_command(name="spoiler", description="Image generation| Generates an image with a fake spoiler filter.", guild_ids = [871734809154707467])
+    @commands.slash_command(name="spoiler", description="Image generation| Generates an image with a fake spoiler filter.")
     async def spoiler_tag(self, ctx,
                       member: discord.Option(discord.Member, "Spoiler someone's avatar!") = None,
                       link: discord.Option(str, "Spoiler an image via a link!") = None,
@@ -235,7 +235,7 @@ class ImgenSlash(commands.Cog):
             else:
                 return await ctx.respond("You need to provide an image URL.", ephemeral=True)
         elif isinstance(base_argument, discord.Member):
-            imagebytes = await base_argument.avatar.with_format("png").read()
+            imagebytes = await base_argument.display_avatar.with_format("png").read()
         elif isinstance(base_argument, discord.Attachment):
             imagebytes = await base_argument.read()
             imagetype = imghdr.what(None, imagebytes)
