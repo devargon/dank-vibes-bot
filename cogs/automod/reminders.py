@@ -22,7 +22,7 @@ class reminders_(commands.Cog):
                     user = self.client.get_user(reminder.get('user_id'))
                     chan_id = reminder.get('channel_id')
                     guild_id = reminder.get('guild_id')
-                    msg_id = reminder.get('msg_id')
+                    msg_id = reminder.get('message_id')
                     time_end = reminder.get('time')
                     time_created = reminder.get('created_time')
                     channel = self.client.get_channel(chan_id)
