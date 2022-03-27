@@ -110,7 +110,7 @@ class lockdown(commands.Cog):
         message = """
 This lockdown feature allows you to create separate groups of channels (or lockdown profiles) to be able to lock and unlock many channels at once. It also allows you to set a separate message for each profile. When quoting profile names, add quotations `""` for names with spaces, unless you're using `view`, `delete`, `start` and `end`.
 
-View the guide on https://docs.dvbot.nogra.me/commands/mod/tools/#lockdown-start.
+View the guide on https://docs.dvbot.nogra.me/commands/mod/tools/#lockdown-start .
         """
         await ctx.send(embed=discord.Embed(title=f"{self.client.user.name}'s Lockdown Guide", description=message, color=self.client.embed_color, timestamp=discord.utils.utcnow()))
 
