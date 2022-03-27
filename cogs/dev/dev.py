@@ -575,6 +575,10 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
     @checks.dev()
     @commands.command(name="commandusage")
     async def commandusage(self, ctx, argument: typing.Union[discord.User, discord.TextChannel, str] = None):
+        """
+        Shows the command usage.
+        The argument can be a user, text channel, or command name.
+        """
         async def create_line_chart(x_axis, y_axis, x_label, y_label, title):
             x_axis = list(x_axis)
             y_axis = list(y_axis)
