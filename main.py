@@ -322,6 +322,7 @@ CREATE SCHEMA IF NOT EXISTS donations""")
             start = time.time()
             pool_pg = self.loop.run_until_complete(asyncpg.create_pool(
                 host=host,
+                port=5433,
                 database=database,
                 user=user,
                 password=password
