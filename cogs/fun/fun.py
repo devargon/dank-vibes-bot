@@ -83,7 +83,7 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
             return True
         else:
             if discord.utils.get(ctx.author.roles, name="No Tags"):
-                raise ArgumentBaseError(message="You have the **No Tags** role and can't use any commands in the **Fun** cantegory. <:dv_pepeHahaUSuckOwO:837653798313918475>")
+                raise ArgumentBaseError(message="You have the **No Tags** role and can't use any commands in the **Fun** category. <:dv_pepeHahaUSuckOwO:837653798313918475>")
         return True
 
     @checks.perm_insensitive_roles()
@@ -346,7 +346,7 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
             return
         if message is not None and len(message) > 180:
             ctx.command.reset_cooldown(ctx)
-            return await ctx.send("Your accompanying message can only be at most 180 characters.")
+            return await ctx.send(f"Your accompanying message is currently {len(message)} characters long; it can only be at most 180 characters.")
         try:
             await ctx.message.delete() # hides the ping so it has to delete the message that was sent to ping user
         except (discord.HTTPException, discord.Forbidden):
@@ -812,4 +812,21 @@ class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
                     self.rcdata = f"{weekday_int}:{times + 1}"
         await random_color_role.edit(color=random_int_color)
         embed = discord.Embed(title="Role Color Changed", description=f"{ctx.author.mention} changed the color of {random_color_role.mention} from {old_hex} to {str_random_hex_color}.", color=random_int_color)
+        await ctx.send(embed=embed)
+
+    @commands.command(name="active", aliases=['activeitems'])
+    async def active_items(self, ctx: DVVTcontext):
+        results = await self.client.pool_pg.fetchrow("SELECT dumbfight_rig_duration, dumbfight_result FROM userconfig WHERE user_id = $1", ctx.author.id)
+        dumbfight_result, dumbfight_duration = results.get('dumbfight_result'), results.get('dumbfight_rig_duration')
+        reply_emoji = "<:Reply:871808167011549244>"
+        dumbfight_potion_emoji = "<:DVB_DumbfightPotion:944226900988026890>"
+        summary = []
+        if dumbfight_result is not None:
+            if dumbfight_duration is None:
+                dumbfight_duration = 0
+            result = "lose all dumbfights" if dumbfight_result is not True else "win all dumbfights"
+            duration = f"{reply_emoji} Removed <t:{dumbfight_duration}:R>" if dumbfight_duration > 0 else ""
+            text = f"{dumbfight_potion_emoji} **Dumbfight Potion**: {result}\n{duration}"
+            summary.append(text)
+        embed = discord.Embed(title="Active items", description="\n\n".join(summary), color=self.client.embed_color, timestamp=discord.utils.utcnow())
         await ctx.send(embed=embed)

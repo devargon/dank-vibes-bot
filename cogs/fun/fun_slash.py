@@ -25,7 +25,7 @@ class FunSlash(commands.Cog):
             return await ctx.respond("You are not authorized to view/send messages in that channel.", ephemeral=True)
         if message is not None and len(message) > 180:
             ctx.command.reset_cooldown(ctx)
-            return await ctx.respond("Your accompanying message can only be at most 180 characters.", ephemeral=True)
+            return await ctx.respond(f"Your accompanying message is currently {len(message)} characters long; it can only be at most 180 characters.", ephemeral=True)
         if message is None:
             message = ''
         if await self.client.check_blacklisted_content(message):

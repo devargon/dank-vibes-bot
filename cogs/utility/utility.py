@@ -193,14 +193,14 @@ class Utility(TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois,
         if prefix is None:
             embed = discord.Embed(color=self.client.embed_color)
             current_prefix = self.client.get_guild_prefix(ctx.guild)
-            embed.description = "<:greentick:806531672140283944> **Server's current prefix is :** `{}`".format(current_prefix)
+            embed.description = "<:DVB_greentick:955345438419087360> **Server's current prefix is :** `{}`".format(current_prefix)
             return await ctx.send(embed=embed)
         if "@everyone" in prefix or "@here" in prefix:
             return await ctx.send("You can't do that.")
         try:
             await self.client.set_prefix(ctx.guild, prefix)
             embed = discord.Embed(color=self.client.embed_color)
-            embed.description = "<:greentick:806531672140283944> **Server's prefix changed to `{}`**".format(prefix)
+            embed.description = "<:DVB_greentick:955345438419087360> **Server's prefix changed to `{}`**".format(prefix)
             await ctx.send(embed=embed)
         except Exception:
             return await ctx.send_error()
@@ -226,15 +226,15 @@ class Utility(TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois,
                     voice += 1
                 elif isinstance(channel, discord.StageChannel):
                     stage += 1
-        value_1.append(f"<:text_channel:868806636230283314> {text}")
-        value_1.append(f'<:voice_channel:868806601123958834> {voice}')
+        value_1.append(f"<:DVB_text_channel:955345569319104573> {text}")
+        value_1.append(f'<:DVB_voice_channel:955345567263911947> {voice}')
         if stage != 0:
-            value_1.append(f'<:stage_channel:868806674452987924> {stage}')
+            value_1.append(f'<:DVB_stage_channel:955345570900344863> {stage}')
         py_version = "{}.{}.{}".format(*sys.version_info[:3])
         dpy_version = discord.__version__
         embed = discord.Embed(description=f"{ctx.guild.me.name} is a multipurpose bot designed to help members and enhance the Dank Vibes experience with a helpful set of fun and utility commands. \n\n{ctx.guild.me.name} is created by {str(self.client.get_user(321892489470410763))} with the Pycord library, and developed by {str(self.client.get_user(321892489470410763))} and {str(self.client.get_user(650647680837484556))}.", color=self.client.embed_color)
         embed.add_field(name='Stats', value="\n".join(value_1), inline=True)
-        embed.add_field(name='Versions', value=f"<:python:868806455317393428> `{py_version}`\n<:DVB_PyCord:937351289514385428> `{dpy_version}`", inline=True)
+        embed.add_field(name='Versions', value=f"<:DVB_python:955345550193078272> `{py_version}`\n<:DVB_PyCord:937351289514385428> `{dpy_version}`", inline=True)
         embed.add_field(name='Developers', value=f"{str(self.client.get_user(650647680837484556))}", inline=True)
         embed.add_field(name="Special Thanks To", value=f"{str(await self.client.fetch_user(727498137232736306))}\n{self.client.get_user(321892489470410763)}\n{self.client.get_user(560251854399733760)}\n{self.client.get_user(886598864965103727)} <3", inline=True)
         if ctx.author.id in [650647680837484556, 515725341910892555, 321892489470410763]:
@@ -317,7 +317,10 @@ class Utility(TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois,
         embed.set_author(name=member, icon_url=member.display_avatar.url)
         embed.add_field(name="Message count", value=user.get('messagecount'), inline=True)
         embed.add_field(name="Position", value=f"{position} {'🏆' if all.index(user2) < 10 else ''}", inline=True)
-        await ctx.reply(embed=embed)
+        try:
+            await ctx.reply(embed=embed)
+        except:
+            await ctx.send(embed=embed)
 
     @commands.command(name="cooldowns", aliases = ['mycooldowns', 'cds', 'mycds', 'cd'])
     async def cooldowns(self, ctx):
@@ -582,5 +585,41 @@ class Utility(TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois,
         avatarview = AvatarView(user, avatar_url, d_avatar_url, banner_url, init_picked)
         avatarview.response = await ctx.send(embed=embed, view=avatarview)
         await avatarview.wait()
+
+    @commands.command(name="changelog")
+    async def changelog(self, ctx):
+        """
+        Shows the changelog.
+        """
+        changelogs = await self.client.pool_pg.fetch("SELECT version_str, changelog FROM changelog ORDER BY version_number DESC")
+        pages = []
+        for changelog in changelogs:
+            embed = discord.Embed(color=self.client.embed_color, title=f"{changelog.get('version_str')}").set_author(name=f"{self.client.user.name} Changelog", icon_url=self.client.user.avatar.url)
+            is_continued = False
+            changelog_text = changelog.get('changelog')
+            if len(changelog_text) > 3000:
+                changelog_split = changelog_text.split('\n')
+                existing_text = ''
+                while len(changelog_split) > 0:
+                    if len(existing_text + changelog_split[0] + '\n') > 3000:
+                        embed.title += "(Continued)" if is_continued else ""
+                        embed.description = existing_text + "\n*Continued...* ➡️"
+                        pages.append(embed)
+                        embed = discord.Embed(color=self.client.embed_color, title=f"{changelog.get('version_str')}").set_author(name=f"{self.client.user.name} Changelog", icon_url=self.client.user.avatar.url)
+                        existing_text = changelog_split[0]
+                        is_continued = True
+                        del changelog_split[0]
+                    else:
+                        existing_text += changelog_split[0] + '\n'
+                        del changelog_split[0]
+                embed.title += "(Continued)" if is_continued else ""
+                embed.description = existing_text
+                pages.append(embed)
+            else:
+                embed.description = changelog_text
+                pages.append(embed)
+        paginator = discord.ext.pages.Paginator(pages=pages)
+        await paginator.send(ctx)
+
 
 

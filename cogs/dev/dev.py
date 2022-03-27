@@ -1,8 +1,16 @@
+import functools
 import io
 import re
 import ast
 import copy
 import time
+import typing
+from collections import Counter
+
+from datetime import datetime, timezone
+
+import matplotlib.pyplot as plt
+
 import discord
 from discord import Webhook
 import asyncio
@@ -12,13 +20,14 @@ import textwrap
 import traceback
 import contextlib
 from abc import ABC
+
 from utils import checks
 from .status import Status
 from .botutils import BotUtils
 from contextlib import redirect_stdout
 from discord.ext import commands, menus
 from .cog_manager import CogManager
-from utils.format import pagify, TabularData, plural, text_to_file
+from utils.format import pagify, TabularData, plural, text_to_file, get_command_name
 from .maintenance import Maintenance
 from.logging import Logging
 from utils.converters import MemberUserConverter, TrueFalse
@@ -236,7 +245,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
             return
         self.sessions.add(ctx.channel.id)
         await ctx.send('Enter code to execute or evaluate. `exit()` or `quit` to exit.')
-        await ctx.message.add_reaction('<a:typing:839487089304141875>')
+        await ctx.message.add_reaction('<a:DVB_typing:955345484648710154>')
         def check(m):
             return m.author.id == ctx.author.id and \
                    m.channel.id == ctx.channel.id
@@ -244,7 +253,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
             try:
                 response = await self.client.wait_for('message', check=check, timeout=10.0 * 60.0)
             except asyncio.TimeoutError:
-                await ctx.message.clear_reaction('<a:typing:839487089304141875>')
+                await ctx.message.clear_reaction('<a:DVB_typing:955345484648710154>')
                 await ctx.checkmark()
                 await ctx.send('Exiting REPL session.')
                 self.sessions.remove(ctx.channel.id)
@@ -253,7 +262,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
             cleaned = self.cleanup_code(response.content)
 
             if cleaned in ('quit', 'exit', 'exit()'):
-                await ctx.message.clear_reaction('<a:typing:839487089304141875>')
+                await ctx.message.clear_reaction('<a:DVB_typing:955345484648710154>')
                 await ctx.checkmark()
                 await ctx.send('Exiting.')
                 self.sessions.remove(ctx.channel.id)
@@ -562,3 +571,296 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
         view.response = msg
         await view.wait()
 
+
+    @checks.dev()
+    @commands.command(name="commandusage")
+    async def commandusage(self, ctx, argument: typing.Union[discord.User, discord.TextChannel, str] = None):
+        async def create_line_chart(x_axis, y_axis, x_label, y_label, title):
+            x_axis = list(x_axis)
+            y_axis = list(y_axis)
+            x_axis_dt_format = [datetime.fromtimestamp(x).replace(tzinfo=timezone.utc) for x in x_axis]
+            for x in x_axis_dt_format:
+                string = x.strftime("%a %d $b")
+            plt.clf()
+            fig, ax = plt.subplots()
+            ax.plot(x_axis_dt_format, y_axis)
+            fig.autofmt_xdate()
+            plt.title(title)
+            plt.xlabel(x_label)
+            plt.ylabel(y_label)
+            plt.grid(True)
+            def generate_graph():
+                buf = io.BytesIO()
+                fig.savefig(buf, format='png')
+                buf.seek(0)
+                return buf
+            task = functools.partial(generate_graph)
+            task = self.client.loop.run_in_executor(None, task)
+            try:
+                buf = await asyncio.wait_for(task, timeout=10)
+            except asyncio.TimeoutError:
+                return None
+            else:
+                return buf
+
+        perf_now = time.perf_counter()
+        def sort_dictionary(dictionary: dict, reverse: bool = False):
+            lst = sorted(dictionary.items(), key=lambda x: x[1], reverse=reverse)
+            new_dict = {}
+            for item in lst:
+                new_dict[item[0]] = item[1]
+            return new_dict
+
+        past_7_days = round(time.time()) - 604800
+        past_24_hours = round(time.time()) - 86400
+        past_30_days = round(time.time()) - 2592000
+
+        if argument is None:
+            result = await self.client.pool_pg.fetch("SELECT * FROM commandlog ORDER BY time")
+            if len(result) < 10:
+                resultembed = discord.Embed(title="Warning", description="Not enough command usage to produce a proper result.", color=discord.Color.red())
+                file = None
+            else:
+                user_dict = Counter([x.get('user_id') for x in result])
+                all_time_usage_dict = {}
+                all_time_usage = 0
+                seven_day_usage = 0
+                twentyfour_hour_usage = 0
+                thirty_day_usage = 0
+                two_week_usage_data_per_hour = {}
+                now = round(time.time())
+
+                while len(two_week_usage_data_per_hour) < 14:
+                    while now % 86400 != 0:
+                        now -= 1
+                    if now in two_week_usage_data_per_hour:
+                        now -= 1
+                    else:
+                        two_week_usage_data_per_hour[now] = 0
+                for command_record in result:
+                    time_run = command_record.get('time')
+                    all_time_usage += 1
+                    if time_run > past_7_days:
+                        seven_day_usage += 1
+                    if time_run > past_24_hours:
+                        twentyfour_hour_usage += 1
+                    if time_run > past_30_days:
+                        for key in two_week_usage_data_per_hour:
+                            if time_run - key > 86400:
+                                break
+                            elif time_run - key < 0:
+                                continue
+                            else:
+                                two_week_usage_data_per_hour[key] += 1
+                                break
+                        thirty_day_usage += 1
+                    if command_record.get('command') not in all_time_usage_dict:
+                        all_time_usage_dict[command_record.get('command')] = 1
+                    else:
+                        all_time_usage_dict[command_record.get('command')] += 1
+                usage_sorted = sort_dictionary(all_time_usage_dict, reverse=True)
+                details = f"Past 7 days: {seven_day_usage}\nPast 24 hours: {twentyfour_hour_usage}\nPast 30 days: {thirty_day_usage}\n**All time: {all_time_usage}**"
+                top_usage = []
+                for cmd in usage_sorted:
+                    if len(top_usage) < 5:
+                        top_usage.append(f"`{cmd}`: **{usage_sorted[cmd]}**")
+                top_usage = '\n'.join(top_usage)
+                u = await create_line_chart(two_week_usage_data_per_hour.keys(), two_week_usage_data_per_hour.values(), "Time", "Usage", "Command usage over time")
+                user_sorted = sort_dictionary(user_dict, reverse=True)
+                top_users = []
+                for user in user_sorted:
+                    if len(top_users) < 5:
+                        user_obj = self.client.get_user(user) or user
+                        top_users.append(f"{user_obj}: **{user_sorted[user]}**")
+                top_users = '\n'.join(top_users)
+                file = discord.File(u, filename="graph.png")
+                resultembed = discord.Embed(title="Command Usage", color=self.client.embed_color)
+                resultembed.add_field(name="Usage Statistics", value=details, inline=True)
+                resultembed.add_field(name="Top 5 commands", value=top_usage, inline=True)
+                resultembed.add_field(name="Top 5 users", value=top_users, inline=True)
+                resultembed.set_image(url="attachment://graph.png")
+
+        elif isinstance(argument, discord.User):
+            result = await self.client.pool_pg.fetch("SELECT * FROM commandlog WHERE user_id = $1 ORDER BY time", argument.id)
+            if len(result) < 10:
+                resultembed = discord.Embed(title="Warning", description="Not enough command usage to produce a proper result.", color=discord.Color.red())
+                file = None
+            else:
+                all_time_usage_dict = {}
+                channel_data = {}
+                all_time_usage = 0
+                two_week_usage_data_per_hour = {}
+                now = round(time.time())
+                while len(two_week_usage_data_per_hour) < 15:
+                    while now % 86400 != 0:
+                        now -= 1
+                    now -= 86400
+                    if now in two_week_usage_data_per_hour:
+                        now -= 1
+                    else:
+                        two_week_usage_data_per_hour[now] = 0
+                for command_record in result:
+                    if command_record.get('channel_id') not in channel_data:
+                        channel_data[command_record.get('channel_id')] = 1
+                    else:
+                        channel_data[command_record.get('channel_id')] += 1
+                    time_run = command_record.get('time')
+                    all_time_usage += 1
+                    # putting them into their respective keys is faster than iterating over the whole data
+                    for key in two_week_usage_data_per_hour:
+                        if time_run - key > 86400:
+                            break
+                        elif time_run - key < 0:
+                            continue
+                        else:
+                            two_week_usage_data_per_hour[key] += 1
+                            break
+                    if command_record.get('command') not in all_time_usage_dict:
+                        all_time_usage_dict[command_record.get('command')] = 1
+                    else:
+                        all_time_usage_dict[command_record.get('command')] += 1
+                usage_sorted = sort_dictionary(all_time_usage_dict, reverse=True)
+                channel_usage_sorted = sort_dictionary(channel_data, reverse=True)
+                chan_data = []
+                for chan in channel_usage_sorted:
+                    if len(chan_data) < 5:
+                        channel = self.client.get_channel(chan)
+                        channel = channel.mention if channel else chan
+                        chan_data.append(f"{channel}: **{channel_usage_sorted[chan]}**")
+                top_usage = [f"**All time: {all_time_usage}**"]
+                for cmd in usage_sorted:
+                    if len(top_usage) < 6:
+                        top_usage.append(f"`{cmd}`: **{usage_sorted[cmd]}**")
+                top_usage = '\n'.join(top_usage)
+                u = await create_line_chart(two_week_usage_data_per_hour.keys(), two_week_usage_data_per_hour.values(), "Time", "Usage", f"{argument}'s command usage over the last two weeks")
+                file = discord.File(u, filename="graph.png")
+                resultembed = discord.Embed(title=f"{argument}'s Command Usage", color=self.client.embed_color)
+                resultembed.add_field(name="Usage Statistics", value=top_usage, inline=True)
+                resultembed.add_field(name="Top used channels", value='\n'.join(chan_data), inline=True)
+                resultembed.set_image(url="attachment://graph.png")
+        elif isinstance(argument, discord.TextChannel):
+            result = await self.client.pool_pg.fetch("SELECT * FROM commandlog WHERE channel_id = $1 ORDER BY time", argument.id)
+            if len(result) < 10:
+                resultembed = discord.Embed(title="Warning", description="Not enough command usage to produce a proper result.", color=discord.Color.red())
+                file = None
+            else:
+                all_time_usage_dict = {}
+                user_data = {}
+                all_time_usage = 0
+                two_week_usage_data_per_hour = {}
+                now = round(time.time())
+                while len(two_week_usage_data_per_hour) < 15:
+                    while now % 86400 != 0:
+                        now -= 1
+                    if now in two_week_usage_data_per_hour:
+                        now -= 1
+                    else:
+                        two_week_usage_data_per_hour[now] = 0
+                for command_record in result:
+                    if command_record.get('user_id') not in user_data:
+                        user_data[command_record.get('user_id')] = 1
+                    else:
+                        user_data[command_record.get('user_id')] += 1
+                    time_run = command_record.get('time')
+                    all_time_usage += 1
+                    # putting them into their respective keys is faster than iterating over the whole data
+                    for key in two_week_usage_data_per_hour:
+                        if time_run - key > 86400:
+                            break
+                        elif time_run - key < 0:
+                            continue
+                        else:
+                            two_week_usage_data_per_hour[key] += 1
+                            break
+                    if command_record.get('command') not in all_time_usage_dict:
+                        all_time_usage_dict[command_record.get('command')] = 1
+                    else:
+                        all_time_usage_dict[command_record.get('command')] += 1
+                usage_sorted = sort_dictionary(all_time_usage_dict, reverse=True)
+                user_data_sorted = sort_dictionary(user_data, reverse=True)
+                user_data = []
+                for user in user_data_sorted:
+                    if len(user_data) < 5:
+                        user_obj = self.client.get_user(user) or user
+                        user_data.append(f"{user_obj}: **{user_data_sorted[user]}**")
+                top_usage = [f"**All time: {all_time_usage}**"]
+                for cmd in usage_sorted:
+                    if len(top_usage) < 6:
+                        top_usage.append(f"`{cmd}`: **{usage_sorted[cmd]}**")
+                top_usage = '\n'.join(top_usage)
+                u = await create_line_chart(two_week_usage_data_per_hour.keys(), two_week_usage_data_per_hour.values(), "Time", "Usage", f"{argument.mention}'s command usage over the last two weeks")
+                file = discord.File(u, filename="graph.png")
+                resultembed = discord.Embed(title=f"{argument.name}'s Command Usage", color=self.client.embed_color)
+                resultembed.add_field(name="Usage Statistics", value=top_usage, inline=True)
+                resultembed.add_field(name="Top used users", value='\n'.join(user_data), inline=True)
+                resultembed.set_image(url="attachment://graph.png")
+        elif isinstance(argument, str):
+            cmd = self.client.get_command(argument)
+            if cmd is None:
+                resultembed = discord.Embed(title="Warning", description="Command not found. The argument passed can be a **Channel**, **Member**, **Command** or Nothing.", color=discord.Color.red())
+                file = None
+            else:
+                full_cmd = get_command_name(cmd)
+                result = await self.client.pool_pg.fetch("SELECT * FROM commandlog WHERE command = $1 ORDER BY time", full_cmd)
+                if len(result) < 10:
+                    resultembed = discord.Embed(title="Warning", description="Not enough command usage to produce a proper result.", color=discord.Color.red())
+                    file = None
+                else:
+                    channel_data = Counter([x.get('channel_id') for x in result])
+                    user_data = Counter([x.get('user_id') for x in result])
+                    all_time_usage = 0
+                    seven_day_usage = 0
+                    twentyfour_hour_usage = 0
+                    thirty_day_usage = 0
+                    two_week_usage_data_per_hour = {}
+                    now = round(time.time())
+
+                    while len(two_week_usage_data_per_hour) < 30:
+                        while now % 86400 != 0:
+                            now -= 1
+                        if now in two_week_usage_data_per_hour:
+                            now -= 1
+                        else:
+                            two_week_usage_data_per_hour[now] = 0
+                    for command_record in result:
+                        time_run = command_record.get('time')
+                        all_time_usage += 1
+                        if time_run > past_7_days:
+                            seven_day_usage += 1
+                        if time_run > past_24_hours:
+                            twentyfour_hour_usage += 1
+                        if time_run > past_30_days:
+                            for key in two_week_usage_data_per_hour:
+                                if time_run - key > 86400:
+                                    break
+                                elif time_run - key < 0:
+                                    continue
+                                else:
+                                    two_week_usage_data_per_hour[key] += 1
+                                    break
+                            thirty_day_usage += 1
+                    channel_data_sorted = sort_dictionary(channel_data, reverse=True)
+                    user_data_sorted = sort_dictionary(user_data, reverse=True)
+                    channel_data = []
+                    for channel in channel_data_sorted:
+                        if len(channel_data) < 5:
+                            channel_obj = self.client.get_channel(channel) or channel
+                            channel_data.append(f"{channel_obj}: **{channel_data_sorted[channel]}**")
+                    user_data = []
+                    for user in user_data_sorted:
+                        if len(user_data) < 5:
+                            user_obj = self.client.get_user(user) or user
+                            user_data.append(f"{user_obj}: **{user_data_sorted[user]}**")
+                    u = await create_line_chart(two_week_usage_data_per_hour.keys(), two_week_usage_data_per_hour.values(), "Time", "Usage", f"{full_cmd}'s usage over 30 days")
+                    file = discord.File(u, filename="graph.png")
+                    resultembed = discord.Embed(title=f"`{full_cmd}` Usage", color=self.client.embed_color)
+                    resultembed.add_field(name="Top used channels", value='\n'.join(channel_data), inline=True)
+                    resultembed.add_field(name="Top used users", value='\n'.join(user_data), inline=True)
+                    resultembed.set_image(url="attachment://graph.png")
+        else:
+            resultembed = None
+            file = None
+        done = round(time.perf_counter() - perf_now, 3)
+        resultembed.timestamp = discord.utils.utcnow()
+        resultembed.set_footer(icon_url=self.client.user.display_avatar.url, text=f"Processing completed in {done} seconds.")
+        await ctx.send(f"Completed in {done}s", embed=resultembed, file=file)

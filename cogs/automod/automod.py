@@ -111,8 +111,10 @@ class AutoMod(reminders_, polledition, AutoStatus, timer, NameLogging, timedrole
         if (duration := await self.client.pool_pg.fetchval("SELECT dumbfight_rig_duration FROM userconfig WHERE user_id = $1", ctx.author.id)) is not None:
             if duration < time.time():
                 await self.client.pool_pg.execute("UPDATE userconfig SET dumbfight_rig_duration = NULL, dumbfight_result = NULL WHERE user_id = $1", ctx.author.id)
-                with contextlib.suppress(discord.HTTPException):
+                try:
                     await ctx.reply(f"> **{ctx.author.name}**, the effects of the dumbfight potion has worn off.")
+                except Exception as e:
+                    await ctx.send(f"> **{ctx.author.mention}**, the effects of the dumbfight potion has worn off.")
 
     @tasks.loop(hours=24)
     async def daily_potion_reset(self):

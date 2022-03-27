@@ -184,7 +184,10 @@ class games(commands.Cog):
                                     has_guessed = True
                                     embed = discord.Embed(title="<a:dv_aConfettiOwO:837712162079244318> CONGRATULATIONS!", description=f"You got the correct number: `{chosen}`!\nThank you for playing **{ctx.author.display_name}**'s Guess the Number Game!", color=self.client.embed_color).set_footer(text=f'Guessing attempts: `{times_guessed}`')
                                     await pinmsg.unpin(reason="Guess the Number game information")
-                                    return await guessingmsg.reply(f"{guessingmsg.author.mention}", embed=embed)
+                                    try:
+                                        return await guessingmsg.reply(f"{guessingmsg.author.mention}", embed=embed)
+                                    except Exception as e:
+                                        return await guessingmsg.send(f"{guessingmsg.author.mention}", embed=embed)
 
     @checks.perm_insensitive_roles()
     @checks.is_not_blacklisted()
@@ -389,7 +392,10 @@ class games(commands.Cog):
             view.response = await ctx.send(f"Agree to the nickname given to you by pressing the button with your name. {ctx.author.mention}{member.mention}", view=view)
             await view.wait()
             if view.agree != 2:
-                await view.response.reply("This nickbet has been cancelled as both of you have not agreed to the given nicknames.")
+                try:
+                    await view.response.reply("This nickbet has been cancelled as both of you have not agreed to the given nicknames.")
+                except Exception as e:
+                    await view.response.channel.send("This nickbet has been cancelled as both of you have not agreed to the given nicknames.")
                 with contextlib.suppress(ValueError):
                     self.nickbets.remove(member.id)
                     self.nickbets.remove(ctx.author.id)

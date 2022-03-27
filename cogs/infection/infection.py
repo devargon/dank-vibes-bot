@@ -36,14 +36,14 @@ class infection(commands.Cog):
                     await self.client.wait_for("raw_reaction_add", check=check, timeout=60)
                 except asyncio.TimeoutError:
                     return await message.remove_reaction("🧐", self.client.user)
-                statusmsg = await message.reply("<a:typing:839487089304141875> **Reading exported modlog**...")
+                statusmsg = await message.reply("<a:DVB_typing:955345484648710154> **Reading exported modlog**...")
                 attachment = message.attachments[0]
                 data_bytes = await attachment.read()
                 data = data_bytes.decode('utf-8')
                 try:
                     data_json = json.loads(data)
                 except json.decoder.JSONDecodeError:
-                    return await statusmsg.edit(content="<:redcross:806531740448718948> **Error:** `JSONDecodeError`")
+                    return await statusmsg.edit(content="<:DVB_redcross:955345440356859944> **Error:** `JSONDecodeError`")
                 else:
                     um = ""
                     emojis = {

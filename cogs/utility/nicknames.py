@@ -2,7 +2,7 @@ import asyncio
 import discord
 from datetime import datetime
 from discord.ext import commands
-emojis = ["<:checkmark:841187106654519296>", "<:crossmark:841186660662247444>"]
+emojis = ["<:DVB_checkmark:955345523139805214>", "<:DVB_crossmark:955345521151737896>"]
 from utils import checks
 from utils.errors import NicknameIsManaged
 
@@ -11,7 +11,7 @@ class NicknamePersistentView(discord.ui.View):
         self.client = client
         super().__init__(timeout=None)
 
-    @discord.ui.button(label='Approve', emoji=discord.PartialEmoji.from_str("<:checkmark:841187106654519296>"), style=discord.ButtonStyle.green, custom_id="button:approve_nickname") #, custom_id='persistent_view:approve')
+    @discord.ui.button(label='Approve', emoji=discord.PartialEmoji.from_str("<:DVB_checkmark:955345523139805214>"), style=discord.ButtonStyle.green, custom_id="button:approve_nickname") #, custom_id='persistent_view:approve')
     async def green(self, button: discord.ui.Button, interaction: discord.Interaction):
         config = await self.client.pool_pg.fetchrow("SELECT nicknamechannel_id FROM channelconfigs WHERE guild_id = $1", interaction.guild_id)
         if config is None or config.get('nicknamechannel_id') != interaction.channel_id:
@@ -59,7 +59,7 @@ class NicknamePersistentView(discord.ui.View):
         await asyncio.sleep(10)
         await interaction.delete_original_message()
 
-    @discord.ui.button(label='Deny', emoji=discord.PartialEmoji.from_str("<:crossmark:841186660662247444>"), style=discord.ButtonStyle.red, custom_id="button:deny_nickname") #c, custom_id='persistent_view:red')
+    @discord.ui.button(label='Deny', emoji=discord.PartialEmoji.from_str("<:DVB_crossmark:955345521151737896>"), style=discord.ButtonStyle.red, custom_id="button:deny_nickname") #c, custom_id='persistent_view:red')
     async def red(self, button: discord.ui.Button, interaction: discord.Interaction):
         config = await self.client.pool_pg.fetchrow("SELECT nicknamechannel_id FROM channelconfigs WHERE guild_id = $1", interaction.guild_id)
         if config is None or config.get('nicknamechannel_id') != interaction.channel_id:
@@ -182,4 +182,7 @@ class nicknames(commands.Cog):
         authorembed.add_field(name="Nickname", value=nickname, inline=True)
         authorembed.add_field(name="Request ID", value=str(ID), inline=True)
         authorembed.set_footer(text="Your nickname will be denied if it is blatantly inappropriate and/or unmentionable.")
-        await ctx.reply(embed=authorembed)
+        try:
+            await ctx.reply(embed=authorembed)
+        except Exception as e:
+            await ctx.send(embed=authorembed)

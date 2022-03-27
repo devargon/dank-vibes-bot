@@ -1,7 +1,13 @@
+import imghdr
 import random
+import re
+from typing import Optional, Union
 
+import aiohttp
 import discord
 from discord.ext import commands
+from emoji import UNICODE_EMOJI
+
 from utils import checks
 import asyncio
 from PIL import Image, ImageFilter, ImageFont, ImageDraw
@@ -10,7 +16,15 @@ import numpy as np
 import os
 import alexflipnote
 
+from utils.errors import ArgumentBaseError
 from .imgen_slash import ImgenSlash
+url_regex = re.compile(
+        r'^(?:http|ftp)s?://' # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #normal urls
+        r'localhost|)' #localhoar
+        r'(?::\d+)?' # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+
 
 alexflipnoteAPI = os.getenv('alexflipnoteAPI')
 
@@ -245,3 +259,65 @@ class Imgen(ImgenSlash, commands.Cog, name='imgen'):
             if str(imageint) in file:
                 image = file
         await ctx.send(file=discord.File(f"assets/spams/{image}"))
+
+    @checks.perm_insensitive_roles()
+    @commands.cooldown(10, 1, commands.BucketType.user)
+    @commands.command(name="spoiler")
+    async def spoiler(self, ctx, argument: Union[discord.Emoji, discord.PartialEmoji, discord.Member, str] = None):
+        """
+        Generates an image with a fake spoiler filter.
+        """
+        if argument is None:
+            if len(ctx.message.attachments) > 0:
+                imagebytes = await ctx.message.attachments[0].read()
+            else:
+                return await ctx.send("You need to provide an attachment, emoji, image URL or mention a user.")
+        elif isinstance(argument, str):
+            if re.match(url_regex, argument):
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(argument) as resp:
+                        if resp.status != 200:
+                            return await ctx.send("The URL you provided is not valid.")
+                        imagebytes = await resp.read()
+                imagetype = imghdr.what(None, imagebytes)
+                if imagetype is None:
+                    return await ctx.send("The URL you provided is not an image.")
+            else:
+                return await ctx.send("You need to provide an custom emoji, image (as an attachment or URL), or mention someone.")
+        elif isinstance(argument, discord.Emoji) or isinstance(argument, discord.PartialEmoji):
+            imagebytes = await argument.read()
+        else:
+            imagebytes = await argument.display_avatar.with_format("png").read()
+        imagetype = imghdr.what(None, imagebytes)
+        if imagetype is None:
+            return await ctx.send("The image you provided is not valid.")
+        def generate():
+            im = Image.open(BytesIO(imagebytes)).convert('RGBA')
+            im = im.filter(ImageFilter.GaussianBlur(radius=30))
+            spoilerimage = Image.open('assets/spoilertag.png').convert('RGBA')
+            s_width, s_height = spoilerimage.size
+            width, height = im.size
+            base_multiplier = 3.0
+            multiplier = base_multiplier + ((width - 250)/100*0.10)
+            tag_width = int(width / multiplier)
+            supposed_height = int(tag_width/s_width * s_height)
+            if supposed_height > height:
+                im.close()
+                spoilerimage.close()
+                raise ArgumentBaseError(message="the dimensions of the image you provided make it impossible to add the spoiler tag.")
+            else:
+                center_x = width / 2
+                center_y = height / 2
+                spoilerimage = spoilerimage.resize((int(tag_width), int(supposed_height)))
+                tag_position = (int(center_x - spoilerimage.size[0] / 2), int(center_y - spoilerimage.size[1] / 2))
+                im.paste(spoilerimage, tag_position, spoilerimage)
+                b = BytesIO()
+                im.save(b, 'png')
+                b.seek(0)
+                im.close()
+                spoilerimage.close()
+                file = discord.File(b, filename="spoiler.png")
+                return file
+        loop = asyncio.get_event_loop()
+        file = await loop.run_in_executor(None, generate)
+        await ctx.send(file=file)

@@ -9,7 +9,7 @@ import math
 from expr import evaluate
 import aiohttp
 from utils.errors import ArgumentBaseError
-from typing import Optional
+from typing import Optional, Union
 
 class plural:
     """
@@ -145,13 +145,19 @@ def ordinal(number:int):
     p = inflect.engine()
     return p.ordinal(number)
 
-def get_command_name(command: commands.command):
+
+def get_command_name(command: Union[commands.Command, discord.ApplicationCommand]):
     """
     Returns commands name.
     """
-    if command.parent:
-        return f"{command.parent} {command.name}"
-    return f"{command.name}"
+    if isinstance(command, commands.Command):
+        if command.parent:
+            return f"{get_command_name(command.parent)} {command.name}"
+        else:
+            return command.name
+    elif isinstance(command, discord.ApplicationCommand):
+        return command.qualified_name
+
 
 class TabularData:
     def __init__(self):
@@ -198,6 +204,7 @@ class TabularData:
         to_draw.append(sep)
         return '\n'.join(to_draw)
 
+
 def stringnum_toint(string:str):
     allowedsymbols=["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "m", "k", 'e', '.', '-', ',']
     string = string.lower()
@@ -224,6 +231,7 @@ def stringnum_toint(string:str):
         raise ArgumentBaseError(message=f"Something went wrong while I was trying to calculate how much you meant from `{string}`. Please contact the developer about this!")
     intstring = int(intstring) if intstring is not None else intstring
     return intstring
+
 
 def stringtime_duration(string:str):
     allowedsymbols=["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "m", "s", 'h', 'y', 'd', 'r', 'e', 'c', 'm', 'i', 'n', 'w', 'k']
@@ -272,6 +280,7 @@ def stringtime_duration(string:str):
     intstring = int(intstring) if intstring is not None else intstring
     return intstring
 
+
 def grammarformat(iterable):
     if len(iterable) == 0:
         return ''
@@ -280,6 +289,7 @@ def grammarformat(iterable):
     if len(iterable) == 2:
         return iterable[0] + ' and ' + iterable[1]
     return ', '.join(iterable[:-1]) + ', and ' + iterable[-1]
+
 
 async def get_image(url:str):
     async with aiohttp.ClientSession() as session:
@@ -292,6 +302,7 @@ async def get_image(url:str):
             raise ArgumentBaseError(message="Something went wrong while trying to get the image.")
         else:
             return data
+
 
 def generate_loadbar(percentage: float, length: Optional[int] = 20):
     aStartLoad = "<a:DVB_aStartLoad:912007459898544198>"

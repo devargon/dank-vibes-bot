@@ -16,7 +16,21 @@ class Logging(commands.Cog):
         guild_id = ctx.guild.id if ctx.guild else None
         channel_id = ctx.channel.id
         message = ctx.message.content
-        await self.client.pool_pg.execute("INSERT INTO commandlog(guild_id, channel_id, user_id, command, message, time) VALUES ($1, $2, $3, $4, $5, $6)", guild_id, channel_id, user_id, command_name, message, timeofexecution)
+        message_id = ctx.message.id
+        await self.client.pool_pg.execute("INSERT INTO commandlog(guild_id, channel_id, user_id, command, message, time, message_id, is_application_command) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", guild_id, channel_id, user_id, command_name, message, timeofexecution, message_id, False)
+
+    @commands.Cog.listener()
+    async def on_application_command_completion(self, ctx: discord.ApplicationContext):
+        command_name = ctx.command.qualified_name
+        user_id = ctx.author.id
+        timeofexecution = round(time())
+        guild_id = ctx.guild.id if ctx.guild else None
+        channel_id = ctx.channel.id
+        await self.client.pool_pg.execute(
+            "INSERT INTO commandlog(guild_id, channel_id, user_id, command, message, time, is_application_command) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+            guild_id, channel_id, user_id, command_name, "", timeofexecution, True
+        )
+
 
     @commands.Cog.listener()
     async def on_message(self, message):

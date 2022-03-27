@@ -18,7 +18,7 @@ class PollButtons(discord.ui.View):
         super().__init__(timeout=None)
 
         async def manage_callback(button: discord.ui.Button, interaction: discord.Interaction):
-            await interaction.response.send_message("<a:typing:839487089304141875> **Processing your vote...**", ephemeral=True)
+            await interaction.response.send_message("<a:DVB_typing:955345484648710154> **Processing your vote...**", ephemeral=True)
             poll_data = await self.client.pool_pg.fetchrow("SELECT poll_name, poll_id, created FROM polls WHERE message_id = $1", interaction.message.id)
             if poll_data is None:
                 return await interaction.edit_original_message(content="There is no poll associated with this message.")

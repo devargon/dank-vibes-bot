@@ -9,6 +9,17 @@ from discord.ext import commands, tasks
 from utils.context import DVVTcontext
 from utils.format import print_exception
 
+class EditContent:
+    __slots__ = ('content', 'embed', 'embeds')
+
+    def __init__(self, content, embed, embeds):
+        self.content: str = content
+        self.embed: discord.Embed = embed
+        self.embeds: list = embeds
+
+    def __repr__(self) -> str:
+        return f"<EditContent content={self.content} embed={self.embed} embeds={self.embeds}>"
+
 AVAILABLE_EXTENSIONS = ['cogs.dev',
 'cogs.errors',
 'cogs.admin',
@@ -42,7 +53,7 @@ password = os.getenv('dbPASSWORD')
 intents = discord.Intents(guilds = True, members = True, presences = True, messages = True, reactions = True, emojis = True, invites = True, voice_states = True)
 allowed_mentions = discord.AllowedMentions(everyone=False, roles=False)
 
-class dvvt(commands.AutoShardedBot):
+class dvvt(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix = self.get_prefix, intents=intents, allowed_mentions=allowed_mentions, case_insensitive=True)
         self.prefixes = {}
@@ -53,9 +64,38 @@ class dvvt(commands.AutoShardedBot):
         self.maintenance_message = {}
         self.available_extensions = AVAILABLE_EXTENSIONS
         self.blacklist = {}
+        self.editqueue = []
+        self.deleted_edit_messages = []
 
         for ext in self.available_extensions:
             self.load_extension(ext)
+
+    @tasks.loop(seconds=0.1)
+    async def edit_message(self):
+        await self.wait_until_ready()
+        # For some reason I am unable to edit the message if the embed is enclosed in another object, for now this function will be used for embeds only
+        if len(self.editqueue) > 0:
+            #print(self.editqueue)
+            tup = self.editqueue.pop(0)
+            m: discord.PartialMessage = tup[0]
+            editable: discord.Embed = tup[1]
+            #print(editable)
+            if m.id in self.deleted_edit_messages:
+                return None
+            try:
+                await m.edit(embed=editable)
+                #await self.get_channel(871737314831908974).send(embed=editable.embed)
+            except discord.NotFound:
+                self.deleted_edit_messages.append(m.id)
+            except Exception as e:
+                print(e)
+
+        else:
+            pass
+            #print('nothing in queue')
+
+
+
 
     @tasks.loop(seconds=5)
     async def update_blacklist(self):
@@ -211,6 +251,7 @@ CREATE TABLE IF NOT EXISTS highlight_ignores (guild_id bigint, user_id bigint, i
 CREATE TABLE IF NOT EXISTS reminders(id serial, user_id bigint, guild_id bigint, channel_id bigint, message_id bigint, name text, time bigint, created_time bigint);
 CREATE TABLE IF NOT EXISTS userconfig(user_id bigint PRIMARY KEY, votereminder bigint, dumbfight_result bool, dumbfight_rig_duration bigint, virus_immune bigint, received_daily_potion bool);
 CREATE TABLE IF NOT EXISTS modlog(case_id serial, guild_id bigint not null, moderator_id bigint not null, offender_id bigint not null, action text not null, reason text, start_time bigint, duration bigint, end_time bigint);
+CREATE TABLE IF NOT EXISTS changelog(version_number serial, version_str text, changelog text);
 CREATE SCHEMA IF NOT EXISTS donations""")
         print("Bot is ready")
 
@@ -281,6 +322,7 @@ CREATE SCHEMA IF NOT EXISTS donations""")
             start = time.time()
             pool_pg = self.loop.run_until_complete(asyncpg.create_pool(
                 host=host,
+                port=5433,
                 database=database,
                 user=user,
                 password=password
@@ -294,6 +336,7 @@ CREATE SCHEMA IF NOT EXISTS donations""")
             self.loop.create_task(self.after_ready())
             self.loop.create_task(self.load_maintenance_data())
             self.loop.create_task(self.get_all_blacklisted_users())
+            self.edit_message.start()
             self.update_blacklist.start()
             self.run(token)
 

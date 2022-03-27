@@ -127,7 +127,7 @@ class Sticky(commands.Cog):
                         f"<:DVB_eyeroll:878146268277374976> You entered a JSON code, but Discord was not able to decode it. More details: `{e}`.\nGet the JSON code directly from Carlbot's embed generator: https://cdn.nogra.me/core/embed.gif")
                 else:
                     await self.client.pool_pg.execute("INSERT INTO stickymessages VALUES($1, $2, $3, $4, $5)", ctx.guild.id, channel.id, message.id, 0, content)
-                    return await ctx.send(f"<:checkmark:841187106654519296> I am now sending a sticky embed message in {channel.mention}.")
+                    return await ctx.send(f"<:DVB_checkmark:955345523139805214> I am now sending a sticky embed message in {channel.mention}.")
         elif message_type == "text":
             try:
                 message = await channel.send(content)
@@ -135,7 +135,7 @@ class Sticky(commands.Cog):
                 return await ctx.send(f"I was not able to add this sticky message. Details: `{e}`")
             else:
                 await self.client.pool_pg.execute("INSERT INTO stickymessages VALUES($1, $2, $3, $4, $5)", ctx.guild.id, channel.id, message.id, 1, content)
-                return await ctx.send(f"<:checkmark:841187106654519296> I am now sending a sticky message in {channel.mention}.")
+                return await ctx.send(f"<:DVB_checkmark:955345523139805214> I am now sending a sticky message in {channel.mention}.")
 
     @checks.has_permissions_or_role(manage_roles=True)
     @sticky.command(name="remove", aliases=["delete"])
@@ -149,7 +149,7 @@ class Sticky(commands.Cog):
         if len(existing) == 0:
             return await ctx.send(f"You do not have a sticky message set for {channel.mention}.")
         await self.client.pool_pg.fetch("DELETE FROM stickymessages WHERE guild_id = $1 and channel_id = $2", ctx.guild.id, channel.id)
-        return await ctx.send(f"<:checkmark:841187106654519296> The sticky message for {channel.mention} has been removed.")
+        return await ctx.send(f"<:DVB_checkmark:955345523139805214> The sticky message for {channel.mention} has been removed.")
 
     @checks.has_permissions_or_role(manage_roles=True)
     @sticky.command(name="view")
@@ -174,4 +174,3 @@ class Sticky(commands.Cog):
         title = f"Sticky Messages in {ctx.guild.name}"
         pages = CustomMenu(source=betcheck_pagination(entries, title), clear_reactions_after=True, timeout=30)
         await pages.start(ctx)
-

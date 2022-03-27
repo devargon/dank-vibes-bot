@@ -377,4 +377,3 @@ class donations(commands.Cog):
             embed = discord.Embed(title="Weekly Dank Memer Donations!", description="\n".join(um), color=self.client.embed_color).set_thumbnail(url="https://media.discordapp.net/attachments/767148393839329290/898670660174376960/DORY_STINKY_16.png")
             embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
             return await ctx.send(embed=embed)
-

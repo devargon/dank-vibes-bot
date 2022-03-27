@@ -4,6 +4,7 @@ from .lockdown import lockdown
 from .censor import censor
 from .browser_screenshot import BrowserScreenshot
 from .sticky import Sticky
+from .mod_slash import ModSlash
 from .role import Role
 
 from utils import checks
@@ -92,7 +93,7 @@ class ModlogPagination:
                 embed.add_field(name=f"#{entry.get('case_id')}: {entry.get('action').capitalize()} (<t:{entry.get('start_time')}:d>)", value=value, inline=False)
         return embed
 
-class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
+class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
     """
     Mod commands
     """
@@ -356,7 +357,7 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='unfreezenick', aliases=['ufn'])
-    async def unfreezenick(self, ctx, member: discord.Member = None):
+    async def unfreezenick(self, ctx: DVVTcontext, member: discord.Member = None):
         """
         Unfreezes a user's nickname.
         """
@@ -366,6 +367,11 @@ class Mod(Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name=
                                                       member.id, ctx.guild.id)
         if existing is None:
             return await ctx.send(f"{member}'s nickname is currently not frozen.")
+        moderator = ctx.guild.get_member(existing.get('responsible_moderator'))
+        if moderator is not None:
+            if moderator != ctx.guild.owner:
+                if moderator.top_role >= ctx.author.top_role:
+                    return await ctx.send(f"You cannot unfreezenick **{member}**'s nickname, as their nickname was frozen by **{moderator}**, whose highest role is the same as or above your own role.")
         try:
             await member.edit(nick=existing.get('old_nickname'))
         except:
