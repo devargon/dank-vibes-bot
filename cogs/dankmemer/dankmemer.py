@@ -274,7 +274,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
         if len(users_with_the_same_name) > 1:
             for m in users_with_the_same_name:
                 query = "SELECT {} FROM remindersettings WHERE member_id = $1".format(self.reminders[remindertype])
-                if await self.client.pool_pg.fetchval(query) == 1:
+                if await self.client.pool_pg.fetchval(query, m.id) == 1:
                     member_id = m.id
                     break
         existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member_id, remindertype)
