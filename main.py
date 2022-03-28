@@ -47,6 +47,7 @@ token = os.getenv('TOKEN')
 host = os.getenv('HOST')
 database = os.getenv('DATABASE')
 user = os.getenv('dbUSER')
+port = int(os.getenv('dbPORT'))
 password = os.getenv('dbPASSWORD')
 
 
@@ -322,7 +323,7 @@ CREATE SCHEMA IF NOT EXISTS donations""")
             start = time.time()
             pool_pg = self.loop.run_until_complete(asyncpg.create_pool(
                 host=host,
-                port=5433,
+                port=port,
                 database=database,
                 user=user,
                 password=password

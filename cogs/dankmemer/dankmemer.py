@@ -2,6 +2,8 @@ import time
 import asyncio
 import discord
 import operator
+
+from main import dvvt
 from utils import checks, buttons
 from datetime import datetime, timedelta
 from discord.ext import commands, tasks
@@ -229,7 +231,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
     Dank Memer utilities
     """
     def __init__(self, client):
-        self.client = client
+        self.client:dvvt = client
         self.dankmemerreminders.start()
         self.dropreminder.start()
         self.fighters = {}
@@ -445,7 +447,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
     async def on_message(self, message):
         if message.author.bot and message.author.id != 270904126974590976:
             return
-        if self.client.maintenance.get(self.qualified_name):
+        if self.client.maintenance.get(self.qualified_name) and await self.client.pool_pg.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", message.author.id) is not True:
             return
         if not message.guild:
             return
