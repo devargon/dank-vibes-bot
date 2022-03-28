@@ -267,16 +267,17 @@ class DankMemer(commands.Cog, name='dankmemer'):
         self.dropreminder.stop()
         self.reset_trending_game.stop()
 
-    async def handle_reminder_entry(self, member_id, remindertype, channel_id, guild_id, time):
-        guild = self.client.get_guild(guild_id)
-        member = guild.get_member(member_id)
-        users_with_the_same_name = [m for m in guild.members if m.name == member.name]
-        if len(users_with_the_same_name) > 1:
-            for m in users_with_the_same_name:
-                query = "SELECT {} FROM remindersettings WHERE member_id = $1".format(self.reminders[remindertype])
-                if await self.client.pool_pg.fetchval(query, m.id) == 1:
-                    member_id = m.id
-                    break
+    async def handle_reminder_entry(self, member_id, remindertype, channel_id, guild_id, time, uses_name: Optional[bool] = False):
+        if uses_name:
+            guild = self.client.get_guild(guild_id)
+            member = guild.get_member(member_id)
+            users_with_the_same_name = [m for m in guild.members if m.name == member.name]
+            if len(users_with_the_same_name) > 1:
+                for m in users_with_the_same_name:
+                    query = "SELECT {} FROM remindersettings WHERE member_id = $1".format(self.reminders[remindertype])
+                    if await self.client.pool_pg.fetchval(query, m.id) == 1:
+                        member_id = m.id
+                        break
         existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member_id, remindertype)
         if len(existing) > 0:
             await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", time, member_id, remindertype)
@@ -472,7 +473,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                     nextdailytime = round(time.time())
                     while nextdailytime % 86400 != 0:
                         nextdailytime += 1
-                    await self.handle_reminder_entry(member.id, 2, message.channel.id, message.guild.id, nextdailytime)
+                    await self.handle_reminder_entry(member.id, 2, message.channel.id, message.guild.id, nextdailytime, uses_name=True)
                     with contextlib.suppress(discord.HTTPException):
                         await clock(message)
             else:
@@ -492,7 +493,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 else:
                     member = message.author
                     nextweeklytime = round(time.time()) + 604800
-                    await self.handle_reminder_entry(member.id, 3, message.channel.id, message.guild.id, nextweeklytime)
+                    await self.handle_reminder_entry(member.id, 3, message.channel.id, message.guild.id, nextweeklytime, uses_name=True)
                     with contextlib.suppress(discord.HTTPException):
                         await clock(botresponse)
             else:
@@ -512,7 +513,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 else:
                     member = message.author
                     nextmonthlytime = round(time.time()) + 2592000
-                    await self.handle_reminder_entry(member.id, 4, message.channel.id, message.guild.id, nextmonthlytime)
+                    await self.handle_reminder_entry(member.id, 4, message.channel.id, message.guild.id, nextmonthlytime, uses_name=True)
                     with contextlib.suppress(discord.HTTPException):
                         await clock(botresponse)
             else:
@@ -553,7 +554,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 if redeemresponse.embeds[0].title and f"{message.author.name} has redeemed their" in redeemresponse.embeds[0].title:
                     member = message.author
                     nextredeemtime = round(time.time()) + 604800
-                    await self.handle_reminder_entry(member.id, 7, message.channel.id, message.guild.id, nextredeemtime)
+                    await self.handle_reminder_entry(member.id, 7, message.channel.id, message.guild.id, nextredeemtime, uses_name=True)
                     with contextlib.suppress(discord.HTTPException):
                         await clock(message)
                 else:
@@ -713,7 +714,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                         if partner is not None:
                             if user_name == partner.name:
                                 timetomarriage = round(time.time()) + 54000
-                                await self.handle_reminder_entry(message.mentions[0].id, 22, message.channel.id, message.guild.id, timetomarriage)
+                                await self.handle_reminder_entry(message.mentions[0].id, 22, message.channel.id, message.guild.id, timetomarriage, uses_name=True)
                                 return await message.add_reaction('<:DVB_Ring:928236453920669786>')
 
 
@@ -850,7 +851,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 if not check_after_view():
                     return
                 nextstreamtime = round(time.time()) + 600
-                await self.handle_reminder_entry(member.id, 20, aftermsg.channel.id, aftermsg.guild.id, nextstreamtime)
+                await self.handle_reminder_entry(member.id, 20, aftermsg.channel.id, aftermsg.guild.id, nextstreamtime, uses_name=True)
                 await checkmark(beforemsg)
         elif beforeembed.footer is not None and beforeembed.title is not None and isinstance(beforeembed.title, str):
             def get_member():
@@ -899,7 +900,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 if not check_after_view():
                     return
                 nextpettime = round(time.time()) + 43200
-                await self.handle_reminder_entry(member.id, 23, aftermsg.channel.id, aftermsg.guild.id, nextpettime)
+                await self.handle_reminder_entry(member.id, 23, aftermsg.channel.id, aftermsg.guild.id, nextpettime, uses_name=True)
                 await checkmark(beforemsg)
 
     @checks.not_in_gen()
