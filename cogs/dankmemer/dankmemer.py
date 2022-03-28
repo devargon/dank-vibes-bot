@@ -146,14 +146,18 @@ class dankreminders(discord.ui.View):
                 await self.client.pool_pg.execute("UPDATE remindersettings SET drop = $1 WHERE member_id = $2", numberswitcher(self.result.get('drop')), ctx.author.id)
             elif str(emoji) == "🎮":
                 await self.client.pool_pg.execute("UPDATE remindersettings SET stream = $1 WHERE member_id = $2", numberswitcher(self.result.get('stream')), ctx.author.id)
+                if self.result.get('stream') != 1:
+                    await interaction.response.send_message("__**Important!**__\nThis uses the username shown in the Stream Manager embed from Dank Memer to identify who used the command. If there're people with the same name as you, the reminder may not work.\nhttps://cdn.nogra.me/screenshots/Discord_cAJOC18PCV.png", ephemeral=True)
             elif str(emoji) == "<:DVB_Laptop:915524266940854303>":
                 await self.client.pool_pg.execute("UPDATE remindersettings SET postmeme = $1 WHERE member_id = $2", numberswitcher(self.result.get('postmeme')), ctx.author.id)
             elif str(emoji) == "<:DVB_Ring:928236453920669786>":
                 if self.result.get('marriage') != 1:
-                    await interaction.response.send_message("__**Important!**__\nWhen you share coins or gift items to your partner, I will react to the shared/gifted message from Dank Memer with <:DVB_Ring:928236453920669786>.\n\nRemember to set your marriage partner via `smp <user>`! This way, I can detect when you gift or share coins to your marriage partner.", ephemeral=True)
+                    await interaction.response.send_message("__**Important!**__\nMarriage reminders aren't working at the moment. Please use `dv.remind` instead.", ephemeral=True)
                 await self.client.pool_pg.execute("UPDATE remindersettings SET marriage = $1 WHERE member_id = $2", numberswitcher(self.result.get('marriage')), ctx.author.id)
             elif str(emoji) == "<:DVB_pet:928236242469011476>":
                 await self.client.pool_pg.execute("UPDATE remindersettings SET pet = $1 WHERE member_id = $2", numberswitcher(self.result.get('pet')), ctx.author.id)
+                if self.result.get('pet') != 1:
+                    await interaction.response.send_message("__**Important!**__\nThis uses the username shown in your pet's embed from Dank Memer to identify who used the command. If there're people with the same username as you, the reminder may not work.\nhttps://cdn.nogra.me/screenshots/Discord_YVzJYHhFVa.png", ephemeral=True)
             elif str(emoji) == "🚀":
                 await self.client.pool_pg.execute("UPDATE remindersettings SET adventure = $1 WHERE member_id = $2", numberswitcher(self.result.get('adventure')), ctx.author.id)
             self.result = await self.client.pool_pg.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
@@ -231,6 +235,29 @@ class DankMemer(commands.Cog, name='dankmemer'):
         self.fighters = {}
         self.trending_game = None
         self.reset_trending_game.start()
+        self.reminders = {
+            2: "daily",
+            3: "weekly",
+            4: "monthly",
+            5: "lottery",
+            6: "work",
+            7: "redeem",
+            8: "hunt",
+            9: "fish",
+            10: "dig",
+            11: "crime",
+            12: "beg",
+            13: "search",
+            14: "snakeeyes",
+            15: "highlow",
+            17: "horseshoe",
+            18: "pizza",
+            20: "stream",
+            21: "postmeme",
+            22: "marriage",
+            23: "pet",
+            24: "adventure"
+        }
 
 
     def cog_unload(self):
@@ -239,6 +266,15 @@ class DankMemer(commands.Cog, name='dankmemer'):
         self.reset_trending_game.stop()
 
     async def handle_reminder_entry(self, member_id, remindertype, channel_id, guild_id, time):
+        guild = self.client.get_guild(guild_id)
+        member = guild.get_member(member_id)
+        users_with_the_same_name = [m for m in guild.members if m.name == member.name]
+        if len(users_with_the_same_name) > 1:
+            for m in users_with_the_same_name:
+                query = "SELECT {} FROM remindersettings WHERE member_id = $1".format(self.reminders[remindertype])
+                if await self.client.pool_pg.fetchval(query) == 1:
+                    member_id = m.id
+                    break
         existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member_id, remindertype)
         if len(existing) > 0:
             await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", time, member_id, remindertype)
@@ -1114,13 +1150,13 @@ Beg <:DVB_beg:888404456356610099> : {remindertimes[10]}
 Search <:DVB_search:888405048260976660>: {remindertimes[11]}
 Snakeeyes <a:DVB_snakeeyes:888404298608812112>: {remindertimes[12]}
 Highlow 🔢: {remindertimes[13]}
-Use a Horseshoe <:DVB_Horseshoe:888404491647463454>: {remindertimes[15]}
-Use a Pizza <:DVB_pizza:888404502280024145>: {remindertimes[16]}
-Stream 🎮: {remindertimes[17]}
-Post memes <:DVB_Laptop:915524266940854303>: {remindertimes[18]}
-Marriage 💍: {remindertimes[19]}
-Pet <:DVB_pet:928236242469011476>: {remindertimes[20]}
-Adventure 🚀: {remindertimes[21]}"""
+Use a Horseshoe <:DVB_Horseshoe:888404491647463454>: {remindertimes[14]}
+Use a Pizza <:DVB_pizza:888404502280024145>: {remindertimes[15]}
+Stream 🎮: {remindertimes[16]}
+Post memes <:DVB_Laptop:915524266940854303>: {remindertimes[17]}
+Marriage 💍: {remindertimes[18]}
+Pet <:DVB_pet:928236242469011476>: {remindertimes[19]}
+Adventure 🚀: {remindertimes[20]}"""
         if ctx.author.id == 650647680837484556:
             embed.description = embed.description + "\nSlap Frenzy <a:DVB_pandaslap:876631217750048798>: **Always Ready**\nBonk Blu <a:DVB_bonk:877196623506194452>: **Always Ready**"
         embed.set_footer(text="To enable/disable reminders, use dv.dankreminder instead.", icon_url=ctx.guild.icon.url)
