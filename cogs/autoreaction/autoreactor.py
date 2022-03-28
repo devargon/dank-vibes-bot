@@ -37,9 +37,14 @@ class Autoreaction(commands.Cog, name='autoreaction'):
         if not message.channel.permissions_for(message.guild.me).add_reactions:
             return
         for trigger in triggers:
+            if MENTION_RE.match(trigger.get('trigger')):
+                fixed_trigger = trigger.get('trigger').replace('<@!', '<@')
+            else:
+                fixed_trigger = trigger.get('trigger')
             msgcontent = message.content.lower()
+            msgcontent = msgcontent.replace('<@!', '<@')
             msgcontent = msgcontent.split(" ")
-            if trigger.get('trigger') in msgcontent:
+            if fixed_trigger in msgcontent:
                 responses = await self.client.pool_pg.fetch("SELECT response FROM autoreactions WHERE guild_id=$1 AND trigger=$2", *(message.guild.id, trigger[0]))
                 if len(responses) > 1:
                     response = random.choice(responses)
