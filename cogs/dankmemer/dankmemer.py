@@ -695,7 +695,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                     if message.embeds[0].author:
                         if message.embeds[0].author.name.endswith("meme posting session"):
                             member = message.mentions[0]
-                            nextpostmemetime = round(time.time()) + 30
+                            nextpostmemetime = round(time.time()) + 45
                             await self.handle_reminder_entry(member.id, 21, message.channel.id, message.guild.id, nextpostmemetime)
         """
         Marriage reminder
