@@ -13,6 +13,7 @@ from main import dvvt
 from utils.errors import ArgumentBaseError
 
 DONATOR_25M_ID = 820011992428707840 if os.getenv('state') == '0' else 943883455610109962
+LEVEL_30_ID = 958285021175754793 if os.getenv('state') == '0' else 944519382577586196
 LEVEL_50_ID = 944519459580821524 if os.getenv('state') == '0' else 943883516565942352
 LEVEL_100_ID = 717120742512394323 if os.getenv('state') == '0' else 943883531573157889
 
@@ -46,13 +47,18 @@ class Highlight(commands.Cog):
         """
         def get_highlight_limit():
             donator_25 = ctx.guild.get_role(DONATOR_25M_ID)
+            level_30 = ctx.guild.get_role(LEVEL_30_ID)
             level_50 = ctx.guild.get_role(LEVEL_50_ID)
             level_100 = ctx.guild.get_role(LEVEL_100_ID)
             hl_limit = 0
             if donator_25 is None:
                 raise ArgumentBaseError(message=f"{DONATOR_25M_ID} is not a valid role ID for donator_25")
             elif donator_25 in ctx.author.roles:
-                    hl_limit += 1
+                hl_limit += 1
+            if level_30 is None:
+                raise ArgumentBaseError(message=f"{LEVEL_30_ID} is not a valid role ID for level_30")
+            elif level_30 in ctx.author.roles:
+                hl_limit += 1
             if level_50 is None:
                 raise ArgumentBaseError(message=f"{LEVEL_50_ID} is not a valid role ID for level_50")
             elif level_50 in ctx.author.roles:
@@ -72,15 +78,18 @@ class Highlight(commands.Cog):
         count = await self.client.pool_pg.fetchval("SELECT COUNT(*) FROM highlight WHERE user_id = $1 AND guild_id = $2", ctx.author.id, ctx.guild.id)
         if count >= get_highlight_limit():
             donator_25 = ctx.guild.get_role(DONATOR_25M_ID)
+            level_30 = ctx.guild.get_role(LEVEL_30_ID)
             level_50 = ctx.guild.get_role(LEVEL_50_ID)
             level_100 = ctx.guild.get_role(LEVEL_100_ID)
             desc = []
             if donator_25 not in ctx.author.roles:
                 desc.append(f"` - ` You can get `1` highlight by being a **{donator_25.name}**.")
+            if level_30 not in ctx.author.roles:
+                desc.append(f"` - ` You can get `1` highlight by being **{level_30.name}**.")
             if level_50 not in ctx.author.roles:
-                desc.append(f"` - ` You can get `2` highlights by having **{level_50.name}** (Level 50).")
+                desc.append(f"` - ` You can get `2` highlights by being **{level_50.name}** (Level 50).")
             if level_100 not in ctx.author.roles:
-                desc.append(f"` - ` You can get **unlimited** highlights by being a **{level_100.name}** (Level 100).")
+                desc.append(f"` - ` You can get **unlimited** highlights by being **{level_100.name}** (Level 100).")
             actual_description = "\n".join(desc)
             if get_highlight_limit() == 0:
                 return await ctx.send(f"You aren't able to get any highlights.\n{actual_description}")
