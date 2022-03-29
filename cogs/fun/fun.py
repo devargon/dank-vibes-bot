@@ -28,13 +28,14 @@ from .snipe import snipe
 from .itemgames import ItemGames
 from .games import games
 from .color import color
+from .fun_slash import FunSlash
 
 alexflipnoteAPI = os.getenv('alexflipnoteAPI')
 tenorAPI = os.getenv('tenorAPI')
 
 RandomColorID = 943530953110880327 if os.getenv('state') == '1' else 758176387806396456
 
-class Fun(color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
+class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
     """
     Fun commands
     """
