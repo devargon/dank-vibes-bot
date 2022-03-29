@@ -1,9 +1,123 @@
+import asyncio
+
 import discord
 from discord import Webhook, Option
 from discord.ext import commands
 import aiohttp
 from utils import checks
 
+
+
+class DMPersistentView(discord.ui.View):
+    def __init__(self, client):
+        self.client = client
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label='Approve', emoji=discord.PartialEmoji.from_str("<:DVB_checkmark:955345523139805214>"), style=discord.ButtonStyle.green, custom_id="button:approve_dm") #, custom_id='persistent_view:approve')
+    async def green(self, button: discord.ui.Button, interaction: discord.Interaction):
+        dm_request = await self.client.pool_pg.fetchrow("SELECT * FROM dmrequests WHERE messageid = $1", interaction.message.id)
+        if dm_request is None:
+            return
+        dmrequester = interaction.guild.get_member(dm_request.get('member_id'))
+        if dmrequester is None:
+            authordetails = dm_request.get('member_id')
+        else:
+            authordetails = f"{dmrequester} ({dmrequester.id})"
+        dmtarget = interaction.guild.get_member(dm_request.get('target_id'))
+        ID = dm_request.get('id')
+        dmcontent = dm_request.get('dmcontent')
+        approver = interaction.guild.get_member(interaction.user.id)
+        if not approver.guild_permissions.manage_roles:
+            return await interaction.response.send_message("You don't have the required permissions to approve this request.", ephemeral=True)
+        if dmrequester is None:
+            output = (1, "Failed: User who requested the DM has left the server",)
+        elif dmtarget is None:
+            output = (1, "Failed: Targetted user to DM has left the server",)
+        else:
+            try:
+                await dmtarget.send(embed=discord.Embed(title="You have received an anonymous message!", description=dmcontent, color=self.client.embed_color))
+            except discord.Forbidden:
+                output = (1, "Failed: Unable to DM user",)
+            else:
+                output = (2, "Approved DM sent",)
+        await self.client.pool_pg.execute("DELETE from dmrequests WHERE id = $1", ID)
+        await self.client.pool_pg.execute("INSERT INTO dmrequestslog values($1, $2, $3, $4, $5, $6)", ID, dmrequester.id if dmrequester else dm_request.get('member_id'), dmtarget.id if dmtarget else dm_request.get('target_id'), interaction.user.id, dmcontent, output[0]) # 0 : Denied, 1: Failed, 2 : Approved
+        embed = discord.Embed(title="DM Request", description = dmcontent, color=discord.Color.green() if output[0] == 2 else discord.Color.red(), timestamp=discord.utils.utcnow())
+        embed.set_author(name=authordetails)
+        dmtargetdetails = f"{dmtarget} {dmtarget.mention}" if dmtarget is not None else dmtarget
+        embed.add_field(name="DM Target", value=f"{dmtargetdetails}")
+        embed.add_field(name="Status", value=output[1], inline=True)
+        if dmrequester is not None:
+            embed.set_thumbnail(url=dmrequester.display_avatar.url)
+        embed.set_footer(text=f"This message will be deleted in 10 seconds.")
+        for b in self.children:
+            b.disabled = True
+        await interaction.response.edit_message(embed=embed, view=self)
+        if output[0] == 1:
+            if output[1] == "Failed: Member has left the server" or output[0] not in [1, 2, 0]:
+                msgcontent = None
+            elif output[1] == "Failed: Targetted user to DM has left the server":
+                msgcontent = "The user who you attempted to send an anonymous DM has left the server. Sorry about that!"
+            elif output[1] == "Failed: Unable to DM user":
+                msgcontent = f"I am unable to DM {dmtarget}. Sorry about that!"
+            else:
+                msgcontent = None
+        elif output[0] == 2:
+            msgcontent = f"Your message was successfully sent to {dmtarget}!"
+        else:
+            msgcontent = f"Your DM request was denied."
+        if msgcontent is not None and dmrequester is not None:
+            try:
+                await dmrequester.send(msgcontent)
+            except discord.Forbidden:
+                pass
+        await asyncio.sleep(10)
+        await interaction.delete_original_message()
+
+    @discord.ui.button(label='Deny', emoji=discord.PartialEmoji.from_str("<:DVB_crossmark:955345521151737896>"), style=discord.ButtonStyle.red, custom_id="button:deny_dm") #c, custom_id='persistent_view:red')
+    async def red(self, button: discord.ui.Button, interaction: discord.Interaction):
+        dm_request = await self.client.pool_pg.fetchrow("SELECT * FROM dmrequests WHERE messageid = $1", interaction.message.id)
+        if dm_request is None:
+            return
+        dmrequester = interaction.guild.get_member(dm_request.get('member_id'))
+        if dmrequester is None:
+            authordetails = dm_request.get('member_id')
+        else:
+            authordetails = f"{dmrequester} ({dmrequester.id})"
+        dmtarget = interaction.guild.get_member(dm_request.get('target_id'))
+        ID = dm_request.get('id')
+        dmcontent = dm_request.get('dmcontent')
+        approver = interaction.guild.get_member(interaction.user.id)
+        if not approver.guild_permissions.manage_roles:
+            return await interaction.response.send_message("You don't have the required permissions to approve this request.", ephemeral=True)
+        if dmrequester is None:
+            output = (1, "Failed: User who requested the DM has left the server",)
+        else:
+            output = (0, "Denied")
+        await self.client.pool_pg.execute("DELETE from dmrequests WHERE id = $1", ID)
+        await self.client.pool_pg.execute("INSERT INTO dmrequestslog values($1, $2, $3, $4, $5, $6)", ID, dmrequester.id if dmrequester else dm_request.get('member_id'), dmtarget.id if dmtarget else dm_request.get('target_id'), interaction.user.id, dmcontent, output[0]) # 0 : Denied, 1: Failed, 2 : Approved
+        embed = discord.Embed(title="DM Request", description = dmcontent, color=discord.Color.green() if output[0] == 2 else discord.Color.red(), timestamp=discord.utils.utcnow())
+        embed.set_author(name=authordetails)
+        dmtargetdetails = f"{dmtarget} {dmtarget.mention}" if dmtarget is not None else dmtarget
+        embed.add_field(name="DM Target", value=f"{dmtargetdetails}")
+        embed.add_field(name="Status", value=output[1], inline=True)
+        if dmrequester is not None:
+            embed.set_thumbnail(url=dmrequester.display_avatar.url)
+        embed.set_footer(text=f"This message will be deleted in 10 seconds.")
+        for b in self.children:
+            b.disabled = True
+        await interaction.response.edit_message(embed=embed, view=self)
+        if output[0] == 1:
+            msgcontent = None
+        else:
+            msgcontent = f"Your DM request was denied."
+        if msgcontent is not None and dmrequester is not None:
+            try:
+                await dmrequester.send(msgcontent)
+            except discord.Forbidden:
+                pass
+        await asyncio.sleep(10)
+        await interaction.delete_original_message()
 
 class FunSlash(commands.Cog):
     def __init__(self, client):
