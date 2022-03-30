@@ -1,3 +1,5 @@
+import os
+
 import discord
 from discord.ext import commands, tasks
 
@@ -47,6 +49,10 @@ class reminders_(commands.Cog):
                     if not reminder.repeat is True:
                         await self.client.pool_pg.execute("DELETE FROM reminders WHERE id = $1", reminder.id)
         except Exception as error:
+            if isinstance(error, ConnectionRefusedError):
+                os.system("sudo service postgresql restart")
+                time.sleep(2.0)
+                os.system("pm2 restart dv_bot")
             traceback_error = print_exception(f'Ignoring exception in RealReminder task', error)
             embed = discord.Embed(color=0xffcccb, description=f"Error encountered on a OfficialReminders.\n```py\n{traceback_error}```", timestamp=discord.utils.utcnow())
             await self.client.get_guild(871734809154707467).get_channel(871737028105109574).send(embed=embed)
