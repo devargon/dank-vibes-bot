@@ -67,6 +67,10 @@ class dvvt(commands.Bot):
         self.blacklist = {}
         self.editqueue = []
         self.deleted_edit_messages = []
+        self.clownmode = {}
+        self.channel_webhooks = {}
+        self.clownprofiles = {}
+        self.clown_duration = 180
 
         for ext in self.available_extensions:
             self.load_extension(ext)
