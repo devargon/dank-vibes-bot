@@ -3,7 +3,9 @@ import difflib
 import operator
 import time
 
+from main import dvvt
 from utils.buttons import confirm
+from utils.context import DVVTcontext
 from utils.converters import BetterInt
 from utils.format import comma_number
 import discord
@@ -17,6 +19,8 @@ from utils.format import plural, get_image
 from PIL import Image
 import asyncio
 from io import BytesIO
+
+from utils.time import humanize_timedelta
 
 
 class DisplayItems(menus.ListPageSource):
@@ -104,7 +108,7 @@ class karutaevent(discord.ui.View):
 
 class ItemGames(commands.Cog):
     def __init__(self, client):
-        self.client = client
+        self.client: dvvt = client
         self.karutaconfig = ''
         self.karutaevent_isrunning = False
 
@@ -349,7 +353,7 @@ class ItemGames(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(name="use")
-    async def use(self, ctx, item: str = None):
+    async def use(self, ctx: DVVTcontext, item: str = None):
         """
         Use an item in your inventory.
         """
@@ -400,10 +404,84 @@ class ItemGames(commands.Cog):
                             return await ctx.send("It appears that you already have a active dumbfight potion in effect. (1)")
                 else:
                     return await ctx.send("It appears that you already have a active dumbfight potion in effect. (2)")
+            elif itemname == 'clowngas':
+                if ctx.channel.id in self.client.clownmode:
+                    return await ctx.send("The clown gas haven't worn off in this channel. If you use it now, the effects would be more potent and everyone might stay as a clown permanently (as if they aren't already).")
+                if await self.get_item_count(itemname, ctx.author) > 0:
+                    overwrite = ctx.channel.overwrites_for(ctx.guild.default_role)
+                    original_overwrite = ctx.channel.overwrites_for(ctx.guild.default_role)
+                    overwrite.send_messages = False
+                    await ctx.channel.set_permissions(ctx.guild.default_role, overwrite=overwrite)
+                    msgstatus = await ctx.send(f"**{ctx.author.name}** slowly places a canister containing something unknown in the center of {ctx.channel.mention}. No one notices as **{ctx.author.name}** quietly leaves the channel, leaving the canister sitting in the channel.")
+                    await asyncio.sleep(6.0)
+                    await msgstatus.edit(content="<:clown_gas_can:958622707568771072>")
+                    await asyncio.sleep(3.0)
+                    await msgstatus.add_reaction("⚠️")
+                    remaining = await self.remove_item_count(itemname, ctx.author, 1)
+                    now = round(time.time())
+                    self.client.clownmode[ctx.channel.id] = now + self.client.clown_duration
+                    await ctx.channel.set_permissions(ctx.guild.default_role, overwrite=original_overwrite)
+                    msgstatus2 = await ctx.send(f"A yellowish gas starts coming out of the canister. Without warning, everyone in the channel turns into a clown for {humanize_timedelta(seconds=self.client.clown_duration)}. 🤡\n{ctx.author} now has {remaining} Cans of clown gas left.")
+
+                else:
+                    return await ctx.send("You don't have any clown gas cans left.")
+
             else:
                 return await ctx.send("Invalid")
+
         else:
             return await ctx.send(f"**{itemdata.get('fullname')}** isn't a usable item lol")
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if message.author.bot or message.webhook_id is not None:
+            return
+        if message.channel.id in self.client.clownmode:
+            if self.client.clownmode[message.channel.id] < round(time.time()):
+                del self.client.clownmode[message.channel.id]
+                return await message.channel.send(f"The clown gas has dissipated away, and everyone is back to normal. {message.author.mention} quickly kicks away the canister, and life goes on as normal.")
+            if message.channel.id in self.client.channel_webhooks:
+                webhook = self.client.channel_webhooks[message.channel.id]
+            else:
+                webhooks = await message.channel.webhooks()
+                webhook = discord.utils.get(webhooks, name=self.client.user.name)
+                if webhook is None:
+                    webhook = await message.channel.create_webhook(name=self.client.user.name)
+                self.client.channel_webhooks[message.channel.id] = webhook
+            clown_avatar = self.client.clownprofiles.get(message.author.id, None)
+            if clown_avatar is None:
+                list_of_clown_avatars = [
+                    "https://cdn.nogra.me/images/clowns/imp_clown.png",
+                    "https://cdn.nogra.me/images/clowns/woozy_clown.png",
+                    "https://cdn.nogra.me/images/clowns/relieved_clown.png",
+                    "https://cdn.nogra.me/images/clowns/pensive_clown.png",
+                    "https://cdn.nogra.me/images/clowns/original_clown.png",
+                    "https://cdn.nogra.me/images/clowns/neutral_clown.png",
+                    "https://cdn.nogra.me/images/clowns/weary_clown.png",
+                    "https://cdn.nogra.me/images/clowns/skeptical_clown.png",
+                    "https://cdn.nogra.me/images/clowns/nerd_clown.png",
+                    "https://cdn.nogra.me/images/clowns/flushed_clown.png"
+                ]
+                clown_avatar = random.choice(list_of_clown_avatars)
+                self.client.clownprofiles[message.author.id] = clown_avatar
+            disp_name = message.author.display_name
+            if len(message.attachments) > 0:
+                embeds = []
+                for attachment in message.attachments:
+                    embed = discord.Embed(color=self.client.embed_color, description=f"📂 [{attachment.filename}]({attachment.proxy_url})").set_author(icon_url=clown_avatar, name=disp_name)
+                    if attachment.height is not None:
+                        embed.set_image(url=attachment.url)
+                    embeds.append(embed)
+            else:
+                embeds = None
+            await message.delete()
+            if embeds is not None:
+                await webhook.send(content=message.content, embeds=embeds, username=disp_name, avatar_url=clown_avatar)
+            else:
+                await webhook.send(content=message.content, username=disp_name, avatar_url=clown_avatar)
+
+
+
 
 
 
