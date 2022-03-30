@@ -552,3 +552,12 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         except Exception as e:
             return await ctx.send(f"There was an issue with adding roles. I've temporarily stopped promoting {member}. More details: {e}")
         return await ctx.send(f"{member.mention} congratulations on your promotion to:  **{', '.join(role.name for role in tupremove)}**!")
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name='resetclowns')
+    async def resetclowns(self, ctx):
+        """
+        Resets the state of clowns so no one will change to a clown in any channel.
+        """
+        self.client.clownmode = {}
+        return await ctx.send("<:DVB_checkmark:955345523139805214> Reset clown mode")
