@@ -460,7 +460,16 @@ class ItemGames(commands.Cog):
                     "https://cdn.nogra.me/images/clowns/weary_clown.png",
                     "https://cdn.nogra.me/images/clowns/skeptical_clown.png",
                     "https://cdn.nogra.me/images/clowns/nerd_clown.png",
-                    "https://cdn.nogra.me/images/clowns/flushed_clown.png"
+                    "https://cdn.nogra.me/images/clowns/flushed_clown.png",
+                    "https://cdn.nogra.me/images/clowns/sunglasses_clown.png",
+                    "https://cdn.nogra.me/images/clowns/smirk_clown.png",
+                    "https://cdn.nogra.me/images/clowns/sleeping_clown.png",
+                    "https://cdn.nogra.me/images/clowns/rolling_eyes_clown.png",
+                    "https://cdn.nogra.me/images/clowns/heart_eyes_clown.png",
+                    "https://cdn.nogra.me/images/clowns/grimace_clown.png",
+                    "https://cdn.nogra.me/images/clowns/floating_heart_clown.png",
+                    "https://cdn.nogra.me/images/clowns/crying_clown.png",
+                    "https://cdn.nogra.me/images/clowns/angry_clown.png",
                 ]
                 clown_avatar = random.choice(list_of_clown_avatars)
                 self.client.clownprofiles[message.author.id] = clown_avatar
