@@ -1,7 +1,16 @@
 import discord
 from discord.ext import commands
+
+from utils.context import DVVTcontext
 from utils.format import get_command_name
 from time import time
+
+class Verify(discord.ui.View):
+    def __init__(self):
+        super().__init__()
+        self.add_item(discord.ui.Button(label='Verify your account via discord.com',
+                                        url="https://discord.com/api/oauth2/authorize?client_id=866346404573216769&redirect_uri=https%3A%2F%2Fverify.dvbot.nogra.me&response_type=code&scope=identify",
+                                        emoji=discord.PartialEmoji.from_str('<a:c_redcheck:915527725807185971>')))
 
 
 class Logging(commands.Cog):
@@ -9,7 +18,18 @@ class Logging(commands.Cog):
         self.client = client
 
     @commands.Cog.listener()
-    async def on_command_completion(self, ctx):
+    async def on_command_completion(self, ctx: DVVTcontext):
+        if ctx.author.id not in self.client.reminded_about_verification and time() < 1648893600:
+            if await self.client.pool_pg.fetchval("SELECT verification_reminded FROM userconfig WHERE user_id = $1", ctx.author.id) is not True:
+                msg = f"Suspicious activity from you has been detected by {self.client.user.name}'s automod function. From **April 2 00:00 Pacific Time**, you will **not** be able to use {self.client.user.name} and its commands.\nTo remove this ban, verify your account at <https://discord.com/api/oauth2/authorize?client_id=866346404573216769&redirect_uri=https%3A%2F%2Fverify.dvbot.nogra.me&response_type=code&scope=identify>, so that your activity can be validated and you can use the bot as per normal.\n\n**This message will be sent only once.**"
+                await self.client.pool_pg.execute("INSERT INTO userconfig (user_id, verification_reminded) VALUES ($1, $2) ON CONFLICT(user_id) DO UPDATE SET verification_reminded = $2is.", ctx.author.id, True)
+                self.client.reminded_about_verification.append(ctx.author.id)
+                try:
+                    await ctx.reply(msg, view=Verify())
+                except discord.Forbidden:
+                    await ctx.send(f"{ctx.author.mention} " + msg, view=Verify())
+            else:
+                self.client.reminded_about_verification.append(ctx.author.id)
         command_name = get_command_name(ctx.command)
         user_id = ctx.author.id
         timeofexecution = round(time())

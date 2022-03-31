@@ -70,6 +70,7 @@ class dvvt(commands.Bot):
         self.clownmode = {}
         self.channel_webhooks = {}
         self.clownprofiles = {}
+        self.reminded_about_verification = []
         self.clown_duration = 180
 
         for ext in self.available_extensions:
