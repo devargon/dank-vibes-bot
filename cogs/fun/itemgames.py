@@ -404,7 +404,7 @@ class ItemGames(commands.Cog):
                             return await ctx.send("It appears that you already have a active dumbfight potion in effect. (1)")
                 else:
                     return await ctx.send("It appears that you already have a active dumbfight potion in effect. (2)")
-            elif itemname == 'clowngas':
+            elif itemname == 'canisterofsomethingunknown':
                 if ctx.channel.id in self.client.clownmode:
                     return await ctx.send("The clown gas haven't worn off in this channel. If you use it now, the effects would be more potent and everyone might stay as a clown permanently (as if they aren't already).")
                 if await self.get_item_count(itemname, ctx.author) > 0:
