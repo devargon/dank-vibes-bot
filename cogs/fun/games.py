@@ -427,5 +427,5 @@ class games(commands.Cog):
         if duration and duration > 0:
             await ctx.send(f"Both {ctx.author.name} and {member.name}'s nicknames have been frozen to their respective chosen nicknames for **{humanize_timedelta(seconds=duration)}**. Their nicknames will be unfrozen <t:{round(time())+duration}:R>.")
         else:
-            await ctx.send("Both {ctx.author.name} and {member.name}'s nicknames have been changed.")
+            await ctx.send(f"Both {ctx.author.name} and {member.name}'s nicknames have been changed.")
         return
