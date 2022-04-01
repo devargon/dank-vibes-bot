@@ -22,7 +22,7 @@ class Logging(commands.Cog):
         if ctx.author.id not in self.client.reminded_about_verification and time() < 1648893600:
             if await self.client.pool_pg.fetchval("SELECT verification_reminded FROM userconfig WHERE user_id = $1", ctx.author.id) is not True:
                 msg = f"Suspicious activity from you has been detected by {self.client.user.name}'s automod function. From **April 2 00:00 Pacific Time**, you will **not** be able to use {self.client.user.name} and its commands.\nTo remove this ban, verify your account at <https://discord.com/api/oauth2/authorize?client_id=866346404573216769&redirect_uri=https%3A%2F%2Fverify.dvbot.nogra.me&response_type=code&scope=identify>, so that your activity can be validated and you can use the bot as per normal.\n\n**This message will be sent only once.**"
-                await self.client.pool_pg.execute("INSERT INTO userconfig (user_id, verification_reminded) VALUES ($1, $2) ON CONFLICT(user_id) DO UPDATE SET verification_reminded = $2is.", ctx.author.id, True)
+                await self.client.pool_pg.execute("INSERT INTO userconfig (user_id, verification_reminded) VALUES ($1, $2) ON CONFLICT(user_id) DO UPDATE SET verification_reminded = $2", ctx.author.id, True)
                 self.client.reminded_about_verification.append(ctx.author.id)
                 try:
                     await ctx.reply(msg, view=Verify())
