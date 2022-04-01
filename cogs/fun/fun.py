@@ -464,26 +464,21 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
             "SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time < $3", ctx.command.name, ctx.author.id, timenow)
         if cooldown:
             await self.client.pool_pg.execute("DELETE FROM cooldowns WHERE command_name = $1 and member_id = $2 and time = $3", cooldown.get('command_name'), cooldown.get('member_id'), cooldown.get('time'))
-        originaloverwrite = genchat.overwrites_for(ctx.guild.default_role) # this is the overwrite that will be restored to gen chat when the lockdown is over
-        newoverwrite = genchat.overwrites_for(ctx.guild.default_role) # this is the overwrite that i will edit to lockdown the channel
-        authornewoverwrite = genchat.overwrites_for(ctx.author) # this is the overwrite that I will edit to allow the invoker to continue talking
-        authornewoverwrite.send_messages=True # this edits the author's overwrite
+        originaloverwrite = genchat.overwrites_for(ctx.author) # this is the overwrite that will be restored to gen chat when the lockdown is over
+        newoverwrite = genchat.overwrites_for(ctx.author) # this is the overwrite that i will edit to lockdown the channel
         newoverwrite.send_messages = False # this edits the @everyone overwrite
-        authororiginaloverwrite = None if ctx.author not in genchat.overwrites else genchat.overwrites_for(ctx.author) # this is the BEFORE overwrite for an individual member, if the author already had an overwrite (such as no react) it will use that to restore, otherwise None since it won't have any overwrites in the first place
         self.gen_is_muted = True
         await self.client.pool_pg.execute("INSERT INTO cooldowns VALUES($1, $2, $3)", ctx.command.name, ctx.author.id, timenow + 10800)
         try:
-            await genchat.set_permissions(ctx.author, overwrite=authornewoverwrite, reason=f"{ctx.author} invoked a lockdown with the lockgen command") # allows author to talk
-            await genchat.set_permissions(ctx.guild.default_role, overwrite = newoverwrite, reason = f"5 second lockdown initiated by {ctx.author.name}#{ctx.author.discriminator}") # does not allow anyone else to talk
+            await genchat.set_permissions(ctx.author, overwrite = newoverwrite, reason = f"5 second lockdown initiated by {ctx.author.name}#{ctx.author.discriminator}") # does not allow anyone else to talk
         except discord.Forbidden:
             ctx.command.reset_cooldown(ctx)
             self.gen_is_muted = False
             return await ctx.send(f"I do not have the required permission to lock down **{genchat.name}**.")
-        message = await ctx.send(f"✅ Locked down **{genchat.name}** for 5 seconds.")
+        message = await ctx.send(f"✅ Locked down **{genchat.name}** for {ctx.author.mention} for 5 seconds.")
         await asyncio.sleep(5)
         try:
-            await genchat.set_permissions(ctx.guild.default_role, overwrite = originaloverwrite, reason = "Lockdown over uwu") # restores
-            await genchat.set_permissions(ctx.author, overwrite = authororiginaloverwrite, reason = "Overwrite no longer required") # restores
+            await genchat.set_permissions(ctx.author, overwrite = originaloverwrite, reason = "Lockdown over uwu") # restores
         except discord.Forbidden:
             self.gen_is_muted = False
             return await ctx.send(f"I do not have the required permission to remove the lockdown for **{genchat.name}**.")
