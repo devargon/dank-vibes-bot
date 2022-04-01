@@ -35,6 +35,54 @@ tenorAPI = os.getenv('tenorAPI')
 
 RandomColorID = 943530953110880327 if os.getenv('state') == '1' else 758176387806396456
 
+class ChooseWinOrLose(discord.ui.View):
+    def __init__(self, author: discord.Member):
+        self.author: discord.Member = author
+        self.response = None
+        self.choice = None
+        self.value = None
+        super().__init__(timeout=10.0)
+
+        async def set_value(value: bool):
+            self.value = value
+            self.stop()
+            if value is True:
+                style = [discord.ButtonStyle.green, discord.ButtonStyle.grey]
+            else:
+                style = [discord.ButtonStyle.grey, discord.ButtonStyle.red]
+            self.children[0].style = style[0]
+            self.children[1].style = style[1]
+            for child in self.children:
+                child.disabled = True
+            await self.response.edit(view=self)
+            self.stop()
+
+
+        class DecisionButton(discord.ui.Button):
+            async def callback(self, interaction: discord.Interaction):
+                if self.custom_id == 'win':
+                    await set_value(True)
+                else:
+                    await set_value(False)
+
+        self.add_item(DecisionButton(label=f"Let {self.author.display_name} win", emoji='🏆', custom_id='win'))
+        self.add_item(DecisionButton(label=f"Make {self.author.display_name} lose", emoji='🚫', custom_id='lose'))
+
+    async def on_timeout(self) -> None:
+        for b in self.children:
+            b.disabled = True
+        await self.response.edit(view=self)
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id == self.author.id:
+            await interaction.response.send_message("You can't choose whether **you** get to win <:dv_pepeHahaUSuckOwO:837653798313918475> Only everyone else can choose.", ephemeral=True)
+            return False
+        else:
+            return True
+
+
+
+
 class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
     """
     Fun commands
@@ -182,6 +230,16 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
         if isinstance(channel, discord.Thread):
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("Dumbfight is not supported in threads yet. Sorry >.<")
+        april_fools_view = ChooseWinOrLose(ctx.author)
+        april_fools_view.response = await ctx.send(embed = discord.Embed(description=f"Choose whether **{ctx.author.display_name}** gets to win or lose this dumbfight against **{member.display_name}**!", color=self.client.embed_color), view=april_fools_view)
+        await april_fools_view.wait()
+        if april_fools_view.value is None:
+            pass
+        elif april_fools_view.value is True:
+            doesauthorwin = True
+        elif april_fools_view.value is False:
+            doesauthorwin = False
+
         if doesauthorwin:
             muted = member
             winmen = ctx.author.mention
