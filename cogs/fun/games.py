@@ -401,137 +401,31 @@ class games(commands.Cog):
                     self.nickbets.remove(ctx.author.id)
                 ctx.command.reset_cooldown(ctx)
                 return
-
-
-
-        class pickACoin(discord.ui.View):
-            def __init__(self, ctx: DVVTcontext, target):
-                self.response = None
-                self.returning_value = None
-                self.target = target
-                super().__init__(timeout=30.0)
-
-            @discord.ui.button(label="Heads", emoji=discord.PartialEmoji.from_str("<:DVB_CoinHead:905400213785690172>"))
-            async def yes(self, button: discord.ui.Button, interaction: discord.Interaction):
-                button.style = discord.ButtonStyle.green
-                self.returning_value = True
-                for b in self.children:
-                    b.disabled = True
-                await self.response.edit(view=self)
-                self.stop()
-
-            @discord.ui.button(label="Tails", emoji=discord.PartialEmoji.from_str("<:DVB_CoinTail:905400213676638279>"))
-            async def no(self, button: discord.ui.Button, interaction: discord.Interaction):
-                button.style = discord.ButtonStyle.green
-                self.returning_value = False
-                for b in self.children:
-                    b.disabled = True
-                await self.response.edit(view=self)
-                self.stop()
-
-            async def interaction_check(self, interaction: discord.Interaction) -> bool:
-                if interaction.user.id != self.target.id:
-                    await interaction.response.send_message("These buttons aren't for you!", ephemeral=True)
-                    return False
-                return True
-
-            async def on_timeout(self) -> None:
-                self.returning_value = None
-                for b in self.children:
-                    b.disabled = True
-                await self.response.edit(view=self)
-
-        coinpickview = pickACoin(ctx, member)
         embed = discord.Embed(description=f"The nickname chosen for {ctx.author.name} is `{authornick}`.\nThe nickname chosen for {member.name} is `{membernick}`.\n\n{member.name}, please pick a side of the coin, and I'll flip the coin to see who's the winner!", color=self.client.embed_color)
-        coinpickmsg = await ctx.send(member.mention, embed=embed, view=coinpickview)
-        coinpickview.response = coinpickmsg
-        await coinpickview.wait()
-        if coinpickview.returning_value is None:
-            embed.color, embed.description = discord.Color.red(), "You didn't respond in time."
-            ctx.command.reset_cooldown(ctx)
-            with contextlib.suppress(ValueError):
-                self.nickbets.remove(member.id)
-                self.nickbets.remove(ctx.author.id)
-            return await coinpickmsg.edit(embed=embed)
-        embed.title = f"{member.name} chose {'Heads! <:DVB_CoinHead:905400213785690172>' if coinpickview.returning_value == True else 'Tails! <:DVB_CoinTail:905400213676638279>'}"
-        olddesc = f"{embed.description.splitlines()[0]}\n{embed.description.splitlines()[1]}\n"
-        embed.description = f"{olddesc}\nI'm flipping the coin..."
-        embed.set_thumbnail(url="https://cdn.nogra.me/core/coin_spin.gif")
+        olddesc = f"{embed.description.splitlines()[0]}\n{embed.description.splitlines()[1]}"
+        coinpickmsg = await ctx.send(member.mention, embed=embed)
+        try:
+            old_nick = ctx.author.display_name
+            await ctx.author.edit(nick=authornick)
+            if duration and duration > 0:
+                await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", ctx.author.id, ctx.guild.id, authornick, old_nick, round(time()) + duration, f"[Nick bet]({ctx.message.jump_url})", member.id)
+        except discord.HTTPException:
+            return await ctx.send(f"I couldn't change some nicknames due to permission issues.")
+        try:
+            old_nick = member.display_name
+            await member.edit(nick=membernick)
+            if duration and duration > 0:
+                await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", member.id, ctx.guild.id, membernick, old_nick, round(time()) + duration, f"[Nick bet]({ctx.message.jump_url})", ctx.author.id)
+        except discord.HTTPException:
+            return await ctx.send(f"I couldn't change some nicknames due to permission issues.")
+        embed.description = f"{olddesc}\nJokes on you, none of you get to win today. The only winner is me."
+        embed.set_thumbnail(url="https://c.tenor.com/IaSQ2CvyEAoAAAAi/pepepoint-pepe.gif")
         try:
             await coinpickmsg.edit(embed=embed)
         except:
-            coinpickmsg = await coinpickmsg.send(embed=embed)
-        heads_or_tails = random.choice([True, True, True, True, True, True, False, False, False, False, False, False, None])
-        await asyncio.sleep(3.0)
-        coinflipembed = embed
-        if heads_or_tails == None:
-            try:
-                old_nick = ctx.author.display_name
-                await ctx.author.edit(nick=authornick)
-                if duration and duration > 0:
-                    await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", ctx.author.id, ctx.guild.id, authornick, old_nick, round(time()) + duration, f"[Nick bet]({ctx.message.jump_url})", member.id)
-            except discord.HTTPException:
-                return await ctx.send(f"I couldn't change some nicknames due to permission issues.")
-            try:
-                old_nick = member.display_name
-                await member.edit(nick=membernick)
-                if duration and duration > 0:
-                    await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", member.id, ctx.guild.id, membernick, old_nick, round(time()) + duration, f"[Nick bet]({ctx.message.jump_url})", ctx.author.id)
-            except discord.HTTPException:
-                return await ctx.send(f"I couldn't change some nicknames due to permission issues.")
-            coinflipembed.description = f"{olddesc}\nOh what just happened...\nLooks like the coin landed on its edge! I guess both of you lost ¯\_(ツ)_/¯"
-            coinflipembed.set_thumbnail(url="https://preview.redd.it/x4eb8v0dvsv31.png?auto=webp&s=849a80f279ac59060e2f0bdc35b9c30723bdb745")
-            try:
-                await coinpickmsg.edit(embed=coinflipembed)
-            except:
-                await ctx.send(embed=coinflipembed)
-            if duration and duration > 0:
-                await ctx.send(f"Both {ctx.author.name} and {member.name}'s nicknames have been frozen to their respective chosen nicknames for **{humanize_timedelta(seconds=duration)}**. Their nicknames will be unfrozen <t:{round(time())+duration}:R>.")
-            return
-        if heads_or_tails == True:
-            coinflipembed.description = f"{olddesc}\nThe coin landed on Heads!! <:DVB_CoinHead:905400213785690172>"
-            coinflipembed.set_thumbnail(url="https://cdn.discordapp.com/emojis/905400213785690172.png?size=96")
-            if coinpickview.returning_value == True:
-                coinflipembed.color, coinflipembed.description = discord.Color.green(), coinflipembed.description + f"\n\n{member.name} won the bet! 🎊"
-                loser = ctx.author
-                nick = authornick
-                old_nick = ctx.author.display_name
-                winner = member
-            else:
-                coinflipembed.color, coinflipembed.description = discord.Color.red(), coinflipembed.description + f"\n\n{ctx.author.name} won the bet, and {member.name} lost 🪦"
-                loser = member
-                nick = membernick
-                old_nick = member.display_name
-                winner = ctx.author
+            await ctx.send(embed=embed)
+        if duration and duration > 0:
+            await ctx.send(f"Both {ctx.author.name} and {member.name}'s nicknames have been frozen to their respective chosen nicknames for **{humanize_timedelta(seconds=duration)}**. Their nicknames will be unfrozen <t:{round(time())+duration}:R>.")
         else:
-            coinflipembed.description = f"{olddesc}\nThe coin landed on Tails!! <:DVB_CoinTail:905400213676638279>"
-            coinflipembed.set_thumbnail(url="https://cdn.discordapp.com/emojis/905400213676638279.png?size=96")
-            if coinpickview.returning_value == True:
-                coinflipembed.color, coinflipembed.description = discord.Color.red(), coinflipembed.description + f"\n\n{ctx.author.name} won the bet, and {member.name} lost 🪦"
-                loser = member
-                nick = membernick
-                old_nick = member.display_name
-                winner = ctx.author
-            else:
-                coinflipembed.color, coinflipembed.description = discord.Color.green(), coinflipembed.description + f"\n\n{member.name} won the bet! 🎊"
-                loser = ctx.author
-                nick = authornick
-                old_nick = ctx.author.display_name
-                winner = member
-        try:
-            await coinpickmsg.edit(embed=coinflipembed)
-        except:
-            await ctx.send(embed=coinflipembed)
-        with contextlib.suppress(ValueError):
-            self.nickbets.remove(member.id)
-            self.nickbets.remove(ctx.author.id)
-        try:
-            await loser.edit(nick=nick)
-        except discord.HTTPException:
-            await ctx.send(f"I couldn't change the loser's nickname, probably due to role hierachy or missing permissions. Sorry :c\nAsk them to change their nickname to `{authornick}`.")
-        else:
-            if duration and duration > 0:
-                await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", loser.id, ctx.guild.id, nick, old_nick, round(time()) + duration, f"[Nick bet]({ctx.message.jump_url})", winner.id)
-                await ctx.send(f"{loser.name}'s name has been changed to **{nick}** for **{humanize_timedelta(seconds=duration)}**. Their nickname will be unfrozen <t:{round(time())+duration}:R>.")
-            else:
-                await ctx.send(f"{loser.name}'s name has been changed to **{nick}**.")
+            await ctx.send("Both {ctx.author.name} and {member.name}'s nicknames have been changed.")
+        return
