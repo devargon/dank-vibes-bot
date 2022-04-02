@@ -38,6 +38,7 @@ hyper
 emoji
 typing
 stemming
-httpcore
+httpcore==0.9.1
+pytz
 h2==3.2.0
 parsedatetime
