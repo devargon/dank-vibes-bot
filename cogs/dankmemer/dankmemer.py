@@ -564,21 +564,21 @@ class DankMemer(commands.Cog, name='dankmemer'):
         """
         if (message.content.startswith("You went hunting") or message.content.startswith("Imagine going into the woods") or message.content.startswith("You might be the only hunter")) and message.author.id == 270904126974590976 and len(message.mentions) > 0:
             member = message.mentions[0]
-            nexthunttime = round(time.time()) + 30
+            nexthunttime = round(time.time()) + 25
             await self.handle_reminder_entry(member.id, 8, message.channel.id, message.guild.id, nexthunttime)
         """
         Fishing Reminder
         """
         if (message.content.startswith("You cast out your line") or message.content.startswith("LMAO you found nothing.") or message.content.startswith("Awh man, no fis")) and message.author.id == 270904126974590976 and len(message.mentions) > 0:
             member = message.mentions[0]
-            nextfishtime = round(time.time()) + 30
+            nextfishtime = round(time.time()) + 25
             await self.handle_reminder_entry(member.id, 9, message.channel.id, message.guild.id, nextfishtime)
         """
         Dig Reminder
         """
         if (message.content.startswith("You dig in the dirt") or message.content.startswith("LMAO you found nothing in the ground.")) and message.author.id == 270904126974590976 and len(message.mentions) > 0:
             member = message.mentions[0]
-            nextdigtime = round(time.time()) + 30
+            nextdigtime = round(time.time()) + 25
             await self.handle_reminder_entry(member.id, 10, message.channel.id, message.guild.id, nextdigtime)
         """
         Highlow Reminder
@@ -600,7 +600,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                         return await crossmark(botresponse)
                     else:
                         member = message.author
-                        nexthighlowtime = round(time.time()) + 20
+                        nexthighlowtime = round(time.time()) + 15
                         await self.handle_reminder_entry(member.id, 15, message.channel.id, message.guild.id, nexthighlowtime)
         """
         Snakeeyes Reminder
@@ -634,7 +634,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
         """
         if "Where do you want to search?" in message.content and message.author.id == 270904126974590976 and len(message.mentions) > 0:
             member = message.mentions[0]
-            nextsearchtime = round(time.time()) + 20
+            nextsearchtime = round(time.time()) + 15
             existing = await self.client.pool_pg.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 13)
             if len(existing) > 0:
                 await self.client.pool_pg.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextsearchtime, member.id, 13)
@@ -645,7 +645,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
         """
         if "What crime do you want to commit?" in message.content and message.author.id == 270904126974590976 and len(message.mentions) > 0:
             member = message.mentions[0]
-            nextcrimetime = round(time.time()) + 20
+            nextcrimetime = round(time.time()) + 15
             await self.handle_reminder_entry(member.id, 11, message.channel.id, message.guild.id, nextcrimetime)
         """
         Beg Reminder
@@ -662,21 +662,21 @@ class DankMemer(commands.Cog, name='dankmemer'):
                     return await crossmark(botresponse)
                 else:
                     member = message.author
-                    nextbegtime = round(time.time()) + 30
+                    nextbegtime = round(time.time()) + 25
                     await self.handle_reminder_entry(member.id, 12, message.channel.id, message.guild.id, nextbegtime)
         """
         Horseshoe Reminder
         """
         if message.content.startswith("You equip your lucky horseshoe") and message.author.id == 270904126974590976 and len(message.mentions) > 0:
             member = message.mentions[0]
-            nexthorseshoetime = round(time.time()) + 900
+            nexthorseshoetime = round(time.time()) + 1800
             await self.handle_reminder_entry(member.id, 17, message.channel.id, message.guild.id, nexthorseshoetime)
         """
         Pizza Reminder
         """
         if message.content.startswith("You eat the perfect slice of pizza.") and message.author.id == 270904126974590976 and len(message.mentions) > 0:
             member = message.mentions[0]
-            nextpizzatime = round(time.time()) + 3600
+            nextpizzatime = round(time.time()) + 7200
             await self.handle_reminder_entry(member.id, 18, message.channel.id, message.guild.id, nextpizzatime)
         """
         Work Reminder
@@ -696,7 +696,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                     if message.embeds[0].author:
                         if message.embeds[0].author.name.endswith("meme posting session"):
                             member = message.mentions[0]
-                            nextpostmemetime = round(time.time()) + 45
+                            nextpostmemetime = round(time.time()) + 30
                             await self.handle_reminder_entry(member.id, 21, message.channel.id, message.guild.id, nextpostmemetime)
         """
         Marriage reminder
@@ -750,7 +750,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                         if not find_all_disabled_component(aftermsg):
                             return False
                         target = beforemsg.mentions[0]
-                        await self.handle_reminder_entry(target.id, 24, beforemsg.channel.id, beforemsg.guild.id, round(time.time()) + 300)
+                        await self.handle_reminder_entry(target.id, 24, beforemsg.channel.id, beforemsg.guild.id, round(time.time()) + 120)
                         await beforemsg.add_reaction('🚀')
         await check_for_adventure()
         beforeembed = beforemsg.embeds[0]
