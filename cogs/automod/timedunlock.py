@@ -30,7 +30,7 @@ class TimedUnlock(commands.Cog):
                             overwrite.send_messages = None
                             await channel.set_permissions(guild.default_role, overwrite=overwrite, reason=reason)
                             if channel.id == disboardchannel:
-                                await channel.send("You can now bump the server! Say `!d bump` in this channel to bump the server. <:dv_pepeHappyWaitOwO:837653050906378240>")
+                                await channel.send(embed=discord.Embed(title="You can now bump the server!", description="Use the slash command `/bump` to bump the server!").set_image(url="https://cdn.discordapp.com/attachments/871737314831908974/960030629959970856/unknown.png"))
                         except:
                             pass
                 await self.client.pool_pg.execute("DELETE FROM timedunlock WHERE channel_id = $1 AND time = $2", row.get('channel_id'), row.get('time'))
