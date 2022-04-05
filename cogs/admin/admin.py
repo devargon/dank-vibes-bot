@@ -54,19 +54,19 @@ class ServerConfigView(discord.ui.View):
         super().__init__(timeout=20)
 
         async def handle_toggle(guild, settings) -> bool:
-            if (result := await self.client.pool_pg.fetchrow(
+            if (result := await self.client.db.fetchrow(
                     "SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", guild.id,
                     settings)) is not None:
                 result = result.get('enabled')
             else:
-                await self.client.pool_pg.execute("INSERT INTO serverconfig VALUES ($1, $2, $3)", guild.id,
+                await self.client.db.execute("INSERT INTO serverconfig VALUES ($1, $2, $3)", guild.id,
                                                   settings, False)
                 result = False
             if result:
                 result = False
             else:
                 result = True
-            await self.client.pool_pg.execute(
+            await self.client.db.execute(
                 "UPDATE serverconfig SET enabled=$1 WHERE guild_id=$2 AND settings=$3", result, guild.id, settings)
             return result
 
@@ -146,15 +146,15 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         Shows guild's server configuration settings and also allows you to allow/disable them.
         """
         embed = discord.Embed(title=f"Server Configuration Settings For {ctx.guild.name}", color=self.client.embed_color, timestamp=discord.utils.utcnow())
-        if (owodaily := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "owodailylb")) is not None:
+        if (owodaily := await self.client.db.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "owodailylb")) is not None:
             owodaily = owodaily.get('enabled')
-        if (owoweekly := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "owoweeklylb")) is not None:
+        if (owoweekly := await self.client.db.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "owoweeklylb")) is not None:
             owoweekly = owoweekly.get('enabled')
-        if (votelb := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "votelb")) is not None:
+        if (votelb := await self.client.db.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "votelb")) is not None:
             votelb = votelb.get('enabled')
-        if (verification := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "verification")) is not None:
+        if (verification := await self.client.db.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "verification")) is not None:
             verification = verification.get('enabled')
-        if (timeoutlog := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "timeoutlog")) is not None:
+        if (timeoutlog := await self.client.db.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "timeoutlog")) is not None:
             timeoutlog = timeoutlog.get('enabled')
         view = ServerConfigView(ctx.guild, owodaily, owoweekly, votelb, verification, timeoutlog, self.client)
         embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon.url)
@@ -203,7 +203,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         """Blacklist a user from using the bot."""
         if user is None:
             return await ctx.send('who tf do you want me to blacklist huh')
-        if await self.client.pool_pg.fetchrow("SELECT * FROM blacklist WHERE user_id=$1 and blacklist_active = $2", user.id, True) is not None:
+        if await self.client.db.fetchrow("SELECT * FROM blacklist WHERE user_id=$1 and blacklist_active = $2", user.id, True) is not None:
             return await ctx.send(f"{user.mention} is already blacklisted from using the bot.")
         reason = None
         duration = None

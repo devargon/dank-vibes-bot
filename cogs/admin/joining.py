@@ -22,7 +22,7 @@ class Joining(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        join_message = await self.client.pool_pg.fetchrow("SELECT * FROM joinmessages WHERE guild_id = $1", member.guild.id)
+        join_message = await self.client.db.fetchrow("SELECT * FROM joinmessages WHERE guild_id = $1", member.guild.id)
         if join_message is None:
             return
         message_text = join_message.get('plain_text')
@@ -62,7 +62,7 @@ class Joining(commands.Cog):
         `-` `{member_mention}` shows the user but in a mention. Example: <@650647680837484556>
         `-` `{count}` shows the number of members after the user has joined. Example: 36121st
         """
-        config = await self.client.pool_pg.fetchrow("SELECT * FROM joinmessages WHERE guild_id = $1", ctx.guild.id)
+        config = await self.client.db.fetchrow("SELECT * FROM joinmessages WHERE guild_id = $1", ctx.guild.id)
         confirmview = confirm(ctx, self.client, 30.0)
         if channel is None:
             if config is None:
@@ -73,7 +73,7 @@ class Joining(commands.Cog):
             await confirmview.wait()
             if confirmview.returning_value == True:
                 embed.color, embed.description = discord.Color.green(), "The configuration has been deleted."
-                await self.client.pool_pg.execute("DELETE FROM joinmessages WHERE guild_id = $1 and channel_id = $2", config.get('guild_id'), config.get('channel_id'))
+                await self.client.db.execute("DELETE FROM joinmessages WHERE guild_id = $1 and channel_id = $2", config.get('guild_id'), config.get('channel_id'))
             elif confirmview.returning_value == False:
                 embed.color, embed.description = discord.Color.red(), "Action cancelled."
             elif confirmview.returning_value == None:
@@ -174,9 +174,9 @@ class Joining(commands.Cog):
         if confirmview.returning_value == True:
             embed.color, embed.description = discord.Color.green(), "The configuration has been successfully added!"
             if config is not None:
-                await self.client.pool_pg.execute("UPDATE joinmessages SET channel_id = $1, plain_text = $2, embed_details = $3, delete_after = $4 WHERE guild_id = $5", channel.id, message_text, json_text, duration, ctx.guild.id)
+                await self.client.db.execute("UPDATE joinmessages SET channel_id = $1, plain_text = $2, embed_details = $3, delete_after = $4 WHERE guild_id = $5", channel.id, message_text, json_text, duration, ctx.guild.id)
             else:
-                await self.client.pool_pg.execute("INSERT INTO joinmessages VALUES($1, $2, $3, $4, $5)", ctx.guild.id, channel.id, message_text, json_text, duration)
+                await self.client.db.execute("INSERT INTO joinmessages VALUES($1, $2, $3, $4, $5)", ctx.guild.id, channel.id, message_text, json_text, duration)
         elif confirmview.returning_value == False:
             embed.color, embed.description = discord.Color.red(), "Action cancelled. Please start over."
         elif confirmview.returning_value == None:

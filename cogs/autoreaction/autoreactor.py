@@ -31,7 +31,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
             return
         if self.client.maintenance.get(self.qualified_name):
             return
-        triggers = await self.client.pool_pg.fetch("SELECT DISTINCT trigger FROM autoreactions WHERE guild_id=$1", message.guild.id)
+        triggers = await self.client.db.fetch("SELECT DISTINCT trigger FROM autoreactions WHERE guild_id=$1", message.guild.id)
         if len(triggers) == 0:
             return
         if not message.channel.permissions_for(message.guild.me).add_reactions:

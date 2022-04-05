@@ -31,11 +31,11 @@ class censor(commands.Cog):
         content = content.lower()
         if len(content) > 1000:
             return await ctx.send("You can only censor strings up to 1000 characters long.")
-        existing = await self.client.pool_pg.fetchval("SELECT string FROM blacklisted_words WHERE string = $1", content)
+        existing = await self.client.db.fetchval("SELECT string FROM blacklisted_words WHERE string = $1", content)
         if existing:
             await ctx.send(f"`{content}` is already blacklisted.")
         else:
-            await self.client.pool_pg.execute("INSERT INTO blacklisted_words(string) VALUES ($1)", content)
+            await self.client.db.execute("INSERT INTO blacklisted_words(string) VALUES ($1)", content)
             await ctx.send(f"<:DVB_True:887589686808309791> `{content}` has been blacklisted.")
 
     @checks.has_permissions_or_role(manage_roles=True)

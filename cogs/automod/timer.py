@@ -15,7 +15,7 @@ class timer(commands.Cog):
     async def timer_loop(self):
         await self.client.wait_until_ready()
         try:
-            timers = await self.client.pool_pg.fetch("SELECT * FROM timers")
+            timers = await self.client.db.fetch("SELECT * FROM timers")
             if len(timers) == 0:
                 return
             for timer_record in timers:

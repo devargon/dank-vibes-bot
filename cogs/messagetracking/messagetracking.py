@@ -25,7 +25,7 @@ class MessageTracking(commands.Cog, name='MessageTracking'):
         if len(str(message.content)) == 1:
             return
         self.queue.append(message.author)
-        result = await self.client.pool_pg.fetchrow("SELECT * FROM messagelog WHERE user_id = $1", message.author.id)
+        result = await self.client.db.fetchrow("SELECT * FROM messagelog WHERE user_id = $1", message.author.id)
         if result is None:
             await self.client.pool_pg.execute("INSERT INTO messagelog VALUES($1, $2)", message.author.id, 1)
             existing_count = 1

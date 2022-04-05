@@ -10,7 +10,7 @@ class AutoStatus(commands.Cog):
     async def change_status(self):
         try:
             await self.client.wait_until_ready()
-            statuses = await self.client.pool_pg.fetch("SELECT * FROM maintenance")
+            statuses = await self.client.db.fetch("SELECT * FROM maintenance")
             not_under_maintenance = []
             under_maintenance = []
             for status in statuses:

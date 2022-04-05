@@ -27,7 +27,7 @@ class VoteSetting(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         if self.values[0] == "DM":
-            await self.client.pool_pg.execute("UPDATE rmpreference SET rmtype = $1 WHERE member_id = $2", 1, self.context.author.id)
+            await self.client.db.execute("UPDATE rmpreference SET rmtype = $1 WHERE member_id = $2", 1, self.context.author.id)
             await interaction.response.send_message("Your reminder settings have been changed. You will **now be DMed** to vote for Dank Vibes.", ephemeral=True)
         if self.values[0] == "Ping":
             await self.client.pool_pg.execute("UPDATE rmpreference SET rmtype = $1 WHERE member_id = $2", 2, self.context.author.id)

@@ -12,7 +12,7 @@ class Verification(commands.Cog):
         await self.client.wait_until_ready()
         try:
             for guild in self.client.guilds:
-                is_enabled = await self.client.pool_pg.fetchval("SELECT enabled FROM serverconfig WHERE settings = $1 and guild_id = $2", 'verification', guild.id)
+                is_enabled = await self.client.db.fetchval("SELECT enabled FROM serverconfig WHERE settings = $1 and guild_id = $2", 'verification', guild.id)
                 if is_enabled:
                     has_not_verified = []
                     for member in guild.members:
@@ -44,7 +44,7 @@ class Verification(commands.Cog):
     async def on_member_update(self, member_before, member_after):
         if time() - member_before.joined_at.timestamp() > 86400:
             return
-        is_enabled = await self.client.pool_pg.fetchval("SELECT enabled FROM serverconfig WHERE settings = $1 and guild_id = $2", 'verification', member_after.guild.id)
+        is_enabled = await self.client.db.fetchval("SELECT enabled FROM serverconfig WHERE settings = $1 and guild_id = $2", 'verification', member_after.guild.id)
         if is_enabled != True:
             return
         if member_before.pending != True or member_after.pending != False or member_before.bot:

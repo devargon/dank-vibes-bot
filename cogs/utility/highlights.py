@@ -75,7 +75,7 @@ class Highlight(commands.Cog):
             return await ctx.send("The text you want to be highlighted for needs to be at least 2 characters long.")
         if len(text) > 50:
             return await ctx.send("The text that you want to be highlighted for can only be 50 characters long.")
-        count = await self.client.pool_pg.fetchval("SELECT COUNT(*) FROM highlight WHERE user_id = $1 AND guild_id = $2", ctx.author.id, ctx.guild.id)
+        count = await self.client.db.fetchval("SELECT COUNT(*) FROM highlight WHERE user_id = $1 AND guild_id = $2", ctx.author.id, ctx.guild.id)
         if count >= get_highlight_limit():
             donator_25 = ctx.guild.get_role(DONATOR_25M_ID)
             level_30 = ctx.guild.get_role(LEVEL_30_ID)
@@ -95,9 +95,9 @@ class Highlight(commands.Cog):
                 return await ctx.send(f"You aren't able to get any highlights.\n{actual_description}")
             else:
                 return await ctx.send(f"You can only have a maximum of {get_highlight_limit()} highlights.\n{actual_description}")
-        exising_hl = await self.client.pool_pg.fetchval("SELECT highlights FROM highlight WHERE user_id = $1 AND guild_id = $2 AND highlights = $3", ctx.author.id, ctx.guild.id, text)
+        exising_hl = await self.client.db.fetchval("SELECT highlights FROM highlight WHERE user_id = $1 AND guild_id = $2 AND highlights = $3", ctx.author.id, ctx.guild.id, text)
         if exising_hl is None:
-            await self.client.pool_pg.execute("INSERT INTO highlight(guild_id, user_id, highlights) VALUES ($1, $2, $3)", ctx.guild.id, ctx.author.id, text)
+            await self.client.db.execute("INSERT INTO highlight(guild_id, user_id, highlights) VALUES ($1, $2, $3)", ctx.guild.id, ctx.author.id, text)
             await ctx.send(f"'{text}' has been added to your highlights.")
         else:
             await ctx.send(f"'{text}' is already in your highlights.")
@@ -112,12 +112,12 @@ class Highlight(commands.Cog):
         """
         if argument is None:
             return await ctx.send("The argument that you need to specify should be a channel or member.")
-        hl_blocks = await self.client.pool_pg.fetchval("SELECT ignore_id FROM highlight_ignores WHERE user_id = $1 AND guild_id = $2 AND ignore_id = $3", ctx.author.id, ctx.guild.id, argument.id)
+        hl_blocks = await self.client.db.fetchval("SELECT ignore_id FROM highlight_ignores WHERE user_id = $1 AND guild_id = $2 AND ignore_id = $3", ctx.author.id, ctx.guild.id, argument.id)
         if hl_blocks is None:
             if isinstance(argument, discord.Member):
-                await self.client.pool_pg.execute("INSERT INTO highlight_ignores(guild_id, user_id, ignore_type, ignore_id) VALUES ($1, $2, $3, $4)", ctx.guild.id, ctx.author.id, 'member', argument.id)
+                await self.client.db.execute("INSERT INTO highlight_ignores(guild_id, user_id, ignore_type, ignore_id) VALUES ($1, $2, $3, $4)", ctx.guild.id, ctx.author.id, 'member', argument.id)
             elif isinstance(argument, discord.TextChannel):
-                await self.client.pool_pg.execute("INSERT INTO highlight_ignores(guild_id, user_id, ignore_type, ignore_id) VALUES ($1, $2, $3, $4)", ctx.guild.id, ctx.author.id, 'channel', argument.id)
+                await self.client.db.execute("INSERT INTO highlight_ignores(guild_id, user_id, ignore_type, ignore_id) VALUES ($1, $2, $3, $4)", ctx.guild.id, ctx.author.id, 'channel', argument.id)
             await ctx.send(f"**{argument.name}** has been added to your highlight block list.")
         else:
             await ctx.send(f"**{argument.name}** is already in your highlight block list.")
@@ -135,7 +135,7 @@ class Highlight(commands.Cog):
         if confirmview.returning_value is not True:
             return await ctx.send("Your highlight list has **not** been reset.")
         else:
-            await self.client.pool_pg.execute("DELETE FROM highlight WHERE user_id = $1 AND guild_id = $2", ctx.author.id, ctx.guild.id)
+            await self.client.db.execute("DELETE FROM highlight WHERE user_id = $1 AND guild_id = $2", ctx.author.id, ctx.guild.id)
         await ctx.send("All your highlights have been removed.")
 
     @checks.perm_insensitive_roles()
@@ -148,10 +148,10 @@ class Highlight(commands.Cog):
         text = (await commands.clean_content().convert(ctx, text)).lower()
         if text is None:
             return await ctx.send("You need to specify text that you want to have removed from your highlights.")
-        await self.client.pool_pg.fetchval("SELECT highlights FROM highlight WHERE user_id = $1 AND guild_id = $2 AND highlights = $3", ctx.author.id, ctx.guild.id, text)
+        await self.client.db.fetchval("SELECT highlights FROM highlight WHERE user_id = $1 AND guild_id = $2 AND highlights = $3", ctx.author.id, ctx.guild.id, text)
         if text is None:
             return await ctx.send("You aren't tracking this text at all 🤨")
-        await self.client.pool_pg.execute("DELETE FROM highlight WHERE user_id=$1 AND guild_id=$2 AND highlights=$3", ctx.author.id, ctx.guild.id, text)
+        await self.client.db.execute("DELETE FROM highlight WHERE user_id=$1 AND guild_id=$2 AND highlights=$3", ctx.author.id, ctx.guild.id, text)
         await ctx.send(f"Removed '{text}' from your highlighted words.")
 
     @checks.perm_insensitive_roles()
@@ -163,12 +163,12 @@ class Highlight(commands.Cog):
         """
         if ctx.guild is None:
             return
-        all_highlights = await self.client.pool_pg.fetch("SELECT highlights FROM highlight WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, ctx.author.id)
+        all_highlights = await self.client.db.fetch("SELECT highlights FROM highlight WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, ctx.author.id)
         if len(all_highlights) == 0:
             hls = "You're not tracking any words yet. Use `highlight add <text>` to start tracking."
         else:
             hls = '\n'.join([highlight.get('highlights') for highlight in all_highlights])
-        all_ignores = await self.client.pool_pg.fetch("SELECT ignore_id, ignore_type FROM highlight_ignores WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, ctx.author.id)
+        all_ignores = await self.client.db.fetch("SELECT ignore_id, ignore_type FROM highlight_ignores WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, ctx.author.id)
         if len(all_ignores) == 0:
             igns = "None"
         else:
@@ -200,9 +200,9 @@ class Highlight(commands.Cog):
         """
         if argument is None:
             return await ctx.send("You need to specify a channel or member to unblock.")
-        hl_blocks = await self.client.pool_pg.fetchval("SELECT ignore_id FROM highlight_ignores WHERE user_id = $1 AND guild_id = $2 AND ignore_id = $3", ctx.author.id, ctx.guild.id, argument.id)
+        hl_blocks = await self.client.db.fetchval("SELECT ignore_id FROM highlight_ignores WHERE user_id = $1 AND guild_id = $2 AND ignore_id = $3", ctx.author.id, ctx.guild.id, argument.id)
         if hl_blocks is not None:
-            await self.client.pool_pg.execute("DELETE FROM highlight_ignores WHERE guild_id = $1 AND user_id = $2 AND ignore_id = $3", ctx.guild.id, ctx.author.id, argument.id)
+            await self.client.db.execute("DELETE FROM highlight_ignores WHERE guild_id = $1 AND user_id = $2 AND ignore_id = $3", ctx.guild.id, ctx.author.id, argument.id)
             await ctx.send(f"**{argument.name}** has been removed from your highlight block list.")
         else:
             await ctx.send(f"**{argument.name}** isn't in your highlight block list.")
@@ -225,7 +225,7 @@ class Highlight(commands.Cog):
             return
         if message.author.bot:
             return
-        a = await self.client.pool_pg.fetch("SELECT highlights, user_id FROM highlight WHERE guild_id = $1", message.guild.id)
+        a = await self.client.db.fetch("SELECT highlights, user_id FROM highlight WHERE guild_id = $1", message.guild.id)
         a = [[hl_entry.get('highlights'), hl_entry.get('user_id')] for hl_entry in a] # gets all the highlights
 
         final_message = self.website_regex.sub('', message.content.lower())
@@ -255,7 +255,7 @@ class Highlight(commands.Cog):
                                     can_run = False
                                 if can_run:
                                     # Check if user has channel or user ignored
-                                    um = await self.client.pool_pg.fetch("SELECT ignore_type, ignore_id FROM highlight_ignores WHERE guild_id = $1 AND user_id = $2", message.guild.id, highlighted_member.id)
+                                    um = await self.client.db.fetch("SELECT ignore_type, ignore_id FROM highlight_ignores WHERE guild_id = $1 AND user_id = $2", message.guild.id, highlighted_member.id)
                                     is_ignored = False
                                     for ignore_entry in um:
                                         if ignore_entry.get('ignore_type') == 'channel':
@@ -360,23 +360,23 @@ class Highlight(commands.Cog):
         if confirmview.returning_value is not True:
             return await ctx.send("**Your highlight settings will not be imported from Carl-bot.")
         else:
-            exising_highlights = await self.client.pool_pg.fetch("SELECT highlights FROM highlight WHERE user_id = $1 AND guild_id = $2", ctx.author.id, ctx.guild.id)
+            exising_highlights = await self.client.db.fetch("SELECT highlights FROM highlight WHERE user_id = $1 AND guild_id = $2", ctx.author.id, ctx.guild.id)
             if len(exising_highlights) > 0:
                 existing_highlights = [x.get('highlights') for x in exising_highlights]
             else:
                 existing_highlights = []
             to_import = [(ctx.guild.id, ctx.author.id, phrase) for phrase in tracked if phrase not in existing_highlights]
-            await self.client.pool_pg.executemany("INSERT INTO highlight(guild_id, user_id, highlights) VALUES ($1, $2, $3)", to_import)
+            await self.client.db.executemany("INSERT INTO highlight(guild_id, user_id, highlights) VALUES ($1, $2, $3)", to_import)
             if ignored_channels is not None:
-                existing_channel_ignores = await self.client.pool_pg.fetch("SELECT ignore_id FROM highlight_ignores WHERE user_id = $1 AND guild_id = $2 AND ignore_type = $3", ctx.author.id, ctx.guild.id, 'channel')
+                existing_channel_ignores = await self.client.db.fetch("SELECT ignore_id FROM highlight_ignores WHERE user_id = $1 AND guild_id = $2 AND ignore_type = $3", ctx.author.id, ctx.guild.id, 'channel')
                 existing_channel_ignores = [x.get('ignore_id') for x in existing_channel_ignores]
                 to_import = [(ctx.guild.id, ctx.author.id, 'channel', channel.id) for channel in ignored_channels if channel.id not in existing_channel_ignores]
-                await self.client.pool_pg.executemany("INSERT INTO highlight_ignores(guild_id, user_id, ignore_type, ignore_id) VALUES ($1, $2, $3, $4)", to_import)
+                await self.client.db.executemany("INSERT INTO highlight_ignores(guild_id, user_id, ignore_type, ignore_id) VALUES ($1, $2, $3, $4)", to_import)
             if ignored_members is not None:
-                existing_member_ignores = await self.client.pool_pg.fetch("SELECT ignore_id FROM highlight_ignores WHERE user_id = $1 AND guild_id = $2 AND ignore_type = $3", ctx.author.id, ctx.guild.id, 'member')
+                existing_member_ignores = await self.client.db.fetch("SELECT ignore_id FROM highlight_ignores WHERE user_id = $1 AND guild_id = $2 AND ignore_type = $3", ctx.author.id, ctx.guild.id, 'member')
                 existing_member_ignores = [x.get('ignore_id') for x in existing_member_ignores]
                 to_import = [(ctx.guild.id, ctx.author.id, 'member', member.id) for member in ignored_members if member.id not in existing_member_ignores]
-                await self.client.pool_pg.executemany("INSERT INTO highlight_ignores(guild_id, user_id, ignore_type, ignore_id) VALUES ($1, $2, $3, $4)", to_import)
+                await self.client.db.executemany("INSERT INTO highlight_ignores(guild_id, user_id, ignore_type, ignore_id) VALUES ($1, $2, $3, $4)", to_import)
             await ctx.send("**Your highlight settings have been successfully imported from Carl-bot!**")
 
 

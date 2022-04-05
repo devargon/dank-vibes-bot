@@ -121,19 +121,19 @@ class Autoreaction(commands.Cog, name='autoreaction'):
         if trigger is None or responses is None:
             return await ctx.send("Please include a trigger and a response")
         trigger = trigger.lower()
-        if (len(await self.client.pool_pg.fetch("SELECT response FROM autoreactions WHERE trigger=$1 AND guild_id=$2", *(trigger, ctx.guild.id))) != 0 ):
+        if (len(await self.client.db.fetch("SELECT response FROM autoreactions WHERE trigger=$1 AND guild_id=$2", *(trigger, ctx.guild.id))) != 0 ):
             return await ctx.send("I already have an autoreaction for that trigger.")
         query = "INSERT INTO autoreactions VALUES ($1, $2, $3)"
         if isinstance(responses, list):
             if len(responses) > 1:
                 params = [(ctx.guild.id, trigger, response) for response in responses]
-                await self.client.pool_pg.executemany(query, params)
+                await self.client.db.executemany(query, params)
             else:
                 params = (ctx.guild.id, trigger, responses[0])
-                await self.client.pool_pg.execute(query, *params)
+                await self.client.db.execute(query, *params)
         else:
             params = (ctx.guild.id, trigger, responses,)
-            await self.client.pool_pg.execute(query, *params)
+            await self.client.db.execute(query, *params)
         return await ctx.send("Autoreaction added.")
 
     @autoreact.command(name='remove', aliases=['delete', '-'], usage='<trigger>')

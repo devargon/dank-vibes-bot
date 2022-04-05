@@ -114,9 +114,9 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("How do you expect me to mute myself?")
         duration = random.randint(30, 120)
-        won_dumbfights = await self.client.pool_pg.fetch(
+        won_dumbfights = await self.client.db.fetch(
             "SELECT * FROM dumbfightlog where did_win = $1 and invoker_id = $2", 1, ctx.author.id)
-        lost_dumbfights = await self.client.pool_pg.fetch(
+        lost_dumbfights = await self.client.db.fetch(
             "SELECT * FROM dumbfightlog where did_win = $1 and invoker_id = $2", 0, ctx.author.id)
         try:
             wonlossratio = len(won_dumbfights) / len(lost_dumbfights)
@@ -129,12 +129,12 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
                 doesauthorwin = True
             else:
                 doesauthorwin = False
-        author_df_details = await self.client.pool_pg.fetchrow("SELECT dumbfight_result, dumbfight_rig_duration FROM userconfig WHERE user_id = $1", ctx.author.id)
+        author_df_details = await self.client.db.fetchrow("SELECT dumbfight_result, dumbfight_rig_duration FROM userconfig WHERE user_id = $1", ctx.author.id)
         if author_df_details is not None and author_df_details.get('dumbfight_rig_duration') is not None and author_df_details.get('dumbfight_rig_duration') > round(time.time()):
             author_has_shield_potion = author_df_details.get('dumbfight_result')
         else:
             author_has_shield_potion = None
-        target_df_details = await self.client.pool_pg.fetchrow("SELECT dumbfight_result, dumbfight_rig_duration FROM userconfig WHERE user_id = $1", member.id)
+        target_df_details = await self.client.db.fetchrow("SELECT dumbfight_result, dumbfight_rig_duration FROM userconfig WHERE user_id = $1", member.id)
         if target_df_details is not None and target_df_details.get('dumbfight_rig_duration') is not None and target_df_details.get('dumbfight_rig_duration') > round(time.time()):
             target_has_shield_potion = target_df_details.get('dumbfight_result')
         else:

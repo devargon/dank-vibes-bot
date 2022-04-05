@@ -12,7 +12,7 @@ class DMPersistentView(discord.ui.View):
 
     @discord.ui.button(label='Approve', emoji=discord.PartialEmoji.from_str("<:DVB_checkmark:955345523139805214>"), style=discord.ButtonStyle.green, custom_id="button:approve_dm") #, custom_id='persistent_view:approve')
     async def green(self, button: discord.ui.Button, interaction: discord.Interaction):
-        dm_request = await self.client.pool_pg.fetchrow("SELECT * FROM dmrequests WHERE messageid = $1", interaction.message.id)
+        dm_request = await self.client.db.fetchrow("SELECT * FROM dmrequests WHERE messageid = $1", interaction.message.id)
         if dm_request is None:
             return
         dmrequester = interaction.guild.get_member(dm_request.get('member_id'))
@@ -37,8 +37,8 @@ class DMPersistentView(discord.ui.View):
                 output = (1, "Failed: Unable to DM user",)
             else:
                 output = (2, "Approved DM sent",)
-        await self.client.pool_pg.execute("DELETE from dmrequests WHERE id = $1", ID)
-        await self.client.pool_pg.execute("INSERT INTO dmrequestslog values($1, $2, $3, $4, $5, $6)", ID, dmrequester.id if dmrequester else dm_request.get('member_id'), dmtarget.id if dmtarget else dm_request.get('target_id'), interaction.user.id, dmcontent, output[0]) # 0 : Denied, 1: Failed, 2 : Approved
+        await self.client.db.execute("DELETE from dmrequests WHERE id = $1", ID)
+        await self.client.db.execute("INSERT INTO dmrequestslog values($1, $2, $3, $4, $5, $6)", ID, dmrequester.id if dmrequester else dm_request.get('member_id'), dmtarget.id if dmtarget else dm_request.get('target_id'), interaction.user.id, dmcontent, output[0]) # 0 : Denied, 1: Failed, 2 : Approved
         embed = discord.Embed(title="DM Request", description = dmcontent, color=discord.Color.green() if output[0] == 2 else discord.Color.red(), timestamp=discord.utils.utcnow())
         embed.set_author(name=authordetails)
         dmtargetdetails = f"{dmtarget} {dmtarget.mention}" if dmtarget is not None else dmtarget
@@ -73,7 +73,7 @@ class DMPersistentView(discord.ui.View):
 
     @discord.ui.button(label='Deny', emoji=discord.PartialEmoji.from_str("<:DVB_crossmark:955345521151737896>"), style=discord.ButtonStyle.red, custom_id="button:deny_dm") #c, custom_id='persistent_view:red')
     async def red(self, button: discord.ui.Button, interaction: discord.Interaction):
-        dm_request = await self.client.pool_pg.fetchrow("SELECT * FROM dmrequests WHERE messageid = $1", interaction.message.id)
+        dm_request = await self.client.db.fetchrow("SELECT * FROM dmrequests WHERE messageid = $1", interaction.message.id)
         if dm_request is None:
             return
         dmrequester = interaction.guild.get_member(dm_request.get('member_id'))
@@ -91,8 +91,8 @@ class DMPersistentView(discord.ui.View):
             output = (1, "Failed: User who requested the DM has left the server",)
         else:
             output = (0, "Denied")
-        await self.client.pool_pg.execute("DELETE from dmrequests WHERE id = $1", ID)
-        await self.client.pool_pg.execute("INSERT INTO dmrequestslog values($1, $2, $3, $4, $5, $6)", ID, dmrequester.id if dmrequester else dm_request.get('member_id'), dmtarget.id if dmtarget else dm_request.get('target_id'), interaction.user.id, dmcontent, output[0]) # 0 : Denied, 1: Failed, 2 : Approved
+        await self.client.db.execute("DELETE from dmrequests WHERE id = $1", ID)
+        await self.client.db.execute("INSERT INTO dmrequestslog values($1, $2, $3, $4, $5, $6)", ID, dmrequester.id if dmrequester else dm_request.get('member_id'), dmtarget.id if dmtarget else dm_request.get('target_id'), interaction.user.id, dmcontent, output[0]) # 0 : Denied, 1: Failed, 2 : Approved
         embed = discord.Embed(title="DM Request", description = dmcontent, color=discord.Color.green() if output[0] == 2 else discord.Color.red(), timestamp=discord.utils.utcnow())
         embed.set_author(name=authordetails)
         dmtargetdetails = f"{dmtarget} {dmtarget.mention}" if dmtarget is not None else dmtarget
@@ -122,7 +122,7 @@ class dm(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        existing_requests = await self.client.pool_pg.fetch("SELECT messageid FROM dmrequests")
+        existing_requests = await self.client.db.fetch("SELECT messageid FROM dmrequests")
         if not self.persistent_views_added:
             if len(existing_requests) == 0:
                 return

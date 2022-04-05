@@ -29,7 +29,7 @@ class Teleport(commands.Cog):
         """
         if checkpoint is None:
             return await ctx.send("You need to include a checkpoint name.")
-        if not (channel_id := await self.client.pool_pg.fetchval("SELECT channel_id FROM teleport WHERE member_id=$1 AND checkpoint=$2", ctx.author.id, checkpoint.lower())):
+        if not (channel_id := await self.client.db.fetchval("SELECT channel_id FROM teleport WHERE member_id=$1 AND checkpoint=$2", ctx.author.id, checkpoint.lower())):
             return await ctx.send("I don't have any channel saved for that checkpoint.")
         channel = f"<#{channel_id}>"
         await ctx.send(channel, delete_after=5)
@@ -46,7 +46,7 @@ class Teleport(commands.Cog):
             return await ctx.send("You need to include a checkpoint name.")
         if channel is None:
             return await ctx.send("Mention a valid channel for your checkpoint.")
-        if await self.client.pool_pg.fetchval("SELECT * FROM teleport WHERE member_id=$1 AND checkpoint=$2", ctx.author.id, checkpoint.lower()):
+        if await self.client.db.fetchval("SELECT * FROM teleport WHERE member_id=$1 AND checkpoint=$2", ctx.author.id, checkpoint.lower()):
             return await ctx.send("You already have a checkpoint with that name.")
         channel_re = re.compile(r"<#(?P<id>\d+)>")
         if len(channel) == 18 and channel.isdigit():
@@ -55,7 +55,7 @@ class Teleport(commands.Cog):
             channel_id = ids[0]
         else:
             return await ctx.send("You didn't mention a valid channel, try again!")
-        await self.client.pool_pg.execute("INSERT INTO teleport VALUES ($1, $2, $3)", ctx.author.id, checkpoint.lower(), int(channel_id))
+        await self.client.db.execute("INSERT INTO teleport VALUES ($1, $2, $3)", ctx.author.id, checkpoint.lower(), int(channel_id))
         await ctx.send("Checkpoint added.")
 
     @checks.perm_insensitive_roles()
@@ -66,9 +66,9 @@ class Teleport(commands.Cog):
         """
         if checkpoint is None:
             return await ctx.send("You need to include a checkpoint name.")
-        if not await self.client.pool_pg.fetchval("SELECT * FROM teleport WHERE member_id=$1 AND checkpoint=$2", ctx.author.id, checkpoint.lower()):
+        if not await self.client.db.fetchval("SELECT * FROM teleport WHERE member_id=$1 AND checkpoint=$2", ctx.author.id, checkpoint.lower()):
             return await ctx.send("You don't have any checkpoint saved with that name.")
-        await self.client.pool_pg.execute("DELETE FROM teleport WHERE member_id=$1 AND checkpoint=$2", ctx.author.id, checkpoint.lower())
+        await self.client.db.execute("DELETE FROM teleport WHERE member_id=$1 AND checkpoint=$2", ctx.author.id, checkpoint.lower())
         await ctx.send("Checkpoint removed.")
 
     @checks.perm_insensitive_roles()
@@ -77,7 +77,7 @@ class Teleport(commands.Cog):
         """
         Shows all checkpoints and channels.
         """
-        results = await self.client.pool_pg.fetch("SELECT checkpoint, channel_id FROM teleport WHERE member_id=$1", ctx.author.id)
+        results = await self.client.db.fetch("SELECT checkpoint, channel_id FROM teleport WHERE member_id=$1", ctx.author.id)
         if len(results) == 0:
             return await ctx.send("You don't have any checkpoint saved.")
         checkpoints = []
@@ -95,6 +95,6 @@ class Teleport(commands.Cog):
         """
         Removes all checkpoints.
         """
-        await self.client.pool_pg.execute("DELETE FROM teleport WHERE member_id=$1", ctx.author.id)
+        await self.client.db.execute("DELETE FROM teleport WHERE member_id=$1", ctx.author.id)
         await ctx.checkmark()
         return await ctx.send("All checkpoints have been removed.")

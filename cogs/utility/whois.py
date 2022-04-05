@@ -27,7 +27,7 @@ class Whois(commands.Cog):
             description.append(f"• Joined server on: **{joined_at}**")
         if ctx.author.guild_permissions.kick_members and isinstance(user, discord.Member):
             description.append(f"• User is verified: {f'<:DVB_False:887589731515392000> They have **{humanize_timedelta(seconds=user.joined_at.timestamp()+86400-round(time()))}** to complete the Membership Screening.' if user.pending else '<:DVB_True:887589686808309791>'}")
-        infection = await self.client.pool_pg.fetchrow("SELECT infectioncase, member_id, infector, timeinfected FROM infections WHERE member_id = $1", user.id)
+        infection = await self.client.db.fetchrow("SELECT infectioncase, member_id, infector, timeinfected FROM infections WHERE member_id = $1", user.id)
         if infection:
             infector = self.client.get_user(infection.get('infector')) or infection.get('infector')
             description.append(f"• User is infected with Horn Knee Virus: 🤒 (Case **{infection.get('infectioncase')}**)\n<:Reply:871808167011549244> Infected by **{infector}** <t:{infection.get('timeinfected')}:R>")

@@ -127,10 +127,10 @@ View the guide on https://docs.dvbot.nogra.me/commands/mod/tools/#lockdown-start
         if len(name) > 18:
             return await ctx.send(f"Your requested profile name is {len(name)} characters long. It can only be 18 characters long.")
         name = name.lower()
-        existing_profile = await self.client.pool_pg.fetchrow("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", name, ctx.guild.id)
+        existing_profile = await self.client.db.fetchrow("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", name, ctx.guild.id)
         if existing_profile is not None:
             return await ctx.send(f"<:DVB_eyeroll:878146268277374976> You already have a profile with the name `{name}`. You can add or remove channels to that profile with `lockdown add [profile_name] [channel]` and `lockdown remove [profile_name] [channel]` respectively. You can also remove the lockdown profile with `lockdown delete [profile_name]`.")
-        await self.client.pool_pg.execute("INSERT INTO lockdownprofiles VALUES($1, $2, $3)", ctx.guild.id, name, channel.id)
+        await self.client.db.execute("INSERT INTO lockdownprofiles VALUES($1, $2, $3)", ctx.guild.id, name, channel.id)
         return await ctx.send(embed=discord.Embed(title="Success!", description = f"The lockdown profile with the name **{name}** has been created and **{channel}** has been added to the lockdown profile.", color=discord.Color.green()))
 
     @checks.has_permissions_or_role(manage_roles=True)
@@ -144,19 +144,19 @@ View the guide on https://docs.dvbot.nogra.me/commands/mod/tools/#lockdown-start
         elif channels is None:
             return await ctx.send("You need to specify the channel to be added to the profile. `lockdown add [profile_name] [channel]`")
         profile_name = profile_name.lower()
-        lockdown_profile = await self.client.pool_pg.fetch("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
+        lockdown_profile = await self.client.db.fetch("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
         if len(lockdown_profile) == 0:
             return await ctx.send(f"There is no such lockdown profile with the name **{profile_name}**.")
         added_channels = []
         already_added_channels = []
-        results = await self.client.pool_pg.fetch("SELECT channel_id FROM lockdownprofiles WHERE profile_name=$1 and guild_id = $2", profile_name, ctx.guild.id)
+        results = await self.client.db.fetch("SELECT channel_id FROM lockdownprofiles WHERE profile_name=$1 and guild_id = $2", profile_name, ctx.guild.id)
         results = [result.get('channel_id') for result in results]
         channels = list(dict.fromkeys(channels))
         for channel in channels:
             if channel.id in results:
                 already_added_channels.append(channel.mention)
             else:
-                await self.client.pool_pg.execute("INSERT INTO lockdownprofiles VALUES($1, $2, $3)", ctx.guild.id, profile_name, channel.id)
+                await self.client.db.execute("INSERT INTO lockdownprofiles VALUES($1, $2, $3)", ctx.guild.id, profile_name, channel.id)
                 added_channels.append(channel.mention)
         if len(added_channels) != 0:
             added_channels = ", ".join(added_channels)
@@ -176,7 +176,7 @@ View the guide on https://docs.dvbot.nogra.me/commands/mod/tools/#lockdown-start
         """
         if profile_name is not None:
             profile_name = profile_name.lower()
-            lockdown_profile = await self.client.pool_pg.fetch("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
+            lockdown_profile = await self.client.db.fetch("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
             if len(lockdown_profile) == 0:
                 return await ctx.send(f"There is no such lockdown profile with the name **{profile_name}**.")
             channel_list = []
@@ -184,7 +184,7 @@ View the guide on https://docs.dvbot.nogra.me/commands/mod/tools/#lockdown-start
             for ele in lockdown_profile:
                 channel = self.client.get_channel(ele.get('channel_id'))
                 if channel is None:
-                    await self.client.pool_pg.execute(
+                    await self.client.db.execute(
                         "DELETE FROM lockdownprofiles WHERE profile_name = $1 and channel_id = $2 and guild_id = $3",profile_name, ele.get('channel_id'), ctx.guild.id)
                     deleted_channels += 1
                 else:
@@ -204,7 +204,7 @@ View the guide on https://docs.dvbot.nogra.me/commands/mod/tools/#lockdown-start
             paginator = pages.Paginator(pages=LockdownPagination(channel_list, title, 20, self.client).get_pages(), disable_on_timeout=True, use_default_buttons=True)
             await paginator.send(ctx)
         else:
-            results = await self.client.pool_pg.fetch("SELECT * FROM lockdownprofiles WHERE guild_id = $1", ctx.guild.id)
+            results = await self.client.db.fetch("SELECT * FROM lockdownprofiles WHERE guild_id = $1", ctx.guild.id)
             if len(results) == 0:
                 return await ctx.send("There are no lockdown profiles in this guild. Use `lockdown create` to create a lockdown profile.")
             profiles = {}
@@ -215,7 +215,7 @@ View the guide on https://docs.dvbot.nogra.me/commands/mod/tools/#lockdown-start
                     profiles[result.get('profile_name')] += 1
             msgcontent = ""
             for profile in profiles:
-                channels = await self.client.pool_pg.fetch("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile, ctx.guild.id)
+                channels = await self.client.db.fetch("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile, ctx.guild.id)
                 unlocked = "<:DVB_True:887589686808309791>"
                 locked = "<:DVB_False:887589731515392000>"
                 neutral = "<:DVB_Neutral:887589643686670366>"
@@ -254,17 +254,17 @@ View the guide on https://docs.dvbot.nogra.me/commands/mod/tools/#lockdown-start
         elif channels is None:
             return await ctx.send("You need to specify the channel to be added to the profile. `lockdown remove [profile_name] [channel]`")
         profile_name = profile_name.lower()
-        lockdown_profile = await self.client.pool_pg.fetch("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
+        lockdown_profile = await self.client.db.fetch("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
         if len(lockdown_profile) == 0:
             return await ctx.send(f"There is no such lockdown profile with the name **{profile_name}**.")
         removed_channels = []
         non_existent_channels = []
-        results = await self.client.pool_pg.fetch("SELECT channel_id FROM lockdownprofiles WHERE profile_name=$1 and guild_id = $2", profile_name, ctx.guild.id)
+        results = await self.client.db.fetch("SELECT channel_id FROM lockdownprofiles WHERE profile_name=$1 and guild_id = $2", profile_name, ctx.guild.id)
         results = [result.get('channel_id') for result in results]
         channels = list(dict.fromkeys(channels))
         for channel in channels:
             if channel.id in results:
-                await self.client.pool_pg.execute("DELETE FROM lockdownprofiles where guild_id = $1 and profile_name = $2 and channel_id = $3", ctx.guild.id, profile_name, channel.id)
+                await self.client.db.execute("DELETE FROM lockdownprofiles where guild_id = $1 and profile_name = $2 and channel_id = $3", ctx.guild.id, profile_name, channel.id)
                 removed_channels.append(channel.mention)
             else:
                 non_existent_channels.append(channel.mention)
@@ -288,7 +288,7 @@ View the guide on https://docs.dvbot.nogra.me/commands/mod/tools/#lockdown-start
             return await ctx.send(
                 "You need to specify the name of the lockdown profile. `lockdown delete [profile_name]`")
         profile_name = profile_name.lower()
-        lockdown_profile = await self.client.pool_pg.fetch(
+        lockdown_profile = await self.client.db.fetch(
             "SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
         if len(lockdown_profile) == 0:
             return await ctx.send(f"There is no such lockdown profile with the name **{profile_name}**.")
@@ -304,8 +304,8 @@ View the guide on https://docs.dvbot.nogra.me/commands/mod/tools/#lockdown-start
             embed.color, embed.description = discord.Color.red(), "Action cancelled."
             return await msg.edit(embed=embed)
         if confirmview.returning_value == True:
-            await self.client.pool_pg.execute("DELETE FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
-            await self.client.pool_pg.execute("DELETE FROM lockdownmsgs WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
+            await self.client.db.execute("DELETE FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
+            await self.client.db.execute("DELETE FROM lockdownmsgs WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
             embed.color, embed.description = discord.Color.green(), f"The lockdown profile **{profile_name}** has been removed."
             return await msg.edit(embed=embed)
 
@@ -319,7 +319,7 @@ View the guide on https://docs.dvbot.nogra.me/commands/mod/tools/#lockdown-start
             return await ctx.send(
                 "You need to specify the name of the lockdown profile. `lockdown start [profile_name]`")
         profile_name = profile_name.lower()
-        lockdown_profile = await self.client.pool_pg.fetch(
+        lockdown_profile = await self.client.db.fetch(
             "SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
         if len(lockdown_profile) == 0:
             return await ctx.send(f"There is no such lockdown profile with the name **{profile_name}**.")
@@ -342,7 +342,7 @@ View the guide on https://docs.dvbot.nogra.me/commands/mod/tools/#lockdown-start
             channels_missing_perms = []
             channels_success = []
             special_cases = []
-            lockdownmsg_entry = await self.client.pool_pg.fetchrow(
+            lockdownmsg_entry = await self.client.db.fetchrow(
                 "SELECT startmsg FROM lockdownmsgs WHERE guild_id = $1 and profile_name = $2", ctx.guild.id,
                 profile_name)
             lockdownmsg = None
@@ -391,7 +391,7 @@ View the guide on https://docs.dvbot.nogra.me/commands/mod/tools/#lockdown-start
             return await ctx.send(
                 "You need to specify the name of the lockdown profile. `lockdown end [profile_name]`")
         profile_name = profile_name.lower()
-        lockdown_profile = await self.client.pool_pg.fetch("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
+        lockdown_profile = await self.client.db.fetch("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
         if len(lockdown_profile) == 0:
             return await ctx.send(f"There is no such lockdown profile with the name **{profile_name}**.")
         confirmview = confirm(ctx, self.client, 30.0)
@@ -412,7 +412,7 @@ View the guide on https://docs.dvbot.nogra.me/commands/mod/tools/#lockdown-start
             channels_missing_perms = []
             channels_success = []
             special_cases = []
-            lockdownmsg_entry = await self.client.pool_pg.fetchrow(
+            lockdownmsg_entry = await self.client.db.fetchrow(
                 "SELECT endmsg FROM lockdownmsgs WHERE guild_id = $1 and profile_name = $2", ctx.guild.id, profile_name)
             lockdownmsg = None
             if lockdownmsg_entry is not None:

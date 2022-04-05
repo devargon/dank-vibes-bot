@@ -12,7 +12,7 @@ class Freezenick(commands.Cog):
         await self.client.wait_until_ready()
         try:
             timenow = time()
-            result = await self.client.pool_pg.fetch("SELECT * FROM freezenick")
+            result = await self.client.db.fetch("SELECT * FROM freezenick")
             for row in result:
                 guild = self.client.get_guild(row.get('guild_id'))
                 if guild is not None:
@@ -28,13 +28,13 @@ class Freezenick(commands.Cog):
                                     await member.send("Your nickname has been restored and is no longer frozen.")
                                 except:
                                     pass
-                        await self.client.pool_pg.execute("DELETE FROM freezenick WHERE id = $1", row.get('id'))
+                        await self.client.db.execute("DELETE FROM freezenick WHERE id = $1", row.get('id'))
                     elif member and member.display_name != row.get('nickname'):
                         try:
                             await member.edit(nick=row.get('nickname'))
                         except:
                             pass
                 else:
-                    await self.client.pool_pg.execute("DELETE FROM freezenick WHERE id = $1", row.get('id'))
+                    await self.client.db.execute("DELETE FROM freezenick WHERE id = $1", row.get('id'))
         except Exception as e:
             await self.client.get_channel(871737028105109574).send(f"Error in Freezenick function: {e}")

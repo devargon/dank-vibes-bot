@@ -48,7 +48,7 @@ class polledition(commands.Cog):
         try:
             await self.client.wait_until_ready()
             time_past_expiry = round(time.time()) - 20*24*60*60
-            polls = await self.client.pool_pg.fetch("SELECT * FROM polls WHERE created > $1", time_past_expiry)
+            polls = await self.client.db.fetch("SELECT * FROM polls WHERE created > $1", time_past_expiry)
             for poll in polls:
                 creator_id = poll.get('creator_id')
                 guild_id = poll.get('guild_id')
@@ -66,7 +66,7 @@ class polledition(commands.Cog):
                             author_icon, author_name = creator.display_avatar.url, f"{creator}'s Poll"
                         question = poll.get('poll_name')
                         choices = poll.get('choices').split('|')
-                        polldata = await self.client.pool_pg.fetch("SELECT * FROM pollvotes WHERE poll_id = $1", poll_id)
+                        polldata = await self.client.db.fetch("SELECT * FROM pollvotes WHERE poll_id = $1", poll_id)
                         poll_dict = {}
                         for choice in choices:
                             poll_dict[choice] = 0
