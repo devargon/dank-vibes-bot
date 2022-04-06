@@ -2,7 +2,7 @@ import sys
 import discord
 import traceback
 from io import BytesIO
-from typing import Sequence, Iterator
+from typing import Sequence, Iterator, Literal
 from discord.ext import commands
 import inflect
 import math
@@ -203,6 +203,19 @@ class TabularData:
 
         to_draw.append(sep)
         return '\n'.join(to_draw)
+
+
+def split_string_into_list(string, return_type: Literal[str, int], delimiter=',') -> list:
+    if string is None:
+        return []
+    if len(string) is None:
+        return []
+    split = string.split(delimiter)
+    split = [s.strip() for s in split]
+    if return_type == int:
+        return [int(s) for s in split]
+    elif return_type == str:
+        return split
 
 
 def stringnum_toint(string:str):
