@@ -30,10 +30,10 @@ class VoteSetting(discord.ui.Select):
             await self.client.db.execute("UPDATE rmpreference SET rmtype = $1 WHERE member_id = $2", 1, self.context.author.id)
             await interaction.response.send_message("Your reminder settings have been changed. You will **now be DMed** to vote for Dank Vibes.", ephemeral=True)
         if self.values[0] == "Ping":
-            await self.client.pool_pg.execute("UPDATE rmpreference SET rmtype = $1 WHERE member_id = $2", 2, self.context.author.id)
+            await self.client.db.execute("UPDATE rmpreference SET rmtype = $1 WHERE member_id = $2", 2, self.context.author.id)
             await interaction.response.send_message("Your reminder settings have been changed. You will **now be pinged** to vote for Dank Vibes.", ephemeral=True)
         if self.values[0] == "None":
-            await self.client.pool_pg.execute("UPDATE rmpreference SET rmtype = $1 WHERE member_id = $2", 0, self.context.author.id)
+            await self.client.db.execute("UPDATE rmpreference SET rmtype = $1 WHERE member_id = $2", 0, self.context.author.id)
             await interaction.response.send_message("Your reminder settings have been changed. You will **not be reminded** to vote for Dank Vibes.\nYou will lose out on some vote perks if you don't vote regularly!", ephemeral=True)
 
 
@@ -92,17 +92,17 @@ class VoteTracker(commands.Cog, name='votetracker'):
         try:
             await self.client.wait_until_ready()
             timenow = round(time.time())
-            result = await self.client.pool_pg.fetch("SELECT * FROM roleremove WHERE rmtime < $1", timenow)
+            result = await self.client.db.fetch("SELECT * FROM roleremove WHERE rmtime < $1", timenow)
             first_time = False
             if len(result) == 0:
                 return
             for row in result:  # iterate through the list of members who have reminders.
                 memberid = row.get('member_id')
-                await self.client.pool_pg.execute('DELETE FROM roleremove WHERE rmtime = $1 AND member_id = $2', row.get('rmtime'), memberid)
-                preferences = await self.client.pool_pg.fetchrow("SELECT rmtype FROM rmpreference WHERE member_id = $1", memberid)
+                await self.client.db.execute('DELETE FROM roleremove WHERE rmtime = $1 AND member_id = $2', row.get('rmtime'), memberid)
+                preferences = await self.client.db.fetchrow("SELECT rmtype FROM rmpreference WHERE member_id = $1", memberid)
                 if preferences is None:  # somehow there is no preference for this user, so i'll create an entry to prevent it from breaking
-                    await self.client.pool_pg.execute("INSERT INTO rmpreference(member_id, rmtype) VALUES($1, $2)", memberid, 1)
-                    preferences = await self.client.pool_pg.fetchrow("SELECT rmtype FROM rmpreference WHERE member_id = $1", memberid)  # refetch the configuration for this user after it has been added
+                    await self.client.db.execute("INSERT INTO rmpreference(member_id, rmtype) VALUES($1, $2)", memberid, 1)
+                    preferences = await self.client.db.fetchrow("SELECT rmtype FROM rmpreference WHERE member_id = $1", memberid)  # refetch the configuration for this user after it has been added
                     first_time = True
                 member = self.client.get_user(memberid)
                 channel = self.client.get_channel(channelid)
@@ -124,7 +124,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
                 elif preferences.get('rmtype') == 2:
                     await channel.send(f"{member.mention} You can now vote for Dank Vibes again!", view=VoteLink(), delete_after=5.0)  # self-explainable
                 elif preferences.get('rmtype') not in [0, 1, 2]:  # somehow this guy doesn't have "dm" "ping or "none" in his setting so i'll update it to show that
-                    await self.client.pool_pg.execute('UPDATE rmpreference set rmtype = $1 where member_id = $2', 0, memberid)  # changes his setting to none
+                    await self.client.db.execute('UPDATE rmpreference set rmtype = $1 where member_id = $2', 0, memberid)  # changes his setting to none
                     return
         except Exception as error:
             traceback_error = print_exception(f'Ignoring exception in Reminder task', error)
@@ -134,8 +134,8 @@ class VoteTracker(commands.Cog, name='votetracker'):
     @tasks.loop(hours=24.0)
     async def leaderboardloop(self):
         await self.client.wait_until_ready()
-        if await self.client.pool_pg.fetchval("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", guildid, 'votelb'):
-            votecount = await self.client.pool_pg.fetch("SELECT * FROM votecount ORDER BY count DESC LIMIT 10")  # gets top 10 voters
+        if await self.client.db.fetchval("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", guildid, 'votelb'):
+            votecount = await self.client.db.fetch("SELECT * FROM votecount ORDER BY count DESC LIMIT 10")  # gets top 10 voters
             leaderboard = []
             guild = self.client.get_guild(guildid)
             channel = guild.get_channel(channelid)
@@ -187,28 +187,28 @@ class VoteTracker(commands.Cog, name='votetracker'):
                 return f"Some variables not found:\nMember: {member}\nVoting Channel: {votingchannel}\nGuild: {guild}"
             vdankster = guild.get_role(vdanksterid)
             rolesummary = "\u200b"  # If no roles are added, this will be in the section where the roles added are displayed.
-            result = await self.client.pool_pg.fetchrow("SELECT count FROM votecount WHERE member_id = $1", userid)
+            result = await self.client.db.fetchrow("SELECT count FROM votecount WHERE member_id = $1", userid)
             votecount = 1 if result is None else result.get('count') + 1
             if result is None:
-                await self.client.pool_pg.execute("INSERT INTO votecount VALUES($1, $2)", userid, votecount)
+                await self.client.db.execute("INSERT INTO votecount VALUES($1, $2)", userid, votecount)
             else:
-                await self.client.pool_pg.execute("UPDATE votecount SET count = $1 where member_id = $2", votecount, userid)
+                await self.client.db.execute("UPDATE votecount SET count = $1 where member_id = $2", votecount, userid)
             try:
                 await member.add_roles(vdankster, reason="Voted for the server")
                 rolesummary = f"You've received the role {vdankster.mention} for 24 hours."
             except discord.Forbidden:
                 pass
-            existing_remind = await self.client.pool_pg.fetchrow("SELECT * from roleremove where member_id = $1", userid)
+            existing_remind = await self.client.db.fetchrow("SELECT * from roleremove where member_id = $1", userid)
             if existing_remind is None:
-                await self.client.pool_pg.execute("INSERT INTO roleremove VALUES($1, $2, $3)", userid, timetoremind, timetoremove)
+                await self.client.db.execute("INSERT INTO roleremove VALUES($1, $2, $3)", userid, timetoremind, timetoremove)
             else:
-                await self.client.pool_pg.execute("UPDATE roleremove SET rmtime = $1, roletime = $2 WHERE member_id = $3", timetoremind, timetoremove, userid)
-            existing_remove = await self.client.pool_pg.fetchrow("SELECT * FROM autorole WHERE member_id = $1 and role_id = $2", userid, vdanksterid)
+                await self.client.db.execute("UPDATE roleremove SET rmtime = $1, roletime = $2 WHERE member_id = $3", timetoremind, timetoremove, userid)
+            existing_remove = await self.client.db.fetchrow("SELECT * FROM autorole WHERE member_id = $1 and role_id = $2", userid, vdanksterid)
             if existing_remove is None:
-                await self.client.pool_pg.execute("INSERT INTO autorole VALUES($1, $2, $3, $4)", userid, guildid, vdanksterid, timetoremove)
+                await self.client.db.execute("INSERT INTO autorole VALUES($1, $2, $3, $4)", userid, guildid, vdanksterid, timetoremove)
             else:
-                await self.client.pool_pg.execute("UPDATE autorole SET time = $1 WHERE member_id = $2 and role_id = $3", timetoremove, userid, vdanksterid)
-            milestones = await self.client.pool_pg.fetch("SELECT * FROM milestones")
+                await self.client.db.execute("UPDATE autorole SET time = $1 WHERE member_id = $2 and role_id = $3", timetoremove, userid, vdanksterid)
+            milestones = await self.client.db.fetch("SELECT * FROM milestones")
             if len(milestones) != 0:
                 for milestone in milestones:
                     role = guild.get_role(milestone.get('roleid'))
@@ -255,7 +255,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         """
         Lists milestones for vote roles.
         """
-        milestones = await self.client.pool_pg.fetch("SELECT * FROM milestones")
+        milestones = await self.client.db.fetch("SELECT * FROM milestones")
         if len(milestones) == 0:
             embed = discord.Embed(title="Vote count milestones", description="There are no milestones set for now. Use `voteroles add [votecount] [role]` to add one.", color=self.client.embed_color)
             return await ctx.send(embed=embed)
@@ -287,11 +287,11 @@ class VoteTracker(commands.Cog, name='votetracker'):
             votecount = int(votecount)
         except ValueError:
             return await ctx.send("`votecount` is not a valid number.")
-        existing_milestones = await self.client.pool_pg.fetch("SELECT * FROM milestones WHERE votecount = $1", votecount)
+        existing_milestones = await self.client.db.fetch("SELECT * FROM milestones WHERE votecount = $1", votecount)
         if len(existing_milestones) > 0:
             await ctx.send(f"You have already set a milestone for **{votecount} votes**. To set a new role, remove this milestone and add it again.")
             return
-        await self.client.pool_pg.execute("INSERT INTO milestones VALUES($1, $2)", votecount, role.id)
+        await self.client.db.execute("INSERT INTO milestones VALUES($1, $2)", votecount, role.id)
         await ctx.send(f"**Done**\n**{role.name}** will be added to a member when they have voted **{votecount} time(s)**.")
 
     @voteroles.command(name="remove", aliases=["delete"])
@@ -306,11 +306,11 @@ class VoteTracker(commands.Cog, name='votetracker'):
             votecount = int(votecount)
         except ValueError:
             return await ctx.send(f"`{votecount}` as the votecount is not a valid number.")
-        existing_milestones = await self.client.pool_pg.fetch("SELECT * FROM milestones WHERE votecount = $1", votecount)
+        existing_milestones = await self.client.db.fetch("SELECT * FROM milestones WHERE votecount = $1", votecount)
         if len(existing_milestones) == 0:
             return await ctx.send(
                 f"You do not have a milestone set for {votecount} votes. Use `voteroles add [votecount] [role]` to add one.")
-        await self.client.pool_pg.execute("DELETE FROM milestones WHERE votecount = $1", votecount)
+        await self.client.db.execute("DELETE FROM milestones WHERE votecount = $1", votecount)
         await ctx.send(f"**Done**\nThe milestone for having voted **{votecount} time(s)** has been removed.")
 
     @commands.command(name="votecountreset")
@@ -319,7 +319,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         """
         Reset the vote count database. **This action is irreversible.**
         """
-        votecount = await self.client.pool_pg.fetch("SELECT * FROM votecount")
+        votecount = await self.client.db.fetch("SELECT * FROM votecount")
         if len(votecount) == 0:  # if there's nothing to be deleted
             return await ctx.send("There's nothing in the database to be removed.")
         totalvote = sum(voter.get('count') for voter in votecount)
@@ -335,7 +335,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
             embed.description, embed.color = "Command stopped.", discord.Color.red()
             return await message.edit(embed=embed)
         elif confirmview.returning_value == True:
-            await self.client.pool_pg.execute("DELETE FROM votecount")
+            await self.client.db.execute("DELETE FROM votecount")
             return await message.edit(embed=discord.Embed(title="Database pending removal", description="All vote counts have been reset, and all entries in the database has been deleted.", color = discord.Color.green()))
 
     @commands.command(name="voteleaderboard", aliases = ["vlb", "votelb"])
@@ -345,7 +345,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         You can also view your rank on the vote leaderboard.
         """
         with ctx.typing():
-            votecount = await self.client.pool_pg.fetch("SELECT * FROM votecount ORDER BY count DESC")
+            votecount = await self.client.db.fetch("SELECT * FROM votecount ORDER BY count DESC")
             leaderboard = []
             for voter in votecount[:10]:
                 member = ctx.guild.get_member(voter.get('member_id'))
@@ -367,7 +367,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
             ima.save(b, format="jpeg", optimize=True, quality=50)
             b.seek(0)
             file = discord.File(fp=b, filename="leaderboard.jpg")
-            uservotecount = await self.client.pool_pg.fetchrow("SELECT * FROM votecount where member_id = $1", ctx.author.id)
+            uservotecount = await self.client.db.fetchrow("SELECT * FROM votecount where member_id = $1", ctx.author.id)
             if uservotecount is None:
                 message = "You're not on the leaderboard yet. Vote for Dank Vibes for a chance to be on the leaderboard! <https://top.gg/servers/595457764935991326/vote>"
             else:
@@ -402,18 +402,18 @@ class VoteTracker(commands.Cog, name='votetracker'):
         See how many times you have voted for Dank Vibes.
         """
         timenow = round(time.time())
-        count = await self.client.pool_pg.fetchval("SELECT count FROM votecount where member_id = $1", ctx.author.id) or 0
-        result = await self.client.pool_pg.fetchrow("SELECT * FROM roleremove WHERE member_id = $1 and rmtime > $2", ctx.author.id, timenow)
-        nextmilestone = await self.client.pool_pg.fetchval("SELECT votecount FROM milestones WHERE votecount > $1 LIMIT 1", count)
+        count = await self.client.db.fetchval("SELECT count FROM votecount where member_id = $1", ctx.author.id) or 0
+        result = await self.client.db.fetchrow("SELECT * FROM roleremove WHERE member_id = $1 and rmtime > $2", ctx.author.id, timenow)
+        nextmilestone = await self.client.db.fetchval("SELECT votecount FROM milestones WHERE votecount > $1 LIMIT 1", count)
         if result is not None and result.get('rmtime') != 9223372036854775807:
             desc = f"You can vote <t:{result.get('rmtime')}:R>!"
         else:
             desc = f"You can vote now!"
         embed = discord.Embed(title=f"You have voted for Dank Vibes **__{plural(count):__**time}.", description=desc, timestamp=discord.utils.utcnow(), url="https://top.gg/servers/595457764935991326/vote")
         embed.set_author(name=ctx.author.name, icon_url=ctx.author.display_avatar.url)
-        preferences = await self.client.pool_pg.fetchval("SELECT rmtype FROM rmpreference WHERE member_id = $1", ctx.author.id)
+        preferences = await self.client.db.fetchval("SELECT rmtype FROM rmpreference WHERE member_id = $1", ctx.author.id)
         if preferences is None:  # if it's the first time for the user to invoke the command, it will create an entry automatically with the default setting "none".
-            preferences = await self.client.pool_pg.fetchval("INSERT INTO rmpreference VALUES($1, $2) RETURNING rmtype", ctx.author.id, 0, column='rmtype')  # fetches the new settings after the user's entry containing the 'none' setting has been created
+            preferences = await self.client.db.fetchval("INSERT INTO rmpreference VALUES($1, $2) RETURNING rmtype", ctx.author.id, 0, column='rmtype')  # fetches the new settings after the user's entry containing the 'none' setting has been created
         if preferences == 0:
             footer_msg = "You are currently not reminded to vote for Dank Vibes. You can be reminded to vote for Dank Vibes by choosing DMs or pings on the dropdown menu below!"
         elif preferences == 1:

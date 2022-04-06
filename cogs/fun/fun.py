@@ -244,7 +244,7 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
                                 f"{winmen} told {losemen} to mine straight down in Minecraft.",
                                 f"{losemen} tried to crack 90s in front of {winmen} and died."])
         if extra_info is not None:
-            await self.client.pool_pg.execute("INSERT INTO dumbfightlog values($1, $2, $3)", ctx.author.id, member.id, 1 if doesauthorwin is True else 0)
+            await self.client.db.execute("INSERT INTO dumbfightlog values($1, $2, $3)", ctx.author.id, member.id, 1 if doesauthorwin is True else 0)
         originaloverwrite = channel.overwrites_for(muted) if muted in channel.overwrites else None
         tempoverwrite = channel.overwrites_for(muted) if muted in channel.overwrites else discord.PermissionOverwrite()
         tempoverwrite.send_messages = False
@@ -275,8 +275,8 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
     @dumbfight.command(name="statistics", aliases = ["stats"])
     async def dfstatistics(self, ctx, member:discord.Member=None):
         if member is None:
-            won_dumbfights = await self.client.pool_pg.fetch("SELECT * FROM dumbfightlog where did_win = $1", 1)
-            lost_dumbfights = await self.client.pool_pg.fetch("SELECT * FROM dumbfightlog where did_win = $1", 0)
+            won_dumbfights = await self.client.db.fetch("SELECT * FROM dumbfightlog where did_win = $1", 1)
+            lost_dumbfights = await self.client.db.fetch("SELECT * FROM dumbfightlog where did_win = $1", 0)
             top3_won = {}
             top3_lost = {}
             for entry in won_dumbfights:
@@ -300,10 +300,10 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
             embed.add_field(name="Top 3 lost dumbfighters", value=top3lost)
             await ctx.send(embed=embed)
         else:
-            won_dumbfights = await self.client.pool_pg.fetch("SELECT * FROM dumbfightlog where did_win = $1 and invoker_id = $2", 1, member.id)
-            lost_dumbfights = await self.client.pool_pg.fetch("SELECT * FROM dumbfightlog where did_win = $1 and invoker_id = $2", 0, member.id)
-            non_invoked_losses = await self.client.pool_pg.fetch("SELECT * FROM dumbfightlog where did_win = $1 and target_id = $2", 1, member.id)
-            non_invoked_wins = await self.client.pool_pg.fetch("SELECT * FROM dumbfightlog where did_win = $1 and target_id = $2", 0, member.id)
+            won_dumbfights = await self.client.db.fetch("SELECT * FROM dumbfightlog where did_win = $1 and invoker_id = $2", 1, member.id)
+            lost_dumbfights = await self.client.db.fetch("SELECT * FROM dumbfightlog where did_win = $1 and invoker_id = $2", 0, member.id)
+            non_invoked_losses = await self.client.db.fetch("SELECT * FROM dumbfightlog where did_win = $1 and target_id = $2", 1, member.id)
+            non_invoked_wins = await self.client.db.fetch("SELECT * FROM dumbfightlog where did_win = $1 and target_id = $2", 0, member.id)
             non_invoked_wins.reverse()
             non_invoked_losses.reverse()
             text = ""
@@ -399,13 +399,13 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
             ctx.command.reset_cooldown(ctx)
             return await ctx.send(f"This command can only be used in {genchat.mention}!")
         timenow = round(time.time())
-        cooldown = await self.client.pool_pg.fetchrow("SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time > $3", ctx.command.name, ctx.author.id, timenow)
+        cooldown = await self.client.db.fetchrow("SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time > $3", ctx.command.name, ctx.author.id, timenow)
         if cooldown is not None:
             return await ctx.send(f"You're on cooldown. try again in {humanize_timedelta(seconds=(cooldown.get('time') - timenow))}.", delete_after=10.0)
-        cooldown = await self.client.pool_pg.fetchrow(
+        cooldown = await self.client.db.fetchrow(
             "SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time < $3", ctx.command.name, ctx.author.id, timenow)
         if cooldown:
-            await self.client.pool_pg.execute("DELETE FROM cooldowns WHERE command_name = $1 and member_id = $2 and time = $3", cooldown.get('command_name'), cooldown.get('member_id'), cooldown.get('time'))
+            await self.client.db.execute("DELETE FROM cooldowns WHERE command_name = $1 and member_id = $2 and time = $3", cooldown.get('command_name'), cooldown.get('member_id'), cooldown.get('time'))
         originaloverwrite = genchat.overwrites_for(ctx.guild.default_role) # this is the overwrite that will be restored to gen chat when the lockdown is over
         newoverwrite = genchat.overwrites_for(ctx.guild.default_role) # this is the overwrite that i will edit to lockdown the channel
         authornewoverwrite = genchat.overwrites_for(ctx.author) # this is the overwrite that I will edit to allow the invoker to continue talking
@@ -413,7 +413,7 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
         newoverwrite.send_messages = False # this edits the @everyone overwrite
         authororiginaloverwrite = None if ctx.author not in genchat.overwrites else genchat.overwrites_for(ctx.author) # this is the BEFORE overwrite for an individual member, if the author already had an overwrite (such as no react) it will use that to restore, otherwise None since it won't have any overwrites in the first place
         self.gen_is_muted = True
-        await self.client.pool_pg.execute("INSERT INTO cooldowns VALUES($1, $2, $3)", ctx.command.name, ctx.author.id, timenow + 10800)
+        await self.client.db.execute("INSERT INTO cooldowns VALUES($1, $2, $3)", ctx.command.name, ctx.author.id, timenow + 10800)
         try:
             await genchat.set_permissions(ctx.author, overwrite=authornewoverwrite, reason=f"{ctx.author} invoked a lockdown with the lockgen command") # allows author to talk
             await genchat.set_permissions(ctx.guild.default_role, overwrite = newoverwrite, reason = f"5 second lockdown initiated by {ctx.author.name}#{ctx.author.discriminator}") # does not allow anyone else to talk
@@ -449,7 +449,7 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
         if member.bot:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("I ain't bullying bots.")
-        if await self.client.pool_pg.fetchval("SELECT user_id FROM freezenick WHERE user_id = $1", member.id):
+        if await self.client.db.fetchval("SELECT user_id FROM freezenick WHERE user_id = $1", member.id):
             raise NicknameIsManaged()
         if member == ctx.author:
             ctx.command.reset_cooldown(ctx)
@@ -483,7 +483,7 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
         except discord.Forbidden:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("Sorry! I am unable to change that user's name, probably due to role hierachy or missing permissions.")
-        await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", member.id, ctx.guild.id, new_name, member_name, round(time.time()) + 180, f"[Scrambled nickname]({ctx.message.jump_url})", ctx.author.id)
+        await self.client.db.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", member.id, ctx.guild.id, new_name, member_name, round(time.time()) + 180, f"[Scrambled nickname]({ctx.message.jump_url})", ctx.author.id)
         await ctx.send(f"{member}'s name is now {new_name}!\n{member.mention}, your nickname/username has been scrambled by **{ctx.author.name}** and it is frozen for 3 minutes. It will automatically revert to your previous nickname/username after. ")
 
     @commands.cooldown(10, 1, commands.BucketType.user)
@@ -637,7 +637,7 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
                 return True
 
 
-        covidinfectors = await self.client.pool_pg.fetch("SELECT * FROM infections ORDER BY infectioncase DESC")
+        covidinfectors = await self.client.db.fetch("SELECT * FROM infections ORDER BY infectioncase DESC")
         um = f"The Horn Knee virus is an infectious disease that emerged in February 2022. It has **unprecedented side effects** that only Case 0 will know. The patient Zero is {self.client.get_user(515725341910892555)}.\nThe Horn Knee virus is spread through interacting with other humans, especially via mentioning someone.\nThere is no known cure for Horn Knee (obviously), but vaccines are being researched at the moment. The person leading the vaccine development is {self.client.get_user(542905463541465088)}."
         embed1 = discord.Embed(title="Horn Knee Virus At a Glance", description=um, color=self.client.embed_color)
         nooo = {}
@@ -785,12 +785,12 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
     @commands.command(name="randomcolor", aliases=['rc'])
     async def randomcolor(self, ctx: DVVTcontext):
         timenow = round(time.time())
-        cooldown = await self.client.pool_pg.fetchrow("SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time > $3", ctx.command.name,ctx.author.id, timenow)
+        cooldown = await self.client.db.fetchrow("SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time > $3", ctx.command.name,ctx.author.id, timenow)
         if cooldown is not None:
             return await ctx.send(f"You're on cooldown. try again in {humanize_timedelta(seconds=(cooldown.get('time') - timenow))}.", delete_after=10.0)
-        cooldown = await self.client.pool_pg.fetchrow("SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time < $3", ctx.command.name, ctx.author.id, timenow)
+        cooldown = await self.client.db.fetchrow("SELECT * FROM cooldowns WHERE command_name = $1 and member_id = $2 and time < $3", ctx.command.name, ctx.author.id, timenow)
         if cooldown:
-            await self.client.pool_pg.execute("DELETE FROM cooldowns WHERE command_name = $1 and member_id = $2 and time = $3", cooldown.get('command_name'), cooldown.get('member_id'), cooldown.get('time'))
+            await self.client.db.execute("DELETE FROM cooldowns WHERE command_name = $1 and member_id = $2 and time = $3", cooldown.get('command_name'), cooldown.get('member_id'), cooldown.get('time'))
         random_color_role = ctx.guild.get_role(RandomColorID)
         if random_color_role is None:
             return await ctx.send("The role ID provided for the random color role is invalid.")
@@ -817,7 +817,7 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
 
     @commands.command(name="active", aliases=['activeitems'])
     async def active_items(self, ctx: DVVTcontext):
-        results = await self.client.pool_pg.fetchrow("SELECT dumbfight_rig_duration, dumbfight_result FROM userconfig WHERE user_id = $1", ctx.author.id)
+        results = await self.client.db.fetchrow("SELECT dumbfight_rig_duration, dumbfight_result FROM userconfig WHERE user_id = $1", ctx.author.id)
         dumbfight_result, dumbfight_duration = results.get('dumbfight_result'), results.get('dumbfight_rig_duration')
         reply_emoji = "<:Reply:871808167011549244>"
         dumbfight_potion_emoji = "<:DVB_DumbfightPotion:944226900988026890>"

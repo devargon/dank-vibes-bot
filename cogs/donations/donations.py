@@ -77,7 +77,7 @@ class donations(commands.Cog):
         """
         Gets the donation count for a user in a category.
         """
-        result = await self.client.pool_pg.fetchval("SELECT value FROM donations.{} WHERE user_id = $1".format(f"guild{member.guild.id}_{category.lower()}"), member.id)
+        result = await self.client.db.fetchval("SELECT value FROM donations.{} WHERE user_id = $1".format(f"guild{member.guild.id}_{category.lower()}"), member.id)
         if result is None:
             return 0
         else:
@@ -94,7 +94,7 @@ class donations(commands.Cog):
         if len(category_name) > 30:
             return await ctx.send("Category name is too long; it can only be 30 characters long.")
 
-        if await self.client.pool_pg.fetchrow("SELECT * FROM donation_categories WHERE guild_id = $1 AND lower(category_name) = $2", ctx.guild.id, category_name.lower()) is not None:
+        if await self.client.db.fetchrow("SELECT * FROM donation_categories WHERE guild_id = $1 AND lower(category_name) = $2", ctx.guild.id, category_name.lower()) is not None:
             return await ctx.send(f"A category with the name `{category_name}` already exists.")
         else:
             confirmview = confirm(ctx, self.client, 15.0)
@@ -106,9 +106,9 @@ class donations(commands.Cog):
                 return await confirmview.response.edit(content="Cancelled; I will not be creating the donation category.")
             else:
                 async with ctx.typing():
-                    await self.client.pool_pg.execute("INSERT INTO donation_categories VALUES($1, $2)", ctx.guild.id, category_name)
+                    await self.client.db.execute("INSERT INTO donation_categories VALUES($1, $2)", ctx.guild.id, category_name)
                     createdb_query = "CREATE TABLE donations.{}(user_id BIGINT PRIMARY KEY, value BIGINT)".format(f"guild{ctx.guild.id}_{category_name.lower()}")
-                    await self.client.pool_pg.execute(createdb_query)
+                    await self.client.db.execute(createdb_query)
                     return await ctx.send(f"Category `{category_name}` created.")
 
     @checks.has_permissions_or_role(manage_roles=True)
@@ -119,7 +119,7 @@ class donations(commands.Cog):
         """
         if category_name is None:
             return await ctx.send("Please enter a category name to remove.")
-        real_name = await self.client.pool_pg.fetchval("SELECT category_name FROM donation_categories WHERE guild_id = $1 AND lower(category_name) = $2", ctx.guild.id, category_name.lower())
+        real_name = await self.client.db.fetchval("SELECT category_name FROM donation_categories WHERE guild_id = $1 AND lower(category_name) = $2", ctx.guild.id, category_name.lower())
         if not real_name:
             return await ctx.send(f"A category with the name `{category_name}` does not exist.")
         else:
@@ -132,14 +132,14 @@ class donations(commands.Cog):
                 return await confirmview.response.edit(content="Cancelled; I will not be removing the category.")
             else:
                 async with ctx.typing():
-                    await self.client.pool_pg.execute("DELETE FROM donation_categories WHERE guild_id = $1 AND lower(category_name) = $2", ctx.guild.id, category_name.lower())
-                    await self.client.pool_pg.execute("ALTER TABLE donations.{} RENAME TO old{}_{}".format(f"guild{ctx.guild.id}_{category_name.lower()}", round(time()), f"guild{ctx.guild.id}_{category_name.lower()}"))
+                    await self.client.db.execute("DELETE FROM donation_categories WHERE guild_id = $1 AND lower(category_name) = $2", ctx.guild.id, category_name.lower())
+                    await self.client.db.execute("ALTER TABLE donations.{} RENAME TO old{}_{}".format(f"guild{ctx.guild.id}_{category_name.lower()}", round(time()), f"guild{ctx.guild.id}_{category_name.lower()}"))
                     return await ctx.send(f"Category `{category_name}` removed.")
 
     class DonationCategory(commands.Converter):
         async def convert(self, ctx, argument: str):
             try:
-                real_name: str = await ctx.bot.pool_pg.fetchval("SELECT category_name FROM donation_categories WHERE guild_id = $1 AND lower(category_name) = $2", ctx.guild.id, argument.lower())
+                real_name: str = await ctx.bot.db.fetchval("SELECT category_name FROM donation_categories WHERE guild_id = $1 AND lower(category_name) = $2", ctx.guild.id, argument.lower())
             except Exception as e:
                 raise e
             else:
@@ -162,7 +162,7 @@ class donations(commands.Cog):
                 if users is None:
                     users = 10
                 query = "SELECT user_id, value FROM donations.{} WHERE value != 0 ORDER BY value DESC ".format(f"guild{ctx.guild.id}_{category_name.lower()}")
-                leaderboard = await self.client.pool_pg.fetch(query)
+                leaderboard = await self.client.db.fetch(query)
                 if len(leaderboard) == 0:
                     return await ctx.send("There are no donations to show in this category.")
                 else:
@@ -192,7 +192,7 @@ class donations(commands.Cog):
         if member is None:
             member = ctx.author
         async with ctx.typing():
-            categories = await self.client.pool_pg.fetch("SELECT * FROM donation_categories WHERE guild_id = $1", ctx.guild.id)
+            categories = await self.client.db.fetch("SELECT * FROM donation_categories WHERE guild_id = $1", ctx.guild.id)
             if not categories:
                 return await ctx.send("There are no donation categories set up for this server.")
             else:
@@ -226,7 +226,7 @@ class donations(commands.Cog):
         """
         member = ctx.author
         async with ctx.typing():
-            categories = await self.client.pool_pg.fetch("SELECT * FROM donation_categories WHERE guild_id = $1", ctx.guild.id)
+            categories = await self.client.db.fetch("SELECT * FROM donation_categories WHERE guild_id = $1", ctx.guild.id)
             if not categories:
                 return await ctx.send("There are no donation categories set up for this server.")
             else:
@@ -258,7 +258,7 @@ class donations(commands.Cog):
         """
         if category_name is None:
             return await ctx.send("Please specify a category.")
-        real_name = await self.client.pool_pg.fetchval("SELECT category_name FROM donation_categories WHERE guild_id = $1 AND lower(category_name) = $2", ctx.guild.id, category_name.lower())
+        real_name = await self.client.db.fetchval("SELECT category_name FROM donation_categories WHERE guild_id = $1 AND lower(category_name) = $2", ctx.guild.id, category_name.lower())
         if not real_name:
             return await ctx.send(f"A category with the name `{category_name}` does not exist.")
         confirmview = confirm(ctx, self.client, 10.0)
@@ -274,7 +274,7 @@ class donations(commands.Cog):
             await anotherconfirmview.response.edit("right, no changes made.")
             return
         query = "DELETE FROM donations.{} WHERE value >= 0".format(f"guild{ctx.guild.id}_{real_name.lower()}")
-        await self.client.pool_pg.execute(query)
+        await self.client.db.execute(query)
         await ctx.send(f"The donations of the category `{real_name}` has been reset.")
 
 
@@ -292,12 +292,12 @@ class donations(commands.Cog):
             return await ctx.send("You must specify a category to add the donations to.")
         if amount <= 0:
             return await ctx.send("You must specify an amount greater than 0 to be added to {}'s donations.".format(member.name))
-        real_name = await self.client.pool_pg.fetchval("SELECT category_name FROM donation_categories WHERE guild_id = $1 AND lower(category_name) = $2", ctx.guild.id, category_name.lower())
+        real_name = await self.client.db.fetchval("SELECT category_name FROM donation_categories WHERE guild_id = $1 AND lower(category_name) = $2", ctx.guild.id, category_name.lower())
         if not real_name:
             return await ctx.send(f"A category with the name `{category_name}` does not exist.")
         currentcount = await self.get_donation_count(member, category_name)
         QUERY = "INSERT INTO donations.{} VALUES ($1, $2) ON CONFLICT(user_id) DO UPDATE SET value=$2 RETURNING value".format(f"guild{ctx.guild.id}_{category_name.lower()}")
-        newamount = await self.client.pool_pg.fetchval(QUERY, member.id, amount + currentcount, column='value')
+        newamount = await self.client.db.fetchval(QUERY, member.id, amount + currentcount, column='value')
         embed = discord.Embed(title=f"Updated {member.name}'s __{real_name}__ donations.", description=f"**Original amount**: `{comma_number(currentcount)}`\n**Amount added**: `{comma_number(amount)}`\n**New amount**: `{comma_number(newamount)}`", color=discord.Color.green(), timestamp=discord.utils.utcnow())
         embed.set_thumbnail(url=member.display_avatar.url)
         embed.set_author(name="Success!", icon_url="https://cdn.discordapp.com/emojis/575412409737543694.gif?size=96")
@@ -318,7 +318,7 @@ class donations(commands.Cog):
             return await ctx.send("You must specify a category to remove the donations from.")
         if amount <= 0:
             return await ctx.send("You must specify an amount greater than 0 to be removed from {}'s donations.".format(member.name))
-        real_name = await self.client.pool_pg.fetchval(
+        real_name = await self.client.db.fetchval(
             "SELECT category_name FROM donation_categories WHERE guild_id = $1 AND lower(category_name) = $2",
             ctx.guild.id, category_name.lower())
         if not real_name:
@@ -327,7 +327,7 @@ class donations(commands.Cog):
         if currentcount - amount < 0:
             return await ctx.send(f"You cannot remove more donations than the what {member.name} has in the {category_name} category.")
         QUERY = "INSERT INTO donations.{} VALUES ($1, $2) ON CONFLICT(user_id) DO UPDATE SET value=$2 RETURNING value".format(f"guild{ctx.guild.id}_{category_name.lower()}")
-        newamount = await self.client.pool_pg.fetchval(QUERY, member.id, currentcount - amount, column='value')
+        newamount = await self.client.db.fetchval(QUERY, member.id, currentcount - amount, column='value')
         embed = discord.Embed(title=f"Updated {member.name}'s __{real_name}__ donations.", description=f"**Original amount**: `{comma_number(currentcount)}`\n**Amount removed**: `{comma_number(amount)}`\n**New amount**: `{comma_number(newamount)}`", color=discord.Color.orange(), timestamp=discord.utils.utcnow())
         embed.set_thumbnail(url=member.display_avatar.url)
         embed.set_author(name="Success!", icon_url="https://cdn.discordapp.com/emojis/575412409737543694.gif?size=96")
@@ -350,7 +350,7 @@ class donations(commands.Cog):
             return await ctx.send("You must specify an amount greater than 0 to be set to {}'s donations.".format(member.name))
         currentcount = await self.get_donation_count(member, category_name)
         QUERY = "INSERT INTO donations.{} VALUES ($1, $2) ON CONFLICT(user_id) DO UPDATE SET value=$2 RETURNING value".format(f"guild{ctx.guild.id}_{category_name.lower()}")
-        newamount = await self.client.pool_pg.fetchval(QUERY, member.id, amount, column='value')
+        newamount = await self.client.db.fetchval(QUERY, member.id, amount, column='value')
         embed = discord.Embed(title=f"Changed {member.name}'s **{category_name}** donations.", description=f"**Original amount**: `{comma_number(currentcount)}`\n**New amount**: `{comma_number(newamount)}`", color=discord.Color.blue(), timestamp=discord.utils.utcnow())
         embed.set_thumbnail(url=member.display_avatar.url)
         embed.set_author(name="Success!", icon_url="https://cdn.discordapp.com/emojis/575412409737543694.gif?size=96")
@@ -363,7 +363,7 @@ class donations(commands.Cog):
         await ctx.message.delete()
         async with ctx.typing():
             try:
-                results = await self.client.pool_pg.fetch("SELECT * FROM donations.{} WHERE value != 0 ORDER BY value DESC LIMIT 10".format(f"guild{ctx.guild.id}_dank"))
+                results = await self.client.db.fetch("SELECT * FROM donations.{} WHERE value != 0 ORDER BY value DESC LIMIT 10".format(f"guild{ctx.guild.id}_dank"))
             except asyncpg.exceptions.UndefinedTableError:
                 return await ctx.send("This command requires having a donation category called `dank` to work.")
             if not results:

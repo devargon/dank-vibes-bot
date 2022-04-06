@@ -12,4 +12,4 @@ class NameLogging(commands.Cog):
     async def on_user_update(self, user_before, user_after):
         if user_before.name != user_after.name:
             new_name = user_after.name
-            await self.client.pool_pg.execute("INSERT INTO name_changes VALUES($1, $2, $3)", user_before.id, new_name, round(time()))
+            await self.client.db.execute("INSERT INTO name_changes VALUES($1, $2, $3)", user_before.id, new_name, round(time()))

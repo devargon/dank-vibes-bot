@@ -462,7 +462,7 @@ View the guide on https://docs.dvbot.nogra.me/commands/mod/tools/#lockdown-start
         if profile_name is None:
             return await ctx.send("You need to specify the name of the lockdown profile. `lockdown delete [profile_name]`")
         profile_name = profile_name.lower()
-        lockdown_profile = await self.client.pool_pg.fetch(
+        lockdown_profile = await self.client.db.fetch(
             "SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
         if len(lockdown_profile) == 0:
             return await ctx.send(f"There is no such lockdown profile with the name **{profile_name}**.")
@@ -479,7 +479,7 @@ View the guide on https://docs.dvbot.nogra.me/commands/mod/tools/#lockdown-start
             embed.description = "You didn't select an option."
             return await msg.edit(embed=embed)
         if message is None:
-            lockdownmsg_entry = await self.client.pool_pg.fetchrow("SELECT * FROM lockdownmsgs WHERE guild_id = $1 and profile_name = $2", ctx.guild.id, profile_name)
+            lockdownmsg_entry = await self.client.db.fetchrow("SELECT * FROM lockdownmsgs WHERE guild_id = $1 and profile_name = $2", ctx.guild.id, profile_name)
             if lockdownmsg_entry is not None:
                 if startEndview.returning_value == 0:
                     lockdownmsg = lockdownmsg_entry.get('startmsg')
@@ -490,16 +490,16 @@ View the guide on https://docs.dvbot.nogra.me/commands/mod/tools/#lockdown-start
                 if lockdownmsg is not None:
                     return await send_lockdown_message(self, ctx.channel, lockdownmsg, f"This is the message sent when channels are {'locked' if startEndview.returning_value == 0 else 'unlocked'} in the lockdown profile **{profile_name}**.", startEndview.returning_value == 0)
             return await ctx.send(f"There is no message set for **{'unlocking' if startEndview.returning_value == 0 else 'locking'}** channels in the lockdown profile **{profile_name}**. You can set one with `dv.lockdown msg {profile_name} [message_in_plain_text_or_json]`.")
-        lockdownprofilemsg = await self.client.pool_pg.fetchrow("SELECT * FROM lockdownmsgs WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
+        lockdownprofilemsg = await self.client.db.fetchrow("SELECT * FROM lockdownmsgs WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
         slug = 'startmsg' if startEndview.returning_value == 0 else 'endmsg'
         if lockdownprofilemsg is not None:
             if startEndview.returning_value == 0:
-                await self.client.pool_pg.execute("UPDATE lockdownmsgs SET startmsg = $1 WHERE profile_name = $2 and guild_id = $3", message, profile_name, ctx.guild.id)
+                await self.client.db.execute("UPDATE lockdownmsgs SET startmsg = $1 WHERE profile_name = $2 and guild_id = $3", message, profile_name, ctx.guild.id)
             elif startEndview.returning_value == 1:
-                await self.client.pool_pg.execute("UPDATE lockdownmsgs SET endmsg = $1 WHERE profile_name = $2 and guild_id = $3", message, profile_name, ctx.guild.id)
+                await self.client.db.execute("UPDATE lockdownmsgs SET endmsg = $1 WHERE profile_name = $2 and guild_id = $3", message, profile_name, ctx.guild.id)
         else:
             if startEndview.returning_value == 0:
-                await self.client.pool_pg.execute("INSERT INTO lockdownmsgs (guild_id, profile_name, startmsg) VALUES($1, $2, $3)", ctx.guild.id, profile_name, message)
+                await self.client.db.execute("INSERT INTO lockdownmsgs (guild_id, profile_name, startmsg) VALUES($1, $2, $3)", ctx.guild.id, profile_name, message)
             elif startEndview.returning_value == 1:
-                await self.client.pool_pg.execute("INSERT INTO lockdownmsgs (guild_id, profile_name, endmsg) VALUES($1, $2, $3)", ctx.guild.id, profile_name, message)
+                await self.client.db.execute("INSERT INTO lockdownmsgs (guild_id, profile_name, endmsg) VALUES($1, $2, $3)", ctx.guild.id, profile_name, message)
         return await send_lockdown_message(self, ctx.channel, message, f"I have successfully set your lockdown message for the lockdown profile **{profile_name}**. This is how it will look like:", True if startEndview.returning_value == 0 else False)

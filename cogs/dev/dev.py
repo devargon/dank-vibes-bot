@@ -620,7 +620,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
         past_30_days = round(time.time()) - 2592000
 
         if argument is None:
-            result = await self.client.pool_pg.fetch("SELECT * FROM commandlog ORDER BY time")
+            result = await self.client.db.fetch("SELECT * FROM commandlog ORDER BY time")
             if len(result) < 10:
                 resultembed = discord.Embed(title="Warning", description="Not enough command usage to produce a proper result.", color=discord.Color.red())
                 file = None
@@ -685,7 +685,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
                 resultembed.set_image(url="attachment://graph.png")
 
         elif isinstance(argument, discord.User):
-            result = await self.client.pool_pg.fetch("SELECT * FROM commandlog WHERE user_id = $1 ORDER BY time", argument.id)
+            result = await self.client.db.fetch("SELECT * FROM commandlog WHERE user_id = $1 ORDER BY time", argument.id)
             if len(result) < 10:
                 resultembed = discord.Embed(title="Warning", description="Not enough command usage to produce a proper result.", color=discord.Color.red())
                 file = None
@@ -743,7 +743,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
                 resultembed.add_field(name="Top used channels", value='\n'.join(chan_data), inline=True)
                 resultembed.set_image(url="attachment://graph.png")
         elif isinstance(argument, discord.TextChannel):
-            result = await self.client.pool_pg.fetch("SELECT * FROM commandlog WHERE channel_id = $1 ORDER BY time", argument.id)
+            result = await self.client.db.fetch("SELECT * FROM commandlog WHERE channel_id = $1 ORDER BY time", argument.id)
             if len(result) < 10:
                 resultembed = discord.Embed(title="Warning", description="Not enough command usage to produce a proper result.", color=discord.Color.red())
                 file = None
@@ -805,7 +805,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
                 file = None
             else:
                 full_cmd = get_command_name(cmd)
-                result = await self.client.pool_pg.fetch("SELECT * FROM commandlog WHERE command = $1 ORDER BY time", full_cmd)
+                result = await self.client.db.fetch("SELECT * FROM commandlog WHERE command = $1 ORDER BY time", full_cmd)
                 if len(result) < 10:
                     resultembed = discord.Embed(title="Warning", description="Not enough command usage to produce a proper result.", color=discord.Color.red())
                     file = None

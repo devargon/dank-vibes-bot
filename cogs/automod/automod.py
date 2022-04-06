@@ -69,10 +69,10 @@ class AutoMod(reminders_, polledition, AutoStatus, timer, NameLogging, timedrole
         self.received_daily_potion = []
 
     async def add_item_count(self, item, user, amount):
-        does_inventory_exist = await self.client.pool_pg.fetchrow("SELECT * FROM inventories WHERE user_id = $1",
+        does_inventory_exist = await self.client.db.fetchrow("SELECT * FROM inventories WHERE user_id = $1",
                                                                   user.id)
         useritem_query = "SELECT {} FROM inventories WHERE user_id = $1".format(item)
-        useritem = await self.client.pool_pg.fetchval(useritem_query, user.id)
+        useritem = await self.client.db.fetchval(useritem_query, user.id)
         if does_inventory_exist:
             if useritem is None:
                 useritem_query = "UPDATE inventories SET {} = $2 WHERE user_id = $1 RETURNING {}".format(item, item)
@@ -80,15 +80,15 @@ class AutoMod(reminders_, polledition, AutoStatus, timer, NameLogging, timedrole
                 useritem_query = "UPDATE inventories SET {} = {} + $2 WHERE user_id = $1 RETURNING {}".format(item, item, item)
         else:
             useritem_query = "INSERT INTO inventories (user_id, {}) VALUES ($1, $2) RETURNING {}".format(item, item)
-        return await self.client.pool_pg.fetchval(useritem_query, user.id, amount, column=item)
+        return await self.client.db.fetchval(useritem_query, user.id, amount, column=item)
 
     @commands.Cog.listener()
     async def on_command(self, ctx: DVVTcontext):
         if ctx.author.id not in self.received_daily_potion:
-            entry = await self.client.pool_pg.fetchrow("SELECT * FROM userconfig WHERE user_id = $1", ctx.author.id)
+            entry = await self.client.db.fetchrow("SELECT * FROM userconfig WHERE user_id = $1", ctx.author.id)
             if entry is None:
                 if discord.utils.get(ctx.author.roles, id=level_50_role):
-                    await self.client.pool_pg.execute("INSERT INTO userconfig (user_id, received_daily_potion) VALUES ($1, $2)", ctx.author.id, True)
+                    await self.client.db.execute("INSERT INTO userconfig (user_id, received_daily_potion) VALUES ($1, $2)", ctx.author.id, True)
                     self.received_daily_potion = self.received_daily_potion + [ctx.author.id]
                     await self.add_item_count('dumbfightpotion', ctx.author, 1)
                     try:
@@ -97,7 +97,7 @@ class AutoMod(reminders_, polledition, AutoStatus, timer, NameLogging, timedrole
                         await ctx.send("You have received `1` Dumbfight Potion as you're currently **Level 50** and above!")
             elif entry.get('received_daily_potion') is not True:
                 if discord.utils.get(ctx.author.roles, id=level_50_role):
-                    await self.client.pool_pg.execute("UPDATE userconfig SET received_daily_potion = $1 WHERE user_id = $2", True, ctx.author.id)
+                    await self.client.db.execute("UPDATE userconfig SET received_daily_potion = $1 WHERE user_id = $2", True, ctx.author.id)
                     await self.add_item_count('dumbfightpotion', ctx.author, 1)
                     self.received_daily_potion.append(ctx.author.id)
                     try:
@@ -108,9 +108,9 @@ class AutoMod(reminders_, polledition, AutoStatus, timer, NameLogging, timedrole
                 self.received_daily_potion = self.received_daily_potion + [ctx.author.id]
             else:
                 pass
-        if (duration := await self.client.pool_pg.fetchval("SELECT dumbfight_rig_duration FROM userconfig WHERE user_id = $1", ctx.author.id)) is not None:
+        if (duration := await self.client.db.fetchval("SELECT dumbfight_rig_duration FROM userconfig WHERE user_id = $1", ctx.author.id)) is not None:
             if duration < time.time():
-                await self.client.pool_pg.execute("UPDATE userconfig SET dumbfight_rig_duration = NULL, dumbfight_result = NULL WHERE user_id = $1", ctx.author.id)
+                await self.client.db.execute("UPDATE userconfig SET dumbfight_rig_duration = NULL, dumbfight_result = NULL WHERE user_id = $1", ctx.author.id)
                 try:
                     await ctx.reply(f"> **{ctx.author.name}**, the effects of the dumbfight potion has worn off.")
                 except Exception as e:
@@ -119,7 +119,7 @@ class AutoMod(reminders_, polledition, AutoStatus, timer, NameLogging, timedrole
     @tasks.loop(hours=24)
     async def daily_potion_reset(self):
         self.received_daily_potion = []
-        await self.client.pool_pg.execute("UPDATE userconfig SET received_daily_potion = $1", False)
+        await self.client.db.execute("UPDATE userconfig SET received_daily_potion = $1", False)
 
     @daily_potion_reset.before_loop
     async def wait_until_8am(self):

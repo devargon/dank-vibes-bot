@@ -198,7 +198,7 @@ class games(commands.Cog):
         Challenge your friend to a nick bet! Both of you will choose a nickname for one another, and one of you will choose a side of the coin.
         If the coin flips onto the side that you choose, you will win! The loser will have their nickname changed.
         """
-        if await self.client.pool_pg.fetchval("SELECT user_id FROM freezenick WHERE user_id = $1", ctx.author.id):
+        if await self.client.db.fetchval("SELECT user_id FROM freezenick WHERE user_id = $1", ctx.author.id):
             return await ctx.send("Your nickname is currently frozen. Wait until your nickname is unfrozen before placing a nick bet with someone else.")
         if member is None:
             ctx.command.reset_cooldown(ctx)
@@ -209,7 +209,7 @@ class games(commands.Cog):
         if member.id in self.nickbets:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("That person is currently nickbetting with someone else.")
-        if await self.client.pool_pg.fetchval("SELECT user_id FROM freezenick WHERE user_id = $1", member.id):
+        if await self.client.db.fetchval("SELECT user_id FROM freezenick WHERE user_id = $1", member.id):
             ctx.command.reset_cooldown(ctx)
             raise NicknameIsManaged()
         if await self.client.check_blacklisted_user(member):
@@ -469,14 +469,14 @@ class games(commands.Cog):
                 old_nick = ctx.author.display_name
                 await ctx.author.edit(nick=authornick)
                 if duration and duration > 0:
-                    await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", ctx.author.id, ctx.guild.id, authornick, old_nick, round(time()) + duration, f"[Nick bet]({ctx.message.jump_url})", member.id)
+                    await self.client.db.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", ctx.author.id, ctx.guild.id, authornick, old_nick, round(time()) + duration, f"[Nick bet]({ctx.message.jump_url})", member.id)
             except discord.HTTPException:
                 return await ctx.send(f"I couldn't change some nicknames due to permission issues.")
             try:
                 old_nick = member.display_name
                 await member.edit(nick=membernick)
                 if duration and duration > 0:
-                    await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", member.id, ctx.guild.id, membernick, old_nick, round(time()) + duration, f"[Nick bet]({ctx.message.jump_url})", ctx.author.id)
+                    await self.client.db.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", member.id, ctx.guild.id, membernick, old_nick, round(time()) + duration, f"[Nick bet]({ctx.message.jump_url})", ctx.author.id)
             except discord.HTTPException:
                 return await ctx.send(f"I couldn't change some nicknames due to permission issues.")
             coinflipembed.description = f"{olddesc}\nOh what just happened...\nLooks like the coin landed on its edge! I guess both of you lost ¯\_(ツ)_/¯"
@@ -531,7 +531,7 @@ class games(commands.Cog):
             await ctx.send(f"I couldn't change the loser's nickname, probably due to role hierachy or missing permissions. Sorry :c\nAsk them to change their nickname to `{authornick}`.")
         else:
             if duration and duration > 0:
-                await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", loser.id, ctx.guild.id, nick, old_nick, round(time()) + duration, f"[Nick bet]({ctx.message.jump_url})", winner.id)
+                await self.client.db.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", loser.id, ctx.guild.id, nick, old_nick, round(time()) + duration, f"[Nick bet]({ctx.message.jump_url})", winner.id)
                 await ctx.send(f"{loser.name}'s name has been changed to **{nick}** for **{humanize_timedelta(seconds=duration)}**. Their nickname will be unfrozen <t:{round(time())+duration}:R>.")
             else:
                 await ctx.send(f"{loser.name}'s name has been changed to **{nick}**.")

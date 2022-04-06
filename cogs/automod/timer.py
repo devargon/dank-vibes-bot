@@ -22,12 +22,12 @@ class timer(commands.Cog):
                 guild = self.client.get_guild(timer_record.get('guild_id'))
                 if guild is None:
                     if timer_record.get('time') < round(time()):
-                        await self.client.pool_pg.execute("DELETE FROM timers WHERE message_id = $1", timer_record.get('message_id'))
+                        await self.client.db.execute("DELETE FROM timers WHERE message_id = $1", timer_record.get('message_id'))
                 chan_id = timer_record.get('channel_id')
                 channel = guild.get_channel(int(chan_id))
                 if channel is None:
                     if timer_record.get('time') < round(time()):
-                        await self.client.pool_pg.execute("DELETE FROM timers WHERE message_id = $1", timer_record.get('message_id'))
+                        await self.client.db.execute("DELETE FROM timers WHERE message_id = $1", timer_record.get('message_id'))
                 else:
                     message = channel.get_partial_message(timer_record.get('message_id'))
                     author = self.client.get_user(timer_record.get('user_id'))
@@ -46,7 +46,7 @@ class timer(commands.Cog):
                     embed = discord.Embed(color=self.client.embed_color, timestamp=datetime.fromtimestamp(endtime)).set_author(name=title, icon_url=guild.icon.url)
                     embed.set_footer(text=f"Timer ends at")
                     if endtime < round(time()):
-                        await self.client.pool_pg.execute("DELETE FROM timers WHERE message_id = $1", timer_record.get('message_id'))
+                        await self.client.db.execute("DELETE FROM timers WHERE message_id = $1", timer_record.get('message_id'))
                         embed.title="Timer is over! 🎊"
                         try:
                             await message.edit(embed=embed)

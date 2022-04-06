@@ -22,7 +22,7 @@ class Sticky(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         for guild in self.client.guilds:
-            result = await self.client.pool_pg.fetch("SELECT * FROM stickymessages WHERE guild_id = $1", guild.id)
+            result = await self.client.db.fetch("SELECT * FROM stickymessages WHERE guild_id = $1", guild.id)
             if len(result) == 0:
                 pass
             for entry in result:
@@ -40,7 +40,7 @@ class Sticky(commands.Cog):
                         newmessage = await channel.send(embed=discord.Embed.from_dict(embedjson))
                     else:
                         newmessage = await channel.send(entry.get('message'))
-                    await self.client.pool_pg.execute("UPDATE stickymessages SET message_id = $1 WHERE guild_id = $2 and channel_id = $3", newmessage.id, guild.id, channel.id)
+                    await self.client.db.execute("UPDATE stickymessages SET message_id = $1 WHERE guild_id = $2 and channel_id = $3", newmessage.id, guild.id, channel.id)
                     self.queue.remove(channel)
 
 
@@ -53,7 +53,7 @@ class Sticky(commands.Cog):
                 return
             if not message.guild:
                 return
-            result = await self.client.pool_pg.fetchrow("SELECT * FROM stickymessages WHERE guild_id = $1 and channel_id = $2", message.guild.id, message.channel.id)
+            result = await self.client.db.fetchrow("SELECT * FROM stickymessages WHERE guild_id = $1 and channel_id = $2", message.guild.id, message.channel.id)
             if result is None:
                 return
             try:
@@ -68,7 +68,7 @@ class Sticky(commands.Cog):
                 newmessage = await message.channel.send(embed=discord.Embed.from_dict(embedjson))
             else:
                 newmessage = await message.channel.send(result.get('message'))
-            await self.client.pool_pg.execute("UPDATE stickymessages SET message_id = $1 WHERE guild_id = $2 and channel_id = $3", newmessage.id, message.guild.id, message.channel.id)
+            await self.client.db.execute("UPDATE stickymessages SET message_id = $1 WHERE guild_id = $2 and channel_id = $3", newmessage.id, message.guild.id, message.channel.id)
             self.queue.remove(message.channel)
         except Exception as e:
             self.queue.remove(message.channel)
@@ -102,7 +102,7 @@ class Sticky(commands.Cog):
             return await ctx.send("`channel` is a required argument. `sticky create [channel] [content]`")
         if content is None:
             return await ctx.send(f"`content` is a required argument. `sticky create [channel] [content]`")
-        existing = await self.client.pool_pg.fetch("SELECT * FROM stickymessages WHERE guild_id = $1 and channel_id = $2", ctx.guild.id, channel.id)
+        existing = await self.client.db.fetch("SELECT * FROM stickymessages WHERE guild_id = $1 and channel_id = $2", ctx.guild.id, channel.id)
         if len(existing) > 0:
             return await ctx.send(f"You already have a sticky message set for {channel.mention}. Remove that sticky message with `` before adding a new sticky message.")
         if content.startswith('{') and content.endswith('}'):
@@ -111,7 +111,7 @@ class Sticky(commands.Cog):
             message_type = "text"
         if message_type == "text" and len(content) > 2000:
             return await ctx.send(f"Your message is currently {len(content)} characters long. It can only be 2000 characters long. Consider using a embed instead, as its description supports up to 4096 characters.")
-        all = await self.client.pool_pg.fetch("SELECT * FROM stickymessages WHERE guild_id = $1", ctx.guild.id)
+        all = await self.client.db.fetch("SELECT * FROM stickymessages WHERE guild_id = $1", ctx.guild.id)
         if len(all) > 1:
             await ctx.send("You have already created **2** sticky messages with Dank Vibes Bot. To create more sticky messages, purchase Premium for Dank Vibes Bot. <http://premium.dvbot.nogra.me/>", delete_after = 3.0)
         if message_type == "embed":
@@ -126,7 +126,7 @@ class Sticky(commands.Cog):
                     return await ctx.send(
                         f"<:DVB_eyeroll:878146268277374976> You entered a JSON code, but Discord was not able to decode it. More details: `{e}`.\nGet the JSON code directly from Carlbot's embed generator: https://cdn.nogra.me/core/embed.gif")
                 else:
-                    await self.client.pool_pg.execute("INSERT INTO stickymessages VALUES($1, $2, $3, $4, $5)", ctx.guild.id, channel.id, message.id, 0, content)
+                    await self.client.db.execute("INSERT INTO stickymessages VALUES($1, $2, $3, $4, $5)", ctx.guild.id, channel.id, message.id, 0, content)
                     return await ctx.send(f"<:DVB_checkmark:955345523139805214> I am now sending a sticky embed message in {channel.mention}.")
         elif message_type == "text":
             try:
@@ -134,7 +134,7 @@ class Sticky(commands.Cog):
             except discord.HTTPException as e:
                 return await ctx.send(f"I was not able to add this sticky message. Details: `{e}`")
             else:
-                await self.client.pool_pg.execute("INSERT INTO stickymessages VALUES($1, $2, $3, $4, $5)", ctx.guild.id, channel.id, message.id, 1, content)
+                await self.client.db.execute("INSERT INTO stickymessages VALUES($1, $2, $3, $4, $5)", ctx.guild.id, channel.id, message.id, 1, content)
                 return await ctx.send(f"<:DVB_checkmark:955345523139805214> I am now sending a sticky message in {channel.mention}.")
 
     @checks.has_permissions_or_role(manage_roles=True)
@@ -145,10 +145,10 @@ class Sticky(commands.Cog):
         """
         if channel is None:
             return await ctx.send(f"`channel` is a required argument. `sticky create [channel] [message_type] [content]`")
-        existing = await self.client.pool_pg.fetch("SELECT * FROM stickymessages WHERE guild_id = $1 and channel_id = $2", ctx.guild.id, channel.id)
+        existing = await self.client.db.fetch("SELECT * FROM stickymessages WHERE guild_id = $1 and channel_id = $2", ctx.guild.id, channel.id)
         if len(existing) == 0:
             return await ctx.send(f"You do not have a sticky message set for {channel.mention}.")
-        await self.client.pool_pg.fetch("DELETE FROM stickymessages WHERE guild_id = $1 and channel_id = $2", ctx.guild.id, channel.id)
+        await self.client.db.fetch("DELETE FROM stickymessages WHERE guild_id = $1 and channel_id = $2", ctx.guild.id, channel.id)
         return await ctx.send(f"<:DVB_checkmark:955345523139805214> The sticky message for {channel.mention} has been removed.")
 
     @checks.has_permissions_or_role(manage_roles=True)
@@ -159,7 +159,7 @@ class Sticky(commands.Cog):
         """
         if channel is not None:
             return await ctx.send(f"Lazy {ctx.author.display_name}, just go to the channel to see the message? {channel.mention}")
-        result = await self.client.pool_pg.fetch("SELECT * FROM stickymessages WHERE guild_id = $1", ctx.guild.id)
+        result = await self.client.db.fetch("SELECT * FROM stickymessages WHERE guild_id = $1", ctx.guild.id)
         entries = []
         for row in result:
             channel = ctx.guild.get_channel(row.get('channel_id'))

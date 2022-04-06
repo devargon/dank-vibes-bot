@@ -22,10 +22,10 @@ def has_permissions_or_role(**perms):
         async def predicate(ctx: DVVTcontext):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
-            enabled = await ctx.bot.pool_pg.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
+            enabled = await ctx.bot.db.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
             if enabled == True:
                 return True
-            roles = await ctx.bot.pool_pg.fetch("SELECT role_id, whitelist FROM rules WHERE guild_id=$1 AND command=$2", ctx.guild.id, get_command_name(ctx.command))
+            roles = await ctx.bot.db.fetch("SELECT role_id, whitelist FROM rules WHERE guild_id=$1 AND command=$2", ctx.guild.id, get_command_name(ctx.command))
             if not roles:
                 return await perms(ctx)
             for role in roles:
@@ -43,15 +43,15 @@ def perm_insensitive_roles() -> callable:
     async def predicate(ctx: DVVTcontext):
         if ctx.guild is None:
             raise commands.NoPrivateMessage()
-        enabled = await ctx.bot.pool_pg.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
+        enabled = await ctx.bot.db.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
         if enabled == True:
             return True
-        roles = await ctx.bot.pool_pg.fetch("SELECT role_id, whitelist FROM rules WHERE guild_id=$1 AND command=$2", ctx.guild.id, get_command_name(ctx.command))
+        roles = await ctx.bot.db.fetch("SELECT role_id, whitelist FROM rules WHERE guild_id=$1 AND command=$2", ctx.guild.id, get_command_name(ctx.command))
         if ctx.author.guild_permissions.manage_roles:
             return True
         if not roles:
             if ctx.command.parent:
-                roles = await ctx.bot.pool_pg.fetch("SELECT role_id, whitelist FROM rules WHERE guild_id=$1 AND command=$2", ctx.guild.id, str(ctx.command.parent))
+                roles = await ctx.bot.db.fetch("SELECT role_id, whitelist FROM rules WHERE guild_id=$1 AND command=$2", ctx.guild.id, str(ctx.command.parent))
                 if not roles:
                     return True
             else:
@@ -80,7 +80,7 @@ def is_owner_or_perms(**perms):
     async def predicate(ctx: DVVTcontext):
         if ctx.guild is None and ctx.author.id != 321892489470410763 or ctx.guild is None and ctx.author.id != 650647680837484556:
             raise commands.NoPrivateMessage()
-        enabled = await ctx.bot.pool_pg.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
+        enabled = await ctx.bot.db.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
         if enabled == True:
             return True
         return await base_check(ctx)
@@ -97,7 +97,7 @@ def in_beta() -> Callable:
 
 def is_not_blacklisted() -> callable:
     async def predicate(ctx: DVVTcontext):
-        blacklisted_users = await ctx.bot.pool_pg.fetchrow("SELECT * FROM blacklist WHERE user_id = $1 and blacklist_active = $2", ctx.author.id, True)
+        blacklisted_users = await ctx.bot.db.fetchrow("SELECT * FROM blacklist WHERE user_id = $1 and blacklist_active = $2", ctx.author.id, True)
         if blacklisted_users:
             if ctx.message.author.id in [321892489470410763, 650647680837484556, 515725341910892555]:
                 return True
@@ -115,7 +115,7 @@ def base_dev() -> callable:
 
 def dev() -> callable:
     async def predicate(ctx: DVVTcontext):
-        enabled = await ctx.bot.pool_pg.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
+        enabled = await ctx.bot.db.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
         if enabled != True:
             raise ArgumentBaseError(message="Only developers can use this command. If you are a developer, turn on Developer mode.")
         return True

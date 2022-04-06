@@ -109,7 +109,7 @@ class infection(commands.Cog):
                 return
             if f"[AFK] {new_nickname}" == old_nickname:
                 return
-            result = await self.client.pool_pg.fetchrow(
+            result = await self.client.db.fetchrow(
                 "SELECT * FROM freezenick WHERE user_id = $1 and guild_id = $2", member_after.id,
                 member_after.guild.id)
             if result is not None:
@@ -121,7 +121,7 @@ class infection(commands.Cog):
                     return
                 if result.get('old_nickname') == old_nickname:
                     return
-            await self.client.pool_pg.execute("INSERT INTO nickname_changes VALUES($1, $2, $3, $4)",
+            await self.client.db.execute("INSERT INTO nickname_changes VALUES($1, $2, $3, $4)",
                                               member_before.guild.id, member_before.id, new_nickname, round(time()))
 
     def cog_unload(self) -> None:

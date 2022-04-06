@@ -127,6 +127,6 @@ class polls(commands.Cog):
         poll_view = PollButtons(choices, self.client, ctx.message.id)
         msg = await ctx.send(embed=embed, view=poll_view)
         poll_view.response = msg
-        await self.client.pool_pg.execute("INSERT INTO polls(guild_id, channel_id, invoked_message_id, message_id, creator_id, poll_name, choices, created) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", ctx.guild.id, ctx.channel.id, ctx.message.id, poll_view.response.id, ctx.author.id, question, "|".join(choices), timeadded)
+        await self.client.db.execute("INSERT INTO polls(guild_id, channel_id, invoked_message_id, message_id, creator_id, poll_name, choices, created) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", ctx.guild.id, ctx.channel.id, ctx.message.id, poll_view.response.id, ctx.author.id, question, "|".join(choices), timeadded)
         await poll_view.wait()
 
