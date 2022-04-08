@@ -47,7 +47,7 @@ class ServerRule(commands.Cog):
         if cmd is None:
             return await ctx.send('Command is a required argument.')
         if not (command := self.client.get_command(cmd) or self.client.get_application_command(cmd)):
-            return await ctx.send(f"Oops, looks like command \"{cmd}\" doesn't exist!")
+            return await ctx.send(f"Oops, looks like command \"{cmd}\" doesn't exist!\nDue to a library limitation, serverrules can't be added to slash subcommands.")
         if role is None:
             return await ctx.send("Role is a required argument.")
         command = get_command_name(command)
