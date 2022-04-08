@@ -53,8 +53,10 @@ port = int(os.getenv('dbPORT'))
 password = os.getenv('dbPASSWORD')
 
 
-intents = discord.Intents(guilds = True, members = True, presences = True, messages = True, reactions = True, emojis = True, invites = True, voice_states = True)
+intents = discord.Intents(guilds = True, members = True, presences = True, messages = True, reactions = True, emojis = True, invites = True, voice_states = True, message_content = True)
 allowed_mentions = discord.AllowedMentions(everyone=False, roles=False)
+
+discord.http.API_VERSION = 9
 
 class dvvt(commands.Bot):
     def __init__(self):
