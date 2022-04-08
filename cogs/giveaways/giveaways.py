@@ -9,7 +9,6 @@ from datetime import datetime
 
 import discord
 from discord import SlashCommandGroup
-from discord.commands import permissions
 from discord.ext import commands, tasks, menus
 
 import cogs.giveaways
@@ -27,11 +26,10 @@ voteid = 874897331252760586 if os.getenv('state') == '1' else 683884762997587998
 level_100id = 943883531573157889 if os.getenv('state') == '1' else 717120742512394323
 
 
-
-
 DVB_True = "<:DVB_True:887589686808309791>"
 DVB_False = "<:DVB_False:887589731515392000>"
 DVB_Neutral = "<:DVB_Neutral:887589643686670366>"
+
 
 class GiveawayList(menus.ListPageSource):
     def __init__(self, entries, title):
@@ -45,6 +43,7 @@ class GiveawayList(menus.ListPageSource):
         embed.set_footer(text=f"{len(entries)} giveaways | Page {menu.current_page + 1}/{self.get_max_pages()}")
         return embed
 
+
 class ShowMultiEntries(discord.ui.View):
     def __init__(self, embed):
         super().__init__(timeout=None)
@@ -56,6 +55,7 @@ class ShowMultiEntries(discord.ui.View):
             await interaction.user.send_message(embed=self.embed)
         except:
             await interaction.message.edit(embed=self.embed, view=None)
+
 
 class GiveawayEndView(discord.ui.View):
     def __init__(self, url, user: typing.Optional[typing.Any] = None):
@@ -84,9 +84,10 @@ class LeaveGiveawayView(discord.ui.View):
         else:
             await interaction.response.send_message(f"You have already left the giveaway.", ephemeral=True)
 
+
 class GiveawayView(discord.ui.View):
     def __init__(self, client, cog):
-        self.cog: cogs.giveaways.Giveaways = cog
+        self.cog: cogs.giveaways.giveaways = cog
         self.client: dvvt = client
         super().__init__(timeout=None)
 
@@ -306,7 +307,7 @@ class giveaways(commands.Cog):
             for req in entry.required_roles:
                 role = guild.get_role(req)
                 role = role.mention if role else f"{req} (Unknown role)"
-                req_list.append(role.mention)
+                req_list.append(role)
             if len(req_list) > 0:
                 embed.add_field(name="Requirements", value="\n ".join(req_list), inline=True)
         if entry.blacklisted_roles and guild is not None and winners is None:
@@ -314,7 +315,7 @@ class giveaways(commands.Cog):
             for req in entry.blacklisted_roles:
                 role = guild.get_role(req)
                 role = role.mention if role else f"{req} (Unknown role)"
-                req_list.append(role.mention)
+                req_list.append(role)
             if len(req_list) > 0:
                 embed.add_field(name="Blacklisted Roles", value="\n ".join(req_list))
         if entry.bypass_roles and guild is not None and winners is None:
@@ -322,7 +323,7 @@ class giveaways(commands.Cog):
             for req in entry.bypass_roles:
                 role = guild.get_role(req)
                 role = role.mention if role else f"{req} (Unknown role)"
-                req_list.append(role.mention)
+                req_list.append(role)
             if len(req_list) > 0:
                 embed.add_field(name="Bypass Roles", value="\n ".join(req_list))
         if entry.multi and guild is not None and winners is None:
