@@ -1,5 +1,7 @@
 import os
 import time
+from typing import Optional
+
 import discord
 import asyncpg
 import datetime
@@ -79,21 +81,41 @@ class dvvt(commands.Bot):
             #print(self.editqueue)
             tup = self.editqueue.pop(0)
             m: discord.PartialMessage = tup[0]
-            editable: discord.Embed = tup[1]
+            content: str = tup[1]
+            embed: discord.Embed = tup[2]
+            view: discord.ui.View = tup[3]
             #print(editable)
             if m.id in self.deleted_edit_messages:
                 return None
             try:
-                await m.edit(embed=editable)
-                #await self.get_channel(871737314831908974).send(embed=editable.embed)
+                print(tup)
+                if type(content) is str or type(content) is None:
+                    if type(embed) == discord.Embed or type(embed) is None:
+                        if type(view) == discord.ui.View or type(view) is None:
+                            await m.edit(content=content, embed=embed, view=view)
+                        else:
+                            await m.edit(content=content, embed=embed)
+                    else:
+                        if type(view) == discord.ui.View or type(view) is None:
+                            await m.edit(content=content, view=view)
+                        else:
+                            await m.edit(content=content)
+                else:
+                    if type(embed) == discord.Embed or type(embed) is None:
+                        if type(view) == discord.ui.View or type(view) is None:
+                            await m.edit(embed=embed, view=view)
+                        else:
+                            await m.edit(embed=embed)
+                    else:
+                        if type(view) == discord.ui.View or type(view) is None:
+                            await m.edit(view=view)
             except discord.NotFound:
                 self.deleted_edit_messages.append(m.id)
             except Exception as e:
                 print(e)
-
         else:
             pass
-            #print('nothing in queue')
+            # nothing in queue
 
 
 
@@ -119,6 +141,27 @@ class dvvt(commands.Bot):
                 del self.blacklist[user.id]
                 await self.get_channel(906433823594668052).send(embed=embed)
         await self.get_all_blacklisted_users()
+
+    def add_to_edit_queue(self, message: discord.PartialMessage = discord.Embed.Empty, content: str = discord.Embed.Empty, embed: discord.Embed = discord.Embed.Empty, view: discord.ui.View = discord.Embed.Empty, index: Optional[int] = None):
+        tup = (message, content, embed, view)
+        if index is None:
+            self.editqueue.append(tup)
+        else:
+            self.editqueue.insert(index, tup)
+
+    def remove_queued_edit(self, message_id: int):
+        parsed_fully = False
+        while parsed_fully is not True:
+            for i, tup in enumerate(self.editqueue):
+                if tup[0].id == message_id:
+                    del self.editqueue[i]
+                    break
+                else:
+                    continue
+            parsed_fully = True
+        return
+
+
 
     @update_blacklist.before_loop
     async def before_update_blacklist(self):
