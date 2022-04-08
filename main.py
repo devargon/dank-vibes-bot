@@ -90,7 +90,6 @@ class dvvt(commands.Bot):
             if m.id in self.deleted_edit_messages:
                 return None
             try:
-                print(tup)
                 if type(content) is str or type(content) is None:
                     if type(embed) == discord.Embed or type(embed) is None:
                         if type(view) == discord.ui.View or type(view) is None:
