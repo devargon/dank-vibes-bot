@@ -1,4 +1,4 @@
-from .giveaways import Giveaways
+from .giveaways import giveaways
 
 def setup(client):
-    client.add_cog(Giveaways(client))
+    client.add_cog(giveaways(client))

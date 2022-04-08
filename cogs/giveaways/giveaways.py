@@ -184,7 +184,7 @@ class GiveawayView(discord.ui.View):
             return await interaction.response.send_message("It appears that this giveaway doesn't exist or has ended.", ephemeral=True)
 
 
-class Giveaways(commands.Cog):
+class giveaways(commands.Cog):
     """
     Giveaway commands
     """
