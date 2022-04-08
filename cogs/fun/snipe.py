@@ -97,7 +97,7 @@ class snipe(commands.Cog):
             return await ctx.send("You can't view this channel.")
         snipedata = self.deleted_messages[channel.id]
         async def desc():
-            blacklisted_words = await self.client.pool_pg.fetch("SELECT * FROM blacklisted_words")
+            blacklisted_words = await self.client.db.fetch("SELECT * FROM blacklisted_words")
             if any([i.get('string') in snipedata['content'] for i in blacklisted_words]):
                 return "This message has a blacklisted word and cannot be shown."
             if snipedata['content'].lower().startswith('dv.hp') or snipedata['content'].lower().startswith('dv.hideping'):
@@ -138,7 +138,7 @@ class snipe(commands.Cog):
         snipedata = self.edited_messages[channel.id]
 
         async def desc():
-            blacklisted_words = await self.client.pool_pg.fetch("SELECT * FROM blacklisted_words")
+            blacklisted_words = await self.client.db.fetch("SELECT * FROM blacklisted_words")
             if any([i.get('string') in snipedata['content'] for i in blacklisted_words]):
                 return "This message has a blacklisted word and cannot be shown."
             if 'dv.hp' in snipedata['content'].lower() or 'dv.hideping' in snipedata['content'].lower() or 'uwu hideping' in snipedata['content'].lower() or 'uwu hp' in snipedata['content'].lower():

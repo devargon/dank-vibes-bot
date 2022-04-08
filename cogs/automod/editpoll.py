@@ -47,8 +47,8 @@ class polledition(commands.Cog):
     async def edit_polls(self):
         try:
             await self.client.wait_until_ready()
-            time_past_expiry = round(time.time()) - 20*24*60*60
-            polls = await self.client.pool_pg.fetch("SELECT * FROM polls WHERE created > $1", time_past_expiry)
+            time_past_expiry = round(time.time()) - 5*24*60*60
+            polls = await self.client.db.fetch("SELECT * FROM polls WHERE created > $1", time_past_expiry)
             for poll in polls:
                 creator_id = poll.get('creator_id')
                 guild_id = poll.get('guild_id')
@@ -66,7 +66,7 @@ class polledition(commands.Cog):
                             author_icon, author_name = creator.display_avatar.url, f"{creator}'s Poll"
                         question = poll.get('poll_name')
                         choices = poll.get('choices').split('|')
-                        polldata = await self.client.pool_pg.fetch("SELECT * FROM pollvotes WHERE poll_id = $1", poll_id)
+                        polldata = await self.client.db.fetch("SELECT * FROM pollvotes WHERE poll_id = $1", poll_id)
                         poll_dict = {}
                         for choice in choices:
                             poll_dict[choice] = 0
@@ -79,7 +79,7 @@ class polledition(commands.Cog):
                         if discord.utils.get([m[0] for m in self.client.editqueue], id=partial_message.id) is not None:
                             #print('item already in queue')
                             continue
-                        self.client.editqueue.append((partial_message, embed))
+                        self.client.add_to_edit_queue(partial_message, embed=embed)
                         #print('added item to queue, queue:', self.client.editqueue)
         except Exception as e:
             print(f"timer task caught a error: {e}")

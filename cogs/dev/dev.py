@@ -60,7 +60,7 @@ class toggledevmode(discord.ui.View):
 
         async def update_message():
             self.enabled = False if self.enabled else True
-            await self.client.pool_pg.execute("UPDATE devmode SET enabled = $1 WHERE user_id = $2", self.enabled, ctx.author.id)
+            await self.client.db.execute("UPDATE devmode SET enabled = $1 WHERE user_id = $2", self.enabled, ctx.author.id)
             self.children[0].style = discord.ButtonStyle.green if self.enabled else discord.ButtonStyle.red
             self.children[0].label = "Dev Mode is enabled" if self.enabled else "Dev mode is disabled"
             await self.response.edit(view=self)
@@ -337,10 +337,10 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
         query = self.cleanup_code(query)      
         multistatement = query.count(';') > 1
         if query.lower().startswith('select') and not multistatement:
-            strategy = self.client.pool_pg.fetch
+            strategy = self.client.db.fetch
         else:
             multistatement = True
-            strategy = self.client.pool_pg.execute
+            strategy = self.client.db.execute
         try:
             start = time.perf_counter()
             results = await strategy(query)
@@ -373,7 +373,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
                    WHERE table_name = $1
                 """
         try:
-            results = await self.client.pool_pg.fetch(query, table)
+            results = await self.client.db.fetch(query, table)
         except Exception:
             return await ctx.send(f'```py\n{traceback.format_exc()}\n```')
         headers = list(results[0].keys())
@@ -466,14 +466,14 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
             embed = discord.Embed(title="Developer Suggestion Utilities", description="`--active` - list active suggestions.\n`--open` - list active suggestions.\n`--inactive` - list closed suggestions.\n`--closed` - list closed suggestions.\n`<num>` - show a specific suggestion.\n`<member>` - list suggestions from a member.", color=discord.Color.green())
             return await ctx.send(embed=embed)
         if type(inquery) == int:
-            result = await self.client.pool_pg.fetchrow("SELECT * FROM suggestions WHERE suggestion_id = $1", inquery)
+            result = await self.client.db.fetchrow("SELECT * FROM suggestions WHERE suggestion_id = $1", inquery)
             if result is not None:
                 member = self.client.get_user(result.get('user_id'))
                 embed = discord.Embed(title=f"Suggestion {inquery}", description = result.get('suggestion'), color=self.client.embed_color)
                 embed.add_field(name="Suggested by", value=f"{member} ({member.id})" if member else result.get('user_id'), inline=True)
                 embed.add_field(name="Status", value="Closed" if result.get('finish') else "Open", inline=True)
                 if result.get('finish'):
-                    response = await self.client.pool_pg.fetchrow("SELECT * FROM suggestion_response WHERE suggestion_id = $1", inquery)
+                    response = await self.client.db.fetchrow("SELECT * FROM suggestion_response WHERE suggestion_id = $1", inquery)
                     if response is not None:
                         responder = self.client.get_user(response.get('user_id'))
                         embed.add_field(name=f"Closed by {responder} with the remarks:", value=response.get('message'), inline=False)
@@ -499,9 +499,9 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
             embed = discord.Embed(title="Developer Suggestion Utilities", description="`--active` - list active suggestions.\n`--open` - list active suggestions.\n`--inactive` - list closed suggestions.\n`--closed` - list closed suggestions.\n`<num>` - show a specific suggestion.\n`<member>` - list suggestions from a member.", color=discord.Color.green())
             return await ctx.send(embed=embed)
         if len(query) == 2:
-            result = await self.client.pool_pg.fetch(query[0], query[1])
+            result = await self.client.db.fetch(query[0], query[1])
         else:
-            result = await self.client.pool_pg.fetch(query)
+            result = await self.client.db.fetch(query)
         suggestions = []
         for suggestion in result:
             member = self.client.get_user(suggestion.get('user_id'))
@@ -561,10 +561,10 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
     @checks.base_dev()
     @commands.command(name="devmode")
     async def devmode(self, ctx):
-        result = await self.client.pool_pg.fetchrow("SELECT * FROM devmode WHERE user_id = $1", ctx.author.id)
+        result = await self.client.db.fetchrow("SELECT * FROM devmode WHERE user_id = $1", ctx.author.id)
         if result is None:
-            await self.client.pool_pg.execute("INSERT INTO devmode VALUES($1, $2)", ctx.author.id, False)
-            result = await self.client.pool_pg.fetchrow("SELECT * FROM devmode WHERE user_id = $1", ctx.author.id)
+            await self.client.db.execute("INSERT INTO devmode VALUES($1, $2)", ctx.author.id, False)
+            result = await self.client.db.fetchrow("SELECT * FROM devmode WHERE user_id = $1", ctx.author.id)
         is_enabled = result.get('enabled')
         view = toggledevmode(ctx, self.client, is_enabled)
         msg = await ctx.send("__**Toogle Developer mode**__", view=view)
@@ -620,7 +620,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
         past_30_days = round(time.time()) - 2592000
 
         if argument is None:
-            result = await self.client.pool_pg.fetch("SELECT * FROM commandlog ORDER BY time")
+            result = await self.client.db.fetch("SELECT * FROM commandlog ORDER BY time")
             if len(result) < 10:
                 resultembed = discord.Embed(title="Warning", description="Not enough command usage to produce a proper result.", color=discord.Color.red())
                 file = None
@@ -685,7 +685,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
                 resultembed.set_image(url="attachment://graph.png")
 
         elif isinstance(argument, discord.User):
-            result = await self.client.pool_pg.fetch("SELECT * FROM commandlog WHERE user_id = $1 ORDER BY time", argument.id)
+            result = await self.client.db.fetch("SELECT * FROM commandlog WHERE user_id = $1 ORDER BY time", argument.id)
             if len(result) < 10:
                 resultembed = discord.Embed(title="Warning", description="Not enough command usage to produce a proper result.", color=discord.Color.red())
                 file = None
@@ -743,7 +743,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
                 resultembed.add_field(name="Top used channels", value='\n'.join(chan_data), inline=True)
                 resultembed.set_image(url="attachment://graph.png")
         elif isinstance(argument, discord.TextChannel):
-            result = await self.client.pool_pg.fetch("SELECT * FROM commandlog WHERE channel_id = $1 ORDER BY time", argument.id)
+            result = await self.client.db.fetch("SELECT * FROM commandlog WHERE channel_id = $1 ORDER BY time", argument.id)
             if len(result) < 10:
                 resultembed = discord.Embed(title="Warning", description="Not enough command usage to produce a proper result.", color=discord.Color.red())
                 file = None
@@ -805,7 +805,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
                 file = None
             else:
                 full_cmd = get_command_name(cmd)
-                result = await self.client.pool_pg.fetch("SELECT * FROM commandlog WHERE command = $1 ORDER BY time", full_cmd)
+                result = await self.client.db.fetch("SELECT * FROM commandlog WHERE command = $1 ORDER BY time", full_cmd)
                 if len(result) < 10:
                     resultembed = discord.Embed(title="Warning", description="Not enough command usage to produce a proper result.", color=discord.Color.red())
                     file = None

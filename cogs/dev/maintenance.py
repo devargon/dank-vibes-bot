@@ -54,7 +54,7 @@ class Maintenance(commands.Cog):
                 continue
             values.append((cog.qualified_name, True))
             self.client.maintenance[cog.qualified_name] = True
-        await self.client.pool_pg.executemany("UPDATE maintenance SET enabled=$2 WHERE cog_name=$1", values)
+        await self.client.db.executemany("UPDATE maintenance SET enabled=$2 WHERE cog_name=$1", values)
         embed = self.get_maintenance_embed()
         await ctx.send(embed=embed)
         
@@ -83,7 +83,7 @@ class Maintenance(commands.Cog):
                 continue
             values.append((cog.qualified_name, False))
             self.client.maintenance[cog.qualified_name] = False
-        await self.client.pool_pg.executemany("UPDATE maintenance SET enabled=$2 WHERE cog_name=$1", values)
+        await self.client.db.executemany("UPDATE maintenance SET enabled=$2 WHERE cog_name=$1", values)
         embed = self.get_maintenance_embed()
         await ctx.send(embed=embed)
     
@@ -106,7 +106,7 @@ class Maintenance(commands.Cog):
             for name in sorted(list(self.client.cogs.keys())):
                 self.client.maintenance_message[name] = message
                 values.append((name, message))
-            await self.client.pool_pg.executemany(query, values)
+            await self.client.db.executemany(query, values)
         else:
             if not (cog := self.client.get_cog(cog_name)):
                 return await ctx.send(f"{cog_name} is not a valid extension.")
@@ -116,7 +116,7 @@ class Maintenance(commands.Cog):
                 embed.add_field(name=f"{self.get_emoji(enabled)} {cog.qualified_name.capitalize()}", value=self.client.maintenance_message.get(cog.qualified_name), inline=True)
                 return await ctx.send(embed=embed)
             value = (cog.qualified_name, message)
-            await self.client.pool_pg.execute(query, *value)
+            await self.client.db.execute(query, *value)
             self.client.maintenance_message[cog.qualified_name] = message
         return await ctx.checkmark()
 
@@ -124,6 +124,6 @@ class Maintenance(commands.Cog):
         query = "INSERT INTO maintenance VALUES ($1, $2, $3) ON CONFLICT DO NOTHING"
         message = "The bot is down for maintenance. Please check back later."
         values = (cog_name, message, False)
-        await self.client.pool_pg.execute(query, *values)
+        await self.client.db.execute(query, *values)
         self.client.maintenance[cog_name] = False
         self.client.maintenance_message[cog_name] = message

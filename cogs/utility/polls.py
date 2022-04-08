@@ -19,15 +19,15 @@ class PollButtons(discord.ui.View):
 
         async def manage_callback(button: discord.ui.Button, interaction: discord.Interaction):
             await interaction.response.send_message("<a:DVB_typing:955345484648710154> **Processing your vote...**", ephemeral=True)
-            poll_data = await self.client.pool_pg.fetchrow("SELECT poll_name, poll_id, created FROM polls WHERE message_id = $1", interaction.message.id)
+            poll_data = await self.client.db.fetchrow("SELECT poll_name, poll_id, created FROM polls WHERE message_id = $1", interaction.message.id)
             if poll_data is None:
                 return await interaction.edit_original_message(content="There is no poll associated with this message.")
             if poll_data.get('created') > round(time.time())+30*24*60*60:
                 return await interaction.edit_original_message(content="This poll has been created more than 30 days ago and is no longer valid.")
             poll_id = poll_data.get('poll_id')
             option = button.label
-            await self.client.pool_pg.execute("DELETE FROM pollvotes WHERE user_id = $1 AND poll_id = $2", interaction.user.id, poll_id)
-            await self.client.pool_pg.execute("INSERT INTO pollvotes (poll_id, user_id, choice) VALUES ($1, $2, $3)", poll_id, interaction.user.id, option)
+            await self.client.db.execute("DELETE FROM pollvotes WHERE user_id = $1 AND poll_id = $2", interaction.user.id, poll_id)
+            await self.client.db.execute("INSERT INTO pollvotes (poll_id, user_id, choice) VALUES ($1, $2, $3)", poll_id, interaction.user.id, option)
             await interaction.edit_original_message(content=f"For the poll **{poll_data.get('poll_name')}**, you voted: **{option}**\n\nYour vote has been recorded!")
 
         class pollbutton(discord.ui.Button):
@@ -70,12 +70,12 @@ class polls(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         if not self.views_added:
-            existing_requests = await self.client.pool_pg.fetch("SELECT messageid FROM nicknames")
+            existing_requests = await self.client.db.fetch("SELECT messageid FROM nicknames")
             if len(existing_requests) > 0:
                 for entry in existing_requests:
                     if entry.get('messageid'):
                         self.client.add_view(NicknamePersistentView(self.client), message_id=entry.get('messageid'))
-            all_polls = await self.client.pool_pg.fetch("SELECT * FROM polls")
+            all_polls = await self.client.db.fetch("SELECT * FROM polls")
             for poll in all_polls:
                 poll_m_id = poll.get('message_id')
                 poll_choices = poll.get('choices').split('|')
@@ -127,6 +127,6 @@ class polls(commands.Cog):
         poll_view = PollButtons(choices, self.client, ctx.message.id)
         msg = await ctx.send(embed=embed, view=poll_view)
         poll_view.response = msg
-        await self.client.pool_pg.execute("INSERT INTO polls(guild_id, channel_id, invoked_message_id, message_id, creator_id, poll_name, choices, created) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", ctx.guild.id, ctx.channel.id, ctx.message.id, poll_view.response.id, ctx.author.id, question, "|".join(choices), timeadded)
+        await self.client.db.execute("INSERT INTO polls(guild_id, channel_id, invoked_message_id, message_id, creator_id, poll_name, choices, created) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", ctx.guild.id, ctx.channel.id, ctx.message.id, poll_view.response.id, ctx.author.id, question, "|".join(choices), timeadded)
         await poll_view.wait()
 

@@ -17,12 +17,12 @@ class infection(commands.Cog):
     @tasks.loop(seconds=60.0)
     async def check_infection(self):
         await self.client.wait_until_ready()
-        infections = await self.client.pool_pg.fetch("SELECT member_id FROM infections")
+        infections = await self.client.db.fetch("SELECT member_id FROM infections")
         self.infected = [i.get('member_id') for i in infections]
 
     @commands.Cog.listener()
     async def on_ready(self):
-        infections = await self.client.pool_pg.fetch("SELECT member_id FROM infections")
+        infections = await self.client.db.fetch("SELECT member_id FROM infections")
         self.infected = [i.get('member_id') for i in infections]
 
     @commands.Cog.listener()
@@ -93,7 +93,7 @@ class infection(commands.Cog):
                 else:
                     self.infected.append(member.id)
                     infected_thisSession.append(member.id)
-                    await self.client.pool_pg.execute("INSERT INTO infections (member_id, guild_id, channel_id, message_id, infector, timeinfected) VALUES ($1, $2, $3, $4, $5, $6)", member.id, message.guild.id, message.channel.id, message.id, message.author.id, round(time()))
+                    await self.client.db.execute("INSERT INTO infections (member_id, guild_id, channel_id, message_id, infector, timeinfected) VALUES ($1, $2, $3, $4, $5, $6)", member.id, message.guild.id, message.channel.id, message.id, message.author.id, round(time()))
             if len(infected_thisSession) > 0:
                 with contextlib.suppress(Exception):
                     await message.add_reaction('😷')
@@ -109,7 +109,7 @@ class infection(commands.Cog):
                 return
             if f"[AFK] {new_nickname}" == old_nickname:
                 return
-            result = await self.client.pool_pg.fetchrow(
+            result = await self.client.db.fetchrow(
                 "SELECT * FROM freezenick WHERE user_id = $1 and guild_id = $2", member_after.id,
                 member_after.guild.id)
             if result is not None:
@@ -121,7 +121,7 @@ class infection(commands.Cog):
                     return
                 if result.get('old_nickname') == old_nickname:
                     return
-            await self.client.pool_pg.execute("INSERT INTO nickname_changes VALUES($1, $2, $3, $4)",
+            await self.client.db.execute("INSERT INTO nickname_changes VALUES($1, $2, $3, $4)",
                                               member_before.guild.id, member_before.id, new_nickname, round(time()))
 
     def cog_unload(self) -> None:

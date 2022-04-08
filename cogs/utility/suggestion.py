@@ -50,7 +50,7 @@ class Suggestion(commands.Cog):
                 await msg.edit(embed=embed)
                 query = "INSERT INTO suggestions VALUES (DEFAULT, $1, False, $2, $3) RETURNING suggestion_id"
                 values = (ctx.author.id, response.id, message)
-                suggestion_id = await self.client.pool_pg.fetchval(query, *values, column='suggestion_id')
+                suggestion_id = await self.client.db.fetchval(query, *values, column='suggestion_id')
                 embed.title += f" (ID: {suggestion_id})"
                 await response.edit(embed=embed)
                 channel = self.client.get_guild(871734809154707467).get_channel(876346196564803614)
@@ -63,7 +63,7 @@ class Suggestion(commands.Cog):
                 await ctx.checkmark()
                 query = "INSERT INTO suggestion_response VALUES ($1, $2, $3, $4, $5)"
                 values = (suggestion_id, ctx.author.id, response.id, msg.id, message)
-                await self.client.pool_pg.execute(query, *values)
+                await self.client.db.execute(query, *values)
 
     @checks.dev()
     @suggest.command(name='close', aliases=['end'], usage='<suggestion_id> <message>', hidden=True)
@@ -78,14 +78,14 @@ class Suggestion(commands.Cog):
         if message is None:
             return await ctx.send("Hey, you need to add a message!")
         suggestion_id = int(suggestion_id)
-        suggestion = await self.client.pool_pg.fetchrow("SELECT * FROM suggestions WHERE suggestion_id=$1", suggestion_id)
+        suggestion = await self.client.db.fetchrow("SELECT * FROM suggestions WHERE suggestion_id=$1", suggestion_id)
         if not suggestion:
             return await ctx.send("I couldn't find a suggestion with that ID.")
         if suggestion.get('finish'):
             return await ctx.send("That suggestion is already closed.")
         channel = self.client.get_guild(871734809154707467).get_channel(876346196564803614)
-        await self.client.pool_pg.execute("UPDATE suggestions SET finish=True WHERE suggestion_id=$1", suggestion_id)
-        stats = await self.client.pool_pg.fetchrow("SELECT * FROM suggestion_response WHERE suggestion_id=$1", suggestion_id)
+        await self.client.db.execute("UPDATE suggestions SET finish=True WHERE suggestion_id=$1", suggestion_id)
+        stats = await self.client.db.fetchrow("SELECT * FROM suggestion_response WHERE suggestion_id=$1", suggestion_id)
         dm = await self.get_dm(suggestion.get('user_id'))
         dm_msg = dm.get_partial_message(suggestion.get('response_id'))
         dmembed = discord.Embed(color=0xffcccb,
@@ -115,14 +115,14 @@ class Suggestion(commands.Cog):
         if message is None:
             return await ctx.send("Hey, you need to add a message!")
         suggestion_id = int(suggestion_id)
-        suggestion = await self.client.pool_pg.fetchrow("SELECT * FROM suggestions WHERE suggestion_id=$1", suggestion_id)
+        suggestion = await self.client.db.fetchrow("SELECT * FROM suggestions WHERE suggestion_id=$1", suggestion_id)
         if not suggestion:
             return await ctx.send("I couldn't find a suggestion with that ID.")
         if suggestion.get('finish'):
             return await ctx.send("That suggestion is already closed.")
         if not await ctx.confirmation(f"Are you sure you wanna send this message to {self.client.get_user(suggestion.get('user_id'))}?", cancel_message="Aborting...", delete_delay=5):
             return
-        stats = await self.client.pool_pg.fetchrow("SELECT * FROM suggestion_response WHERE suggestion_id=$1", suggestion_id)
+        stats = await self.client.db.fetchrow("SELECT * FROM suggestion_response WHERE suggestion_id=$1", suggestion_id)
         dm = await self.get_dm(stats.get('user_id'))
         msg = dm.get_partial_message(stats.get('response_id'))
         embed = discord.Embed(color=0xffcccb,
@@ -132,7 +132,7 @@ class Suggestion(commands.Cog):
         response = await msg.reply(embed=embed)
         query = "INSERT INTO suggestion_response VALUES ($1, $2, $3, $4, $5)"
         values = (suggestion_id, stats.get('user_id'), response.id, stats.get('message_id'), message)
-        await self.client.pool_pg.execute(query, *values)
+        await self.client.db.execute(query, *values)
         await ctx.checkmark()
     
     async def get_dm(self, user_id):

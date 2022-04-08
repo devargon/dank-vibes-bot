@@ -314,7 +314,7 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
             return await ctx.send("You need to tell me what nickname you want to use.")
         if len(nickname) > 32:
             return await ctx.send("That nickname is too long, just like my-", delete_after=3.0)
-        existing = await self.client.pool_pg.fetchrow("SELECT * FROM freezenick WHERE user_id = $1 and guild_id = $2", member.id, ctx.guild.id)
+        existing = await self.client.db.fetchrow("SELECT * FROM freezenick WHERE user_id = $1 and guild_id = $2", member.id, ctx.guild.id)
         if existing is not None:
             return await ctx.send("A freezenick is already implemented for this user; the user most likely lost a nickbet.")
         try:
@@ -324,7 +324,7 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
             return await ctx.send(f"I encountered an error while trying to freeze {member}'s nickname. It could be due to role hierachy or missing permissions.")
         else:
             timetounfreeze = 9223372036854775807
-            await self.client.pool_pg.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", member.id, ctx.guild.id, nickname, old_nick, timetounfreeze, f"Invoked via freezenick command", ctx.author.id)
+            await self.client.db.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", member.id, ctx.guild.id, nickname, old_nick, timetounfreeze, f"Invoked via freezenick command", ctx.author.id)
             return await ctx.send(f"{member.mention}'s nickname is now frozen to `{nickname}`.")
 
     @checks.has_permissions_or_role(manage_roles=True)
@@ -334,7 +334,7 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
         Lists the active blacklists.
         """
         title = "Active frozen nicknames"
-        result = await self.client.pool_pg.fetch("SELECT * FROM freezenick WHERE guild_id = $1", ctx.guild.id)
+        result = await self.client.db.fetch("SELECT * FROM freezenick WHERE guild_id = $1", ctx.guild.id)
         frozennicknames = []
         for entry in result:
             member = self.client.get_user(entry.get('user_id'))
@@ -363,7 +363,7 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
         """
         if member is None:
             return await ctx.send("You need to tell me who you want to freezenick.")
-        existing = await self.client.pool_pg.fetchrow("SELECT * FROM freezenick WHERE user_id = $1 and guild_id = $2",
+        existing = await self.client.db.fetchrow("SELECT * FROM freezenick WHERE user_id = $1 and guild_id = $2",
                                                       member.id, ctx.guild.id)
         if existing is None:
             return await ctx.send(f"{member}'s nickname is currently not frozen.")
@@ -377,7 +377,7 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
         except:
             return await ctx.send(f"I encountered an error while trying to unfreeze {member}'s nickname. It could be due to role hierachy or missing permissions.")
         else:
-            await self.client.pool_pg.execute("DELETE FROM freezenick WHERE id = $1", existing.get('id'))
+            await self.client.db.execute("DELETE FROM freezenick WHERE id = $1", existing.get('id'))
             return await ctx.send(f"{member.mention}'s nickname is now unfrozen.")
 
     class BetterRoles(commands.Converter):
@@ -428,12 +428,12 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
         except discord.Forbidden:
             return await ctx.send(f"I do not have permission to put {member} on a timeout.")
         else:
-            case_id = await self.client.pool_pg.fetchval("INSERT INTO modlog (guild_id, moderator_id, offender_id, action, reason, start_time, duration, end_time) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING case_id", ctx.guild.id, ctx.author.id, member.id, "timeout", reason, now, duration, ending, column='case_id')
+            case_id = await self.client.db.fetchval("INSERT INTO modlog (guild_id, moderator_id, offender_id, action, reason, start_time, duration, end_time) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING case_id", ctx.guild.id, ctx.author.id, member.id, "timeout", reason, now, duration, ending, column='case_id')
             msg = f"**{ctx.author}** has put **{member}** on a timeout for {humanize_timedelta(seconds=duration)}, until <t:{ending}>."
             if reason is not None:
                 msg += f"\nReason: {reason}"
             await ctx.send(msg)
-            if await self.client.pool_pg.fetchval("SELECT enabled FROM serverconfig WHERE guild_id = $1 AND settings = $2", ctx.guild.id, 'timeoutlog') is True:
+            if await self.client.db.fetchval("SELECT enabled FROM serverconfig WHERE guild_id = $1 AND settings = $2", ctx.guild.id, 'timeoutlog') is True:
                 offender = member
                 moderator = ctx.author
                 reason = reason or "NA"
@@ -477,7 +477,7 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
             await ctx.send(f"An error occured while trying to ban the user.\n{e}")
         else:
             now = round(time.time())
-            await self.client.pool_pg.execute("INSERT INTO modlog (guild_id, moderator_id, offender_id, action, reason, start_time) VALUES ($1, $2, $3, $4, $5, $6)", ctx.guild.id, ctx.author.id, member.id, "ban", reason, now)
+            await self.client.db.execute("INSERT INTO modlog (guild_id, moderator_id, offender_id, action, reason, start_time) VALUES ($1, $2, $3, $4, $5, $6)", ctx.guild.id, ctx.author.id, member.id, "ban", reason, now)
             msg = f"**{ctx.author}** has banned **{member}**."
             if reason is not None:
                 msg += f"\nReason: {reason}"
@@ -513,7 +513,7 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
         """
         if user is None:
             return await ctx.send("Whose modlog are you checking??")
-        modlog = await self.client.pool_pg.fetch("SELECT * FROM modlog WHERE offender_id = $1 ORDER BY case_id DESC", user.id)
+        modlog = await self.client.db.fetch("SELECT * FROM modlog WHERE offender_id = $1 ORDER BY case_id DESC", user.id)
         if len(modlog) < 1:
             embed = discord.Embed(title="Mod Log", description="Nothing to see here, move along 👋").set_author(icon_url=user.display_avatar.url, name=f"{user} ({user.id}")
             return await ctx.send(embed=embed)
@@ -613,7 +613,7 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
         """
         if member is None:
             return await ctx.send("You need to specify a user.")
-        names = await self.client.pool_pg.fetch("SELECT * FROM name_changes WHERE user_id = $1", member.id)
+        names = await self.client.db.fetch("SELECT * FROM name_changes WHERE user_id = $1", member.id)
         if len(names) == 0:
             return await ctx.send(f"There has been no name changes recorded for {member}.\nName changes are only recorded starting from 9 Jan 2022.")
         buffer = []
@@ -632,7 +632,7 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
         """
         if member is None:
             return await ctx.send("You need to specify a user.")
-        nicknames = await self.client.pool_pg.fetch("SELECT * FROM nickname_changes WHERE member_id = $1", member.id)
+        nicknames = await self.client.db.fetch("SELECT * FROM nickname_changes WHERE member_id = $1", member.id)
         if len(nicknames) == 0:
             return await ctx.send(f"There has been no nickname changes recorded for {member}.\nNickname changes are only recorded starting from 9 Jan 2022.")
         buffer = []

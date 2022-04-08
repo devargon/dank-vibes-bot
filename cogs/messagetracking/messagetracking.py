@@ -25,14 +25,14 @@ class MessageTracking(commands.Cog, name='MessageTracking'):
         if len(str(message.content)) == 1:
             return
         self.queue.append(message.author)
-        result = await self.client.pool_pg.fetchrow("SELECT * FROM messagelog WHERE user_id = $1", message.author.id)
+        result = await self.client.db.fetchrow("SELECT * FROM messagelog WHERE user_id = $1", message.author.id)
         if result is None:
-            await self.client.pool_pg.execute("INSERT INTO messagelog VALUES($1, $2)", message.author.id, 1)
+            await self.client.db.execute("INSERT INTO messagelog VALUES($1, $2)", message.author.id, 1)
             existing_count = 1
         else:
             existing_count = result.get('messagecount')
-            await self.client.pool_pg.execute("UPDATE messagelog SET messagecount = $1 WHERE user_id = $2", existing_count+1, message.author.id)
-        milestones = await self.client.pool_pg.fetch("SELECT * FROM messagemilestones")
+            await self.client.db.execute("UPDATE messagelog SET messagecount = $1 WHERE user_id = $2", existing_count+1, message.author.id)
+        milestones = await self.client.db.fetch("SELECT * FROM messagemilestones")
         if len(milestones) != 0:  # there are settings for milestones
             rolesummary = ""
             for milestone in milestones:

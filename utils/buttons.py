@@ -13,7 +13,7 @@ from utils.menus import ListPageInteractionBase, MenuViewInteractionBase
 from utils.helper import BaseEmbed
 
 class confirm(discord.ui.View):
-    def __init__(self, ctx: DVVTcontext, client, timeout):
+    def __init__(self, ctx: Union[DVVTcontext, discord.ApplicationContext], client, timeout):
         self.timeout = timeout
         self.context = ctx
         self.response = None
@@ -28,7 +28,10 @@ class confirm(discord.ui.View):
             if b != button:
                 b.style = discord.ButtonStyle.grey
             b.disabled = True
-        await self.response.edit(view=self)
+        if isinstance(self.response, discord.Message):
+            await self.response.edit(view=self)
+        elif isinstance(self.response, discord.Interaction):
+            await self.response.edit_original_message(view=self)
         self.stop()
 
     @discord.ui.button(label="No", style=discord.ButtonStyle.red)
@@ -38,7 +41,10 @@ class confirm(discord.ui.View):
             if b != button:
                 b.style = discord.ButtonStyle.grey
             b.disabled = True
-        await self.response.edit(view=self)
+        if isinstance(self.response, discord.Message):
+            await self.response.edit(view=self)
+        elif isinstance(self.response, discord.Interaction):
+            await self.response.edit_original_message(view=self)
         self.stop()
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
@@ -53,7 +59,10 @@ class confirm(discord.ui.View):
         self.returning_value = None
         for b in self.children:
             b.disabled = True
-        await self.response.edit(view=self)
+        if isinstance(self.response, discord.Message):
+            await self.response.edit(view=self)
+        elif isinstance(self.response, discord.Interaction):
+            await self.response.edit_original_message(view=self)
 
 
 

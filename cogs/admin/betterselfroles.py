@@ -351,7 +351,7 @@ class BetterSelfroles(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        selfrolemessages = await self.client.pool_pg.fetchrow("SELECT age, gender, location, minigames, event_pings, dank_pings, server_pings, bot_roles, random_color, colors, specialcolors, boostping, vipheist FROM selfrolemessages WHERE guild_id = $1", 595457764935991326)
+        selfrolemessages = await self.client.db.fetchrow("SELECT age, gender, location, minigames, event_pings, dank_pings, server_pings, bot_roles, random_color, colors, specialcolors, boostping, vipheist FROM selfrolemessages WHERE guild_id = $1", 595457764935991326)
         categories = ['age', 'gender', 'location', 'minigames', 'event_pings', 'dank_pings', 'server_pings', 'bot_roles', 'random_color', 'colors', 'specialcolors', 'boostping', 'vipheist']
         if selfrolemessages == None:
             return
@@ -393,7 +393,7 @@ class BetterSelfroles(commands.Cog):
         channel = ctx.guild.get_channel(782586550486695936)
         if channel is None:
             return await ctx.send("There is no such channel with the ID 782586550486695936.")
-        selfrolemessages = await self.client.pool_pg.fetchrow(
+        selfrolemessages = await self.client.db.fetchrow(
             "SELECT age, gender, location, minigames, event_pings, dank_pings, server_pings, bot_roles, random_color FROM selfrolemessages WHERE guild_id = $1",
             595457764935991326)
         categories = ['age', 'gender', 'location', 'minigames', 'event_pings', 'dank_pings', 'server_pings',
@@ -453,9 +453,9 @@ class BetterSelfroles(commands.Cog):
             msgids.append(msg.id)
         if selfrolemessages is not None:
             msgids.append(ctx.guild.id)
-            await self.client.pool_pg.execute("UPDATE selfrolemessages SET guild_id = $1, age = $2, gender = $3, location = $4, minigames = $5, event_pings = $6, dank_pings = $7, server_pings = $8, bot_roles = $9, random_color = $10 WHERE guild_id = $11", *msgids)
+            await self.client.db.execute("UPDATE selfrolemessages SET guild_id = $1, age = $2, gender = $3, location = $4, minigames = $5, event_pings = $6, dank_pings = $7, server_pings = $8, bot_roles = $9, random_color = $10 WHERE guild_id = $11", *msgids)
         else:
-            await self.client.pool_pg.execute("INSERT INTO selfrolemessages VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)", *msgids)
+            await self.client.db.execute("INSERT INTO selfrolemessages VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)", *msgids)
         await ctx.send("Done!")
 
     @checks.has_permissions_or_role(manage_roles=True)
@@ -464,7 +464,7 @@ class BetterSelfroles(commands.Cog):
         channel = ctx.guild.get_channel(641497978112180235)
         if channel is None:
             return await ctx.send("There is no such channel with the ID 641497978112180235.")
-        selfrolemessages = await self.client.pool_pg.fetchrow(
+        selfrolemessages = await self.client.db.fetchrow(
             "SELECT colors, vipcolors, boostgaw, vipheistping FROM viprolemessages WHERE guild_id = $1",
             595457764935991326)
         if selfrolemessages is not None:
@@ -500,9 +500,9 @@ class BetterSelfroles(commands.Cog):
             msgids.append(msg.id)
         if selfrolemessages is not None:
             msgids.append(ctx.guild.id)
-            await self.client.pool_pg.execute(
+            await self.client.db.execute(
                 "UPDATE selfrolemessages SET guild_id = $1, colors = $2, specialcolors = $3, boostping = $4, vipheist = $5 WHERE guild_id = $6", *msgids)
         else:
-            await self.client.pool_pg.execute(
+            await self.client.db.execute(
                 "INSERT INTO selfrolemessages(guild_id, colors, specialcolors, boostping, vipheist) VALUES($1, $2, $3, $4, $5)", *msgids)
         await ctx.send("Done!")

@@ -1,5 +1,7 @@
 import os
 import time
+from typing import Optional
+
 import discord
 import asyncpg
 import datetime
@@ -60,7 +62,7 @@ class dvvt(commands.Bot):
         self.prefixes = {}
         self.uptime = None
         self.embed_color = 0x57F0F0
-        self.pool_pg = None
+        self.db = None
         self.maintenance = {}
         self.maintenance_message = {}
         self.available_extensions = AVAILABLE_EXTENSIONS
@@ -79,21 +81,41 @@ class dvvt(commands.Bot):
             #print(self.editqueue)
             tup = self.editqueue.pop(0)
             m: discord.PartialMessage = tup[0]
-            editable: discord.Embed = tup[1]
+            content: str = tup[1]
+            embed: discord.Embed = tup[2]
+            view: discord.ui.View = tup[3]
             #print(editable)
             if m.id in self.deleted_edit_messages:
                 return None
             try:
-                await m.edit(embed=editable)
-                #await self.get_channel(871737314831908974).send(embed=editable.embed)
+                print(tup)
+                if type(content) is str or type(content) is None:
+                    if type(embed) == discord.Embed or type(embed) is None:
+                        if type(view) == discord.ui.View or type(view) is None:
+                            await m.edit(content=content, embed=embed, view=view)
+                        else:
+                            await m.edit(content=content, embed=embed)
+                    else:
+                        if type(view) == discord.ui.View or type(view) is None:
+                            await m.edit(content=content, view=view)
+                        else:
+                            await m.edit(content=content)
+                else:
+                    if type(embed) == discord.Embed or type(embed) is None:
+                        if type(view) == discord.ui.View or type(view) is None:
+                            await m.edit(embed=embed, view=view)
+                        else:
+                            await m.edit(embed=embed)
+                    else:
+                        if type(view) == discord.ui.View or type(view) is None:
+                            await m.edit(view=view)
             except discord.NotFound:
                 self.deleted_edit_messages.append(m.id)
             except Exception as e:
                 print(e)
-
         else:
             pass
-            #print('nothing in queue')
+            # nothing in queue
 
 
 
@@ -104,9 +126,9 @@ class dvvt(commands.Bot):
         blacklist_dict = dict(self.blacklist) # copy the dict so that we can iterate over it and not result in runtime error due to dictionary edits
         for user in blacklist_dict:
             if time.time() >= self.blacklist[user]:
-                blacklist = await self.pool_pg.fetchrow(
+                blacklist = await self.db.fetchrow(
                     "SELECT * FROM blacklist WHERE user_id=$1 AND time_until = $2 AND blacklist_active = $3", user, self.blacklist[user], True)
-                await self.pool_pg.execute(
+                await self.db.execute(
                     "UPDATE blacklist SET blacklist_active = $1 WHERE user_id = $2 and incident_id = $3", False, user, blacklist.get('incident_id'))
                 embed = discord.Embed(title=f"Bot Unblacklist | Case {blacklist.get('incident_id')}", description=f"**Reason**: Blacklist over, automatically rescinded\n**Responsible Moderator**: {self.user.name} ({self.user.id})", color=discord.Color.green())
                 user = await self.fetch_user(user)
@@ -120,6 +142,27 @@ class dvvt(commands.Bot):
                 await self.get_channel(906433823594668052).send(embed=embed)
         await self.get_all_blacklisted_users()
 
+    def add_to_edit_queue(self, message: discord.PartialMessage = discord.Embed.Empty, content: str = discord.Embed.Empty, embed: discord.Embed = discord.Embed.Empty, view: discord.ui.View = discord.Embed.Empty, index: Optional[int] = None):
+        tup = (message, content, embed, view)
+        if index is None:
+            self.editqueue.append(tup)
+        else:
+            self.editqueue.insert(index, tup)
+
+    def remove_queued_edit(self, message_id: int):
+        parsed_fully = False
+        while parsed_fully is not True:
+            for i, tup in enumerate(self.editqueue):
+                if tup[0].id == message_id:
+                    del self.editqueue[i]
+                    break
+                else:
+                    continue
+            parsed_fully = True
+        return
+
+
+
     @update_blacklist.before_loop
     async def before_update_blacklist(self):
         await self.wait_until_ready()
@@ -129,7 +172,7 @@ class dvvt(commands.Bot):
         return context
 
     async def load_maintenance_data(self):
-        results = await self.pool_pg.fetch("SELECT * FROM maintenance")
+        results = await self.db.fetch("SELECT * FROM maintenance")
         for result in results:
             self.maintenance.setdefault(result.get('cog_name'), result.get('enabled'))
             self.maintenance_message.setdefault(result.get('cog_name'), result.get('message'))
@@ -140,8 +183,8 @@ class dvvt(commands.Bot):
             if ctx.author.id in self.blacklist:
                 if ctx.author.id not in [650647680837484556, 515725341910892555, 321892489470410763]:
                     if time.time() >= self.blacklist[ctx.author.id]:
-                        blacklist = await self.pool_pg.fetchrow("SELECT * FROM blacklist WHERE user_id=$1 AND time_until = $2 AND blacklist_active = $3", ctx.author.id, self.blacklist[ctx.author.id], True)
-                        await self.pool_pg.execute("UPDATE blacklist SET blacklist_active = $1 WHERE user_id = $2 and incident_id = $3", False, message.author.id, blacklist.get('incident_id'))
+                        blacklist = await self.db.fetchrow("SELECT * FROM blacklist WHERE user_id=$1 AND time_until = $2 AND blacklist_active = $3", ctx.author.id, self.blacklist[ctx.author.id], True)
+                        await self.db.execute("UPDATE blacklist SET blacklist_active = $1 WHERE user_id = $2 and incident_id = $3", False, message.author.id, blacklist.get('incident_id'))
                         embed = discord.Embed(title=f"Bot Unblacklist | Case {blacklist.get('incident_id')}", description=f"**Reason**: Blacklist over, automatically rescinded\n**Responsible Moderator**: {ctx.me} ({ctx.me.id})", color=discord.Color.green())
                         embed.set_author(name=f"{message.author} ({message.author.id})", icon_url=message.author.display_avatar.url)
                         await self.get_channel(906433823594668052).send(embed=embed)
@@ -173,7 +216,7 @@ class dvvt(commands.Bot):
                       'ignoredchristmaschan', 'perkremoval', 'commandlog', 'timedunlock', 'nickname_changes',
                       'name_changes', 'timers', 'infections', 'polls', 'pollvotes', 'highlight', 'highlight_ignores',
                       'reminders', 'userconfig', 'modlog']
-        tables = await self.pool_pg.fetch("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';")
+        tables = await self.db.fetch("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';")
         tables = [i.get('table_name') for i in tables]
         if tables is None:
             pass
@@ -186,7 +229,7 @@ class dvvt(commands.Bot):
                 pass
             else:
                 print("Some databases do not exist, creating them now...")
-                await self.pool_pg.execute("""CREATE TABLE IF NOT EXISTS autoreactions(guild_id bigint, trigger text, response text);
+                await self.db.execute("""CREATE TABLE IF NOT EXISTS autoreactions(guild_id bigint, trigger text, response text);
 CREATE TABLE IF NOT EXISTS autorole(member_id bigint, guild_id bigint, role_id bigint, time bigint);
 CREATE TABLE IF NOT EXISTS blacklist(incident_id serial, user_id bigint, moderator_id bigint, blacklist_active boolean, time_until bigint, reason text);
 CREATE TABLE IF NOT EXISTS blacklisted_words(string text);
@@ -261,7 +304,7 @@ CREATE SCHEMA IF NOT EXISTS donations""")
         return self.get_guild(871734809154707467).get_channel(871737028105109574)
 
     async def on_guild_join(self, guild):
-        await self.pool_pg.execute('INSERT INTO prefixes VALUES ($1, $2) ON CONFLICT DO UPDATE SET prefix=$2', guild.id, "dv.")
+        await self.db.execute('INSERT INTO prefixes VALUES ($1, $2) ON CONFLICT DO UPDATE SET prefix=$2', guild.id, "dv.")
 
     async def get_prefix(self, message):
         if message.guild is None:
@@ -269,9 +312,9 @@ CREATE SCHEMA IF NOT EXISTS donations""")
         guild_id = message.guild.id
         if not (prefix := self.prefixes.get(guild_id)):
             query = "SELECT prefix FROM prefixes WHERE guild_id=$1"
-            data = await self.pool_pg.fetchrow(query, guild_id)
+            data = await self.db.fetchrow(query, guild_id)
             if data is None:
-                await self.pool_pg.execute("INSERT INTO prefixes VALUES ($1, $2)", guild_id, 'dv.')
+                await self.db.execute("INSERT INTO prefixes VALUES ($1, $2)", guild_id, 'dv.')
                 data = {}
             prefix = self.prefixes.setdefault(guild_id, data.get("prefix") or '.')
         if message.content.lower().startswith(prefix):
@@ -279,11 +322,11 @@ CREATE SCHEMA IF NOT EXISTS donations""")
         return commands.when_mentioned_or(prefix)(self, message)
 
     async def set_prefix(self, guild, prefix):
-        await self.pool_pg.execute('UPDATE prefixes SET prefix=$1 WHERE guild_id=$2', prefix, guild.id)
+        await self.db.execute('UPDATE prefixes SET prefix=$1 WHERE guild_id=$2', prefix, guild.id)
         self.prefixes[guild.id] = prefix
 
     async def check_blacklisted_content(self, string):
-        blacklisted_words = await self.pool_pg.fetch("SELECT * FROM blacklisted_words")
+        blacklisted_words = await self.db.fetch("SELECT * FROM blacklisted_words")
         string = string.lower()
         for word in blacklisted_words:
             if word.get('string') in string.lower():
@@ -292,7 +335,7 @@ CREATE SCHEMA IF NOT EXISTS donations""")
 
     async def get_all_blacklisted_users(self):
         blacklist_dict = {}
-        blacklist = await self.pool_pg.fetch("SELECT * FROM blacklist WHERE blacklist_active = $1", True)
+        blacklist = await self.db.fetch("SELECT * FROM blacklist WHERE blacklist_active = $1", True)
         for entry in blacklist:
             user_id = entry.get('user_id')
             time_until = entry.get('time_until')
@@ -303,7 +346,7 @@ CREATE SCHEMA IF NOT EXISTS donations""")
         self.blacklist = blacklist_dict
 
     async def check_blacklisted_user(self, member):
-        blacklisted_users = await self.pool_pg.fetchrow("SELECT * FROM blacklist WHERE user_id = $1 and blacklist_active = $2", member.id, True)
+        blacklisted_users = await self.db.fetchrow("SELECT * FROM blacklist WHERE user_id = $1 and blacklist_active = $2", member.id, True)
         if blacklisted_users:
             return True
         return False
@@ -332,7 +375,7 @@ CREATE SCHEMA IF NOT EXISTS donations""")
             print_exception("Could not connect to databases:", e)
         else:
             self.uptime = discord.utils.utcnow()
-            self.pool_pg = pool_pg
+            self.db = pool_pg
             print(f"Connected to the database ({round(time.time() - start, 2)})s")
             self.loop.create_task(self.after_ready())
             self.loop.create_task(self.load_maintenance_data())

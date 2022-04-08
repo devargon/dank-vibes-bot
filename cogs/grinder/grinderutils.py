@@ -55,7 +55,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         """
         Gets the donation count for a user in a category.
         """
-        result = await self.client.pool_pg.fetchval("SELECT value FROM donations.{} WHERE user_id = $1".format(f"guild{member.guild.id}_{category.lower()}"), member.id)
+        result = await self.client.db.fetchval("SELECT value FROM donations.{} WHERE user_id = $1".format(f"guild{member.guild.id}_{category.lower()}"), member.id)
         if result is None:
             return 0
         else:
@@ -67,7 +67,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
 
     async def get_leaderboard(self, guild, query, top):
         leaderboard = []
-        counts = await self.client.pool_pg.fetch(query, top)
+        counts = await self.client.db.fetch(query, top)
         for count in counts:
             member = guild.get_member(count[0])
             name = member.name if member is not None else count[0]
@@ -106,7 +106,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             member = ctx.author
         if ctx.author.id not in [argon] and ctx.author.guild_permissions.manage_roles != True:
             member = ctx.author
-        result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
+        result = await self.client.db.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
         embed = discord.Embed(color=self.client.embed_color, timestamp=discord.utils.utcnow())
         tier = "5M Grinder" if self.is_5m_grinder(member) else "3M Grinder" if self.is_3m_grinder(member) else "Trial Grinder (3M/5M)" if self.is_trial_grinder(member) else None
         tier = "**" + tier + "**" if tier is not None else None
@@ -138,7 +138,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         else:
             value = "You are not a Grinder."
         embed.add_field(name='Has fulfilled requirement?', value=value, inline=False)
-        total = await self.client.pool_pg.fetchrow("SELECT SUM(all_time) FROM grinderdata")
+        total = await self.client.db.fetchrow("SELECT SUM(all_time) FROM grinderdata")
         embed.set_footer(text=f"A total ⏣ {comma_number(int(total.get('sum')))} grinded so far! · {ctx.guild.name}")
         embed.set_author(name=str(member), icon_url=member.display_avatar.url)
         embed.set_thumbnail(url=ctx.guild.icon.url)
@@ -154,14 +154,14 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             return await ctx.send("The correct usage of this command is `glog [member] [amount to add]`.")
         if number is None:
             return await ctx.send("There was a problem converting your requested sum to a number. You might have input an incorrect number.")
-        result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
+        result = await self.client.db.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
         if result is None:
-            await self.client.pool_pg.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)",
+            await self.client.db.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)",
                                               member.id, number, number, 0, number, number, round(time.time()),
                                               ctx.message.jump_url)
             today = number
         else:
-            today = await self.client.pool_pg.fetchval(
+            today = await self.client.db.fetchval(
                 "UPDATE grinderdata SET today = $1, past_week = $2, last_week = $3, past_month = $4, all_time = $5, last_dono_time = $6, last_dono_msg = $7 WHERE user_id = $8 RETURNING today",
                 result.get('today') + number, result.get('past_week') + number, result.get('last_week'),
                 result.get('past_month') + number, result.get('all_time') + number, round(time.time()),
@@ -187,20 +187,20 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         if confirmview.returning_value is None:
             embed.color, embed.description = discord.Color.red(), "Action timeout. Nothing has been done."
             return await message.edit(embed=embed)
-        result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
+        result = await self.client.db.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
         if confirmview.returning_value == False:
             embed.color, embed.description = discord.Color.green(), f"{member}'s grinder statistics has been updated for **all time**. "
             if result is None:
-                await self.client.pool_pg.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)", member.id, 0, 0, 0, 0, number, round(time.time()), ctx.message.jump_url)
+                await self.client.db.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)", member.id, 0, 0, 0, 0, number, round(time.time()), ctx.message.jump_url)
             else:
-                await self.client.pool_pg.execute("UPDATE grinderdata SET all_time = $1, last_dono_time = $2, last_dono_msg = $3 WHERE user_id = $4", result.get('all_time') + number, round(time.time()), ctx.message.jump_url, member.id)
+                await self.client.db.execute("UPDATE grinderdata SET all_time = $1, last_dono_time = $2, last_dono_msg = $3 WHERE user_id = $4", result.get('all_time') + number, round(time.time()), ctx.message.jump_url, member.id)
             await message.edit(embed=embed)
         elif confirmview.returning_value == True:
             embed.color, embed.description = discord.Color.green(), f"All of {member}'s grinder statistics has been updated."
             if result is None:
-                await self.client.pool_pg.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)", member.id, number, number, 0, number, number, round(time.time()), ctx.message.jump_url)
+                await self.client.db.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)", member.id, number, number, 0, number, number, round(time.time()), ctx.message.jump_url)
             else:
-                await self.client.pool_pg.execute("UPDATE grinderdata SET today = $1, past_week = $2, last_week = $3, past_month = $4, all_time = $5, last_dono_time = $6, last_dono_msg = $7 WHERE user_id = $8", result.get('today') + number, result.get('past_week') + number, result.get('last_week'), result.get('past_month') + number, result.get('all_time') + number, round(time.time()), ctx.message.jump_url, member.id)
+                await self.client.db.execute("UPDATE grinderdata SET today = $1, past_week = $2, last_week = $3, past_month = $4, all_time = $5, last_dono_time = $6, last_dono_msg = $7 WHERE user_id = $8", result.get('today') + number, result.get('past_week') + number, result.get('last_week'), result.get('past_month') + number, result.get('all_time') + number, round(time.time()), ctx.message.jump_url, member.id)
             await message.edit(embed=embed)
 
     @checks.is_bav_or_mystic()
@@ -221,16 +221,16 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         if confirmview.returning_value is None:
             embed.color, embed.description = discord.Color.red(), "Action timeout. Nothing has been done."
             return await message.edit(embed=embed)
-        result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
+        result = await self.client.db.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
         if confirmview.returning_value == False:
             embed.color, embed.description = discord.Color.red(), f"Action cancelled."
             return await message.edit(embed=embed)
         elif confirmview.returning_value == True:
             embed.color, embed.description = discord.Color.green(), f"All of {member}'s grinder statistics has been updated. BTW, I did not automatically add them to the Dank Memer weekly donation leaderboard."
             if result is None:
-                await self.client.pool_pg.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)", member.id, 0, 0, 0, 0, number, round(time.time()), ctx.message.jump_url)
+                await self.client.db.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)", member.id, 0, 0, 0, 0, number, round(time.time()), ctx.message.jump_url)
             else:
-                await self.client.pool_pg.execute("UPDATE grinderdata SET all_time = $1, last_dono_time = $2, last_dono_msg = $3 WHERE user_id = $4", number, round(time.time()), ctx.message.jump_url, member.id)
+                await self.client.db.execute("UPDATE grinderdata SET all_time = $1, last_dono_time = $2, last_dono_msg = $3 WHERE user_id = $4", number, round(time.time()), ctx.message.jump_url, member.id)
             await message.edit(embed=embed)
 
 
@@ -273,12 +273,12 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                 return await message.reply("⚠️ **You need to have Reply Pings enabled!** Your grinder statistics will be manually added by <@!542905463541465088>, as I was unable to detect who shared the coins.")
             if not (discord.utils.get(member.roles, id=tgrinderroleID) or discord.utils.get(member.roles, id=grinder3mroleID) or discord.utils.get(member.roles, id=grinderroleID)):
                 return await message.channel.send("You don't have the required roles or the roles declared are invalid.")
-            result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
+            result = await self.client.db.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
             if result is None:
-                await self.client.pool_pg.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)", member.id, amt, amt, 0, amt, amt, round(time.time()), message.jump_url)
+                await self.client.db.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)", member.id, amt, amt, 0, amt, amt, round(time.time()), message.jump_url)
             else:
-                await self.client.pool_pg.execute("UPDATE grinderdata SET today = $1, past_week = $2, past_month = $3, all_time = $4, last_dono_time = $5, last_dono_msg = $6 WHERE user_id = $7", result.get('today') + amt, result.get('past_week') + amt, result.get('past_month') + amt, result.get('all_time') + amt, round(time.time()), message.jump_url, member.id)
-            total = await self.client.pool_pg.fetchrow("SELECT SUM(all_time) FROM grinderdata")
+                await self.client.db.execute("UPDATE grinderdata SET today = $1, past_week = $2, past_month = $3, all_time = $4, last_dono_time = $5, last_dono_msg = $6 WHERE user_id = $7", result.get('today') + amt, result.get('past_week') + amt, result.get('past_month') + amt, result.get('all_time') + amt, round(time.time()), message.jump_url, member.id)
+            total = await self.client.db.fetchrow("SELECT SUM(all_time) FROM grinderdata")
             logembed = discord.Embed(description=f"**Grinder**: {member.mention}\n**Amount**: `⏣ {comma_number(amt)}`\nClick [here]({message.jump_url}) to view.\n`⏣ {comma_number(int(total.get('sum')))}` total grinded by grinders!", color=self.client.embed_color, timestamp=discord.utils.utcnow())
             logembed.set_footer(text=f"{message.guild.name} Grinder Log", icon_url=message.guild.icon.url)
             await self.client.get_channel(grinderlogID).send(f"A grinder transaction by `{member} ({member.id})` has been logged.", embed=logembed)
@@ -307,7 +307,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             currentcount = await self.get_donation_count(member, 'dank')
             amount = amt
             QUERY = "INSERT INTO donations.{} VALUES ($1, $2) ON CONFLICT(user_id) DO UPDATE SET value=$2 RETURNING value".format(f"guild{message.guild.id}_dank")
-            await self.client.pool_pg.execute(QUERY, member.id, amount + currentcount)
+            await self.client.db.execute(QUERY, member.id, amount + currentcount)
 
     @checks.is_bav_or_mystic()
     @commands.command(name="gdm", brief="Reminds DV Grinders that the requirement has been checked.", description="Reminds DV Grinders that the requirement has been checked.")
@@ -349,10 +349,10 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             completed_req = []
             not_complete = []
             for grinder in grinders:
-                result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", grinder.id)
+                result = await self.client.db.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", grinder.id)
                 if result is None:
-                    await self.client.pool_pg.fetchrow("INSERT INTO grinderdata(user_id, today, past_week, last_week, past_month, all_time, last_dono_time, last_dono_msg, advance_amt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)", grinder.id, 0, 0, 0, 0, 0, 0, "https://www.youtube.com/watch?v=dQw4w9WgXcQ", 0)
-                    result = await self.client.pool_pg.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", grinder.id)
+                    await self.client.db.fetchrow("INSERT INTO grinderdata(user_id, today, past_week, last_week, past_month, all_time, last_dono_time, last_dono_msg, advance_amt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)", grinder.id, 0, 0, 0, 0, 0, 0, "https://www.youtube.com/watch?v=dQw4w9WgXcQ", 0)
+                    result = await self.client.db.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", grinder.id)
                 today = result.get('today') or 0
                 if self.is_5m_grinder(grinder):
                     if today < 35000000:
@@ -377,11 +377,11 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                     available_funds = result.get('advance_amt') or 0
                     if req == uncompleted:
                         if available_funds >= uncompleted:
-                            remaining = await self.client.pool_pg.fetchval("UPDATE grinderdata SET advance_amt = advance_amt - $1 WHERE user_id = $2 RETURNING advance_amt", uncompleted, grinder.id, column='advance_amt')
+                            remaining = await self.client.db.fetchval("UPDATE grinderdata SET advance_amt = advance_amt - $1 WHERE user_id = $2 RETURNING advance_amt", uncompleted, grinder.id, column='advance_amt')
                             not_complete.remove(tup)
                             completed_req.append((grinder, uncompleted, f"Deduct from advance funds, ⏣ {comma_number(remaining)} remaining"))
                         elif available_funds > 0:
-                            remaining = await self.client.pool_pg.fetchval("UPDATE grinderdata SET advance_amt = 0 WHERE user_id = $1 RETURNING advance_amt", grinder.id, column='advance_amt')
+                            remaining = await self.client.db.fetchval("UPDATE grinderdata SET advance_amt = 0 WHERE user_id = $1 RETURNING advance_amt", grinder.id, column='advance_amt')
                             still_uncompleted = req - available_funds
                             not_complete.remove(tup)
                             not_complete.append((grinder, still_uncompleted, result, req, f"Deduct from advance funds, ⏣ {comma_number(remaining)} remaining"))
@@ -396,18 +396,18 @@ class Grinderutils(commands.Cog, name='grinderutils'):
 <:DVB_middle_incomplete:895172800430620742> <a:DVB_typing:955345484648710154> **Updating statistics** 
 <:DVB_end_incomplete:895172799923109919> Notifying grinders and sending a summary""")
             if discord.utils.utcnow().day == 1:
-                await self.client.pool_pg.execute("UPDATE grinderdata SET past_month = $1", 0)
+                await self.client.db.execute("UPDATE grinderdata SET past_month = $1", 0)
             if discord.utils.utcnow().weekday() == 3:
                 reset_week = True
                 week_values = []
-                all = await self.client.pool_pg.fetch("SELECT user_id, past_week FROM grinderdata")
+                all = await self.client.db.fetch("SELECT user_id, past_week FROM grinderdata")
                 if all is not None:
                     for a in all:
                         week_values.append((0, 0, a.get('past_week'), a.get('user_id')))
-                await self.client.pool_pg.executemany("UPDATE grinderdata SET today = $1, past_week = $2, last_week = $3 WHERE user_id = $4", week_values)
+                await self.client.db.executemany("UPDATE grinderdata SET today = $1, past_week = $2, last_week = $3 WHERE user_id = $4", week_values)
             else:
                 reset_week = False
-                await self.client.pool_pg.execute("UPDATE grinderdata SET today = $1", 0)
+                await self.client.db.execute("UPDATE grinderdata SET today = $1", 0)
             await msg.edit(content="""
 <:DVB_start_complete:895172800627769447> Checking daily requirement 
 <:DVB_middle_complete:895172800627769444> Updating statistics
@@ -535,14 +535,14 @@ Done! Note: People who **did not** complete the req won't be told they didn't co
             return await ctx.send("Please specify a user.")
         if amount is None:
             return await ctx.send("Please specify an amount.")
-        current = await self.client.pool_pg.fetchrow("SELECT advance_amt FROM grinderdata WHERE user_id = $1", member.id)
+        current = await self.client.db.fetchrow("SELECT advance_amt FROM grinderdata WHERE user_id = $1", member.id)
         if current is None:
             old_amt = 0
-            amt = await self.client.pool_pg.fetchval("INSERT INTO grinderdata (user_id, advance_amt) VALUES ($1, $2) RETURNING advance_amt", member.id, amount, column='advance_amt')
+            amt = await self.client.db.fetchval("INSERT INTO grinderdata (user_id, advance_amt) VALUES ($1, $2) RETURNING advance_amt", member.id, amount, column='advance_amt')
             new_amt = amt
         else:
             old_amt = current.get('advance_amt') or 0
             new_amt = old_amt + amount
-            await self.client.pool_pg.execute("UPDATE grinderdata SET advance_amt = $1 WHERE user_id = $2", new_amt, member.id)
+            await self.client.db.execute("UPDATE grinderdata SET advance_amt = $1 WHERE user_id = $2", new_amt, member.id)
         embed = discord.Embed(title=f"Summary for {member}'s In Advance statistics", description=f"Old Amount: `⏣ {comma_number(old_amt)}`\nNew Amount: `⏣ {comma_number(new_amt)}` (+ ⏣ {comma_number(amount)})", color=discord.Color.green())
         await ctx.send(embed=embed)

@@ -27,7 +27,7 @@ class Whois(commands.Cog):
             description.append(f"• Joined server on: **{joined_at}**")
         if ctx.author.guild_permissions.kick_members and isinstance(user, discord.Member):
             description.append(f"• User is verified: {f'<:DVB_False:887589731515392000> They have **{humanize_timedelta(seconds=user.joined_at.timestamp()+86400-round(time()))}** to complete the Membership Screening.' if user.pending else '<:DVB_True:887589686808309791>'}")
-        infection = await self.client.pool_pg.fetchrow("SELECT infectioncase, member_id, infector, timeinfected FROM infections WHERE member_id = $1", user.id)
+        infection = await self.client.db.fetchrow("SELECT infectioncase, member_id, infector, timeinfected FROM infections WHERE member_id = $1", user.id)
         if infection:
             infector = self.client.get_user(infection.get('infector')) or infection.get('infector')
             description.append(f"• User is infected with Horn Knee Virus: 🤒 (Case **{infection.get('infectioncase')}**)\n<:Reply:871808167011549244> Infected by **{infector}** <t:{infection.get('timeinfected')}:R>")
@@ -40,7 +40,7 @@ class Whois(commands.Cog):
         embed.add_field(name="Past usernames", value="Retrieving their past usernames...", inline=False)
         embed.description = '\n'.join(description)
         uimessage = await ctx.send(embed=embed)
-        past_nicknames = await self.client.pool_pg.fetch("SELECT * FROM nickname_changes WHERE member_id = $1 ORDER BY time DESC LIMIT 20", user.id)
+        past_nicknames = await self.client.db.fetch("SELECT * FROM nickname_changes WHERE member_id = $1 ORDER BY time DESC LIMIT 20", user.id)
         if past_nicknames:
             nicknames = []
             for nickname in past_nicknames:
@@ -49,7 +49,7 @@ class Whois(commands.Cog):
             embed.set_field_at(-2, name="Nicknames", value=f"{', '.join(nicknames) if len(nicknames) > 0 else 'No records; nicknames are only tracked after 9 January 21.'}\n\nRun `nicknames @{user}` to see their other nicknames and the time they were changed.", inline=False)
         else:
             embed.set_field_at(-2, name="Nicknames", value=f"No records; nicknames are only tracked after 9 January 21.", inline=False)
-        past_names = await self.client.pool_pg.fetch("SELECT * FROM name_changes WHERE user_id = $1 ORDER BY time DESC LIMIT 20", user.id)
+        past_names = await self.client.db.fetch("SELECT * FROM name_changes WHERE user_id = $1 ORDER BY time DESC LIMIT 20", user.id)
         if past_names:
             names = []
             for name in past_names:

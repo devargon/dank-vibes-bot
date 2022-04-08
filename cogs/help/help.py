@@ -251,7 +251,7 @@ class DVBotHelp(commands.DefaultHelpCommand):
         embed = discord.Embed(title=self.get_command_name(command))
         embed.description = self.get_help(command, brief=False)
         command_withno_prefix = self.get_command_name(command).replace(self.context.clean_prefix, '')
-        roles = await self.context.bot.pool_pg.fetch("SELECT * FROM rules WHERE guild_id = $1 AND command = $2", self.context.guild.id, command_withno_prefix)
+        roles = await self.context.bot.db.fetch("SELECT * FROM rules WHERE guild_id = $1 AND command = $2", self.context.guild.id, command_withno_prefix)
         if len(roles) > 0:
             required_roles = []
             for role in roles:

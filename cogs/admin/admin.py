@@ -54,19 +54,19 @@ class ServerConfigView(discord.ui.View):
         super().__init__(timeout=20)
 
         async def handle_toggle(guild, settings) -> bool:
-            if (result := await self.client.pool_pg.fetchrow(
+            if (result := await self.client.db.fetchrow(
                     "SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", guild.id,
                     settings)) is not None:
                 result = result.get('enabled')
             else:
-                await self.client.pool_pg.execute("INSERT INTO serverconfig VALUES ($1, $2, $3)", guild.id,
+                await self.client.db.execute("INSERT INTO serverconfig VALUES ($1, $2, $3)", guild.id,
                                                   settings, False)
                 result = False
             if result:
                 result = False
             else:
                 result = True
-            await self.client.pool_pg.execute(
+            await self.client.db.execute(
                 "UPDATE serverconfig SET enabled=$1 WHERE guild_id=$2 AND settings=$3", result, guild.id, settings)
             return result
 
@@ -146,15 +146,15 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         Shows guild's server configuration settings and also allows you to allow/disable them.
         """
         embed = discord.Embed(title=f"Server Configuration Settings For {ctx.guild.name}", color=self.client.embed_color, timestamp=discord.utils.utcnow())
-        if (owodaily := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "owodailylb")) is not None:
+        if (owodaily := await self.client.db.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "owodailylb")) is not None:
             owodaily = owodaily.get('enabled')
-        if (owoweekly := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "owoweeklylb")) is not None:
+        if (owoweekly := await self.client.db.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "owoweeklylb")) is not None:
             owoweekly = owoweekly.get('enabled')
-        if (votelb := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "votelb")) is not None:
+        if (votelb := await self.client.db.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "votelb")) is not None:
             votelb = votelb.get('enabled')
-        if (verification := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "verification")) is not None:
+        if (verification := await self.client.db.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "verification")) is not None:
             verification = verification.get('enabled')
-        if (timeoutlog := await self.client.pool_pg.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "timeoutlog")) is not None:
+        if (timeoutlog := await self.client.db.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "timeoutlog")) is not None:
             timeoutlog = timeoutlog.get('enabled')
         view = ServerConfigView(ctx.guild, owodaily, owoweekly, votelb, verification, timeoutlog, self.client)
         embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon.url)
@@ -203,7 +203,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         """Blacklist a user from using the bot."""
         if user is None:
             return await ctx.send('who tf do you want me to blacklist huh')
-        if await self.client.pool_pg.fetchrow("SELECT * FROM blacklist WHERE user_id=$1 and blacklist_active = $2", user.id, True) is not None:
+        if await self.client.db.fetchrow("SELECT * FROM blacklist WHERE user_id=$1 and blacklist_active = $2", user.id, True) is not None:
             return await ctx.send(f"{user.mention} is already blacklisted from using the bot.")
         reason = None
         duration = None
@@ -244,7 +244,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
             timeuntil = round(time()) + duration
         else:
             timeuntil = 9223372036854775807
-        id = await self.client.pool_pg.fetchval("INSERT INTO blacklist(user_id, moderator_id, blacklist_active, reason, time_until) VALUES($1, $2, $3, $4, $5) RETURNING incident_id", user.id, ctx.author.id, True, reason, timeuntil, column='incident_id')
+        id = await self.client.db.fetchval("INSERT INTO blacklist(user_id, moderator_id, blacklist_active, reason, time_until) VALUES($1, $2, $3, $4, $5) RETURNING incident_id", user.id, ctx.author.id, True, reason, timeuntil, column='incident_id')
         self.client.blacklist[user.id] = timeuntil
         embed=discord.Embed(title=f"{user} is now blacklisted.", description=f"**Reason**: {reason}\n**Blacklisted for**: {'Eternity' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}\nBlacklisted until: {'NA' if timeuntil == 9223372036854775807 else f'<t:{timeuntil}:R>'}", color=discord.Color.red())
         logembed = discord.Embed(title=f"Bot Blacklist: Case {id}", description=f"**Reason:** {reason}\n**Blacklisted for**: {'Eternity' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}\n**Blacklisted until**: {'NA' if timeuntil == 9223372036854775807 else f'<t:{timeuntil}:R>'}\n**Responsible Moderator**: {ctx.author} ({ctx.author.id})", color=discord.Color.red())
@@ -279,7 +279,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
             embed = discord.Embed(title="Blacklist Utilities", description="`--active` - list active blacklists.\n``--inactive` - list inactive blacklists.\n`<num>` - show a specific blacklist.\n`<member>` - list a member's blacklist.\n`--all` lists all past blacklists.", color=discord.Color.green())
             return await ctx.send(embed=embed)
         if type(inquery) == int:
-            result = await self.client.pool_pg.fetchrow("SELECT * FROM blacklist WHERE incident_id = $1", inquery)
+            result = await self.client.db.fetchrow("SELECT * FROM blacklist WHERE incident_id = $1", inquery)
             if result is None:
                 return await ctx.send(f"There is no such blacklist with the ID {inquery}.")
             member = ctx.guild.get_member(result.get('user_id'))
@@ -311,9 +311,9 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
             embed = discord.Embed(title="Blacklist Utilities", description="`--active` - list active blacklists.\n`--inactive` - list inactive blacklists.\n`<num>` - show a specific blacklist.\n`<member>` - list a member's blacklist.\n`--all` lists all past blacklists.", color=discord.Color.green())
             return await ctx.send(embed=embed)
         if len(query) == 2:
-            result = await self.client.pool_pg.fetch(query[0], query[1])
+            result = await self.client.db.fetch(query[0], query[1])
         else:
-            result = await self.client.pool_pg.fetch(query)
+            result = await self.client.db.fetch(query)
         blacklists = []
         for blacklist in result:
             member = self.client.get_user(blacklist.get('user_id'))
@@ -340,10 +340,10 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         """Unblacklist a user so that they can continue using the bot."""
         if user is None:
             return await ctx.send('who tf do you want me to unblacklist huh')
-        active_blacklist = await self.client.pool_pg.fetchrow("SELECT * FROM blacklist WHERE user_id=$1 and blacklist_active = $2", user.id, True)
+        active_blacklist = await self.client.db.fetchrow("SELECT * FROM blacklist WHERE user_id=$1 and blacklist_active = $2", user.id, True)
         if active_blacklist is None:
             return await ctx.send(f"{user.mention} is currently not blacklisted.")
-        await self.client.pool_pg.execute("UPDATE blacklist SET blacklist_active = $1 WHERE user_id = $2 and incident_id = $3", False, user.id, active_blacklist.get('incident_id'))
+        await self.client.db.execute("UPDATE blacklist SET blacklist_active = $1 WHERE user_id = $2 and incident_id = $3", False, user.id, active_blacklist.get('incident_id'))
         embed = discord.Embed(title=f"{user} is now unblacklisted.", color=discord.Color.green())
         logembed = discord.Embed(title=f"Bot Unblacklist: Case {active_blacklist.get('incident_id')}", description=f"**Reason:** Manually unblacklisted by {ctx.author}\n**Responsible Moderator**: {ctx.author} ({ctx.author.id})", color=discord.Color.green())
         logembed.set_author(name=f"{user} ({user.id})", icon_url=user.display_avatar.url)
@@ -356,13 +356,13 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         """
         Set the channel for nickname requests to be sent to.
         """
-        result = await self.client.pool_pg.fetch("SELECT * FROM channelconfigs where guild_id = $1", ctx.guild.id)
+        result = await self.client.db.fetch("SELECT * FROM channelconfigs where guild_id = $1", ctx.guild.id)
         if len(result) == 0:
-            await self.client.pool_pg.execute("INSERT INTO channelconfigs(guild_id, nicknamechannel_id) VALUES($1, $2)", ctx.guild.id, channel.id)
+            await self.client.db.execute("INSERT INTO channelconfigs(guild_id, nicknamechannel_id) VALUES($1, $2)", ctx.guild.id, channel.id)
             return await ctx.send(f"I will now send nickname requests to {channel.mention}.")
         else:
-            await self.client.pool_pg.execute("UPDATE channelconfigs SET nicknamechannel_id = $1 where guild_id = $2", channel.id, ctx.guild.id)
-            await self.client.pool_pg.execute("DELETE FROM nicknames")
+            await self.client.db.execute("UPDATE channelconfigs SET nicknamechannel_id = $1 where guild_id = $2", channel.id, ctx.guild.id)
+            await self.client.db.execute("DELETE FROM nicknames")
             return await ctx.send(f"I will now send nickname requests to {channel.mention}.\nAll nickname requests sent in a previous channel have been forfeited.")
 
     @commands.command(name="setdmchannel", aliases = ["dmchannel"])
@@ -371,13 +371,13 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         """
         Set the channel for dmname requests to be sent to.
         """
-        result = await self.client.pool_pg.fetch("SELECT * FROM channelconfigs where guild_id = $1", ctx.guild.id)
+        result = await self.client.db.fetch("SELECT * FROM channelconfigs where guild_id = $1", ctx.guild.id)
         if len(result) == 0:
-            await self.client.pool_pg.execute("INSERT INTO channelconfigs(guild_id, dmchannel_id) VALUES($1, $2)", ctx.guild.id, channel.id)
+            await self.client.db.execute("INSERT INTO channelconfigs(guild_id, dmchannel_id) VALUES($1, $2)", ctx.guild.id, channel.id)
             return await ctx.send(f"I will now send DM requests to {channel.mention}.")
         else:
-            await self.client.pool_pg.execute("UPDATE channelconfigs SET dmchannel_id = $1 where guild_id = $2", channel.id, ctx.guild.id)
-            await self.client.pool_pg.execute("DELETE FROM dmrequests")
+            await self.client.db.execute("UPDATE channelconfigs SET dmchannel_id = $1 where guild_id = $2", channel.id, ctx.guild.id)
+            await self.client.db.execute("DELETE FROM dmrequests")
             return await ctx.send(f"I will now send DM requests to {channel.mention}.\nAll DM requests sent in a previous channel have been forfeited.")
 
     @commands.command(name="viewconfig")
@@ -386,7 +386,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         """
         Show configurations for nickname and DM requests.
         """
-        result = await self.client.pool_pg.fetchrow("SELECT * FROM channelconfigs where guild_id = $1", ctx.guild.id)
+        result = await self.client.db.fetchrow("SELECT * FROM channelconfigs where guild_id = $1", ctx.guild.id)
         if len(result) == 0:
             return await ctx.send(f"No configuration for DM and nickname requests have been set yet. ")
         else:
@@ -399,7 +399,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         Resets the database for counting messages sent.
         """
         confirm_view = confirm(ctx, self.client, 30.0)
-        messagecount = await self.client.pool_pg.fetch("SELECT * FROM messagelog")
+        messagecount = await self.client.db.fetch("SELECT * FROM messagelog")
         if len(messagecount) == 0:  # if there's nothing to be deleted
             return await ctx.send("There's no message count to be removed.")
         totalvote = sum(userentry.get('messagecount') for userentry in messagecount)
@@ -417,7 +417,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
             embed.color, embed.description = discord.Color.red(), "Action cancelled."
             return await msg.edit(embed=embed)
         if confirm_view.returning_value == True:
-            await self.client.pool_pg.execute("DELETE FROM messagelog")
+            await self.client.db.execute("DELETE FROM messagelog")
             embed.color, embed.description = discord.Color.green(), "The message count has been cleared."
             await msg.edit(embed=embed)
 
@@ -440,7 +440,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
         """
         Lists milestones for message count roles.
         """
-        messagemilestones = await self.client.pool_pg.fetch("SELECT * FROM messagemilestones")
+        messagemilestones = await self.client.db.fetch("SELECT * FROM messagemilestones")
         if len(messagemilestones) == 0:
             embed = discord.Embed(title = "Message count milestones", description = "There are no milestones set for now. Use `messageroles add [messagecount] [role]` to add one.", color=self.client.embed_color) # there are no milestones set
             return await ctx.send(embed=embed)
@@ -468,11 +468,11 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
             messagecount = int(messagecount)
         except ValueError:
             return await ctx.send("`messagecount` is not a valid number.")
-        existing_milestones = await self.client.pool_pg.fetch("SELECT * FROM messagemilestones WHERE messagecount = $1", messagecount)
+        existing_milestones = await self.client.db.fetch("SELECT * FROM messagemilestones WHERE messagecount = $1", messagecount)
         if len(existing_milestones) > 0:
             await ctx.send(f"You have already set a milestone for **{messagecount} messages**. To set a new role, remove this milestone and add it again.")
             return
-        await self.client.pool_pg.execute("INSERT INTO messagemilestones VALUES($1, $2)", messagecount, role.id)
+        await self.client.db.execute("INSERT INTO messagemilestones VALUES($1, $2)", messagecount, role.id)
         await ctx.send(f"**Done**\n**{role.name}** will be added to a member when they have sent a message **{messagecount} time(s)**.")
 
     @messageroles.command(name="remove", aliases=["delete"])
@@ -487,11 +487,11 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
             messagecount = int(messagecount)
         except ValueError:
             return await ctx.send(f"`{messagecount}` as the messagecount is not a valid number.")
-        existing_milestones = await self.client.pool_pg.fetch("SELECT * FROM messagemilestones WHERE messagecount = $1", messagecount)
+        existing_milestones = await self.client.db.fetch("SELECT * FROM messagemilestones WHERE messagecount = $1", messagecount)
         if len(existing_milestones) == 0:
             return await ctx.send(
                 f"You do not have a milestone set for {messagecount} messages. Use `messageroles add [messagecount] [role]` to add one.")
-        await self.client.pool_pg.execute("DELETE FROM messagemilestones WHERE messagecount = $1", messagecount) # Removes the milestone rule
+        await self.client.db.execute("DELETE FROM messagemilestones WHERE messagecount = $1", messagecount) # Removes the milestone rule
         await ctx.send(f"**Done**\nThe milestone for having sent a message **{messagecount} time(s)** has been removed.")
 
     @checks.has_permissions_or_role(manage_roles=True)

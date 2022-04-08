@@ -307,11 +307,11 @@ class Utility(TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois,
         """
         if member is None:
             member = ctx.author
-        user = await self.client.pool_pg.fetchrow("SELECT * FROM messagelog WHERE user_id = $1", member.id)
+        user = await self.client.db.fetchrow("SELECT * FROM messagelog WHERE user_id = $1", member.id)
         if user is None:
             return await ctx.send("Hmm... it appears that you have not sent a message in <#608498967474601995>. Contact a mod if you think this is wrong.")
-        all = await self.client.pool_pg.fetch("SELECT user_id FROM messagelog ORDER BY messagecount DESC")
-        user2 = await self.client.pool_pg.fetchrow("SELECT user_id FROM messagelog WHERE user_id = $1", member.id)
+        all = await self.client.db.fetch("SELECT user_id FROM messagelog ORDER BY messagecount DESC")
+        user2 = await self.client.db.fetchrow("SELECT user_id FROM messagelog WHERE user_id = $1", member.id)
         position = ordinal(all.index(user2)+1)
         embed = discord.Embed(title="Your number of messages sent in #general-chat", color=self.client.embed_color, timestamp=discord.utils.utcnow())
         embed.set_author(name=member, icon_url=member.display_avatar.url)
@@ -335,7 +335,7 @@ class Utility(TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois,
                 duration = command_cache.get_retry_after()
                 if duration > 0:
                     cooldownlst.append(f"**{Command.name}**: {humanize_timedelta(seconds=duration)}")
-        db_cds = await self.client.pool_pg.fetch("SELECT * FROM cooldowns WHERE member_id = $1", ctx.author.id)
+        db_cds = await self.client.db.fetch("SELECT * FROM cooldowns WHERE member_id = $1", ctx.author.id)
         if len(db_cds) > 0:
             for cd in db_cds:
                 command_name = cd.get('command_name')
@@ -485,7 +485,7 @@ class Utility(TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois,
         embed.set_author(name=f"{ctx.author.name}'s {titleembed}", icon_url=ctx.guild.icon.url)
         embed.set_footer(text="Ends at")
         msg = await channel.send(embed=embed)
-        await self.client.pool_pg.execute("INSERT INTO timers(guild_id, channel_id, message_id, user_id, time, title) VALUES ($1, $2, $3, $4, $5, $6)", ctx.guild.id, channel.id, msg.id, ctx.author.id, endtime, title)
+        await self.client.db.execute("INSERT INTO timers(guild_id, channel_id, message_id, user_id, time, title) VALUES ($1, $2, $3, $4, $5, $6)", ctx.guild.id, channel.id, msg.id, ctx.author.id, endtime, title)
 
     @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.command(name='avatar', aliases=['av', 'pfp', 'banner', 'bn', 'sav'])
@@ -591,7 +591,7 @@ class Utility(TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois,
         """
         Shows the changelog.
         """
-        changelogs = await self.client.pool_pg.fetch("SELECT version_str, changelog FROM changelog ORDER BY version_number DESC")
+        changelogs = await self.client.db.fetch("SELECT version_str, changelog FROM changelog ORDER BY version_number DESC")
         pages = []
         for changelog in changelogs:
             embed = discord.Embed(color=self.client.embed_color, title=f"{changelog.get('version_str')}").set_author(name=f"{self.client.user.name} Changelog", icon_url=self.client.user.avatar.url)

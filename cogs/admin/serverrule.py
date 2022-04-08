@@ -12,7 +12,7 @@ class ServerRule(commands.Cog):
 
     async def get_command_rule(self, guild: discord.Guild, command_name: str):
         query = "SELECT role_id, whitelist FROM rules WHERE guild_id=$1 AND command=$2"
-        roles = await self.client.pool_pg.fetch(query, guild.id, command_name)
+        roles = await self.client.db.fetch(query, guild.id, command_name)
         if roles is None:
             return roles
         whitelist = []
@@ -75,7 +75,7 @@ class ServerRule(commands.Cog):
                 elif role.id in whitelist:
                     query = "UPDATE rules SET whitelist=$1 WHERE guild_id=$2 AND command=$3 AND role_id=$4"
                     values = (allow_or_deny, ctx.guild.id, command, role.id)
-        await self.client.pool_pg.execute(query, *values)
+        await self.client.db.execute(query, *values)
         await ctx.checkmark()
         await ctx.send(f"Command rule added for {role.mention}.")
 
@@ -102,7 +102,7 @@ class ServerRule(commands.Cog):
         whitelist, blacklist = command_rule
         if role.id not in whitelist and role.id not in blacklist:
             return await ctx.send(f"I don't have any server rule for {role.mention}.")
-        await self.client.pool_pg.execute("DELETE FROM rules WHERE guild_id=$1 AND command=$2 AND role_id=$3", ctx.guild.id, command, role.id)
+        await self.client.db.execute("DELETE FROM rules WHERE guild_id=$1 AND command=$2 AND role_id=$3", ctx.guild.id, command, role.id)
         await ctx.checkmark()
         await ctx.send(f"Command rule removed for {role.mention}.")
     
@@ -123,7 +123,7 @@ class ServerRule(commands.Cog):
         command_rule = await self.get_command_rule(ctx.guild, command)
         if not command_rule:
             return await ctx.send(f"I don't have any server rule for that `{command}`.")
-        await self.client.pool_pg.execute("DELETE FROM rules WHERE guild_id=$1 AND command=$2", ctx.guild.id, command)
+        await self.client.db.execute("DELETE FROM rules WHERE guild_id=$1 AND command=$2", ctx.guild.id, command)
         await ctx.send(f"Successfully removed all command rule for `{command}`")
 
     @commands.guild_only()

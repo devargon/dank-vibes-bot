@@ -46,11 +46,11 @@ class DisboardAutoLock(commands.Cog):
                 timetobump = now + int(result[0]) * 60
             overwrite.send_messages = False
             await dischannel.set_permissions(message.guild.default_role, overwrite=overwrite, reason=f"Disboard Auto Lock from bump by {message.author}")
-            result = await self.client.pool_pg.fetchrow("SELECT * FROM timedunlock WHERE guild_id = $1 AND channel_id = $2", message.guild.id, disboard_channel)
+            result = await self.client.db.fetchrow("SELECT * FROM timedunlock WHERE guild_id = $1 AND channel_id = $2", message.guild.id, disboard_channel)
             if result:
-                await self.client.pool_pg.execute("UPDATE timedunlock SET time = $1 WHERE guild_id = $2 AND channel_id = $3 AND responsible_moderator = $4", timetobump, message.guild.id, disboard_channel, self.client.user.id)
+                await self.client.db.execute("UPDATE timedunlock SET time = $1 WHERE guild_id = $2 AND channel_id = $3 AND responsible_moderator = $4", timetobump, message.guild.id, disboard_channel, self.client.user.id)
             else:
-                await self.client.pool_pg.execute("INSERT INTO timedunlock (guild_id, channel_id, time, responsible_moderator) VALUES ($1, $2, $3, $4)", message.guild.id, disboard_channel, timetobump, self.client.user.id)
+                await self.client.db.execute("INSERT INTO timedunlock (guild_id, channel_id, time, responsible_moderator) VALUES ($1, $2, $3, $4)", message.guild.id, disboard_channel, timetobump, self.client.user.id)
         else:
             return
 

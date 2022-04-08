@@ -121,19 +121,19 @@ class Autoreaction(commands.Cog, name='autoreaction'):
         if trigger is None or responses is None:
             return await ctx.send("Please include a trigger and a response")
         trigger = trigger.lower()
-        if (len(await self.client.pool_pg.fetch("SELECT response FROM autoreactions WHERE trigger=$1 AND guild_id=$2", *(trigger, ctx.guild.id))) != 0 ):
+        if (len(await self.client.db.fetch("SELECT response FROM autoreactions WHERE trigger=$1 AND guild_id=$2", *(trigger, ctx.guild.id))) != 0 ):
             return await ctx.send("I already have an autoreaction for that trigger.")
         query = "INSERT INTO autoreactions VALUES ($1, $2, $3)"
         if isinstance(responses, list):
             if len(responses) > 1:
                 params = [(ctx.guild.id, trigger, response) for response in responses]
-                await self.client.pool_pg.executemany(query, params)
+                await self.client.db.executemany(query, params)
             else:
                 params = (ctx.guild.id, trigger, responses[0])
-                await self.client.pool_pg.execute(query, *params)
+                await self.client.db.execute(query, *params)
         else:
             params = (ctx.guild.id, trigger, responses,)
-            await self.client.pool_pg.execute(query, *params)
+            await self.client.db.execute(query, *params)
         return await ctx.send("Autoreaction added.")
 
     @autoreact.command(name='remove', aliases=['delete', '-'], usage='<trigger>')
@@ -144,10 +144,10 @@ class Autoreaction(commands.Cog, name='autoreaction'):
         """
         if trigger is None:
             return await ctx.send("Please include the trigger that you wanna remove.")
-        ar = await self.client.pool_pg.fetchrow("SELECT response FROM autoreactions WHERE trigger=$1 AND guild_id=$2", *(trigger, ctx.guild.id))
+        ar = await self.client.db.fetchrow("SELECT response FROM autoreactions WHERE trigger=$1 AND guild_id=$2", *(trigger, ctx.guild.id))
         if not ar:
             return await ctx.send("Looks like I don't have any reactions for that trigger.")
-        await self.client.pool_pg.execute("DELETE FROM autoreactions WHERE trigger=$1 AND guild_id=$2", *(trigger, ctx.guild.id))
+        await self.client.db.execute("DELETE FROM autoreactions WHERE trigger=$1 AND guild_id=$2", *(trigger, ctx.guild.id))
         await ctx.send('Autoreaction removed.')
 
     @commands.guild_only()
@@ -194,7 +194,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
                 mention=False
         else:
             check_values = (f"<@!{ctx.author.id}>", ctx.guild.id)
-        ar = await self.client.pool_pg.fetch("SELECT response FROM autoreactions WHERE trigger=$1 AND guild_id=$2", *check_values)
+        ar = await self.client.db.fetch("SELECT response FROM autoreactions WHERE trigger=$1 AND guild_id=$2", *check_values)
         query = "INSERT INTO autoreactions VALUES ($1, $2, $3)"
         value = (ctx.guild.id, f"<@!{ctx.author.id}>", reaction,) if mention else (ctx.guild.id, f"{ctx.author.name.lower()}", reaction)
         if len(ar) != 0:
@@ -207,7 +207,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
                 return await ctx.send(f"You already have that autoreaction for your {'mention' if mention else 'name'}.")
             query = "UPDATE autoreactions SET response=$1 WHERE trigger=$2 AND guild_id=$3"
             value = (reaction, f"<@!{ctx.author.id}>", ctx.guild.id,) if mention else (reaction, f"{ctx.author.name.lower()}", ctx.guild.id)
-        await self.client.pool_pg.execute(query, *value)
+        await self.client.db.execute(query, *value)
         if msg is not None:
             await msg.clear_reactions()
             return await msg.edit(content="Autoreaction added.")
@@ -220,7 +220,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
         Clear all auto reactions from the server
 
         """
-        ars = await self.client.pool_pg.fetch('SELECT DISTINCT trigger FROM autoreactions WHERE guild_id=$1', ctx.guild.id)
+        ars = await self.client.db.fetch('SELECT DISTINCT trigger FROM autoreactions WHERE guild_id=$1', ctx.guild.id)
         if len(ars) == 0:
             return await ctx.send("This server does not have any autoreaction.")
         confirmview = confirm(ctx, self.client, 15.0)
@@ -233,7 +233,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
                 embed.color = discord.Color.red()
                 await msg.edit(embed=embed)
             elif confirmview.returning_value == True:
-                await self.client.pool_pg.execute("DELETE FROM autoreactions WHERE guild_id=$1", ctx.guild.id)
+                await self.client.db.execute("DELETE FROM autoreactions WHERE guild_id=$1", ctx.guild.id)
                 embed = discord.Embed(title='Deleted', color=discord.Color.green(), description=f"Successfully removed **{plural(len(ars)):autoreaction}**.")
                 try:
                     await msg.edit(embed=embed)
@@ -257,7 +257,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
 
         Required role: <@&608495204399448066>
         """
-        ars = await self.client.pool_pg.fetch("SELECT DISTINCT trigger FROM autoreactions WHERE guild_id=$1", ctx.guild.id)
+        ars = await self.client.db.fetch("SELECT DISTINCT trigger FROM autoreactions WHERE guild_id=$1", ctx.guild.id)
         if len(ars) == 0:
             return await ctx.send("This server does not have any autoreaction.")
         pages = CustomMenu(source=get_ars(ars, ctx.guild, self.client.embed_color), clear_reactions_after=True, timeout=60)

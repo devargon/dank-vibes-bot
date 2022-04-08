@@ -27,7 +27,7 @@ class reminders(commands.Cog):
                 argument = int(argument)
             except ValueError:
                 raise ArgumentBaseError(message='You did not provide a valid reminder ID.')
-            reminder = await ctx.bot.pool_pg.fetchrow("SELECT * FROM reminders WHERE id=$1 AND guild_id=$2", argument, ctx.guild.id)
+            reminder = await ctx.bot.db.fetchrow("SELECT * FROM reminders WHERE id=$1 AND guild_id=$2", argument, ctx.guild.id)
             if not reminder:
                 raise ArgumentBaseError(message="You don't have a reminder with that ID.")
             return Reminder(record=reminder)
@@ -38,14 +38,14 @@ class reminders(commands.Cog):
                 argument = int(argument)
             except ValueError:
                 raise ArgumentBaseError(message='You did not provide a valid reminder ID.')
-            reminder = await ctx.bot.pool_pg.fetchrow("SELECT * FROM reminders WHERE id=$1 AND user_id=$2 AND guild_id=$3", argument, ctx.author.id, ctx.guild.id)
+            reminder = await ctx.bot.db.fetchrow("SELECT * FROM reminders WHERE id=$1 AND user_id=$2 AND guild_id=$3", argument, ctx.author.id, ctx.guild.id)
             if not reminder:
                 raise ArgumentBaseError(message="You don't have a reminder with that ID.")
             return Reminder(record=reminder)
 
     async def add_reminder(self, user_id, guild_id, channel_id, message_id, name, end_time, repeat: Optional[bool] = False):
         now = round(time.time())
-        rm_id = await self.client.pool_pg.fetchval("INSERT INTO reminders(user_id, guild_id, channel_id, message_id, name, time, created_time) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id", user_id, guild_id, channel_id, message_id, name, end_time, round(time.time()), column='id')
+        rm_id = await self.client.db.fetchval("INSERT INTO reminders(user_id, guild_id, channel_id, message_id, name, time, created_time) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id", user_id, guild_id, channel_id, message_id, name, end_time, round(time.time()), column='id')
         return rm_id
 
     @checks.perm_insensitive_roles()
@@ -94,13 +94,13 @@ class reminders(commands.Cog):
         if repeating_interval is None:
             repeating_interval = reminder.time - reminder.created_time
         if isinstance(repeating_interval, int) and repeating_interval == -1:
-            await self.client.pool_pg.execute("UPDATE reminders SET repeat = $1, interval = $2 WHERE id = $3", False, 0, reminder.id)
+            await self.client.db.execute("UPDATE reminders SET repeat = $1, interval = $2 WHERE id = $3", False, 0, reminder.id)
             return await ctx.send(f"Alright, I won't repeat this reminder (**{reminder.name}**) anymore.")
         minimum_interval = 1 if os.getenv('state') == '1' else 300
         if repeating_interval < minimum_interval:
             return await ctx.send("Repeating reminders require a minimum of 5 minutes between each reminder.")
         else:
-            await self.client.pool_pg.execute("UPDATE reminders SET repeat = $1, interval = $2 WHERE id = $3", True, repeating_interval, reminder.id)
+            await self.client.db.execute("UPDATE reminders SET repeat = $1, interval = $2 WHERE id = $3", True, repeating_interval, reminder.id)
             await ctx.send(f"Alright! Your reminder **{reminder.name}** will repeat **every {humanize_timedelta(seconds=repeating_interval)}**. This will take place only after you get reminded about this reminder.")
 
     @checks.perm_insensitive_roles()
@@ -108,7 +108,7 @@ class reminders(commands.Cog):
     @remind.command(name='list', aliases=['mine', 'show', 'display'])
     async def remind_list(self, ctx):
         """Lists all of your reminders."""
-        reminders = await self.client.pool_pg.fetch("SELECT id, channel_id, message_id, name, time FROM reminders WHERE user_id=$1 AND guild_id=$2 ORDER BY time", ctx.author.id, ctx.guild.id)
+        reminders = await self.client.db.fetch("SELECT id, channel_id, message_id, name, time FROM reminders WHERE user_id=$1 AND guild_id=$2 ORDER BY time", ctx.author.id, ctx.guild.id)
         if not reminders:
             return await ctx.send("You don't have any reminders set.")
         reminder_list = []
@@ -144,7 +144,7 @@ class reminders(commands.Cog):
         if reminder_id is None:
             return await ctx.send("You need to specify a reminder's ID to delete.")
         reminder: Reminder = reminder_id
-        await self.client.pool_pg.execute("DELETE FROM reminders WHERE id=$1 AND user_id=$2 AND guild_id=$3", reminder.id, ctx.author.id, ctx.guild.id)
+        await self.client.db.execute("DELETE FROM reminders WHERE id=$1 AND user_id=$2 AND guild_id=$3", reminder.id, ctx.author.id, ctx.guild.id)
         await ctx.send(f"Your reminder **{reminder.name}** with ID `{reminder.id}` has been deleted.")
 
     @checks.perm_insensitive_roles()
@@ -152,7 +152,7 @@ class reminders(commands.Cog):
     @remind.command(name='clear', aliases=['clean', 'purge', 'reset'])
     async def remind_clear(self, ctx):
         """Completely clears your reminder list."""
-        is_existing = await self.client.pool_pg.fetch("SELECT * FROM reminders WHERE user_id = $1 AND guild_id = $2", ctx.author.id, ctx.guild.id)
+        is_existing = await self.client.db.fetch("SELECT * FROM reminders WHERE user_id = $1 AND guild_id = $2", ctx.author.id, ctx.guild.id)
         if not is_existing:
             return await ctx.send("You don't have any reminders to clear lol �")
         confirmview = confirm(ctx, self.client, 30)
@@ -164,7 +164,7 @@ class reminders(commands.Cog):
             return await confirmview.response.edit(embed=embed)
         embed.color, embed.description = discord.Color.green(), "Clearing your reminders for {}...".format(ctx.guild.name)
         await confirmview.response.edit(embed=embed)
-        await self.client.pool_pg.execute("DELETE FROM reminders WHERE user_id=$1 AND guild_id=$2", ctx.author.id, ctx.guild.id)
+        await self.client.db.execute("DELETE FROM reminders WHERE user_id=$1 AND guild_id=$2", ctx.author.id, ctx.guild.id)
         await ctx.send(f"Your {len(is_existing)} reminders have been removed.")
 
     @checks.perm_insensitive_roles()
@@ -255,7 +255,7 @@ class reminders(commands.Cog):
         if confirmview.returning_value is not True:
             return await ctx.send("**Your reminders will not be imported from Carl-bot.")
         else:
-            exising_reminders = await self.client.pool_pg.fetch(
+            exising_reminders = await self.client.db.fetch(
                 "SELECT name, time FROM reminders WHERE user_id = $1 AND guild_id = $2", ctx.author.id, ctx.guild.id)
             if len(exising_reminders) > 0:
                 existing_reminders = [(x.get('time'), x.get('name')) for x in exising_reminders]
@@ -265,7 +265,7 @@ class reminders(commands.Cog):
                 (ctx.author.id, ctx.guild.id, ctx.channel.id, ctx.message.id, tup[1], tup[0], round(time.time()))
                 for tup in reminders
                 if tup not in existing_reminders]
-            await self.client.pool_pg.executemany("INSERT INTO reminders(user_id, guild_id, channel_id, message_id, name, time, created_time) VALUES ($1, $2, $3, $4, $5, $6, $7)", to_import)
+            await self.client.db.executemany("INSERT INTO reminders(user_id, guild_id, channel_id, message_id, name, time, created_time) VALUES ($1, $2, $3, $4, $5, $6, $7)", to_import)
             await ctx.send("**Your reminders have been successfully imported from Carl-bot!**")
 
 

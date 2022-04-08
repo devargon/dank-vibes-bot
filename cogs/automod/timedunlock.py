@@ -14,7 +14,7 @@ class TimedUnlock(commands.Cog):
         await self.client.wait_until_ready()
         try:
             now = int(round(time.time()))
-            unlockingchannels = await self.client.pool_pg.fetch("SELECT * FROM timedunlock WHERE time <= $1", now)
+            unlockingchannels = await self.client.db.fetch("SELECT * FROM timedunlock WHERE time <= $1", now)
             for row in unlockingchannels:
                 guild = self.client.get_guild(row.get('guild_id'))
                 if guild is not None:
@@ -33,7 +33,7 @@ class TimedUnlock(commands.Cog):
                                 await channel.send(embed=discord.Embed(title="You can now bump the server!", description="Use the slash command `/bump` to bump the server!", color=0xffffff).set_image(url="https://cdn.discordapp.com/attachments/871737314831908974/960030629959970856/unknown.png"))
                         except:
                             pass
-                await self.client.pool_pg.execute("DELETE FROM timedunlock WHERE channel_id = $1 AND time = $2", row.get('channel_id'), row.get('time'))
+                await self.client.db.execute("DELETE FROM timedunlock WHERE channel_id = $1 AND time = $2", row.get('channel_id'), row.get('time'))
         except Exception as e:
             print(f"timedunlock task caught a error: {e}")
 

@@ -17,7 +17,7 @@ class reminders_(commands.Cog):
     async def reminder_check(self):
         await self.client.wait_until_ready()
         try:
-            reminders = await self.client.pool_pg.fetch("SELECT * FROM reminders WHERE time <= $1", round(time.time()))
+            reminders = await self.client.db.fetch("SELECT * FROM reminders WHERE time <= $1", round(time.time()))
             if len(reminders) == 0:
                 return
             else:
@@ -35,7 +35,7 @@ class reminders_(commands.Cog):
                     text = f"Your reminder ended: **{reminder.name}**"
                     if reminder.repeat is True and reminder.interval and reminder.interval > 0:
                         text += f"\nThis reminder will repeat again at <t:{time_end+reminder.interval}> (every {humanize_timedelta(seconds=reminder.interval)})."
-                        await self.client.pool_pg.execute("UPDATE reminders SET time = $1, created_time = $2 WHERE id = $3", time_end+reminder.interval, time_end, reminder.id)
+                        await self.client.db.execute("UPDATE reminders SET time = $1, created_time = $2 WHERE id = $3", time_end+reminder.interval, time_end, reminder.id)
                     if user is not None:
                         try:
                             await user.send(text, embed=embed)
@@ -47,7 +47,7 @@ class reminders_(commands.Cog):
                     else:
                         pass
                     if not reminder.repeat is True:
-                        await self.client.pool_pg.execute("DELETE FROM reminders WHERE id = $1", reminder.id)
+                        await self.client.db.execute("DELETE FROM reminders WHERE id = $1", reminder.id)
         except Exception as error:
             if isinstance(error, ConnectionRefusedError):
                 os.system("sudo service postgresql restart")

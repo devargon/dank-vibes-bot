@@ -31,7 +31,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
             return
         if self.client.maintenance.get(self.qualified_name):
             return
-        triggers = await self.client.pool_pg.fetch("SELECT DISTINCT trigger FROM autoreactions WHERE guild_id=$1", message.guild.id)
+        triggers = await self.client.db.fetch("SELECT DISTINCT trigger FROM autoreactions WHERE guild_id=$1", message.guild.id)
         if len(triggers) == 0:
             return
         if not message.channel.permissions_for(message.guild.me).add_reactions:
@@ -45,7 +45,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
             msgcontent = msgcontent.replace('<@!', '<@')
             msgcontent = msgcontent.split(" ")
             if fixed_trigger in msgcontent:
-                responses = await self.client.pool_pg.fetch("SELECT response FROM autoreactions WHERE guild_id=$1 AND trigger=$2", *(message.guild.id, trigger[0]))
+                responses = await self.client.db.fetch("SELECT response FROM autoreactions WHERE guild_id=$1 AND trigger=$2", *(message.guild.id, trigger[0]))
                 if len(responses) > 1:
                     response = random.choice(responses)
                 else:
@@ -56,7 +56,7 @@ class Autoreaction(commands.Cog, name='autoreaction'):
                         return await message.add_reaction(response)
                     except discord.HTTPException as error:
                         if error.status == 400:
-                            await self.client.pool_pg.execute("DELETE FROM autoreactions WHERE guild_id=$1 AND trigger=$2 AND response=$3", *(message.guild.id, trigger.get('trigger'), response))
+                            await self.client.db.execute("DELETE FROM autoreactions WHERE guild_id=$1 AND trigger=$2 AND response=$3", *(message.guild.id, trigger.get('trigger'), response))
                         return
                 else:
                     with contextlib.suppress(discord.HTTPException):
