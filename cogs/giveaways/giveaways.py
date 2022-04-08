@@ -58,7 +58,7 @@ class ShowMultiEntries(discord.ui.View):
             await interaction.message.edit(embed=self.embed, view=None)
 
 class GiveawayEndView(discord.ui.View):
-    def __init__(self, user, url):
+    def __init__(self, url, user: typing.Optional[typing.Any] = None):
         self.user = user
         self.url = url
         super().__init__(timeout=None)
@@ -239,7 +239,7 @@ class giveaways(commands.Cog):
                     msg_link = f"https://discord.com/channels/{guild.id}/{channel.id}/{g_entry.message_id}"
                     host = guild.get_member(g_entry.host_id)
                     if len(winners) == 0:
-                        await channel.send(f"I could not find a winner from the **{g_entry.title}** giveaway.\n{msg_link}", view=GiveawayEndView(host, msg_link))
+                        await channel.send(f"I could not find a winner from the **{g_entry.title}** giveaway.\n{msg_link}", view=GiveawayEndView(msg_link, host))
                         if host is not None:
                             hostembed = discord.Embed(
                                 title=f"Your {g_entry.title} giveaway has ended!",
@@ -253,7 +253,7 @@ class giveaways(commands.Cog):
                         self.client.add_to_edit_queue(message=gawmessage.channel.get_partial_message(gawmessage.id), embed=embed, view=view, index=0)
                         #await gawmessage.edit(embed=embed, view=view)
                         message = f"{random.choice(guild.emojis)} **{entrant_no}** user(s) entered, {human_join([winner.mention for winner in winners], final='and')} snagged away **{g_entry.title}**!"
-                        await channel.send(message, view=GiveawayEndView(host, msg_link))
+                        await channel.send(message, view=GiveawayEndView(msg_link, host))
                         winembed = discord.Embed(title=f"You've won the {g_entry.title} giveaway!",
                                                  description=f"Please be patient and wait for a DM from `Atlas#2867`. Do **not** try to claim before the DM!\n\n[Link to giveaway]({msg_link})",
                                                  color=self.client.embed_color, timestamp=discord.utils.utcnow())
@@ -528,7 +528,7 @@ class giveaways(commands.Cog):
         `--noping True` If you do not want the bot to ping
         """
         channel = ctx.channel
-        if os.getenv('state') == "0" and channel.id not in [630587061665267713, 803039330310029362, 882280305233383474]:
+        if os.getenv('state') == "0" and channel.id not in [630587061665267713, 803039330310029362, 882280305233383474] and not ctx.author.guild_permissions.manage_roles:
             return await ctx.send("This command can only be used in certain channels.")
         if flags.time is None:
             duration = 86400
@@ -607,7 +607,7 @@ class giveaways(commands.Cog):
     @giveaway.command(name="start", aliases=['s'], usage="[duration] [winner] <requirement> [prize]")
     async def giveaway_start(self, ctx):
         """
-        Starts a new giveaway.
+        Starts a new giveaway. This command is non-functional, please use its slash command version instead.
         """
         return await ctx.send("Please use the slash command `/giveaway start` instead.")
 
@@ -710,22 +710,24 @@ class giveaways(commands.Cog):
 
     @checks.has_permissions_or_role(manage_roles=True)
     @giveaway.command(name="reroll", aliases=["r"])
-    async def giveaway_reroll(self, ctx, message_ID: BetterMessageID = None, winner: int = None):
+    async def giveaway_reroll(self, ctx, message_id: BetterMessageID = None, winner: int = None):
         """
         Rerolls the winner for a giveaway.
         """
-        giveaway = await self.client.db.fetchrow("SELECT * FROM giveaways WHERE message_id = $1", message_ID)
+        result = await self.client.db.fetchrow("SELECT * FROM giveaways WHERE message_id = $1 AND guild_id = $2", message_id, ctx.guild.id)
+        if result is None:
+            with contextlib.suppress(Exception):
+                await ctx.send(f"No giveaway was found with the message ID {message_id}.", delete_after=5.0)
+            with contextlib.suppress(Exception):
+                await ctx.message.delete()
         if winner is None:
             winnernum = 1
         else:
             winnernum = winner
-        if giveaway is None:
-            return await ctx.send("I couldn't find a giveaway with that message ID.")
-        if giveaway.get('guild_id') != ctx.guild.id:
-            return await ctx.send("I couldn't find a giveaway with that message ID.")
-        if giveaway.get('time') > time() or giveaway.get('active') == True:
+        giveaway = GiveawayEntry(result)
+        if giveaway.end_time > time() or giveaway.active is True:
             return await ctx.send("You can't reroll a giveaway that hasn't ended yet 😂🤣")
-        entries = await self.client.db.fetch("SELECT * FROM giveawayentrants WHERE message_id = $1", message_ID)
+        entries = await self.client.db.fetch("SELECT * FROM giveawayentrants WHERE message_id = $1", message_id)
         winners = []
         while len(winners) != winnernum and len(entries) > 0:
             winner = random.choice(entries)
@@ -734,23 +736,23 @@ class giveaways(commands.Cog):
                 if member is not None:
                     winners.append(member)
             entries.remove(winner)
-        channel = self.client.get_channel(giveaway.get("channel_id"))
+        channel = self.client.get_channel(giveaway.channel_id)
+        url = f"https://discord.com/channels/{ctx.guild.id}/{channel.id}/{giveaway.message_id}"
         if len(winners) == 0:
             await channel.send(
-                f"I could reroll for a winner from the **{giveaway.get('name')}** giveaway.\nhttps://discord.com/channels/{ctx.guild.id}/{channel.id}/{giveaway.get('message_id')}")
+                f"I could reroll for a winner from the **{giveaway.title}** giveaway.")
         else:
-            message = f"Congratulations, {grammarformat([winner.mention for winner in winners])}! You snagged away **{giveaway.get('name')}** after a reroll!\nhttps://discord.com/channels/{ctx.guild.id}/{channel.id}/{giveaway.get('message_id')}"
-            await channel.send(message)
+            message = f"Congratulations, {grammarformat([winner.mention for winner in winners])}! You snagged away **{giveaway.title}** after a reroll!"
+            await channel.send(message, view=GiveawayEndView(url=url))
 
 
     @checks.has_permissions_or_role(manage_roles=True)
-    @giveaway.command(name="active", aliases = ['a'])
+    @giveaway.command(name="active", aliases = ['a', 'list', 'l'])
     async def giveaway_active(self, ctx):
         """
         Lists active giveaways.
         """
-        giveaways = await self.client.db.fetch("SELECT * FROM giveaways WHERE guild_id=$1 AND active = $2", ctx.guild.id, False)
-        giveaways = [giveaways for giveaway in giveaways if giveaway.get('active') is True]
+        giveaways = await self.client.db.fetch("SELECT * FROM giveaways WHERE guild_id=$1 AND active = $2", ctx.guild.id, True)
         embed = discord.Embed(title="All giveaways", color=self.client.embed_color)
         if len(giveaways) == 0:
             embed.description = "There are no active giveaways."
@@ -758,15 +760,16 @@ class giveaways(commands.Cog):
         else:
             giveaway_list = []
             for index, giveaway in enumerate(giveaways):
-                channel = ctx.guild.get_channel(giveaway.get('channel_id'))
+                giveaway = GiveawayEntry(giveaway)
+                channel = ctx.guild.get_channel(giveaway.channel_id)
                 if channel is None:
                     channel = "Unknown channel"
-                message_link = f"https://discord.com/channels/{ctx.guild.id}/{giveaway.get('channel_id')}/{giveaway.get('message_id')}"
-                host = self.client.get_user(giveaway.get('host_id'))
+                message_link = f"https://discord.com/channels/{ctx.guild.id}/{giveaway.channel_id}/{giveaway.channel_id}"
+                host = self.client.get_user(giveaway.host_id)
                 if host is None:
                     host = "Unknown host"
-                prize = f"{index+1}. {giveaway.get('name')}"
-                description = f"Hosted by **{host.mention if type(host) != str else host}** in **{channel.mention if type(channel) != str else channel}**\nEnds **<t:{giveaway.get('time')}>**\n[Jump to giveaway]({message_link})"
+                prize = f"{index+1}. {giveaway.title}"
+                description = f"Hosted by **{host.mention if type(host) != str else host}** in **{channel.mention if type(channel) != str else channel}**\nEnds **<t:{giveaway.end_time}>**\n[Jump to giveaway]({message_link})"
                 giveaway_list.append((prize, description))
             if len(giveaway_list) <= 10:
                 for giveaway_details in giveaway_list:
