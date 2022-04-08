@@ -363,24 +363,23 @@ class Giveaways(commands.Cog):
     @tasks.loop(seconds=30.0)
     async def change_entrantcount(self):
         await self.client.wait_until_ready()
-        results = await self.client.db.fetch("SELECT * FROM giveaways WHERE showentrantcount = true AND end_time > $1 AND active = True", round(time()))
-        if len(results) > 0:
-            for entry in results:
-                entry = GiveawayEntry(entry)
-                embed = await self.format_giveaway_embed(entry, None)
-                channel = self.client.get_channel(entry.channel_id)
-                if channel is None:
-                    await self.client.db.execute("UPDATE giveaways SET active = False WHERE message_id = $1", entry.message_id)
-                    continue
-                p_message = channel.get_partial_message(entry.message_id)
-                if discord.utils.get([m[0] for m in self.client.editqueue], id=p_message.id) is not None:
-                    # print('item already in queue')
-                    continue
-                self.client.add_to_edit_queue(message=p_message, embed=embed)
         try:
-            pass
+            results = await self.client.db.fetch("SELECT * FROM giveaways WHERE showentrantcount = true AND end_time > $1 AND active = True", round(time()))
+            if len(results) > 0:
+                for entry in results:
+                    entry = GiveawayEntry(entry)
+                    embed = await self.format_giveaway_embed(entry, None)
+                    channel = self.client.get_channel(entry.channel_id)
+                    if channel is None:
+                        await self.client.db.execute("UPDATE giveaways SET active = False WHERE message_id = $1", entry.message_id)
+                        continue
+                    p_message = channel.get_partial_message(entry.message_id)
+                    if discord.utils.get([m[0] for m in self.client.editqueue], id=p_message.id) is not None:
+                        # print('item already in queue')
+                        continue
+                    self.client.add_to_edit_queue(message=p_message, embed=embed)
         except Exception as e:
-            print(f"giveaway task caught a error: {e}")
+            print(f"Editing count received an error: {e}")
 
 
     @tasks.loop(seconds=1.0)
@@ -397,23 +396,26 @@ class Giveaways(commands.Cog):
         # what the end_giveaway function should do, is to get the number of winners, generate an embed and do the stuff above
         # yea that's all bye have fun
         await self.client.wait_until_ready()
-        result = await self.client.db.fetch("SELECT * FROM giveaways WHERE end_time < $1 AND active = $2", round(time()), True)
-        if len(result) > 0:
-            for entry in result:
-                entry = GiveawayEntry(entry)
-                print(f"Processing entry {entry}")
-                try:
-                    await self.end_giveaway(entry)
-                except (GiveawayGuildNotFound, GiveawayChannelNotFound, GiveawayMessageNotFound) as e:
-                    print(e)
-                    await self.client.db.execute("UPDATE giveaways SET active = False WHERE message_id = $1", entry.message_id)
-                except Exception as e:
-                    print(e)
-                    await self.client.get_user(650647680837484556).send(f"```\nFailed to end {entry}: {e}\n```")
-                else:
-                    print("Done processing")
-                    await self.client.db.execute("UPDATE giveaways SET active = False WHERE message_id = $1",
-                                                 entry.message_id)
+        try:
+            result = await self.client.db.fetch("SELECT * FROM giveaways WHERE end_time < $1 AND active = $2", round(time()), True)
+            if len(result) > 0:
+                for entry in result:
+                    entry = GiveawayEntry(entry)
+                    print(f"Processing entry {entry}")
+                    try:
+                        await self.end_giveaway(entry)
+                    except (GiveawayGuildNotFound, GiveawayChannelNotFound, GiveawayMessageNotFound) as e:
+                        print(e)
+                        await self.client.db.execute("UPDATE giveaways SET active = False WHERE message_id = $1", entry.message_id)
+                    except Exception as e:
+                        print(e)
+                        await self.client.get_user(650647680837484556).send(f"```\nFailed to end {entry}: {e}\n```")
+                    else:
+                        print("Done processing")
+                        await self.client.db.execute("UPDATE giveaways SET active = False WHERE message_id = $1",
+                                                     entry.message_id)
+        except Exception as e:
+            print(f"Checking/ending giveaways received an error: {e}")
 
 
     class RoleFlags(commands.FlagConverter, case_insensitive=True, delimiter=' ', prefix='--'):
