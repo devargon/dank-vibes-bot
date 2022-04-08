@@ -660,7 +660,7 @@ class giveaways(commands.Cog):
                 with contextlib.suppress(Exception):
                     await ctx.send(f"Giveaway {message_id} has been cancelled.", delete_after=5.0)
                 giveaway.active = False
-                embed = self.format_giveaway_embed(giveaway)
+                embed = await self.format_giveaway_embed(giveaway)
                 channel = self.client.get_channel(giveaway.channel_id)
                 try:
                     msg = await channel.fetch_message(giveaway.message_id)
