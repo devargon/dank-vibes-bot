@@ -781,7 +781,7 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
             print('nooo')
 
     @checks.perm_insensitive_roles()
-    @commands.cooldown(1, 1800, commands.BucketType.guild)
+    @commands.cooldown(1, 3600, commands.BucketType.guild)
     @commands.command(name="randomcolor", aliases=['rc'])
     async def randomcolor(self, ctx: DVVTcontext):
         timenow = round(time.time())
@@ -797,20 +797,6 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
         old_hex = '#%06x' % random_color_role.color.value
         random_int_color = random.randint(0, 0xFFFFFF)
         str_random_hex_color = '#%06x' % random_int_color
-        data = self.rcdata.split(':')
-        weekday_int = datetime.now().weekday()
-        if len(data) != 2:
-            self.rcdata = f"{weekday_int}:0"
-        else:
-            recorded_weekday_int = int(data[0])
-            if recorded_weekday_int != weekday_int:
-                self.rcdata = f"{weekday_int}:1"
-            else:
-                times = int(data[1])
-                if times >= 3:
-                    return await ctx.send(f"The **{random_color_role.name}**'s color has been changed 3/3 times today. It will reset at 5:00 AM UTC every day.")
-                else:
-                    self.rcdata = f"{weekday_int}:{times + 1}"
         await random_color_role.edit(color=random_int_color)
         embed = discord.Embed(title="Role Color Changed", description=f"{ctx.author.mention} changed the color of {random_color_role.mention} from {old_hex} to {str_random_hex_color}.", color=random_int_color)
         await ctx.send(embed=embed)
