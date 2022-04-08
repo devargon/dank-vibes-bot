@@ -243,7 +243,7 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
                                 f"{losemen} mined straight into the desert temple as he was distracted by {winmen}.",
                                 f"{winmen} told {losemen} to mine straight down in Minecraft.",
                                 f"{losemen} tried to crack 90s in front of {winmen} and died."])
-        if extra_info is not None:
+        if extra_info is None:
             await self.client.db.execute("INSERT INTO dumbfightlog values($1, $2, $3)", ctx.author.id, member.id, 1 if doesauthorwin is True else 0)
         originaloverwrite = channel.overwrites_for(muted) if muted in channel.overwrites else None
         tempoverwrite = channel.overwrites_for(muted) if muted in channel.overwrites else discord.PermissionOverwrite()
