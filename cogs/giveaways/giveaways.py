@@ -428,7 +428,7 @@ class giveaways(commands.Cog):
 
     giveaway_group = SlashCommandGroup("giveaway", "Giveaway commands")
 
-    @giveaway_group.command(name='start', description="Start a giveaway!", guild_ids=[871734809154707467, 595457764935991326])
+    @giveaway_group.command(name='start', description="Start a giveaway!")
     @checks.has_permissions_or_role(manage_roles=True)
     async def start_giveaway(self, ctx: discord.ApplicationContext,
                              duration: discord.Option(str, "The duration of the giveaway"),
