@@ -726,9 +726,10 @@ class giveaways(commands.Cog):
             entries.remove(winner)
         channel = self.client.get_channel(giveaway.channel_id)
         url = f"https://discord.com/channels/{ctx.guild.id}/{channel.id}/{giveaway.message_id}"
+        with contextlib.suppress(Exception):
+            await ctx.message.delete()
         if len(winners) == 0:
-            await channel.send(
-                f"I could reroll for a winner from the **{giveaway.title}** giveaway.")
+            await channel.send(f"I could not reroll for a winner from the **{giveaway.title}** giveaway.", delete_after=5.0)
         else:
             message = f"Congratulations, {grammarformat([winner.mention for winner in winners])}! You snagged away **{giveaway.title}** after a reroll!"
             await channel.send(message, view=GiveawayEndView(url=url))
