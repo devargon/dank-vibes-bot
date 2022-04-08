@@ -42,7 +42,7 @@ class ErrorHandler(commands.Cog):
             return
         if isinstance(error, commands.NoPrivateMessage):
             await send_error("Sowwi, you can't use this command in DMs :(", delete_after=10)
-        elif isinstance(error, commands.CheckFailure):
+        elif isinstance(error, commands.CheckFailure) or isinstance(error.original, commands.MissingPermissions):
             await send_error("Oops!, looks like you don't have enough permission to use this command.", delete_after=5)
         elif isinstance(error, commands.CommandOnCooldown):
             #enabled = await ctx.bot.db.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)

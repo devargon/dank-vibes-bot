@@ -42,3 +42,5 @@ httpcore==0.9.1
 pytz
 h2==3.2.0
 parsedatetime
+hyperframe==5.2.0
+bugsnag
