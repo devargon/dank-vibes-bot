@@ -1,3 +1,4 @@
+import contextlib
 import os
 import random
 import typing
@@ -44,6 +45,18 @@ class GiveawayList(menus.ListPageSource):
         embed.set_footer(text=f"{len(entries)} giveaways | Page {menu.current_page + 1}/{self.get_max_pages()}")
         return embed
 
+class ShowMultiEntries(discord.ui.View):
+    def __init__(self, embed):
+        super().__init__(timeout=None)
+        self.embed = embed
+
+    @discord.ui.button(emoji=discord.PartialEmoji.from_str("<:leave:893542866071203910>"), label="Leave Giveaway", style=discord.ButtonStyle.red)
+    async def LeaveGiveaway(self, button: discord.ui.Button, interaction: discord.Interaction):
+        try:
+            await interaction.user.send_message(embed=self.embed)
+        except:
+            await interaction.message.edit(embed=self.embed, view=None)
+
 class GiveawayEndView(discord.ui.View):
     def __init__(self, user, url):
         self.user = user
@@ -74,7 +87,7 @@ class LeaveGiveawayView(discord.ui.View):
 class GiveawayView(discord.ui.View):
     def __init__(self, client, cog):
         self.cog: cogs.giveaways.Giveaways = cog
-        self.client = client
+        self.client: dvvt = client
         super().__init__(timeout=None)
 
     @discord.ui.button(emoji=discord.PartialEmoji.from_str("<a:dv_iconOwO:837943874973466664>"), label="Join giveaway", style=discord.ButtonStyle.green, custom_id="dvb:giveawayjoin")
@@ -98,8 +111,10 @@ class GiveawayView(discord.ui.View):
                 print("Umm?")
                 entry_list = []
                 entry_list.append({'role_id': 0, 'allowed_entries': 1, 'valid_role': True, 'entered_entries':entries.get(0, 0)})
-                for role_id, multi_count in giveawayentry.multi.keys():
+                for role_id, multi_count in giveawayentry.multi.items():
+                    role_id = int(role_id)
                     role = interaction.guild.get_role(role_id)
+                    print(role)
                     if role is None:
                         entry_list.append({'role_id': role_id, 'allowed_entries': 0, 'valid_role': False, 'entered_entries': entries.get(role_id, 0)})
                     else:
@@ -159,6 +174,11 @@ class GiveawayView(discord.ui.View):
                 await self.client.db.executemany("INSERT INTO giveawayentrants VALUES($1, $2, $3)", entries_to_insert)
             else:
                 content = "You have already entered the giveaway."
+            final_number_of_entries = len(await self.cog.fetch_user_entries(interaction.user.id, giveawaymessage.id))
+            if giveaway_uses_multiple_entries is True:
+                summary_embed.set_footer(text=f"Your total entries: {final_number_of_entries}")
+            else:
+                summary_embed.description = f"Your total entries: {final_number_of_entries}"
             await interaction.response.send_message(content, embed=summary_embed, view=LeaveGiveawayView(giveawaymessage.id, self.cog, self.client), ephemeral=True)
         else:
             return await interaction.response.send_message("It appears that this giveaway doesn't exist or has ended.", ephemeral=True)
@@ -169,7 +189,7 @@ class Giveaways(commands.Cog):
     Giveaway commands
     """
     def __init__(self, client):
-        self.client = client
+        self.client: dvvt = client
         self.giveawayview_added = False
         self.change_entrantcount.start()
         self.check_giveaways.start()
@@ -205,7 +225,7 @@ class Giveaways(commands.Cog):
                     for b in view.children:
                         if isinstance(b, discord.ui.Button):
                             b.disabled = True
-                    await gawmessage.edit(view=view)
+                    #await gawmessage.edit(view=view)
                     entries = await self.client.db.fetch("SELECT * FROM giveawayentrants WHERE message_id = $1", g_entry.message_id)
                     winners = []
                     while len(winners) != g_entry.winners and len(entries) > 0:
@@ -229,7 +249,8 @@ class Giveaways(commands.Cog):
                             self.dm_queue.append((host, None, hostembed, None))
                     else:
                         embed = await self.format_giveaway_embed(g_entry, winners)
-                        self.client.editqueue.append((gawmessage, embed))
+                        self.client.remove_queued_edit(gawmessage.id)
+                        self.client.add_to_edit_queue(message=gawmessage.channel.get_partial_message(gawmessage.id), embed=embed, view=view, index=0)
                         #await gawmessage.edit(embed=embed, view=view)
                         message = f"{random.choice(guild.emojis)} **{entrant_no}** user(s) entered, {human_join([winner.mention for winner in winners], final='and')} snagged away **{g_entry.title}**!"
                         await channel.send(message, view=GiveawayEndView(host, msg_link))
@@ -265,11 +286,15 @@ class Giveaways(commands.Cog):
         user = self.client.get_user(entry.host_id)
         user = user.mention if user else entry.host_id
         descriptions.append(f"**Host:** {user}")
-        if winners is not None:
-            descriptions.append(f"**Duration:** {humanize_timedelta(seconds=entry.duration)}")
-            descriptions.append(f"**Ends:** <t:{entry.end_time}:F> <t:{entry.end_time}:R>")
+        if winners is None:
+            if entry.active is True:
+                descriptions.append(f"**Duration:** {humanize_timedelta(seconds=entry.duration)}")
+                descriptions.append(f"**Ends:** <t:{entry.end_time}:F> <t:{entry.end_time}:R>")
+            else:
+                descriptions.append(f"**Would've ended on:** <t:{entry.end_time}:F>")
+                embed.set_author(icon_url="https://cdn.discordapp.com/attachments/871737314831908974/961853829731741716/cancel.png", name="Giveaway Cancelled")
         else:
-            descriptions.append(f"**Ended:** <t:{entry.end_time}>")
+            descriptions.append(f"**Ended:** <t:{round(time())}>")
         if entry.showentrantcount is True:
             print('umm?')
             count = await self.client.db.fetchval("SELECT COUNT(distinct user_id) FROM giveawayentrants WHERE message_id = $1", entry.message_id)
@@ -284,7 +309,7 @@ class Giveaways(commands.Cog):
                 req_list.append(role.mention)
             if len(req_list) > 0:
                 embed.add_field(name="Requirements", value="\n ".join(req_list), inline=True)
-        if entry.blacklisted_roles and guild is not None:
+        if entry.blacklisted_roles and guild is not None and winners is None:
             req_list = []
             for req in entry.blacklisted_roles:
                 role = guild.get_role(req)
@@ -292,7 +317,7 @@ class Giveaways(commands.Cog):
                 req_list.append(role.mention)
             if len(req_list) > 0:
                 embed.add_field(name="Blacklisted Roles", value="\n ".join(req_list))
-        if entry.bypass_roles and guild is not None:
+        if entry.bypass_roles and guild is not None and winners is None:
             req_list = []
             for req in entry.bypass_roles:
                 role = guild.get_role(req)
@@ -300,10 +325,10 @@ class Giveaways(commands.Cog):
                 req_list.append(role.mention)
             if len(req_list) > 0:
                 embed.add_field(name="Bypass Roles", value="\n ".join(req_list))
-        if entry.multi and guild is not None:
+        if entry.multi and guild is not None and winners is None:
             req_list = []
             for role_id, number_of_entries in entry.multi.items():
-                role = guild.get_role(role_id)
+                role = guild.get_role(int(role_id))
                 if role is not None:
                     req_list.append(f"{role.mention}: **{number_of_entries}** extra entries")
             if len(req_list) > 0:
@@ -351,7 +376,7 @@ class Giveaways(commands.Cog):
                 if discord.utils.get([m[0] for m in self.client.editqueue], id=p_message.id) is not None:
                     # print('item already in queue')
                     continue
-                self.client.editqueue.append((p_message, embed))
+                self.client.add_to_edit_queue(message=p_message, embed=embed)
         try:
             pass
         except Exception as e:
@@ -534,10 +559,10 @@ class Giveaways(commands.Cog):
         end_at_datetime = datetime.fromtimestamp(ends_at)
         giveawaymessage = await ctx.channel.send(embed=discord.Embed(title="<a:DVB_Loading:909997219644604447> Initializing giveaway...", color=self.client.embed_color))
         multi = {
-
+            str(voteid): 1,
+            str(level_100id): 1
         }
-        await self.client.db.execute("INSERT INTO giveaways (guild_id, channel_id, message_id, title, host_id, donor_id, winners, required_roles, blacklisted_roles, bypass_roles, multi, duration, end_time, showentrantcount) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
-                                     ctx.guild.id, ctx.channel.id, giveawaymessage.id, prize, ctx.author.id, None, winner, "", "", "", str(multi), duration, round(time() + duration), show_count)
+        await self.client.db.execute("INSERT INTO giveaways (guild_id, channel_id, message_id, title, host_id, donor_id, winners, required_roles, blacklisted_roles, bypass_roles, multi, duration, end_time) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)", ctx.guild.id, ctx.channel.id, giveawaymessage.id, prize, ctx.author.id, None, winner, "", "", "", json.dumps(multi), duration, round(time() + duration))
         giveawayrecord = await self.fetch_giveaway(giveawaymessage.id)
         embed = await self.format_giveaway_embed(giveawayrecord, None)
         await giveawaymessage.edit(embed=embed, view=GiveawayView(self.client, self))
@@ -584,22 +609,6 @@ class Giveaways(commands.Cog):
         """
         return await ctx.send("Please use the slash command `/giveaway start` instead.")
 
-    @checks.has_permissions_or_role(manage_roles=True)
-    @giveaway.command(name="cancel", aliases=['c'])
-    async def giveaway_cancel(self, ctx, messasge_ID=None):
-        """
-        Cancels a giveaway. No winners will be announced.
-        """
-        return await ctx.send("i'm not really a giveaway bot so here's a youtube video instead <https://www.youtube.com/watch?v=dQw4w9WgXcQ>")
-
-    @checks.has_permissions_or_role(manage_roles=True)
-    @giveaway.command(name="end", aliases=['e'])
-    async def giveaway_end(self, ctx, message_ID=None):
-        """
-        Ends a giveaway earlier than the end time, but winners will be announced.
-        """
-        return await ctx.send("i'm not really a giveaway bot so here's a youtube video instead <https://www.youtube.com/watch?v=dQw4w9WgXcQ>")
-
     class BetterMessageID(commands.Converter):
         async def convert(self, ctx, argument):
             if argument is None:
@@ -627,6 +636,74 @@ class Giveaways(commands.Cog):
                                 return message_id
                         except:
                             raise ArgumentBaseError(message="5You did not provide a valid message link or ID.")
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @giveaway.command(name="cancel", aliases=['c'])
+    async def giveaway_cancel(self, ctx, message_id: BetterMessageID =None):
+        """
+        Cancels a giveaway. No winners will be announced.
+        """
+        if message_id is None:
+            return await ctx.send("You need to provide a message link or ID.")
+        result = await self.client.db.fetchrow("SELECT * FROM giveaways WHERE guild_id = $1 AND message_id = $2", ctx.guild.id, message_id)
+        if result is None:
+            with contextlib.suppress(Exception):
+                await ctx.send(f"No giveaway was found with the message ID {message_id}.", delete_after=5.0)
+            with contextlib.suppress(Exception):
+                await ctx.message.delete()
+        else:
+            giveaway = GiveawayEntry(result)
+            if giveaway.active:
+                await self.client.db.execute("UPDATE giveaways SET active = False WHERE message_id = $1", message_id)
+                with contextlib.suppress(Exception):
+                    await ctx.send(f"Giveaway {message_id} has been cancelled.", delete_after=5.0)
+                giveaway.active = False
+                embed = self.format_giveaway_embed(giveaway)
+                channel = self.client.get_channel(giveaway.channel_id)
+                try:
+                    msg = await channel.fetch_message(giveaway.message_id)
+                except discord.NotFound:
+                    return
+                view = discord.ui.View.from_message(msg)
+                for b in view.children:
+                    if isinstance(b, discord.ui.Button):
+                        b.disabled = True
+                with contextlib.suppress(Exception):
+                    await msg.edit(view=view, embed=embed)
+            else:
+                with contextlib.suppress(Exception):
+                    await ctx.send(f"Either this giveaway was cancelled, or it has already ended.", delete_after=5.0)
+                with contextlib.suppress(Exception):
+                    await ctx.message.delete()
+
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @giveaway.command(name="end", aliases=['e'])
+    async def giveaway_end(self, ctx, message_id: BetterMessageID = None):
+        """
+        Ends a giveaway earlier than the end time, but winners will be announced.
+        """
+        if message_id is None:
+            return await ctx.send("You need to provide a message link or ID.")
+        result = await self.client.db.fetchrow("SELECT * FROM giveaways WHERE guild_id = $1 AND message_id = $2", ctx.guild.id, message_id)
+        if result is None:
+            with contextlib.suppress(Exception):
+                await ctx.send(f"No giveaway was found with the message ID {message_id}.", delete_after=5.0)
+            with contextlib.suppress(Exception):
+                await ctx.message.delete()
+        else:
+            giveaway = GiveawayEntry(result)
+            if giveaway.active:
+                try:
+                    await self.end_giveaway(giveaway)
+                except (GiveawayGuildNotFound, GiveawayChannelNotFound, GiveawayMessageNotFound):
+                    await ctx.message.delete()
+                    await self.client.db.execute("UPDATE giveaways SET active = False WHERE message_id = $1", giveaway.message_id)
+                else:
+                    await self.client.db.execute("UPDATE giveaways SET active = False WHERE message_id = $1", giveaway.message_id)
+
+
+
 
 
     @checks.has_permissions_or_role(manage_roles=True)
