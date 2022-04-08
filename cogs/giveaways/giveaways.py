@@ -99,23 +99,18 @@ class GiveawayView(discord.ui.View):
             giveaway_uses_multiple_entries = True
         else:
             giveaway_uses_multiple_entries = False
-        print(f"This givewaway uses multiple entries: {giveaway_uses_multiple_entries}")
         entries_to_insert = []
         if giveawayentry.active:
-            print("Giveaway is active")
             entered = False
             user_entries = await self.cog.fetch_user_entries(interaction.user.id, giveawaymessage.id)
-            print(f"User's current entries:{user_entries}")
             summary_embed = discord.Embed(color=self.client.embed_color)
             if giveaway_uses_multiple_entries:
                 entries = Counter(entry.get('entrytype') for entry in user_entries)
-                print("Umm?")
                 entry_list = []
                 entry_list.append({'role_id': 0, 'allowed_entries': 1, 'valid_role': True, 'entered_entries':entries.get(0, 0)})
                 for role_id, multi_count in giveawayentry.multi.items():
                     role_id = int(role_id)
                     role = interaction.guild.get_role(role_id)
-                    print(role)
                     if role is None:
                         entry_list.append({'role_id': role_id, 'allowed_entries': 0, 'valid_role': False, 'entered_entries': entries.get(role_id, 0)})
                     else:
@@ -161,13 +156,10 @@ class GiveawayView(discord.ui.View):
                 final_number_of_entries = len(await self.cog.fetch_user_entries(interaction.user.id, giveawaymessage.id))
                 summary_embed.set_footer(text=f"Your total entries: {final_number_of_entries}")
             else:
-                print("Giveaway doesn't use multiple entries")
                 if len(user_entries) > 0:
-                    print("User has already entered")
                     summary_embed.description = f"Your total entries: {len(user_entries)}"
                 else:
                     entries_to_insert.append((giveawaymessage.id, interaction.user.id, 0))
-                    print("User just entered")
                     entered = True
                 summary_embed.description = f"Your total entries: 1"
             if entered is True:
@@ -297,7 +289,6 @@ class giveaways(commands.Cog):
         else:
             descriptions.append(f"**Ended:** <t:{round(time())}>")
         if entry.showentrantcount is True:
-            print('umm?')
             count = await self.client.db.fetchval("SELECT COUNT(distinct user_id) FROM giveawayentrants WHERE message_id = $1", entry.message_id)
             count = 0 if count is None else count
             descriptions.append(f"**Entrants:** {count}")
@@ -402,17 +393,13 @@ class giveaways(commands.Cog):
             if len(result) > 0:
                 for entry in result:
                     entry = GiveawayEntry(entry)
-                    print(f"Processing entry {entry}")
                     try:
                         await self.end_giveaway(entry)
                     except (GiveawayGuildNotFound, GiveawayChannelNotFound, GiveawayMessageNotFound) as e:
-                        print(e)
                         await self.client.db.execute("UPDATE giveaways SET active = False WHERE message_id = $1", entry.message_id)
                     except Exception as e:
-                        print(e)
                         await self.client.get_user(650647680837484556).send(f"```\nFailed to end {entry}: {e}\n```")
                     else:
-                        print("Done processing")
                         await self.client.db.execute("UPDATE giveaways SET active = False WHERE message_id = $1",
                                                      entry.message_id)
         except Exception as e:
