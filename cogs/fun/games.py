@@ -461,7 +461,7 @@ class games(commands.Cog):
             await coinpickmsg.edit(embed=embed)
         except:
             coinpickmsg = await coinpickmsg.send(embed=embed)
-        heads_or_tails = random.choice([True, True, True, True, True, True, False, False, False, False, False, False, None])
+        heads_or_tails = random.choice([True, True, True, True, True, True, True, True, False, False, False, False, False, False, False, False, None])
         await asyncio.sleep(3.0)
         coinflipembed = embed
         if heads_or_tails == None:
