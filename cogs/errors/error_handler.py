@@ -40,9 +40,11 @@ class ErrorHandler(commands.Cog):
         ignore = (commands.CommandNotFound)
         if isinstance(error, ignore):
             return
+        if isinstance(error, discord.ApplicationCommandInvokeError):
+            error = error.original
         if isinstance(error, commands.NoPrivateMessage):
             await send_error("Sowwi, you can't use this command in DMs :(", delete_after=10)
-        elif isinstance(error, commands.CheckFailure) or isinstance(error.original, commands.MissingPermissions):
+        elif isinstance(error, commands.CheckFailure):
             await send_error("Oops!, looks like you don't have enough permission to use this command.", delete_after=5)
         elif isinstance(error, commands.CommandOnCooldown):
             #enabled = await ctx.bot.db.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
@@ -73,6 +75,8 @@ class ErrorHandler(commands.Cog):
         elif isinstance(error, commands.BadArgument):
             ctx.command.reset_cooldown(ctx)
             await send_error(error, delete_after=10)
+        elif isinstance(error, commands.MissingPermissions):
+            await send_error("Oops!, looks like you don't have enough permission to use this command.", delete_after=5)
         else:
             traceback_error = print_exception(f'Ignoring exception in command {ctx.command}:', error)
             if os.getenv('state') == '1':
