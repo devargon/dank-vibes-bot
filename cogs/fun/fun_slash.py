@@ -239,7 +239,7 @@ class FunSlash(commands.Cog):
             await ctx.respond("Your DM request has been submitted, check your DMs!", ephemeral=True)
 
     @checks.perm_insensitive_roles()
-    @commands.dynamic_cooldown(lowered_cooldown, commands.BucketType.user)
+    @commands.cooldown(3600, 1, commands.BucketType.user)
     @commands.slash_command(name="dumbfight", name_localizations={
         "da": "k\u00e6mpe",
         "de": "k\u00e4mpfen",
