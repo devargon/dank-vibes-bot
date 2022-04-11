@@ -8,6 +8,7 @@ from discord.ext import commands
 from utils.context import DVVTcontext
 
 import os
+import json
 import time
 import random
 import aiohttp
@@ -58,6 +59,8 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
         self.rcdata = ""
         self.alex_api = alexflipnote.Client()
         self.rantimes = {}
+        with open('assets/localization/dumbfight_statements.json', 'r') as f:
+            self.dumbfight_statements = json.load(f)
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
