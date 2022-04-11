@@ -296,7 +296,7 @@ class FunSlash(commands.Cog):
         "ja": "30\u301c120\u79d2\u306e\u30e9\u30f3\u30c0\u30e0\u306a\u6642\u9593\u3067\u4eba\u3092\u30df\u30e5\u30fc\u30c8\u3057\u307e\u3059\u3002",
         "zh-TW": "\u5c07\u4eba\u975c\u97f3 30 \u5230 120 \u79d2\u4e4b\u9593\u7684\u96a8\u6a5f\u6301\u7e8c\u6642\u9593\u3002",
         "ko": "30\ucd08\uc5d0\uc11c 120\ucd08 \uc0ac\uc774\uc758 \uc784\uc758\uc758 \uc2dc\uac04 \ub3d9\uc548 \uc0ac\ub78c\ub4e4\uc744 \uc74c\uc18c\uac70\ud569\ub2c8\ub2e4."
-    }, guild_ids=[871734809154707467])
+    })
     async def dumbfight_slash(self, ctx: discord.ApplicationContext, member: discord.Option(discord.Member, name="target", name_localizations={
         "en-GB": "target",
         "en-US": "target",
