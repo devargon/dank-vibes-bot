@@ -658,6 +658,7 @@ class giveaways(commands.Cog):
                 for b in view.children:
                     if isinstance(b, discord.ui.Button):
                         b.disabled = True
+                self.client.remove_queued_edit(giveaway.message_id)
                 with contextlib.suppress(Exception):
                     await msg.edit(view=view, embed=embed)
             else:
