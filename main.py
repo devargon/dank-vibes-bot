@@ -89,25 +89,33 @@ class dvvt(commands.Bot):
             if m.id in self.deleted_edit_messages:
                 return None
             try:
-                if type(content) is str or type(content) is None:
-                    if type(embed) == discord.Embed or type(embed) is None:
-                        if type(view) == discord.ui.View or type(view) is None:
+                if content != 0:
+                    if embed != 0:
+                        if view != 0:
+                            print("content, embed and view exists")
                             await m.edit(content=content, embed=embed, view=view)
                         else:
+                            print("content and embed exists")
                             await m.edit(content=content, embed=embed)
                     else:
-                        if type(view) == discord.ui.View or type(view) is None:
+                        if view != 0:
+                            print("content and view exists")
                             await m.edit(content=content, view=view)
                         else:
+                            print("only content exists")
                             await m.edit(content=content)
                 else:
-                    if type(embed) == discord.Embed or type(embed) is None:
-                        if type(view) == discord.ui.View or type(view) is None:
+                    if embed != 0:
+                        if view != 0:
+                            print("embed and view exists")
                             await m.edit(embed=embed, view=view)
                         else:
+                            print("only embed exists")
                             await m.edit(embed=embed)
                     else:
-                        if type(view) == discord.ui.View or type(view) is None:
+                        if view != 0:
+
+                            print("only view exists")
                             await m.edit(view=view)
             except discord.NotFound:
                 self.deleted_edit_messages.append(m.id)
@@ -142,7 +150,7 @@ class dvvt(commands.Bot):
                 await self.get_channel(906433823594668052).send(embed=embed)
         await self.get_all_blacklisted_users()
 
-    def add_to_edit_queue(self, message: discord.PartialMessage = discord.Embed.Empty, content: str = discord.Embed.Empty, embed: discord.Embed = discord.Embed.Empty, view: discord.ui.View = discord.Embed.Empty, index: Optional[int] = None):
+    def add_to_edit_queue(self, message: discord.PartialMessage = 0, content: str = 0, embed: discord.Embed = 0, view: discord.ui.View = 0, index: Optional[int] = None):
         tup = (message, content, embed, view)
         if index is None:
             self.editqueue.append(tup)
