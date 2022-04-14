@@ -1,7 +1,6 @@
 from abc import ABC
 from discord.ext import menus
 
-
 from utils.converters import BetterInt, BetterTimeConverter
 from .serverrule import ServerRule
 from .joining import Joining
