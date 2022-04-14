@@ -232,19 +232,19 @@ class giveaways(commands.Cog):
                     msg_link = f"https://discord.com/channels/{guild.id}/{channel.id}/{g_entry.message_id}"
                     host = guild.get_member(g_entry.host_id)
                     if len(winners) == 0:
-                        await channel.send(f"I could not find a winner from the **{g_entry.title}** giveaway.\n{msg_link}", view=GiveawayEndView(msg_link, host))
+                        await channel.send(f"I could not find a winner from the **{g_entry.title}** giveaway.", view=GiveawayEndView(msg_link, host))
                         if host is not None:
                             hostembed = discord.Embed(
                                 title=f"Your {g_entry.title} giveaway has ended!",
                                 description=f"No winners were picked, either becuase of an error or there were no entrants.",
                                 url=msg_link,
                                 color=self.client.embed_color, timestamp=discord.utils.utcnow())
+                            self.client.remove_queued_edit(gawmessage.id)
                             self.dm_queue.append((host, None, hostembed, None))
                     else:
                         embed = await self.format_giveaway_embed(g_entry, winners)
                         self.client.remove_queued_edit(gawmessage.id)
                         self.client.add_to_edit_queue(message=gawmessage.channel.get_partial_message(gawmessage.id), embed=embed, view=view, index=0)
-                        #await gawmessage.edit(embed=embed, view=view)
                         message = f"{random.choice(guild.emojis)} **{entrant_no}** user(s) entered, {human_join([winner.mention for winner in winners], final='and')} snagged away **{g_entry.title}**!"
                         await channel.send(message, view=GiveawayEndView(msg_link, host))
                         winembed = discord.Embed(title=f"You've won the {g_entry.title} giveaway!",
