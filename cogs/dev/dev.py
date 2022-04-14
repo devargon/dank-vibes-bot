@@ -1,8 +1,13 @@
 import functools
+import getpass
+import importlib
 import io
+import os
 import re
 import ast
 import copy
+import subprocess
+import sys
 import time
 import typing
 from collections import Counter
@@ -21,13 +26,15 @@ import traceback
 import contextlib
 from abc import ABC
 
+from main import dvvt
 from utils import checks
 from .status import Status
 from .botutils import BotUtils
 from contextlib import redirect_stdout
 from discord.ext import commands, menus
 from .cog_manager import CogManager
-from utils.format import pagify, TabularData, plural, text_to_file, get_command_name
+from utils.buttons import confirm
+from utils.format import pagify, TabularData, plural, text_to_file, get_command_name, comma_number
 from .maintenance import Maintenance
 from.logging import Logging
 from utils.converters import MemberUserConverter, TrueFalse
@@ -95,8 +102,18 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
     This module contains various development focused commands.
     """
     def __init__(self, client):
-        self.client = client
+        self.client: dvvt = client
         self.sessions = set()
+
+    async def run_process(self, command):
+        try:
+            process = await asyncio.create_subprocess_shell(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            result = await process.communicate()
+        except NotImplementedError:
+            process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            result = await self.client.loop.run_in_executor(None, process.communicate)
+
+        return [output.decode() for output in result]
 
     def cleanup_code(self, content):
         """Automatically removes code blocks from the code."""
@@ -571,7 +588,6 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
         view.response = msg
         await view.wait()
 
-
     @checks.dev()
     @commands.command(name="commandusage")
     async def commandusage(self, ctx, argument: typing.Union[discord.User, discord.TextChannel, str] = None):
@@ -593,6 +609,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
             plt.xlabel(x_label)
             plt.ylabel(y_label)
             plt.grid(True)
+
             def generate_graph():
                 buf = io.BytesIO()
                 fig.savefig(buf, format='png')
@@ -608,6 +625,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
                 return buf
 
         perf_now = time.perf_counter()
+
         def sort_dictionary(dictionary: dict, reverse: bool = False):
             lst = sorted(dictionary.items(), key=lambda x: x[1], reverse=reverse)
             new_dict = {}
@@ -868,3 +886,147 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
         resultembed.timestamp = discord.utils.utcnow()
         resultembed.set_footer(icon_url=self.client.user.display_avatar.url, text=f"Processing completed in {done} seconds.")
         await ctx.send(f"Completed in {done}s", embed=resultembed, file=file)
+
+    @checks.dev()
+    @commands.group(name="github", aliases=['git'], invoke_without_command=True)
+    async def github_cmd(self, ctx):
+        """
+        Shows the link to the github repo.
+        """
+        embed = discord.Embed(title="<a:DVB_Loading:909997219644604447> Contacting the GitHub server...",
+                              color=self.client.embed_color)
+        msg = await ctx.send(embed=embed)
+        now = time.perf_counter()
+        token = f"token {os.getenv('GITHUBPAT')}"
+        headers = {'Authorization': token}
+        async with aiohttp.ClientSession(headers=headers) as session:
+            async with session.get("https://api.github.com/repos/argo0n/dank-vibes-bot") as r:
+                if r.status == 200:
+                    data = await r.json()
+                    if "full_name" in data:
+                        embed.title = f"GitHub Repository: {data['full_name']}"
+                        if "html_url" in data:
+                            embed.url = data['html_url']
+                    else:
+                        embed.title = "Retrieving data failed."
+                        embed.description = "Data did not have a key for `full_name`."
+                        embed.color = discord.Color.red()
+                        return await msg.edit(embed=embed)
+                    if "description" in data:
+                        embed.description = data['description']
+                    if "owner" in data:
+                        if "login" in data['owner']:
+                            embed.add_field(name="🧑‍⚖️ Owner",
+                                            value=f"[{data['owner']['login']}]({data['owner']['html_url']})",
+                                            inline=True)
+                    if "size" in data:
+                        embed.add_field(name="💾 Size", value=f"{comma_number(data['size'])} KB", inline=True)
+                    if "visibility" in data:
+                        embed.add_field(name="🔒 Visibility", value=data['visibility'], inline=True)
+                    if "default_branch" in data:
+                        default_branch = data['default_branch']
+                    else:
+                        default_branch = None
+                else:
+                    embed.title = "Retrieving data failed."
+                    embed.description = f"GitHub did not return a 200 status code.\nStatus code: {r.status}"
+                    embed.color = discord.Color.red()
+                    return await msg.edit(embed=embed)
+            async with session.get("https://api.github.com/repos/argo0n/dank-vibes-bot/contributors") as r:
+                if r.status == 200:
+                    data = await r.json()
+                    if len(data) > 0:
+                        embed.add_field(name="🧑‍💻 Contributors", value="\n".join(
+                            [f"[{contributor['login']}]({contributor['html_url']})" for contributor in data]),
+                                        inline=True)
+                else:
+                    embed.add_field(name="🧑‍💻 Contributors",
+                                    value=f"GitHub did not return a 200 status code.\nStatus code: {r.status}",
+                                    inline=True)
+            async with session.get("https://api.github.com/repos/argo0n/dank-vibes-bot/branches") as r:
+                if r.status == 200:
+                    data = await r.json()
+                    if len(data) > 0:
+                        branches = [branch['name'] for branch in data]
+                        formatted_branches = []
+                        for branch in branches:
+                            if branch == default_branch:
+                                formatted_branches.append(f"**{branch}**")
+                            else:
+                                formatted_branches.append(branch)
+                        embed.add_field(name="📂 Branches", value="\n".join(formatted_branches), inline=True)
+                else:
+                    embed.add_field(name="📂 Branches",
+                                    value=f"GitHub did not return a 200 status code.\nStatus code: {r.status}",
+                                    inline=True)
+                embed.add_field(name="🛠️ Last commit",
+                                value="<a:DVB_Loading:909997219644604447> Contacting the GitHub server...",
+                                inline=False)
+            await msg.edit(content="Initial data retrieved in `{}`ms".format(round((time.perf_counter() - now) * 1000)),
+                           embed=embed)
+            async with session.get("https://api.github.com/repos/argo0n/dank-vibes-bot/commits?page=1&per_page=1") as r:
+                content = await r.json()
+                embed.remove_field(-1)
+                if r.status == 200:
+                    if len(content) > 0:
+                        async with session.get(content[0]['url']) as r:
+                            if r.status == 200:
+                                content = await r.json()
+                                sha = content['sha']
+                                um = [
+                                    f"[`{sha[:7]}`]({content['html_url']}) [{content['commit']['message']}]({content['html_url']})"]
+                                idk = "<:ReplyCont:871807889587707976> **Commited by:** " + content['commit']['author'][
+                                    'name']
+                                um.append(idk)
+                                date = datetime.strptime(content['commit']['author']['date'], "%Y-%m-%dT%H:%M:%SZ")
+                                date = date.strftime("%d %b %Y, %I:%M:%S %p")
+                                idk = "<:ReplyCont:871807889587707976> **At: ** " + date
+                                um.append(idk)
+                                if 'stats' in content:
+                                    stats = content['stats']
+                                    idk = f"<:Reply:871808167011549244> {plural(int(stats['additions'])):addition}, {plural(int(stats['deletions'])):deletion}"
+                                    um.append(idk)
+                                embed.add_field(name="🛠️ Last commit", value="\n".join(um), inline=False)
+                                fileschanged = []
+                                if 'files' in content and len(content['files']) > 0:
+                                    files = content['files']
+                                    for file in files:
+                                        idk = f"[{file['filename']}]({file['blob_url']}) <:DVB_plus:910010210310041630> {file['additions']}, <:DVB_minus:910010210310057994> {file['deletions']}"
+                                        fileschanged.append(idk)
+                                else:
+                                    fileschanged.append("No files changed.")
+                            else:
+                                um = ["GitHub did not return a 200 status code.\nStatus code: {r.status}"]
+                    else:
+                        um = ["GitHub did not return any commits."]
+                    totalfileschanged = "\n".join(fileschanged)
+                    if len(totalfileschanged) > 1024:
+                        tempstring = ''
+                        for file in fileschanged:
+                            if len(tempstring) + len(file) < 1024:
+                                tempstring += file + "\n"
+                            else:
+                                embed.add_field(name="📂 Files changed", value=tempstring, inline=False)
+                                tempstring = file + "\n"
+                        embed.add_field(name="📂 Files changed", value=tempstring, inline=False)
+                    else:
+                        embed.add_field(name="📂 Files changed", value="\n".join(fileschanged), inline=False)
+                else:
+                    embed.add_field(name="🛠️ Last commit",
+                                    value=f"GitHub did not return a 200 status code.\nStatus code: {r.status}",
+                                    inline=False)
+                await msg.edit(content="All retrieved in `{}`ms".format(round((time.perf_counter() - now) * 1000)),
+                               embed=embed)
+
+    @github_cmd.command(name='pull', hidden=True)
+    async def github_pull(self, ctx):
+        """Runs `git pull`."""
+
+
+        async with ctx.typing():
+            content = f"{getpass.getuser()}@{os.getcwd()} $ git pull\n\n"
+            msg = await ctx.send("```\n" + content + "\n```")
+            now = time.perf_counter()
+            stdout, stderr = await self.run_process('git pull')
+            content += f"{stdout}\n\nCompleted in {round((time.perf_counter() - now) * 1000, 3)}ms"
+            await msg.edit(content="```\n" + content + "\n```")
