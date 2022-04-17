@@ -1,4 +1,6 @@
 import discord
+from fuzzywuzzy import process
+
 from .time import parse_timedelta
 from datetime import timedelta
 from discord.ext import commands
@@ -120,3 +122,20 @@ class BetterTimeConverter(commands.Converter):
         if time is None:
             raise ArgumentBaseError(message="You have inputted an invalid time.")
         return time
+
+class BetterBetterRoles(commands.Converter):
+    async def convert(self, ctx, argument) -> discord.Role:
+        try:
+            return await commands.RoleConverter().convert(ctx, argument)
+        except commands.BadArgument:
+            role_to_return = discord.utils.find(lambda x: x.name.lower() == argument.lower(), ctx.guild.roles)
+            if role_to_return is not None:
+                return role_to_return
+            roles_and_aliases = {}
+            for r in ctx.guild.roles:
+                roles_and_aliases[r.name] = r.id
+                # This might be a bad idea, don't care
+            name, ratio = process.extractOne(argument, [x for x in roles_and_aliases])
+            if ratio >= 75:
+                role_to_return = discord.utils.get(ctx.guild.roles, id=roles_and_aliases[name])
+                return role_to_return
