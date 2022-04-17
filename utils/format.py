@@ -206,6 +206,9 @@ class TabularData:
 
 
 def split_string_into_list(string, return_type: Literal[str, int], delimiter=',') -> list:
+    """
+    Splits a string into a list. It will always return a list.
+    """
     if string is None:
         return []
     if len(string) is None:
