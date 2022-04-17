@@ -75,7 +75,7 @@ class BrowserScreenshot(commands.Cog):
                         elif "ERR_NAME_NOT_RESOLVED" in str(e):
                             return f"**This site can't be reached**\n{domain}'s server DNS address could not be found. *This may mean that the website does not exist.*"
                         else:
-                            return f"**Error encountered!** <@650647680837484556>\m{e}"
+                            return f"**Error encountered!** \n{e}"
                     else:
                         return None
             result = await loop.run_in_executor(None, get_to_website)
@@ -92,6 +92,7 @@ class BrowserScreenshot(commands.Cog):
                 return await message.edit(embed=discord.Embed(title=message.embeds[0].title, description=result, color=self.client.embed_color, timestamp=discord.utils.utcnow()), view=View)
             await message.edit(embed=discord.Embed(title=f"Website details for {domain}", description=f"__**Status**__\n<:DVB_start_complete:895172800627769447> Start Google Chrome\n<:DVB_middle_complete:895172800627769444> **Connecting to linked website**\n<:DVB_middle_complete:895172800627769444> **Getting screenshot of website**\n<:DVB_end_incomplete:895172799923109919> Getting SSL Certificate information of {domain}", timestamp=discord.utils.utcnow(),color=self.client.embed_color).set_footer(icon_url="https://camo.githubusercontent.com/74ed64243ba05754329bc527cd4240ebd1c087a1/68747470733a2f2f73656c656e69756d2e6465762f696d616765732f73656c656e69756d5f6c6f676f5f7371756172655f677265656e2e706e67", text="Powered by Selenium | This process could take up to 30 seconds."))
             def generate_screenshot():
+                time.sleep(1.0)
                 try:
                     req_height = browser.execute_script('return document.body.parentNode.scrollHeight')
                     browser.set_window_size(1920, req_height if req_height < 10000 else 10000)
