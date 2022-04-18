@@ -384,7 +384,7 @@ class GiveawayConfigCategories(discord.ui.View):
                 item.disabled = True
                 item.style = discord.ButtonStyle.grey
         await self.response.edit(embed=self.original_embed, view=self)
-        await self.response.reply("This message has timed out. Please run the command again.")
+        await self.response.reply("This message has timed out. If you need to continue editing the giveaway configuration, please run the command again.")
 
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id != self.ctx.author.id:
