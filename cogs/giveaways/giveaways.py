@@ -50,9 +50,9 @@ class ListMultis(discord.ui.Select):
         self.list_of_roles = list_of_roles
         self.role_id = None
         options = []
-        options.append(discord.SelectOption(label="Add a new multi", value="add_multi", description="Click here to add a new multi for a role.", emoji="➕"))
+        options.append(discord.SelectOption(label="Add a new multi", value="add_multi", description="Add a new entry multi for a role.", emoji="➕"))
         for role, multi in self.list_of_roles:
-            options.append(discord.SelectOption(label=f"{role.name} ({role.id}) - {multi} extra entries", value=str(role.id), description=f"Click here to edit this role's multi or delete it.", emoji="✏️"))
+            options.append(discord.SelectOption(label=f"{role.name} - {multi} extra entries", value=str(role.id), description=f"Edit this role's entry multi or delete it.", emoji="✏️"))
         super().__init__(placeholder="Select a role to edit...",
                          min_values = 1,
                          max_values = 1,
@@ -67,6 +67,7 @@ class ListMultis(discord.ui.Select):
             except ValueError:
                 pass
         self.view.result = self.role_id
+        await interaction.response.defer()
         self.view.stop()
 
 class ChooseMultiFromList(discord.ui.View):
@@ -81,7 +82,8 @@ class ChooseMultiFromList(discord.ui.View):
 
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id != self.user.id:
-            return await interaction.response.send_message(embed = discord.Embed(description="Only the author (`{}`) can interact with this message.".format(self.user), color=discord.Color.red()), ephemeral=True)
+            await interaction.response.send_message(embed = discord.Embed(description="Only the author (`{}`) can interact with this message.".format(self.user), color=discord.Color.red()), ephemeral=True)
+            return False
         else:
             return True
 
@@ -110,7 +112,9 @@ class EditOrDeleteMultiEntry(discord.ui.View):
 
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id != self.user.id:
-            return await interaction.response.send_message(embed = discord.Embed(description="Only the author (`{}`) can interact with this message.".format(self.user), color=discord.Color.red()), ephemeral=True)
+            await interaction.response.send_message(embed = discord.Embed(description="Only the author (`{}`) can interact with this message.".format(self.user), color=discord.Color.red()), ephemeral=True)
+            return False
+        return True
 
 
 
@@ -138,8 +142,7 @@ class GiveawayConfigCategories(discord.ui.View):
                 if item == button:
                     item.style = discord.ButtonStyle.green
             item.disabled = True
-        await interaction.response.pong()
-        await self.response.edit(view=self)
+        await interaction.response.edit_message(view=self)
         add_remove_view = AddOrRemoveView()
         add_remove_view.response = await self.ctx.send("Are you going to **add** or **remove** bypass roles?", view=add_remove_view)
         await add_remove_view.wait()
@@ -228,8 +231,7 @@ class GiveawayConfigCategories(discord.ui.View):
                 if item == button:
                     item.style = discord.ButtonStyle.green
             item.disabled = True
-        await interaction.response.pong()
-        await self.response.edit(view=self)
+        await interaction.response.edit_message(view=self)
         add_remove_view = AddOrRemoveView()
         add_remove_view.response = await self.ctx.send("Are you going to **add** or **remove** blacklisted roles?", view=add_remove_view)
         await add_remove_view.wait()
@@ -317,7 +319,7 @@ class GiveawayConfigCategories(discord.ui.View):
                 if item == button:
                     item.style = discord.ButtonStyle.green
             item.disabled = True
-        await self.response.edit(view=self)
+        await interaction.response.edit_message(view=self)
         multi_list = []
         if len(multi) > 0:
             multi_list = []
@@ -363,9 +365,9 @@ class GiveawayConfigCategories(discord.ui.View):
             if (multi_role := self.ctx.guild.get_role(int(multi_role_id))) is not None:
                 multi_role_list.append(f" - {multi_role.mention} x{multi[multi_role_id]}")
         if len(multi_role_list) > 0:
-            embed.add_field(name="Multi Roles", value=",\n".join(multi_role_list), inline=False)
+            self.original_embed.set_field_at(index=2, name="Multi Roles", value="\n".join(multi_role_list), inline=False)
         else:
-            embed.add_field(name="Multi Roles", value="None", inline=False)
+            self.original_embed.set_field_at(index=2, name="Multi Roles", value="None", inline=False)
 
         if button.style == discord.ButtonStyle.grey:  # if the buttons were disabled due to timeout, do not enable them again
             pass
@@ -386,7 +388,8 @@ class GiveawayConfigCategories(discord.ui.View):
 
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id != self.ctx.author.id:
-            return await interaction.response.send_message(embed = discord.Embed(description="Only the author (`{}`) can interact with this message.".format(self.ctx.author), color=discord.Color.red()), ephemeral=True)
+            await interaction.response.send_message(embed = discord.Embed(description="Only the author (`{}`) can interact with this message.".format(self.ctx.author), color=discord.Color.red()), ephemeral=True)
+            return False
         else:
             return True
 
