@@ -1,5 +1,6 @@
 import os
 import time
+import typing
 from typing import Optional
 
 import discord
@@ -62,14 +63,15 @@ class dvvt(commands.Bot):
         super().__init__(command_prefix = self.get_prefix, intents=intents, allowed_mentions=allowed_mentions, case_insensitive=True)
         self.prefixes = {}
         self.uptime = None
-        self.embed_color = 0x57F0F0
-        self.db = None
+        self.embed_color: int = 0x57F0F0
+        self.db: asyncpg.pool = None
         self.maintenance = {}
         self.maintenance_message = {}
         self.available_extensions = AVAILABLE_EXTENSIONS
         self.blacklist = {}
         self.editqueue = []
         self.deleted_edit_messages = []
+        self.webhooks = {}
 
         for ext in self.available_extensions:
             self.load_extension(ext)
@@ -81,7 +83,7 @@ class dvvt(commands.Bot):
         if len(self.editqueue) > 0:
             #print(self.editqueue)
             tup = self.editqueue.pop(0)
-            m: discord.PartialMessage = tup[0]
+            m: typing.Union[discord.PartialMessage, discord.Message] = tup[0]
             content: str = tup[1]
             embed: discord.Embed = tup[2]
             view: discord.ui.View = tup[3]
@@ -125,7 +127,16 @@ class dvvt(commands.Bot):
             pass
             # nothing in queue
 
-
+    async def get_webhook(self, channel: discord.TextChannel):
+        if channel.id in self.webhooks:
+            return self.webhooks[channel.id]
+        else:
+            webhooks = await channel.webhooks()
+            webhook = discord.utils.get(webhooks, name=self.user.name)
+            if webhook is None:
+                webhook = await channel.create_webhook(name=self.user.name)
+            self.webhooks[channel.id] = webhook
+            return webhook
 
 
     @tasks.loop(seconds=5)
@@ -150,7 +161,7 @@ class dvvt(commands.Bot):
                 await self.get_channel(906433823594668052).send(embed=embed)
         await self.get_all_blacklisted_users()
 
-    def add_to_edit_queue(self, message: discord.PartialMessage = 0, content: str = 0, embed: discord.Embed = 0, view: discord.ui.View = 0, index: Optional[int] = None):
+    def add_to_edit_queue(self, message: typing.Union[discord.PartialMessage, discord.Message] = 0, content: str = 0, embed: discord.Embed = 0, view: discord.ui.View = 0, index: Optional[int] = None):
         tup = (message, content, embed, view)
         if index is None:
             self.editqueue.append(tup)
