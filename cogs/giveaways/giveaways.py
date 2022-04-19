@@ -93,16 +93,19 @@ class ChooseMultiFromList(discord.ui.View):
 class EditOrDeleteMultiEntry(discord.ui.View):
     def __init__(self, user):
         self.value = None
+        self.interaction: discord.Interaction = None
         self.user = user
         super().__init__(timeout=30)
 
     @discord.ui.button(label="Edit Multi", emoji="✏️", style=discord.ButtonStyle.grey)
     async def edit_multi(self, button: discord.Button, interaction: discord.Interaction):
+        self.interaction = interaction
         self.value = "edit"
         self.stop()
 
     @discord.ui.button(label="Delete Role's Multi", emoji="🗑", style=discord.ButtonStyle.red)
     async def delete_role(self, button: discord.Button, interaction: discord.Interaction):
+        self.interaction = interaction
         self.value = "delete"
         self.stop()
 
@@ -162,7 +165,7 @@ class GiveawayConfigCategories(discord.ui.View):
             else:
                 input_bypass_roles = split_string_into_list(input_msg.content, return_type=str)
                 if len(input_bypass_roles) < 1:
-                    await self.ctx.send("You didn't input any roles.")
+                    await self.ctx.send("You didn't input any roles.", delete_after=10.0)
                 else:
                     converted_roles = []
                     invalid_roles = []
@@ -205,7 +208,7 @@ class GiveawayConfigCategories(discord.ui.View):
                     if len(invalid_roles) > 0:
                         list_of_invalid_roles = "\n".join([f"`{role_name}` - {reason}" for role_name, reason in invalid_roles])
                         summary += f"\nI could not add/remove these roles:\n{list_of_invalid_roles}"
-                    await self.ctx.send(summary)
+                    await self.ctx.send(summary, delete_after=20.0)
             await draft_msg.delete()
         if button.style == discord.ButtonStyle.grey: # if the buttons were disabled due to timeout, do not enable them again
             pass
@@ -253,7 +256,7 @@ class GiveawayConfigCategories(discord.ui.View):
             else:
                 input_blacklisted_roles = split_string_into_list(input_msg.content, return_type=str)
                 if len(input_blacklisted_roles) < 1:
-                    await self.ctx.send("You didn't input any roles.")
+                    await self.ctx.send("You didn't input any roles.", delete_after=10.0)
                 else:
                     converted_roles = []
                     invalid_roles = []
@@ -296,7 +299,7 @@ class GiveawayConfigCategories(discord.ui.View):
                     if len(invalid_roles) > 0:
                         list_of_invalid_roles = "\n".join([f"`{role_name}` - {reason}" for role_name, reason in invalid_roles])
                         summary += f"\nI could not add/remove these roles:\n{list_of_invalid_roles}"
-                    await self.ctx.send(summary)
+                    await self.ctx.send(summary, delete_after=20.0)
             await draft_msg.delete()
         if button.style == discord.ButtonStyle.grey: # if the buttons were disabled due to timeout, do not enable them again
             pass
@@ -337,29 +340,91 @@ class GiveawayConfigCategories(discord.ui.View):
         elif type(select_multi_view.result) == int:
             r = self.ctx.guild.get_role(select_multi_view.result)
             if r is None:
-                await self.ctx.send("Role not found.")
+                await self.ctx.send("Role not found.", delete_after=10.0)
             else:
                 embed.description = f"You selected **{r.name}**.\n\nChoose an option below."
                 choose_edit_or_delete = EditOrDeleteMultiEntry(self.ctx.author)
                 await select_multi_view.response.edit(embed=embed, view=choose_edit_or_delete)
                 await choose_edit_or_delete.wait()
+                for b in choose_edit_or_delete.children:
+                    b.disabled = True
+                if choose_edit_or_delete.interaction is not None:
+                    await choose_edit_or_delete.interaction.response.edit_message(view=choose_edit_or_delete)
                 print(choose_edit_or_delete.value)
                 if choose_edit_or_delete.value is None:
                     pass
                 elif choose_edit_or_delete.value == "edit":
-                    await self.ctx.send("You requested to edit the role")
+                    draft_msg = await self.ctx.send("Give a number for the multi count for the role **{}**.".format(r.name))
+                    try:
+                        m = await self.client.wait_for("message", check=lambda m: m.author == self.ctx.author and m.channel == self.ctx.channel, timeout=60)
+                    except asyncio.TimeoutError:
+                        await self.ctx.send("You did not respond in time.", delete_after=10.0)
+                    else:
+                        try:
+                            multi_count = int(m.content)
+                        except ValueError:
+                            await self.ctx.send("You did not provide a valid number for the multi count.", delete_after=10.0)
+                        else:
+                            if multi_count < 1:
+                                await self.ctx.send("You must provide a number greater than 0.", delete_after=10.0)
+                            else:
+                                multi[str(r.id)] = multi_count
+                                await self.client.db.execute("INSERT INTO giveawayconfig (guild_id, channel_id, multi) VALUES ($1, $2, $3) ON CONFLICT (channel_id) DO UPDATE SET multi = $3", self.ctx.guild.id, self.channel.id, json.dumps(multi))
+                                await self.ctx.send("<:DVB_True:887589686808309791> **Successfully updated!**", delete_after=5.0)
+                                await draft_msg.delete()
                 elif choose_edit_or_delete.value == "delete":
                     multi.pop(str(r.id))
                     await self.client.db.execute("INSERT INTO giveawayconfig (guild_id, channel_id, multi) VALUES ($1, $2, $3) ON CONFLICT (channel_id) DO UPDATE SET multi = $3", self.ctx.guild.id, self.channel.id, json.dumps(multi))
-                    await self.ctx.send("<:DVB_True:887589686808309791> **Successfully updated!**")
-                for b in choose_edit_or_delete.children:
-                    b.disabled = True
+                    await self.ctx.send("<:DVB_True:887589686808309791> **Successfully updated!**", delete_after=5.0)
                 await select_multi_view.response.edit(view=choose_edit_or_delete)
         else:
             if select_multi_view.result == "add_multi":
-                embed.description += f"\nRole selected: **Add Multi Role**."
+                try:
+                    select_multi_view.children[0].options[0].default = True
+                except:
+                    pass
             await select_multi_view.response.edit(embed=embed, view=select_multi_view)
-
+            def check(m: discord.Message):
+                return m.author == self.ctx.author and m.channel == self.ctx.channel
+            draft_msg = await self.ctx.send("Please **enter the role** (like how you would do with `dv.roleinfo` and the **multi as a number**, separated by **a comma**.\nExample: `rolename, 1`, `\<@&12345678>, 2`, `12345678, 3`")
+            try:
+                response_msg = await self.client.wait_for('message', check=check, timeout=60)
+            except asyncio.TimeoutError:
+                pass
+            else:
+                msg_con = response_msg.content
+                u = msg_con.split(",")
+                msg_con = [ele.strip() for ele in u]
+                if len(msg_con) != 2:
+                    await self.ctx.send("Invalid input, you did not provide a role and a multi separated by commas (example: `@role, 1`)", delete_after=10.0)
+                else:
+                    unconverted_obj = msg_con[0]
+                    try:
+                        r = await BetterBetterRoles().convert(self.ctx, unconverted_obj)
+                    except Exception as e:
+                        await self.ctx.send(f"You did not provide a valid role: {e}", delete_after=10.0)
+                    else:
+                        if r is None:
+                            await self.ctx.send("You did not provide a valid role.", delete_after=10.0)
+                        else:
+                            if str(r.id) in multi:
+                                await self.ctx.send(f"You already have a multi set for the role **{r}**. If you want to edit the multi or delete it, select it from the menu in the previous step.", delete_after=15.0)
+                            else:
+                                try:
+                                    multi_count = int(msg_con[1])
+                                except ValueError:
+                                    await self.ctx.send("You did not input a valid number for the multi count.", delete_after=10.0)
+                                else:
+                                    if multi_count < 1:
+                                        await self.ctx.send("The multi count should be more than 0.", delete_after=10.0)
+                                    else:
+                                        multi[str(r.id)] = multi_count
+                                        await self.client.db.execute("INSERT INTO giveawayconfig (guild_id, channel_id, multi) VALUES ($1, $2, $3) ON CONFLICT (channel_id) DO UPDATE SET multi = $3", self.ctx.guild.id, self.channel.id, json.dumps(multi))
+                                        await self.ctx.send(f"<:DVB_True:887589686808309791> **Successfully updated!**", delete_after=5.0)
+            with contextlib.suppress(Exception):
+                await draft_msg.delete()
+        with contextlib.suppress(Exception):
+            await select_multi_view.response.delete()
         multi_role_list = []
         for multi_role_id in multi:
             if (multi_role := self.ctx.guild.get_role(int(multi_role_id))) is not None:
