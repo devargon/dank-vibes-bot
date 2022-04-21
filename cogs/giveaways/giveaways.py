@@ -974,6 +974,10 @@ class giveaways(commands.Cog):
     @commands.group(name="giveawayconfig", aliases=["gwconfig"], invoke_without_command=True)
     @checks.has_permissions_or_role(manage_roles=True)
     async def giveawayconfig(self, ctx: DVVTcontext):
+        """
+        Giveaway configurations can be set for specific channels. In each channel, you can choose roles that can bypass the giveaway requirement, roles that are blacklisted from joining or roles that can gain extra entries from the giveaway.
+        This command will show you all existing configurations for various channels in the server.
+        """
         existing_configs = await self.client.db.fetch("SELECT * FROM giveawayconfig WHERE guild_id = $1", ctx.guild.id)
         if len(existing_configs) > 0:
             embeds = []
@@ -1027,6 +1031,9 @@ class giveaways(commands.Cog):
     @giveawayconfig.command(name="add", aliases=["create", "new"])
     @checks.has_permissions_or_role(manage_roles=True)
     async def giveawayconfig_add(self, ctx: DVVTcontext, channel: discord.TextChannel = None):
+        """
+        Creates a fresh new giveaway profile for a channel.
+        """
         if channel is None:
             return await ctx.send(f"You must specify a channel to add a giveaway profile for.")
         if (existing_config := await self.client.db.fetchrow("SELECT * FROM giveawayconfig WHERE guild_id = $1 AND channel_id = $2", ctx.guild.id, channel.id)) is not None:
@@ -1039,6 +1046,11 @@ class giveaways(commands.Cog):
     @giveawayconfig.command(name="edit", aliases=["modify"])
     @checks.has_permissions_or_role(manage_roles=True)
     async def giveawayconfig_edit(self, ctx: DVVTcontext, channel: discord.TextChannel = None):
+        """
+        Edits the giveaway profile for a channel.
+        Unlike many other bots, there is only one command for editing bypass, blacklist and multi roles all in one go.
+        You can choose what you want to edit by selecting the buttons, and following the instructions for adding or removing roles.
+        """
         if channel is None:
             return await ctx.send("You must specify a channel to edit the giveaway profile for.")
         config_entry = await self.client.db.fetchrow("SELECT * FROM giveawayconfig WHERE guild_id = $1 AND channel_id = $2", ctx.guild.id, channel.id)
@@ -1077,6 +1089,25 @@ class giveaways(commands.Cog):
         GiveawayConfigEditView = GiveawayConfigCategories(self.client, channel, embed, ctx)
         GiveawayConfigEditView.response = await ctx.send(embed=embed, view=GiveawayConfigEditView)
 
+    @giveawayconfig.command(name="remove", aliases=["delete"])
+    @checks.has_permissions_or_role(manage_roles=True)
+    async def giveawayconfig_remove(self, ctx: DVVTcontext, channel: discord.TextChannel = None):
+        """
+        Deletes a channel's existing giveaway profile.
+        """
+        if channel is None:
+            return await ctx.send(f"You must specify a channel to delete its giveaway profile.")
+        if (existing_config := await self.client.db.fetchrow("SELECT * FROM giveawayconfig WHERE guild_id = $1 AND channel_id = $2", ctx.guild.id, channel.id)) is None:
+            return await ctx.send(
+                f"You do not have a giveaway profile set for {channel.mention}.")
+        else:
+            confirmview = confirm(ctx, self.client, 30)
+            confirmview.response = await ctx.send(f"**Are you sure** you want to **delete** the giveaway profile for {channel.name}?\nThis action cannot be undone.", view=confirm)
+            await confirmview.wait()
+            if confirmview.returning_value is not True:
+                return await confirmview.response.edit(content=confirmview.response.content + "\n\nNo action was done.")
+            await self.client.db.execute("DELETE FROM giveawayconfig WHERE guild_id = $1 AND channel_id = $2", ctx.guild.id, channel.id)
+            return await ctx.send(f"The giveaway profile for {channel.mention} has been deleted.")
 
 
 
