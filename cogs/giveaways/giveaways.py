@@ -45,6 +45,7 @@ class GiveawayList(menus.ListPageSource):
         embed.set_footer(text=f"{len(entries)} giveaways | Page {menu.current_page + 1}/{self.get_max_pages()}")
         return embed
 
+
 class ListMultis(discord.ui.Select):
     def __init__(self, list_of_roles:list):
         self.list_of_roles = list_of_roles
@@ -70,6 +71,7 @@ class ListMultis(discord.ui.Select):
         await interaction.response.defer()
         self.view.stop()
 
+
 class ChooseMultiFromList(discord.ui.View):
     def __init__(self, list_of_roles, user):
         self.list_of_roles = list_of_roles
@@ -89,6 +91,7 @@ class ChooseMultiFromList(discord.ui.View):
 
     async def on_timeout(self):
         self.result = None
+
 
 class EditOrDeleteMultiEntry(discord.ui.View):
     def __init__(self, user):
@@ -120,7 +123,6 @@ class EditOrDeleteMultiEntry(discord.ui.View):
         return True
 
 
-
 class GiveawayConfigCategories(discord.ui.View):
     def __init__(self, client: dvvt, channel: discord.TextChannel, original_embed: discord.Embed, ctx: DVVTcontext):
         self.client: dvvt = client
@@ -129,7 +131,6 @@ class GiveawayConfigCategories(discord.ui.View):
         self.ctx: DVVTcontext = ctx
         self.response: discord.Message = None
         super().__init__(timeout=30)
-
 
     @discord.ui.button(style=discord.ButtonStyle.grey, label="Edit bypass roles", disabled = False)
     async def edit_bypass_roles(self, button: discord.ui.Button, interaction: discord.Interaction):
