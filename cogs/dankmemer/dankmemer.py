@@ -1,5 +1,7 @@
 import time
 import asyncio
+from typing import Tuple
+
 import discord
 import operator
 
@@ -9,6 +11,7 @@ from datetime import datetime, timedelta
 from discord.ext import commands, tasks
 from utils.format import print_exception, short_time
 from utils.buttons import *
+import cogs.dankmemer
 
 
 async def checkmark(message:discord.Message):
@@ -54,6 +57,129 @@ def numberswitcher(no):
         return 1
     else:
         return 0
+class ListOfStreamGames(discord.ui.Select):
+    def __init__(self, current):
+        self.current: Union[None, int] = current
+        options = [
+            discord.SelectOption(label="Lost Ark", value="0"),
+            discord.SelectOption(label="Animal Crossing", value="1"),
+            discord.SelectOption(label="Apex Legends", value="2"),
+            discord.SelectOption(label="Battlefield 5", value="3"),
+            discord.SelectOption(label="Counter-Strike Global Offensive", value="4"),
+            discord.SelectOption(label="PUBG", value="5"),
+            discord.SelectOption(label="Dark Souls II", value="6"),
+            discord.SelectOption(label="Destiny 2: The Witch Queen", value="7"),
+            discord.SelectOption(label="Diablo II", value="8"),
+            discord.SelectOption(label="Dota 2", value="9"),
+            discord.SelectOption(label="FIFA 22", value="10"),
+            discord.SelectOption(label="Fortnite", value="11"),
+            discord.SelectOption(label="Forza Horizon 5", value="12"),
+            discord.SelectOption(label="Genshin Impact", value="13"),
+            discord.SelectOption(label="Get Stuffed", value="14"),
+            discord.SelectOption(label="Grand Theft Auto V", value="15"),
+            discord.SelectOption(label="Hearthstone", value="16"),
+            discord.SelectOption(label="League of Legends", value="17"),
+            discord.SelectOption(label="Mario", value="18"),
+            discord.SelectOption(label="Minecraft", value="19"),
+            discord.SelectOption(label="Dying Light 2", value="20"),
+            discord.SelectOption(label="Overwatch", value="21"),
+            discord.SelectOption(label="Phasmophobia", value="22"),
+            discord.SelectOption(label="Rocket League", value="23"),
+            discord.SelectOption(label="Valorant", value="24"),
+        ]
+        if self.current is not None:
+            options[self.current].default = True
+        super().__init__(placeholder="Select today's trending game...", min_values=1, max_values=1, options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        for option in self.options:
+            option.default = False
+        index = int(self.values[0])
+        self.options[index].default = True
+        self.view.update = True
+        self.view.trending_game = self.options[index].label
+        self.current = index
+        await interaction.response.edit_message(view=self.view)
+
+
+class TrendingGameSetting(discord.ui.View):
+    def __init__(self, index, trending_game, cog, ctx, client):
+        self.active = True
+        self.update = False
+        self.cog: cogs.dankmemer.DankMemer = cog
+        self.trending_game = trending_game
+        self.index = index
+        self.credits = ""
+        self.ctx: DVVTcontext = ctx
+        self.client = client
+        self.response = None
+        self.list_select = ListOfStreamGames(self.index)
+        super().__init__(timeout=60)
+
+        self.add_item(self.list_select)
+
+    @discord.ui.button(label="Set Credits", style=discord.ButtonStyle.grey, emoji="🙋‍♂️", row=1)
+    async def set_credits(self, button: discord.ui.Button, interaction: discord.Interaction):
+        for c in self.children:
+            c.disabled = True
+        await interaction.response.edit_message(view=self)
+        await self.ctx.send("Mention the user, give their username or username#discriminator.")
+        try:
+            m = await self.client.wait_for("message", check=lambda m: m.author.id == interaction.user.id and m.channel.id == self.ctx.channel.id, timeout=45)
+        except asyncio.TimeoutError:
+            await self.ctx.channel.send("You didn't respond on time.", delete_after=5)
+        else:
+            try:
+                m_credits = await commands.MemberConverter().convert(self.ctx, m.content)
+            except Exception as e:
+                await interaction.response.send_message(f"Invalid member", delete_after=5)
+            else:
+                self.credits = str(m_credits)
+                button.label = f"Set Credits ({m_credits})"
+                self.update = True
+        for c in self.children:
+            c.disabled = False
+        if self.active:
+            await self.response.edit(view=self)
+
+    @discord.ui.button(label="Submit", style=discord.ButtonStyle.green, row=1)
+    async def submit(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if self.update:
+            if self.list_select.current is None:
+                await interaction.response.send_message("You need to choose a trending game to submit.", ephemeral=True)
+                return
+            else:
+                trending_game_str = self.trending_game
+                if self.credits != "":
+                    trending_game_str += f" **(Credits: {self.credits})**"
+                self.cog.trending_game = (self.list_select.current, trending_game_str)
+                await interaction.response.send_message(f"Trending game has been updated. This is how it will look like:\nThe current trending game to stream is **{self.cog.trending_game[1]}**!")
+                for c in self.children:
+                    c.disabled = True
+                await self.response.edit(view=self)
+                self.active = False
+                self.stop()
+        else:
+            await interaction.response.send_message("There were no changes made, so nothing was updated.", ephemeral=True)
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.ctx.author.id:
+            await interaction.response.send_message(embed=discord.Embed(
+                description="Only the author (`{}`) can interact with this message.".format(self.ctx.author),
+                color=discord.Color.red()), ephemeral=True)
+            return False
+        else:
+            return True
+
+    async def on_timeout(self) -> None:
+        for c in self.children:
+            c.disabled = True
+        await self.response.edit(view=self)
+        await self.ctx.reply("The message has timed out. If you would still want to change the trending game, use `dv.trendinggame` again.")
+        self.active = False
+        self.stop()
+
+
 
 
 class VoteSetting(discord.ui.Select):
@@ -235,7 +361,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
         self.dankmemerreminders.start()
         self.dropreminder.start()
         self.fighters = {}
-        self.trending_game = None
+        self.trending_game: Tuple[int, str] = (None, None)
         self.reset_trending_game.start()
         self.reminders = {
             2: "daily",
@@ -286,7 +412,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
 
     @tasks.loop(hours=24.0)
     async def reset_trending_game(self):
-        self.trending_game = None
+        self.trending_game = (None, None)
 
     @reset_trending_game.before_loop
     async def wait_until_utc(self):
@@ -823,11 +949,11 @@ class DankMemer(commands.Cog, name='dankmemer'):
                             return False
                         return True
                     if check_start_selecting_stream():
-                        if self.trending_game is not None:
+                        if self.trending_game[1] is not None:
                             try:
-                                return await beforemsg.reply("The current trending game to stream is **{}**!".format(self.trending_game), delete_after=10.0)
+                                return await beforemsg.reply("The current trending game to stream is **{}**!".format(self.trending_game[1]), delete_after=10.0)
                             except Exception as e:
-                                await beforemsg.channel.send("The current trending game to stream is **{}**!".format(self.trending_game), delete_after=10.0)
+                                await beforemsg.channel.send("The current trending game to stream is **{}**!".format(self.trending_game[1]), delete_after=10.0)
                     return
                 def check_after_view():
                     for button in afterview.children:
@@ -1076,9 +1202,10 @@ class DankMemer(commands.Cog, name='dankmemer'):
         Set the current trending game.
         """
         if game is None:
-            return await ctx.send("The current trending game is **{}**".format(self.trending_game))
-        self.trending_game = game
-        await ctx.send("I've set the current trending game. This is how it will look like:\n\nThe current trending game to stream is **{}**!".format(game))
+            trendinggame_view = TrendingGameSetting(self.trending_game[0], self.trending_game[1], self, ctx, self.client)
+            trendinggame_view.response = await ctx.send("The current trending game is **{}**".format(self.trending_game[1]), view=trendinggame_view)
+        else:
+            await ctx.send("I've set the current trending game. This is how it will look like:\n\nThe current trending game to stream is **{}**!\n\n**ALERT**: Please use `dv.trendinggame` and use the select menu to set today's trending game, it's more easier that way. Adding an argument for this command will soon be deprecated.".format(game))
 
 
     @checks.not_in_gen()
