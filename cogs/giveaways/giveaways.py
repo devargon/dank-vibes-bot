@@ -372,7 +372,10 @@ class GiveawayConfigCategories(discord.ui.View):
                                 multi[str(r.id)] = multi_count
                                 await self.client.db.execute("INSERT INTO giveawayconfig (guild_id, channel_id, multi) VALUES ($1, $2, $3) ON CONFLICT (channel_id) DO UPDATE SET multi = $3", self.ctx.guild.id, self.channel.id, json.dumps(multi))
                                 await self.ctx.send("<:DVB_True:887589686808309791> **Successfully updated!**", delete_after=5.0)
-                                await draft_msg.delete()
+                                with contextlib.suppress(Exception):
+                                    await draft_msg.delete()
+                                    await m.delete()
+
                 elif choose_edit_or_delete.value == "delete":
                     multi.pop(str(r.id))
                     await self.client.db.execute("INSERT INTO giveawayconfig (guild_id, channel_id, multi) VALUES ($1, $2, $3) ON CONFLICT (channel_id) DO UPDATE SET multi = $3", self.ctx.guild.id, self.channel.id, json.dumps(multi))
@@ -1259,7 +1262,7 @@ class giveaways(commands.Cog):
         if message is not None:
             if donor is None:
                 donor = ctx.author
-            dis_name = f"{donor.display_name}'s message" if len(donor.display_name) <= 22 else donor.display_name
+            dis_name = f"{donor.display_name} (sponsor)" if len(donor.display_name) <= 22 else donor.display_name
             webh = await self.client.get_webhook(giveawaymessage.channel)
             if webh is not None:
                 try:
