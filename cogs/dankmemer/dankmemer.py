@@ -151,7 +151,7 @@ class TrendingGameSetting(discord.ui.View):
             else:
                 trending_game_str = self.trending_game
                 if self.credits != "":
-                    trending_game_str += f" **(Credits: {self.credits})**"
+                    trending_game_str += f" (Credits: {self.credits})"
                 self.cog.trending_game = (self.list_select.current, trending_game_str)
                 await interaction.response.send_message(f"Trending game has been updated. This is how it will look like:\nThe current trending game to stream is **{self.cog.trending_game[1]}**!")
                 for c in self.children:
