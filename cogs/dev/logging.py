@@ -57,15 +57,5 @@ class Logging(commands.Cog):
                 embed.add_field(name="Attachments", value="\n".join(attachments), inline=False)
         embed.set_author(name=f"{message.author} ({message.author.id})", icon_url=message.author.display_avatar.url)
         log_channel = self.client.get_channel(889111152561369158)
-        webhooks = await log_channel.webhooks()
-        webhook = discord.utils.get(webhooks, name=self.client.user.name)
-        if webhook is None:
-            try:
-                webhook = await log_channel.create_webhook(name=self.client.user.name)
-            except discord.Forbidden:
-                try:
-                    await log_channel.send("I am unable to create a webhook to send a log.")
-                except (discord.HTTPException, discord.Forbidden):
-                    return
-                return
+        webhook = await self.client.get_webhook(log_channel)
         await webhook.send(embed=embed, username=self.client.user.name, avatar_url=self.client.user.display_avatar.url)

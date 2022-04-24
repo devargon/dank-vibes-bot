@@ -544,17 +544,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
             channel = ctx.channel
             if len(message) > 2000:
                 return await ctx.send("Your message is too long.")
-        webhooks = await channel.webhooks()
-        webhook = discord.utils.get(webhooks, name=self.client.user.name)
-        if webhook is None:
-            try:
-                webhook = await channel.create_webhook(name=self.client.user.name)
-            except discord.Forbidden:
-                try:
-                    await channel.send("I am unable to create a webhook.")
-                except (discord.HTTPException, discord.Forbidden):
-                    return
-                return
+        webhook = await self.client.get_webhook(channel)
         msg = await webhook.send(message, username=member.display_name, avatar_url=member.display_avatar)
         await ctx.message.add_reaction("<a:DVB_NyaTrash:919606179590733944>")
         try:

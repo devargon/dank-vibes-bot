@@ -1,3 +1,5 @@
+import itertools
+
 from discord.ext import menus, pages
 
 from .lockdown import lockdown
@@ -9,10 +11,10 @@ from .role import Role
 
 from utils import checks
 from utils.buttons import *
-from utils.format import text_to_file, ordinal
+from utils.format import text_to_file, ordinal, human_join
 from utils.time import humanize_timedelta
 from utils.menus import CustomMenu
-from utils.converters import BetterTimeConverter
+from utils.converters import BetterTimeConverter, MemberUserConverter
 
 import os
 from selenium import webdriver
@@ -22,6 +24,62 @@ from datetime import timedelta, datetime
 import time
 
 modlog_channelID = 873616122388299837 if os.getenv('state') == '1' else 640029959213285387
+
+class ListWatchlistNotifyMethods(discord.ui.Select):
+    def __init__(self, client, default_index):
+        self.default_index = default_index
+        self.client = client
+        options = []
+        options.append(discord.SelectOption(label="None", value='none', description="You will not be notified about any watchlist joins.", default = False))
+        options.append(discord.SelectOption(label="DM", value='dm', description="You will be DMed when a user on your watchlist joins this server.", emoji = discord.PartialEmoji.from_str("<:DVB_Letter:884743813166407701>"), default = True if default_index == 1 else False))
+        options.append(discord.SelectOption(label = "Ping", value='ping', description = f"You will be pinged when a user on your watchlist joins this server.", emoji = discord.PartialEmoji.from_str("<:DVB_Ping:883744614295674950>"), default = True if default_index == 2 else False))
+        super().__init__(placeholder='Change how you want to be notified for your watchlist...', min_values=1, max_values=1, options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        result = self.values[0]
+        if result == 'none':
+            xd = 0
+        elif result == 'dm':
+            xd = 1
+        elif result == 'ping':
+            xd = 2
+        else:
+            return await interaction.response.send_message("Invalid", ephemeral=True)
+        await self.client.db.execute("INSERT INTO userconfig(user_id, watchlist_notify) VALUES($1, $2) ON CONFLICT(user_id) DO UPDATE SET watchlist_notify = $2", interaction.user.id, xd)
+        if result == 'None':
+            summary = "You will not be notified about any joins from your watchlist."
+        elif result == 'dm':
+            summary = "You will now be DMed when a user on your watchlist joins this server."
+        elif result == 'ping':
+            summary = "You will now be pinged when a user on your watchlist joins this server."
+        else:
+            summary = "Invalid"
+        await interaction.response.send_message(summary, ephemeral=True)
+        #self.options[xd].default = True
+        #await interaction.response.edit_message(view=self.view)
+
+class ChangeWatchlistNotify(discord.ui.View):
+    def __init__(self, client, default_index, user):
+        self.client = client
+        self.default_index = default_index
+        self.response = None
+        self.user = user
+        super().__init__(timeout=45)
+
+        self.add_item(ListWatchlistNotifyMethods(client, default_index))
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message(embed=discord.Embed(description="Only the author (`{}`) can interact with this message.".format(self.user), color=discord.Color.red()), ephemeral=True)
+            return False
+        else:
+            return True
+
+    async def on_timeout(self):
+        for b in self.children:
+            b.disabled = True
+        await self.response.edit(view=self)
+
 
 class FrozenNicknames(menus.ListPageSource):
     def __init__(self, entries, title, inline):
@@ -677,3 +735,212 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
                 await ctx.send(hm)
                 hm = f"{obj}\n"
         await ctx.send(hm, allowed_mentions=discord.AllowedMentions(users=False, roles=False, replied_user = False, everyone=False))
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.group(name='watchlist', invoke_without_command=True)
+    async def watchlist(self, ctx):
+        """
+        Watchlists are a new feature on Dank Vibes Bot. It will notify you if someone on your watchlist joins the server.
+        This command will show all users who are on your watchlist, and toggle how/if you want to be notified when a user joins.
+        """
+        watchlist = await self.client.db.fetch("SELECT * FROM watchlist WHERE guild_id = $1 and user_id = $2", ctx.guild.id, ctx.author.id)
+        user_notify_method = await self.client.db.fetchval("SELECT watchlist_notify FROM userconfig WHERE user_id = $1", ctx.author.id)
+        if len(watchlist) == 0:
+            return await ctx.send("You don't have any users on your watchlist.")
+        buffer = []
+        for watchlist_entry in watchlist:
+            target_id = watchlist_entry.get('target_id')
+            target = self.client.get_user(watchlist_entry.get('target_id'))
+            if target is None:
+                target_disp = str(target_id)
+            else:
+                target_disp = f"{target} ({target_id})"
+                if watchlist_entry.get('remarks'):
+                    target_disp += f": {watchlist_entry.get('remarks')}"
+            buffer.append(target_disp)
+        embed = discord.Embed(title=f"{ctx.author.name}'s watchlist", description = "", color = self.client.embed_color)
+        for user in buffer:
+            if len(embed.description) < 3900:
+                embed.description += f"{user}\n"
+            else:
+                va = len(buffer) - len(embed.description.split("\n"))
+                embed.description += f"{user}\n**and {va} more users...**"
+                break
+        embed.set_footer(text=f"There are {len(buffer)} users on your watchlist.")
+        ChangeNotifyView = ChangeWatchlistNotify(self.client, user_notify_method if user_notify_method is not None else 0, ctx.author)
+        ChangeNotifyView.response = await ctx.send(embed=embed, view=ChangeNotifyView)
+
+
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @watchlist.command(name='add', aliases=['+'])
+    async def watchlist_add(self, ctx, target: MemberUserConverter = None, *, remarks: str = None):
+        """
+        Add a user to your watchlist.
+        """
+        if target is None:
+            return await ctx.send("You need to specify a user to add to your watchlist.")
+        target: Union[discord.Member, discord.User] = target
+        if remarks is not None:
+            if len(remarks) > 1000:
+                return await ctx.send("Remarks cannot be longer than 1000 characters.")
+        if await self.client.db.fetchrow("SELECT * FROM watchlist WHERE guild_id = $1 and user_id = $2 and target_id = $3", ctx.guild.id, ctx.author.id, target.id) is not None:
+            return await ctx.send(f"**{target}** is already on your watchlist.")
+        await self.client.db.execute("INSERT INTO watchlist (guild_id, user_id, target_id, remarks) VALUES ($1, $2, $3, $4)", ctx.guild.id, ctx.author.id, target.id, remarks)
+        await ctx.send(f"<:DVB_True:887589686808309791> Added **{target}** to your watchlist.")
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @watchlist.command(name='remove', aliases=['-'])
+    async def watchlist_remove(self, ctx, target: MemberUserConverter = None):
+        """
+        Removes a user from your watchlist.
+        """
+        if target is None:
+            return await ctx.send("You need to specify a user to remove from your watchlist.")
+        target: Union[discord.Member, discord.User] = target
+        if await self.client.db.fetchrow("SELECT * FROM watchlist WHERE guild_id = $1 and user_id = $2 and target_id = $3", ctx.guild.id, ctx.author.id, target.id) is None:
+            return await ctx.send(f"**{target}** is not on your watchlist.")
+        await self.client.db.execute("DELETE FROM watchlist WHERE guild_id = $1 and user_id = $2 and target_id = $3", ctx.guild.id, ctx.author.id, target.id)
+        await ctx.send(f"<:DVB_True:887589686808309791> Removed **{target}** from your watchlist.")
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @watchlist.command(name='clear', aliases=['c'])
+    async def watchlist_clear(self, ctx:DVVTcontext ):
+        """
+        Removes all users from your watchlist.
+        """
+        if len(existing_watchlist := await self.client.db.fetch("SELECT * FROM watchlist WHERE guild_id = $1 and user_id = $2", ctx.guild.id, ctx.author.id)) < 1:
+            return await ctx.send("You don't have any users on your watchlist.")
+        confirmview = confirm(ctx, self.client, 30.0)
+        embed = discord.Embed(title="Dangerous action!", description=f"Are you sure you want to clear and remove {len(existing_watchlist)} users from your watchlist?\n\nThis action cannot be undone.", color=discord.Color.orange())
+        confirmview.response = await ctx.reply(embed=embed, view=confirmview)
+        await confirmview.wait()
+        if confirmview.returning_value is None:
+            embed.description = "Timed out, your watchlist wasn't cleared."
+            embed.color = discord.Color.red()
+        elif confirmview.returning_value is not True:
+            embed.description = "Your watchlist wasn't cleared."
+            embed.color = discord.Color.red()
+        elif confirmview.returning_value is True:
+            await self.client.db.execute("DELETE FROM watchlist WHERE guild_id = $1 and user_id = $2", ctx.guild.id, ctx.author.id)
+            embed.description = "Your watchlist was cleared."
+            embed.color = discord.Color.green()
+        await confirmview.response.edit(embed=embed)
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.group(name="messagecleanup", aliases=['mc'], invoke_without_command=True)
+    async def messagecleanup(self, ctx: DVVTcontext):
+        """
+        Message Cleanup is a feature that allows messages from bots to be deleted in certain channels. This is a way to prevent people from using bots in the wrong channel.
+        This command shows the current settings for this feature.
+        """
+        result = await self.client.db.fetch("SELECT * FROM usercleanup WHERE guild_id = $1", ctx.guild.id)
+        if len(result) == 0:
+            return await ctx.send("There are no channels set for messages to be deleted from.")
+        txt = []
+        categorised_bots = {}
+        for row in result:
+            if (target := ctx.guild.get_member(row.get('target_id'))) is not None:
+                if (chan := ctx.guild.get_channel(row.get('channel_id'))) is not None:
+                    if target in categorised_bots:
+                        categorised_bots[target].append(chan)
+                    else:
+                        categorised_bots[target] = [chan]
+        for bot, channels in categorised_bots.items():
+            if len(channels) > 0:
+                txt.append(f"{bot.mention} **{bot}**: {', '.join([channel.mention for channel in channels])}")
+        embed = discord.Embed(title="Message Cleanup", color=self.client.embed_color)
+        page = []
+        while len(txt) > 0:
+            to_send = txt.pop(0)
+            embed.add_field(name='\u200b', value=to_send, inline=False)
+            if len(embed) > 6000:
+                embed.remove_field(-1)
+                page.append(embed)
+                embed = discord.Embed(title="Message Cleanup", color=self.client.embed_color)
+                embed.add_field(name='\u200b', value=to_send, inline=False)
+        if embed not in page:
+            page.append(embed)
+        paginator = pages.Paginator(pages=page, author_check=True)
+        await paginator.send(ctx)
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @messagecleanup.command(name='add', aliases=['a'])
+    async def messagecleanup_add(self, ctx: DVVTcontext, target: commands.Greedy[discord.Member], channel: commands.Greedy[discord.TextChannel]):
+        """
+        Adds users to the channels to prevent their messages from showing in that channel.
+        You can add as many targets and channels as you would want.
+        If you used `dv.mc add @OwO @Dank Memer @Karuta #chan-1 #chan-2 #chan-3, the restrictions for those 3 bots will be applied to all channels.
+        """
+        if len(target) == 0:
+            return await ctx.send("You need to specify at least one user/target.")
+        if len(channel) == 0:
+            return await ctx.send("You need to specify at least one channel.")
+        targets = list(dict.fromkeys(target))
+        channels = list(dict.fromkeys(channel))
+        to_insert = []
+        existing = tuple(await self.client.db.fetch("SELECT target_id, channel_id FROM usercleanup WHERE guild_id = $1", ctx.guild.id))
+        for target, channel in itertools.product(targets, channels):
+            if (target.id, channel.id) not in existing:
+                to_insert.append((ctx.guild.id, target.id, channel.id))
+        await self.client.db.executemany("INSERT INTO usercleanup (guild_id, target_id, channel_id) VALUES ($1, $2, $3)", to_insert)
+
+        target_str = human_join([target.mention for target in targets], final='and')
+        channel_str = human_join([channel.mention for channel in channels], final='and')
+        await ctx.send(f"{target_str} will be prevented from sending messages in {channel_str}. You'll need to set the cleanup message again for any newly added channels with `dv.messagecleanup message [target] [message]`.")
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @messagecleanup.command(name='remove', aliases=['r'])
+    async def messagecleanup_remove(self, ctx: DVVTcontext, target: discord.Member, channel: commands.Greedy[discord.TextChannel]):
+        """
+        Remove users from the channels, alllowing their messages to show up again.
+        You can input as many channels as you want, **but only one user**.
+        """
+        if target is None:
+            return await ctx.send("You need to specify a target.")
+        if len(channel) == 0:
+            return await ctx.send(f"You need to specify at least one channel to **remove** for **{target}**.")
+        existing = await self.client.db.fetch("SELECT channel_id FROM usercleanup WHERE guild_id = $1 AND target_id = $2", ctx.guild.id, target.id)
+        if len(existing) == 0:
+            return await ctx.send(f"{target} is not in the list of users to be prevented from sending messages in any channel.")
+        existing = [row.get('channel_id') for row in existing]
+        to_push = []
+        failed = []
+        for _channel in channel:
+            if _channel.id not in existing:
+                failed.append(f"{_channel.mention} not in list of channels for {target}")
+            else:
+                to_push.append((ctx.guild.id, target.id, _channel.id))
+        if len(failed) > 0:
+            await ctx.send("\n".join(failed))
+        if len(to_push) > 0:
+            await self.client.db.executemany("DELETE FROM usercleanup WHERE guild_id = $1 AND target_id = $2 AND channel_id = $3", to_push)
+            await ctx.send(f"{target} will no longer be prevented from sending messages in {human_join([channel.mention for channel in channel], final='and')}.")
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @messagecleanup.command(name="message", aliases=['m'])
+    async def messagecleanup_message(self, ctx: DVVTcontext, target: discord.Member = None, *, message: str = None):
+        """
+        Sets a message to be shown when a message is deleted with the messagecleanup feature.
+        """
+        if target is None:
+            return await ctx.send("You need to specify a target to edit or display its messages.")
+        current_msg = await self.client.db.fetchval("SELECT message FROM usercleanup WHERE guild_id = $1 AND target_id = $2 AND message is not null", ctx.guild.id, target.id)
+        if message is None:
+            if current_msg == "":
+                current_msg = None
+            return await ctx.send(f"{target}'s message is currently set to: {current_msg}")
+        else:
+            if message.lower() == 'none':
+                await self.client.db.execute("UPDATE usercleanup SET message = $1 WHERE guild_id = $2 AND target_id = $3", None, ctx.guild.id, target.id)
+                return await ctx.send(f"{target}'s message has been removed.")
+            if len(message) > 1500:
+                return await ctx.send(f"Your message is {len(message)} characters long, which is too long. Please keep it under 1500 characters.")
+            await self.client.db.execute("UPDATE usercleanup SET message = $1 WHERE guild_id = $2 AND target_id = $3", message, ctx.guild.id, target.id)
+            await ctx.send(f"{target}'s message has been set to: {message}")
+
+
+
+
+
+
