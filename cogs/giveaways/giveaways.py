@@ -598,9 +598,9 @@ class GiveawayView(discord.ui.View):
                                     for i in range(entry_dict['allowed_entries'] - entry_dict['entered_entries']):
                                         entries_to_insert.append((giveawaymessage.id, interaction.user.id, entry_dict['role_id']))
                                         newly_entered_entries += 1
-                                    string = f"{DVB_True} **{entry_dict['entered_entries'] + newly_entered_entries}**/{entry_dict['allowed_entries']} Entries for being {role.mention}" + (f" (`+{newly_entered_entries}`)" if newly_entered_entries > 0 else "")
+                                    string = f"{DVB_True} **{entry_dict['entered_entries'] + newly_entered_entries}**/{entry_dict['allowed_entries']} Entries for being **{role.mention}**" + (f" (`+{newly_entered_entries}`)" if newly_entered_entries > 0 else "")
                                 else:
-                                    string = f"{DVB_Neutral} **{entry_dict['entered_entries']}**/{entry_dict['allowed_entries']} Entries for being {role.name} (You don't have the role)"
+                                    string = f"{DVB_Neutral} **{entry_dict['entered_entries']}**/{entry_dict['allowed_entries']} Entries for being **{role.mention}** (You don't have the role)"
                         else:
                             if entry_dict['allowed_entries'] > 0:
                                 if entry_dict['role_id'] == 0:
