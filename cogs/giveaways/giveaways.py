@@ -1123,7 +1123,7 @@ class giveaways(commands.Cog):
         msg: typing.Optional[str]
         noping: typing.Optional[str]
 
-    giveaway_group = SlashCommandGroup("giveaway", "Giveaway commands", guild_ids=[871734809154707467])
+    giveaway_group = SlashCommandGroup("giveaway", "Giveaway commands")
 
     @giveaway_group.command(name='start', description="Start a giveaway!")
     @checks.has_permissions_or_role(manage_roles=True)
