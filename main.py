@@ -234,7 +234,7 @@ class dvvt(commands.Bot):
                       'donation_categories', 'christmaseventconfig', 'commandaccess', 'ignoredchristmascat',
                       'ignoredchristmaschan', 'perkremoval', 'commandlog', 'timedunlock', 'nickname_changes',
                       'name_changes', 'timers', 'infections', 'polls', 'pollvotes', 'highlight', 'highlight_ignores',
-                      'reminders', 'userconfig', 'modlog']
+                      'reminders', 'userconfig', 'modlog', 'watchlist', 'usercleanup', 'giveawayconfig']
         tables = await self.db.fetch("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';")
         tables = [i.get('table_name') for i in tables]
         if tables is None:
@@ -315,6 +315,9 @@ CREATE TABLE IF NOT EXISTS reminders(id serial, user_id bigint, guild_id bigint,
 CREATE TABLE IF NOT EXISTS userconfig(user_id bigint PRIMARY KEY, votereminder bigint, dumbfight_result bool, dumbfight_rig_duration bigint, virus_immune bigint, received_daily_potion bool);
 CREATE TABLE IF NOT EXISTS modlog(case_id serial, guild_id bigint not null, moderator_id bigint not null, offender_id bigint not null, action text not null, reason text, start_time bigint, duration bigint, end_time bigint);
 CREATE TABLE IF NOT EXISTS changelog(version_number serial, version_str text, changelog text);
+CREATE TABLE IF NOT EXISTS watchlist(guild_id bigint, user_id bigint, target_id bigint, remarks text);
+CREATE TABLE IF NOT EXISTS usercleanup(guild_id bigint, target_id bigint, channel_id bigint, message text);
+CREATE TABLE IF NOT EXISTS giveawayconfig(guild_id bigint not null, channel_id bigint not null constraint giveawayconfig_pkey primary key, bypass_roles text, blacklisted_roles text, multi jsonb);
 CREATE SCHEMA IF NOT EXISTS donations""")
         print("Bot is ready")
 
