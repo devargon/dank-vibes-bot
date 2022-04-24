@@ -17,18 +17,18 @@ class CommandCleanup(commands.Cog):
         modchannel = message.guild.get_channel(616007729718231161) if message.guild.id == 595457764935991326 else message.guild.get_channel(946245571394564107) if message.guild.id == 871734809154707467 else None
         if (result := await self.client.db.fetchrow("SELECT * FROM usercleanup WHERE target_id = $1 AND guild_id = $2 AND channel_id = $3", message.author.id, message.guild.id, message.channel.id)) is not None:
             if message.interaction: # Is an application command, we can use this to remind the user it's not allowed
+                user = message.interaction.user
                 if result.get('message') is not None and len(result.get('message')) > 0:
-                    user = message.interaction.user
                     if message.channel.permissions_for(user).manage_messages is True:
                         return
                     await message.channel.send(f"{user.mention} {result.get('message')}", delete_after=10.0)
-                    if self.limit.get(user.id, 0) > 5:
-                        if modchannel is not None:
-                            em = discord.Embed(description = f"**{user.id}** {user.mention} has exceeded the threshold for running **{message.author}**'s commands (5 commands in a minute).", color = discord.Color.red(), timestamp = discord.utils.utcnow())
-                            em.set_author(name=f"{user}", icon_url=user.display_avatar.url)
-                            em.set_footer(text=f"{user.id}")
-                            await modchannel.send(embed=em)
-                        self.limit[user.id] = 0
+                if self.limit.get(user.id, 0) > 5:
+                    if modchannel is not None:
+                        em = discord.Embed(description = f"**{user.id}** {user.mention} has exceeded the threshold for running **{message.author}**'s commands (5 commands in a minute).", color = discord.Color.red(), timestamp = discord.utils.utcnow())
+                        em.set_author(name=f"{user}", icon_url=user.display_avatar.url)
+                        em.set_footer(text=f"{user.id}")
+                        await modchannel.send(embed=em)
+                    self.limit[user.id] = 0
             else:
                 if result.get('message') is not None and len(result.get('message')) > 0:
                     await message.channel.send(result.get('message'), delete_after=10.0)
