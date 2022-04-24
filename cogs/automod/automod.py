@@ -15,6 +15,8 @@ from .timer import timer
 from .status import AutoStatus
 from .editpoll import polledition
 from .reminders import reminders_
+from .commandcleanup import CommandCleanup
+from .watchlist import WatchList
 from abc import ABC
 import os
 
@@ -39,7 +41,7 @@ class verifyView(discord.ui.View):
         for role in roles:
             if role not in interaction.user.roles:
                 await interaction.user.add_roles(role, reason="User completed manual verification")
-        await interaction.followup.send("You've been verified! You should now be able to talk.", ephemeral=True)
+        await interaction.  followup.send("You've been verified! You should now be able to talk.", ephemeral=True)
 
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     """
@@ -49,7 +51,7 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
 
 
-class AutoMod(reminders_, polledition, AutoStatus, timer, NameLogging, timedrole, TimedUnlock, Verification, Freezenick, commands.Cog):
+class AutoMod(reminders_, polledition, AutoStatus, timer, NameLogging, timedrole, TimedUnlock, Verification, Freezenick, CommandCleanup, WatchList, commands.Cog):
     """
     This file is just a placeholder for the various automod functions/modules.
     """
@@ -67,6 +69,7 @@ class AutoMod(reminders_, polledition, AutoStatus, timer, NameLogging, timedrole
         self.verifyview = False
         self.status = None
         self.received_daily_potion = []
+        self.limit = {} # for commandcleanup
 
     async def add_item_count(self, item, user, amount):
         does_inventory_exist = await self.client.db.fetchrow("SELECT * FROM inventories WHERE user_id = $1",
