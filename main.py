@@ -94,30 +94,23 @@ class dvvt(commands.Bot):
                 if content != 0:
                     if embed != 0:
                         if view != 0:
-                            print("content, embed and view exists")
                             await m.edit(content=content, embed=embed, view=view)
                         else:
-                            print("content and embed exists")
                             await m.edit(content=content, embed=embed)
                     else:
                         if view != 0:
-                            print("content and view exists")
                             await m.edit(content=content, view=view)
                         else:
-                            print("only content exists")
                             await m.edit(content=content)
                 else:
                     if embed != 0:
                         if view != 0:
-                            print("embed and view exists")
                             await m.edit(embed=embed, view=view)
                         else:
-                            print("only embed exists")
                             await m.edit(embed=embed)
                     else:
                         if view != 0:
 
-                            print("only view exists")
                             await m.edit(view=view)
             except discord.NotFound:
                 self.deleted_edit_messages.append(m.id)

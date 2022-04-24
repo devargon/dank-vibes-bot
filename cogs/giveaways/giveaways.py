@@ -135,12 +135,12 @@ class GiveawayConfigCategories(discord.ui.View):
     @discord.ui.button(style=discord.ButtonStyle.grey, label="Edit bypass roles", disabled = False)
     async def edit_bypass_roles(self, button: discord.ui.Button, interaction: discord.Interaction):
         bypass_roles = await self.client.db.fetchval("SELECT bypass_roles FROM giveawayconfig WHERE guild_id = $1 AND channel_id = $2", self.ctx.guild.id, self.channel.id)
-        print(bypass_roles)
+        #print(bypass_roles)
         if bypass_roles is None:
             bypass_roles = []
         else:
             bypass_roles = split_string_into_list(bypass_roles, return_type=int)
-        print(bypass_roles)
+        #print(bypass_roles)
         for item in self.children:
             if isinstance(item, discord.ui.Button):
                 if item == button:
@@ -178,7 +178,7 @@ class GiveawayConfigCategories(discord.ui.View):
                         else:
                             if result_role is not None:
                                 if add_remove_view.value == "add":
-                                    print(result_role.id, bypass_roles)
+                                    #print(result_role.id, bypass_roles)
                                     if result_role.id in bypass_roles:
                                         invalid_roles.append((f"{result_role.name} - {result_role.id}", "Already in list of bypassed roles"))
                                     else:
@@ -224,12 +224,12 @@ class GiveawayConfigCategories(discord.ui.View):
     @discord.ui.button(style=discord.ButtonStyle.grey, label="Edit Blacklisted roles", disabled=False)
     async def edit_blacklisted_roles(self, button: discord.ui.Button, interaction: discord.Interaction):
         blacklisted_roles = await self.client.db.fetchval("SELECT blacklisted_roles FROM giveawayconfig WHERE guild_id = $1 AND channel_id = $2", self.ctx.guild.id, self.channel.id)
-        print(blacklisted_roles)
+        #print(blacklisted_roles)
         if blacklisted_roles is None:
             blacklisted_roles = []
         else:
             blacklisted_roles = split_string_into_list(blacklisted_roles, return_type=int)
-        print(blacklisted_roles)
+        #print(blacklisted_roles)
         for item in self.children:
             if isinstance(item, discord.ui.Button):
                 if item == button:
@@ -269,7 +269,7 @@ class GiveawayConfigCategories(discord.ui.View):
                         else:
                             if result_role is not None:
                                 if add_remove_view.value == "add":
-                                    print(result_role.id, blacklisted_roles)
+                                    #print(result_role.id, blacklisted_roles)
                                     if result_role.id in blacklisted_roles:
                                         invalid_roles.append((f"{result_role.name} - {result_role.id}", "Already in list of blacklisted roles"))
                                     else:
@@ -351,7 +351,7 @@ class GiveawayConfigCategories(discord.ui.View):
                     b.disabled = True
                 if choose_edit_or_delete.interaction is not None:
                     await choose_edit_or_delete.interaction.response.edit_message(view=choose_edit_or_delete)
-                print(choose_edit_or_delete.value)
+                #print(choose_edit_or_delete.value)
                 if choose_edit_or_delete.value is None:
                     pass
                 elif choose_edit_or_delete.value == "edit":
@@ -562,7 +562,7 @@ class GiveawayView(discord.ui.View):
                                             return await interaction.response.send_message(
                                                 embed=discord.Embed(title="Failed to join giveaway", description=f"You have the role {role.mention} which is blacklisted from entering this giveaway.", color=discord.Color.red()), ephemeral=True)
                                 if len(giveawayentry.required_roles) > 0:
-                                    print('giveaway has required roles')
+                                    #print('giveaway has required roles')
                                     missing_roles = []
                                     for r_id in giveawayentry.required_roles:
                                         if (r := interaction.guild.get_role(r_id)) is not None:
@@ -571,10 +571,10 @@ class GiveawayView(discord.ui.View):
                                             else:
                                                 qualified = True
                                                 break
-                                    print(missing_roles)
+                                    #print(missing_roles)
                                     if len(missing_roles) > 0:
                                         if len(giveawayentry.bypass_roles) > 0:
-                                            print('giveaway has bypass roles')
+                                            #print('giveaway has bypass roles')
                                             for r_id in giveawayentry.bypass_roles:
                                                 if discord.utils.get(interaction.user.roles, id=r_id):
                                                     qualified = True
@@ -622,7 +622,7 @@ class GiveawayView(discord.ui.View):
                 summary_embed.set_footer(text=f"Your total entries: {final_number_of_entries}")
             else:
                 if len(user_entries) > 0:
-                    print('user already entered')
+                    #print('user already entered')
                     summary_embed.description = f"Your total entries: {len(user_entries)}"
                 else:
                     qualified = False
@@ -631,7 +631,7 @@ class GiveawayView(discord.ui.View):
                             if role.id in giveawayentry.blacklisted_roles:
                                 return await interaction.response.send_message(embed=discord.Embed(title="Failed to join giveaway", description=f"You have the role {role.mention} which is blacklisted from entering this giveaway.", color=discord.Color.red()), ephemeral=True)
                     if len(giveawayentry.required_roles) > 0:
-                        print('giveaway has required roles')
+                        #print('giveaway has required roles')
                         missing_roles = []
                         for r_id in giveawayentry.required_roles:
                             if (r := interaction.guild.get_role(r_id)) is not None:
@@ -640,10 +640,9 @@ class GiveawayView(discord.ui.View):
                                 else:
                                     qualified = True
                                     break
-                        print(missing_roles)
+                        #print(missing_roles)
                         if len(missing_roles) > 0:
                             if len(giveawayentry.bypass_roles) > 0:
-                                print('giveaway has bypass roles')
                                 for r_id in giveawayentry.bypass_roles:
                                     if discord.utils.get(interaction.user.roles, id=r_id):
                                         qualified = True
@@ -1179,7 +1178,6 @@ class giveaways(commands.Cog):
         multi_set_by_server = False
         if len(multi.keys()) > 0:
             multi_set_by_server = True
-        print(multi_set_by_server, multi)
 
         try:
             duration: int = stringtime_duration(duration)
