@@ -863,7 +863,10 @@ class giveaways(commands.Cog):
     async def format_giveaway_embed(self, entry: GiveawayEntry, winners: typing.Optional[list] = None) -> discord.Embed:
         guild = self.client.get_guild(entry.guild_id)
         embed = discord.Embed(title=entry.title, color=self.client.embed_color, timestamp = datetime.fromtimestamp(entry.end_time))
-        descriptions = ["Press the button to enter!"]
+        if entry.active is True:
+            descriptions = ["Press the button to enter!"]
+        else:
+            descriptions = []
         user = self.client.get_user(entry.host_id)
         user = user.mention if user else entry.host_id
         descriptions.append(f"**Host:** {user}")
