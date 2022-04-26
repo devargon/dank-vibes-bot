@@ -559,8 +559,7 @@ class GiveawayView(discord.ui.View):
                                 if len(giveawayentry.blacklisted_roles) > 0:
                                     for role in interaction.user.roles:
                                         if role.id in giveawayentry.blacklisted_roles:
-                                            return await interaction.response.send_message(
-                                                embed=discord.Embed(title="Failed to join giveaway", description=f"You have the role {role.mention} which is blacklisted from entering this giveaway.", color=discord.Color.red()), ephemeral=True)
+                                            return await interaction.response.send_message(embed=discord.Embed(title="Failed to join giveaway", description=f"You have the role {role.mention} which is blacklisted from entering this giveaway.", color=discord.Color.red()), ephemeral=True)
                                 if len(giveawayentry.required_roles) > 0:
                                     #print('giveaway has required roles')
                                     missing_roles = []
@@ -586,18 +585,18 @@ class GiveawayView(discord.ui.View):
                                             embed=discord.Embed(title="Unable to join giveaway",
                                                                 description=f"<:DVB_False:887589731515392000> You do not have the following roles to join this giveaway: {', '.join(missing_roles)}",
                                                                 color=discord.Color.yellow()), ephemeral=True)
-                                entered = True
                                 for i in range(entry_dict['allowed_entries'] - entry_dict['entered_entries']):
                                     entries_to_insert.append((giveawaymessage.id, interaction.user.id, entry_dict['role_id']))
                                     newly_entered_entries += 1
+                                    entered = True
                                 string = f"{DVB_True} **{entry_dict['entered_entries'] + newly_entered_entries}**/{entry_dict['allowed_entries']} Normal Entry" + (f" (`+{newly_entered_entries}`)" if newly_entered_entries > 0 else "")
                             else:
-                                entered = True
                                 role = interaction.guild.get_role(entry_dict['role_id'])
                                 if role in interaction.user.roles:
                                     for i in range(entry_dict['allowed_entries'] - entry_dict['entered_entries']):
                                         entries_to_insert.append((giveawaymessage.id, interaction.user.id, entry_dict['role_id']))
                                         newly_entered_entries += 1
+                                        entered = True
                                     string = f"{DVB_True} **{entry_dict['entered_entries'] + newly_entered_entries}**/{entry_dict['allowed_entries']} Entries for being **{role.mention}**" + (f" (`+{newly_entered_entries}`)" if newly_entered_entries > 0 else "")
                                 else:
                                     string = f"{DVB_Neutral} **{entry_dict['entered_entries']}**/{entry_dict['allowed_entries']} Entries for being **{role.mention}** (You don't have the role)"
