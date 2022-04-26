@@ -23,7 +23,8 @@ class GiveawayConfig:
             self.channel_id = record['channel_id']
             self.bypass_roles = split_string_into_list(record['bypass_roles'], return_type=int)
             self.blacklisted_roles = split_string_into_list(record['blacklisted_roles'], return_type=int)
-            self.multi = json.loads(record['multi'])
+            if self.multi is not None:
+                self.multi = json.loads(record['multi'])
 
 class GiveawayEntry:
     __slots__ = ('guild_id', 'channel_id', 'message_id', 'title', 'host_id', 'donor_id', 'winners', 'required_roles', 'blacklisted_roles', 'bypass_roles', 'multi', 'duration', 'end_time', 'showentrantcount', 'active')
