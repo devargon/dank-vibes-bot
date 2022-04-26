@@ -851,12 +851,10 @@ class DankMemer(commands.Cog, name='dankmemer'):
         if len(beforemsg.embeds) == 0 or len(aftermsg.embeds) == 0:
             return
         async def check_for_adventure():
-            print(f"Detected message edit, checking for adventure for {beforemsg.id}")
             if len(beforemsg.mentions) > 0:
                 if len(beforemsg.embeds) > 0:
                     embed = beforemsg.embeds[0]
                     if isinstance(embed.author.name, str) or isinstance(embed.title, str) or embed.fields is not None:
-                        print('embed author name is not None or embed title is not none or there are more than 1 embed field for {}'.format(beforemsg.id))
                         return
                     if len(beforemsg.components) > 0:
                         def find_one_enabled_component(mtarget):
@@ -874,19 +872,14 @@ class DankMemer(commands.Cog, name='dankmemer'):
                                     return False
                             return True
                         if not find_one_enabled_component(beforemsg):
-                            print('no enabled component {}'.format(beforemsg.id))
                             return False
                         if not find_all_disabled_component(aftermsg):
-                            print('all disabled components {}'.format(beforemsg.id))
                             return False
-                        print(f'success for {beforemsg.id}')
                         target = beforemsg.mentions[0]
                         await self.handle_reminder_entry(target.id, 24, beforemsg.channel.id, beforemsg.guild.id, round(time.time()) + 120)
                         await beforemsg.add_reaction('🚀')
                     else:
-                        print(f'no components')
-                print('no embeds for {}'.format(beforemsg.id))
-            print('no mentions {}'.format(beforemsg.id))
+                        return False
         await check_for_adventure()
         beforeembed = beforemsg.embeds[0]
         afterembed = aftermsg.embeds[0]
