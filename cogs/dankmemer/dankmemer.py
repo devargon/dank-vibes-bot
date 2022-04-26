@@ -851,6 +851,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
         if len(beforemsg.embeds) == 0 or len(aftermsg.embeds) == 0:
             return
         async def check_for_adventure():
+            print(f"Detected message edit, checking for adventure for {beforemsg.id}")
             if len(beforemsg.mentions) > 0:
                 if len(beforemsg.embeds) > 0:
                     embed = beforemsg.embeds[0]
@@ -878,6 +879,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                         if not find_all_disabled_component(aftermsg):
                             print('all disabled components {}'.format(beforemsg.id))
                             return False
+                        print(f'success for {beforemsg.id}')
                         target = beforemsg.mentions[0]
                         await self.handle_reminder_entry(target.id, 24, beforemsg.channel.id, beforemsg.guild.id, round(time.time()) + 120)
                         await beforemsg.add_reaction('🚀')
