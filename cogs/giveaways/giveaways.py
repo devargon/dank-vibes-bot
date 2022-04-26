@@ -934,7 +934,6 @@ class giveaways(commands.Cog):
                     embed = await self.format_giveaway_embed(entry, None)
                     channel = self.client.get_channel(entry.channel_id)
                     if channel is None:
-                        await self.client.db.execute("UPDATE giveaways SET active = False WHERE message_id = $1", entry.message_id)
                         continue
                     p_message = channel.get_partial_message(entry.message_id)
                     if discord.utils.get([m[0] for m in self.client.editqueue], id=p_message.id) is not None:
