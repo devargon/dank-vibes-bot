@@ -855,7 +855,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
             if len(beforemsg.mentions) > 0:
                 if len(beforemsg.embeds) > 0:
                     embed = beforemsg.embeds[0]
-                    if isinstance(embed.author.name, str) or isinstance(embed.title, str) or len(embed.fields) > 0:
+                    if isinstance(embed.author.name, str) or isinstance(embed.title, str) or embed.fields is not None:
                         print('embed author name is not None or embed title is not none or there are more than 1 embed field for {}'.format(beforemsg.id))
                         return
                     if len(beforemsg.components) > 0:
