@@ -781,8 +781,21 @@ class giveaways(commands.Cog):
                         self.client.add_to_edit_queue(message=gawmessage.channel.get_partial_message(gawmessage.id), embed=embed, view=view, index=0)
                         message = f"{random.choice(guild.emojis)} **{entrant_no}** user(s) entered, {human_join([winner.mention for winner in winners], final='and')} snagged away **{g_entry.title}**!"
                         await channel.send(message, view=GiveawayEndView(msg_link, host))
+                        winnerdmmsg = ['Generic', "Depending on the type of giveaway you won, If you haven't received your prize after 24 hours, contact a mod from <#870880772985344010> "]
+                        if channel.id in [701771740912549938, 626704430468825089, 741254464303923220, 803039330310029362]:
+                            winnerdmmsg = ["Dank Memer", "Please be patient and wait for a DM from `Atlas#2867` notifying you to claim your prize.\nKindly claim within **3** hours after receiving the Atlas DM, do **not** try to claim before the DM."]
+                        elif channel.id in [847375661332299786]:
+                            winnerdmmsg = ["Karuta", "Please claim your prize by DMing/pinging the host within **24** hours after winning."]
+                        elif channel.id in [847830388713586738]:
+                            winnerdmmsg = ["OwO Bot", "Please wait **24 hours** before contacting the host if you haven't received your prize."]
+                        elif channel.id in [853113922272624650]:
+                            winnerdmmsg = ["Pokemon", "Please wait **24 hours** before contacting the host if you haven't received your prize."]
+                        elif channel.id in [650244237744537630]:
+                            winnerdmmsg = ["Nitro", "You might need to claim the nitro from the sponsor/giveaway host within a limited time, depending on the giveaway's requirements."]
+
+
                         winembed = discord.Embed(title=f"You've won the {g_entry.title} giveaway!",
-                                                 description=f"Please be patient and wait for a DM from `Atlas#2867`. Do **not** try to claim before the DM!\n\n[Link to giveaway]({msg_link})",
+                                                 description=f"{winnerdmmsg}\n\n[Link to giveaway]({msg_link})",
                                                  color=self.client.embed_color, timestamp=discord.utils.utcnow())
                         winembed.set_author(name=guild.name, icon_url=guild.icon.url)
                         for winner in winners:
