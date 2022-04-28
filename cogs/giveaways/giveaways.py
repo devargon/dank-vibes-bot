@@ -1261,7 +1261,7 @@ class giveaways(commands.Cog):
                                      ctx.guild.id, channel.id, giveawaymessage.id, prize, ctx.author.id, donor.id if donor is not None else None, winners, required_role_list_str, blacklisted_role_list_str, bypass_role_list_str, json.dumps(multi), duration, round(time() + duration), show_count)
         giveawayrecord = await self.fetch_giveaway(giveawaymessage.id)
         embed = await self.format_giveaway_embed(giveawayrecord, None)
-        self.client.add_to_edit_queue(message=giveawaymessage, embed=embed, view=GiveawayView(self.client, self))
+        self.client.add_to_edit_queue(message=giveawaymessage, embed=embed, view=GiveawayView(self.client, self), index=0)
         if message is not None:
             if donor is None:
                 donor = ctx.author
