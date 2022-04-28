@@ -1135,9 +1135,11 @@ class giveaways(commands.Cog):
                              message: discord.Option(str, "The message to display for the giveaway") = None,
                              required_role: discord.Option(discord.Role, "The role required to participate in the giveaway") = None,
                              required_role2: discord.Option(discord.Role, "A second required role to participate in the giveaway") = None,
-                             required_role3: discord.Option(discord.Role, "A third required role to participate in the giveaway") = None
+                             required_role3: discord.Option(discord.Role, "A third required role to participate in the giveaway") = None,
+                             channel: discord.Option(discord.TextChannel, "Specify another channel to start the giveaway there") = None
                              ):
-        channel = ctx.channel
+        if channel is None:
+            channel = ctx.channel
         required_roles = []
         if required_role is not None:
             required_roles.append(required_role)
@@ -1234,6 +1236,8 @@ class giveaways(commands.Cog):
             if multi_set_by_server:
                 m_r_str += "\n(set by server)"
             descriptions.append(m_r_str)
+        if channel != ctx.channel:
+            descriptions.append(f"Giveaway will be started in another channel ({channel.mention}")
         embed = discord.Embed(title="Are you ready to start this giveaway?", description="\n".join(descriptions), color=self.client.embed_color)
         confirmview = confirm(ctx, self.client, timeout=30)
         confirmview.response = await ctx.respond(embed=embed, view=confirmview, ephemeral=True)
