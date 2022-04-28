@@ -467,8 +467,15 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 for message in messages:
                     await channel.send(message)
                 await self.client.db.execute("DELETE FROM dankdrops WHERE guild_id = $1 AND name = $2 AND price = $3 AND time = $4", drop.get('guild_id'), drop.get('name'), drop.get('price'), drop.get('time'))
-        except:
-            pass
+        except Exception as error:
+            traceback_error = print_exception(f'Ignoring exception in RealReminder task', error)
+            embed = discord.Embed(color=0xffcccb,
+                                  description=f"Error encountered on Drop reminders.\n```py\n{traceback_error}```",
+                                  timestamp=discord.utils.utcnow())
+            if len(embed) < 6000:
+                await self.client.get_guild(871734809154707467).get_channel(871737028105109574).send(embed=embed)
+            else:
+                await self.client.get_guild(871734809154707467).get_channel(871737028105109574).send("There was an error in Drop reminders, check the log for details.")
 
     @tasks.loop(seconds=1.0)
     async def dankmemerreminders(self):
@@ -568,7 +575,10 @@ class DankMemer(commands.Cog, name='dankmemer'):
             embed = discord.Embed(color=0xffcccb,
                                   description=f"Error encountered on a Reminder task.\n```py\n{traceback_error}```",
                                   timestamp=discord.utils.utcnow())
-            await self.client.get_guild(871734809154707467).get_channel(871737028105109574).send(embed=embed)
+            if len(embed) > 6000:
+                await self.client.get_guild(871734809154707467).get_channel(871737028105109574).send("There was en error with Dank reminders, check the log for more info.")
+            else:
+                await self.client.get_guild(871734809154707467).get_channel(871737028105109574).send(embed=embed)
 
     @commands.Cog.listener()
     async def on_message(self, message):

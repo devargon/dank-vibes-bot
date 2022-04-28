@@ -37,4 +37,9 @@ class Freezenick(commands.Cog):
                 else:
                     await self.client.db.execute("DELETE FROM freezenick WHERE id = $1", row.get('id'))
         except Exception as e:
-            await self.client.get_channel(871737028105109574).send(f"Error in Freezenick function: {e}")
+            errormsg = f"Error in Freezenick function: {e}"
+            if len(errormsg) > 2000:
+                print(errormsg)
+                await self.client.get_channel(871737028105109574).send("There was an error in freezenick function, check the log for details.")
+            else:
+                await self.client.get_channel(871737028105109574).send(errormsg)

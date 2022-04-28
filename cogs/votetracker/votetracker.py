@@ -129,7 +129,10 @@ class VoteTracker(commands.Cog, name='votetracker'):
         except Exception as error:
             traceback_error = print_exception(f'Ignoring exception in Reminder task', error)
             embed = discord.Embed(color=0xffcccb, description=f"Error encountered on a Reminder task.\n```py\n{traceback_error}```", timestamp=discord.utils.utcnow())
-            await self.client.get_guild(871734809154707467).get_channel(871737028105109574).send(embed=embed)
+            if len(embed) < 6000:
+                await self.client.get_guild(871734809154707467).get_channel(871737028105109574).send(embed=embed)
+            else:
+                await self.client.get_guild(871734809154707467).get_channel(871737028105109574).send("There was en error with vote reminders, check the log for more info.")
 
     @tasks.loop(hours=24.0)
     async def leaderboardloop(self):
