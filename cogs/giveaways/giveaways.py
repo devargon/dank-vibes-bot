@@ -33,6 +33,13 @@ DVB_False = "<:DVB_False:887589731515392000>"
 DVB_Neutral = "<:DVB_Neutral:887589643686670366>"
 
 
+class VoteLink(discord.ui.View):
+    def __init__(self):
+        super().__init__()
+        self.add_item(discord.ui.Button(label='Vote for Dank Vibes at Top.gg',
+                                        url="https://top.gg/servers/595457764935991326/vote",
+                                        emoji=discord.PartialEmoji.from_str('<a:dv_iconOwO:837943874973466664>')))
+
 class GiveawayList(menus.ListPageSource):
     def __init__(self, entries, title):
         self.title = title
@@ -582,10 +589,21 @@ class GiveawayView(discord.ui.View):
                                     else:
                                         qualified = True
                                     if not qualified:
+                                        desc = f"<:DVB_False:887589731515392000> You do not have the following roles to join this giveaway: {', '.join(missing_roles)}"
+                                        def gway_only_requires_voting() -> bool:
+                                            if f"<@&{voteid}>" in missing_roles and len(missing_roles) == 1:
+                                                return True
+                                            else:
+                                                return False
+                                        if gway_only_requires_voting():
+                                            desc += f"\n\n You can get <@&{voteid}> by voting for Dank Vibes!"
+
                                         return await interaction.response.send_message(
                                             embed=discord.Embed(title="Unable to join giveaway",
-                                                                description=f"<:DVB_False:887589731515392000> You do not have the following roles to join this giveaway: {', '.join(missing_roles)}",
-                                                                color=discord.Color.yellow()), ephemeral=True)
+                                                                description=desc,
+                                                                color=discord.Color.yellow()), view = VoteLink() if gway_only_requires_voting() else None,
+                                                                ephemeral=True
+                                        )
                                 for i in range(entry_dict['allowed_entries'] - entry_dict['entered_entries']):
                                     entries_to_insert.append((giveawaymessage.id, interaction.user.id, entry_dict['role_id']))
                                     newly_entered_entries += 1
