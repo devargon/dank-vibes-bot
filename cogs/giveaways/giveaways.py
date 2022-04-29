@@ -568,8 +568,7 @@ class GiveawayView(discord.ui.View):
                                             if r not in interaction.user.roles:
                                                 missing_roles.append(f"<@&{r_id}>")
                                             else:
-                                                qualified = True
-                                                break
+                                                pass
                                     #print(missing_roles)
                                     if len(missing_roles) > 0:
                                         if len(giveawayentry.bypass_roles) > 0:
@@ -580,6 +579,8 @@ class GiveawayView(discord.ui.View):
                                                     break
                                                 else:
                                                     continue
+                                    else:
+                                        qualified = True
                                     if not qualified:
                                         return await interaction.response.send_message(
                                             embed=discord.Embed(title="Unable to join giveaway",
