@@ -25,6 +25,7 @@ from utils.errors import ArgumentBaseError
 from utils.format import plural, stringtime_duration, grammarformat, human_join
 
 voteid = 874897331252760586 if os.getenv('state') == '1' else 683884762997587998
+elite_gw_channel = 871737332431216661 if os.getenv('state') == '1' else 741254464303923220
 level_100id = 943883531573157889 if os.getenv('state') == '1' else 717120742512394323
 
 
@@ -1173,12 +1174,18 @@ class giveaways(commands.Cog):
         if channel is None:
             channel = ctx.channel
         required_roles = []
+        required_roles_set_by_server = False
         if required_role is not None:
             required_roles.append(required_role)
         if required_role2 is not None:
             required_roles.append(required_role2)
         if required_role3 is not None:
             required_roles.append(required_role3)
+        if channel.id == elite_gw_channel:
+            if (voterole := ctx.guild.get_role(voteid)) is not None:
+                if voterole not in required_roles:
+                    required_roles.append(voterole)
+                    required_roles_set_by_server = True
         result = await self.client.db.fetchrow("SELECT * FROM giveawayconfig WHERE guild_id = $1 AND channel_id = $2", ctx.guild.id, channel.id)
         g_config = GiveawayConfig(result)
 
@@ -1248,7 +1255,10 @@ class giveaways(commands.Cog):
         if donor is not None:
             descriptions.append(f"**Donor**: {donor.mention}")
         if required_roles:
-            descriptions.append(f"**Required roles**: {', '.join(r.mention for r in required_roles)}")
+            req_r_str = f"**Required roles**: {', '.join(r.mention for r in required_roles)}"
+            if required_roles_set_by_server:
+                req_r_str += " (set by server)"
+            descriptions.append(req_r_str)
         if len(blacklisted_roles) > 0:
             bl_r_str = f"**Blacklisted roles**: {', '.join(r.mention for r in blacklisted_roles)}"
             if blacklisted_set_by_server:
@@ -1269,7 +1279,7 @@ class giveaways(commands.Cog):
                 m_r_str += "\n(set by server)"
             descriptions.append(m_r_str)
         if channel != ctx.channel:
-            descriptions.append(f"Giveaway will be started in another channel ({channel.mention}")
+            descriptions.append(f"Giveaway will be started in another channel ({channel.mention})")
         embed = discord.Embed(title="Are you ready to start this giveaway?", description="\n".join(descriptions), color=self.client.embed_color)
         confirmview = confirm(ctx, self.client, timeout=30)
         confirmview.response = await ctx.respond(embed=embed, view=confirmview, ephemeral=True)
@@ -1307,6 +1317,8 @@ class giveaways(commands.Cog):
                 else:
                     return
             await giveawaymessage.channel.send(embed=discord.Embed(description=message, color=self.client.embed_color).set_author(name=dis_name, icon_url=donor.display_avatar.url))
+        if channel != ctx.channel:
+            await ctx.respond(f"{DVB_True} Giveaway started!", ephemeral=True)
 
 
     @checks.has_permissions_or_role(manage_roles=True)
