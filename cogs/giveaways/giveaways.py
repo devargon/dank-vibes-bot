@@ -1161,7 +1161,7 @@ class giveaways(commands.Cog):
     @checks.has_permissions_or_role(manage_roles=True)
     async def start_giveaway(self, ctx: discord.ApplicationContext,
                              duration: discord.Option(str, "The duration of the giveaway"),
-                             winners: discord.Option(int, "The number of winners for the giveaway", min_value=1, max_value=30),
+                             winners: discord.Option(int, "The number of winners for the giveaway", min_value=1, max_value=30, default=1),
                              prize: discord.Option(str, "The prize of the giveaway"),
                              donor: discord.Option(discord.Member, "The user who donated for this giveaway.") = None,
                              message: discord.Option(str, "The message to display for the giveaway") = None,
@@ -1269,7 +1269,7 @@ class giveaways(commands.Cog):
                 m_r_str += "\n(set by server)"
             descriptions.append(m_r_str)
         if channel != ctx.channel:
-            descriptions.append(f"Giveaway will be started in another channel ({channel.mention}")
+            descriptions.append(f"Giveaway will be started in another channel ({channel.mention})")
         embed = discord.Embed(title="Are you ready to start this giveaway?", description="\n".join(descriptions), color=self.client.embed_color)
         confirmview = confirm(ctx, self.client, timeout=30)
         confirmview.response = await ctx.respond(embed=embed, view=confirmview, ephemeral=True)
@@ -1448,6 +1448,7 @@ class giveaways(commands.Cog):
                 await ctx.send(f"No giveaway was found with the message ID {message_id}.", delete_after=5.0)
             with contextlib.suppress(Exception):
                 await ctx.message.delete()
+            return
         else:
             giveaway = GiveawayEntry(result)
             if giveaway.active:
@@ -1471,8 +1472,8 @@ class giveaways(commands.Cog):
             else:
                 with contextlib.suppress(Exception):
                     await ctx.send(f"Either this giveaway was cancelled, or it has already ended.", delete_after=5.0)
-                with contextlib.suppress(Exception):
-                    await ctx.message.delete()
+            with contextlib.suppress(Exception):
+                await ctx.message.delete()
 
 
     @checks.has_permissions_or_role(manage_roles=True)
@@ -1489,6 +1490,7 @@ class giveaways(commands.Cog):
                 await ctx.send(f"No giveaway was found with the message ID {message_id}.", delete_after=5.0)
             with contextlib.suppress(Exception):
                 await ctx.message.delete()
+            return
         else:
             giveaway = GiveawayEntry(result)
             if giveaway.active:
@@ -1516,6 +1518,7 @@ class giveaways(commands.Cog):
                 await ctx.send(f"No giveaway was found with the message ID {message_id}.", delete_after=5.0)
             with contextlib.suppress(Exception):
                 await ctx.message.delete()
+            return
         if winner is None:
             winnernum = 1
         else:
