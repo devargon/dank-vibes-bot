@@ -18,7 +18,7 @@ from main import dvvt
 from utils import checks
 from utils.buttons import confirm
 from utils.context import DVVTcontext
-from utils.converters import BetterBetterRoles
+from utils.converters import BetterBetterRoles, BetterMessageID
 from utils.menus import CustomMenu
 from utils.time import humanize_timedelta
 from utils.errors import ArgumentBaseError
@@ -1406,37 +1406,9 @@ class giveaways(commands.Cog):
         """
         return await ctx.send("Please use the slash command `/giveaway start` instead.")
 
-    class BetterMessageID(commands.Converter):
-        async def convert(self, ctx, argument):
-            if argument is None:
-                raise ArgumentBaseError(message="1You need to provide a message link or ID.")
-            try:
-                return int(argument)
-            except ValueError:
-                if not (argument.startswith('https') and 'discord.com/channels/' in argument):
-                    raise ArgumentBaseError(message="2You did not provide a valid message link or ID. A message link should start with `https://discord.com/channels/`, `https://ptb.discord.com/channels/` or `https://canary.discord.com/channels/`.")
-                split = argument.split('/')
-                if split[4] == '@me':
-                    raise ArgumentBaseError(message="3You provided a message from DMs, I need a message from a channel.")
-                else:
-                    try:
-                        channel_id = int(split[5])
-                    except:
-                        raise ArgumentBaseError(message="4You did not provide a message link with a valid channel, or ID. A message link should start with `https://discord.com/channels/`, `https://ptb.discord.com/channels/` or `https://canary.discord.com/channels/`.")
-                    channel = ctx.guild.get_channel(channel_id)
-                    if channel is None:
-                        raise ArgumentBaseError(message="4You did not provide a valid message link with a valid channel, or ID.")
-                    else:
-                        try:
-                            message_id = int(split[-1])
-                            if channel.get_partial_message(message_id) is not None:
-                                return message_id
-                        except:
-                            raise ArgumentBaseError(message="5You did not provide a valid message link or ID.")
-
     @checks.has_permissions_or_role(manage_roles=True)
     @giveaway.command(name="cancel", aliases=['c'])
-    async def giveaway_cancel(self, ctx, message_id: BetterMessageID =None):
+    async def giveaway_cancel(self, ctx, message_id: BetterMessageID = None):
         """
         Cancels a giveaway. No winners will be announced.
         """
