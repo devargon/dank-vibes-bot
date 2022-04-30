@@ -1,13 +1,170 @@
 import asyncio
+import re
+from typing import Union
 
 import discord
+from emoji import UNICODE_EMOJI
+
 from utils import checks
 from discord.ext import commands
-from utils.format import get_command_name
-from utils.converters import BetterRoles, AllowDeny
+from utils.format import get_command_name, split_string_into_list, human_join
+from utils.converters import BetterRoles, AllowDeny, BetterMessageID
 import json
 from utils.format import ordinal
 from utils.buttons import confirm
+
+custom_emoji_regex = re.compile('<(a?):([A-Za-z0-9_]+):([0-9]+)>')
+
+class RoleMenu(discord.ui.Select):
+    def __init__(self, options, select_placeholder, roles, msg_id):
+        super().__init__(options=options,
+        placeholder=select_placeholder if type(select_placeholder) == str else None,
+        custom_id=str(msg_id),
+        min_values=1,
+        max_values=1 if discord.utils.get(roles, id=874897331252760586) or discord.utils.get(roles, id=782945052770697256) or discord.utils.get(roles, id=694795449273548813) else
+        len(roles),
+    )
+
+    async def callback(self, interaction: discord.Interaction):
+        client = self.view.client
+        await interaction.response.defer(ephemeral=True)
+        to_remove_roles = []
+        to_add_roles = []
+        invalid_roles = []
+        for selected_role_ids in self.values:
+            selected_role = interaction.guild.get_role(int(selected_role_ids))
+            if selected_role is not None:
+                if selected_role in interaction.user.roles:
+                    to_remove_roles.append(selected_role)
+                else:
+                    to_add_roles.append(selected_role)
+            else:
+                invalid_roles.append(f"Role {selected_role_ids} not found.")
+        for role in to_remove_roles:
+            try:
+                await interaction.user.remove_roles(role)
+            except discord.Forbidden:
+                to_remove_roles.remove(role)
+                invalid_roles.append(f"I am not allowed to remove {role.mention} from you.")
+            except discord.HTTPException:
+                to_remove_roles.remove(role)
+                invalid_roles.append(f"Something went wrong while removing {role.mention}.")
+            else:
+                pass
+        remarks = ""
+        if len(to_add_roles) > 0:
+            if interaction.message.id in [969859562054246401, 937316404368117811, 937316405362192384]:
+                if len(to_add_roles) > 1:
+                    remarks += "You can only choose **one** color role."
+                    to_add_roles = [to_add_roles[0]]
+            required_roles = await client.db.fetchval("SELECT required_role FROM selfroles WHERE message_id = $1",
+                                                       interaction.message.id)
+            required_roles = split_string_into_list(required_roles, int)
+            if len(required_roles) == 0:
+                allowed_to_get_roles = True
+            else:
+                allowed_to_get_roles = False
+                for r_id in required_roles:
+                    if discord.utils.get(interaction.user.roles, id=r_id):
+                        allowed_to_get_roles = True
+                        break
+            if not allowed_to_get_roles:
+                to_add_roles = []
+                remarks = "You need to be a " + human_join(
+                    [f"__<@&{r_id}>__" for r_id in required_roles]) + " to get this role."
+            else:
+                color_roles = [677658283732893701, 740717141782954105, 758172198769917993, 627934465959919656,
+                               631228082728075264, 758171919349710859, 694795449273548813, 631227617651195904,
+                               758172003814866944, 758172076082987028, 758170964340506675, 767031737673842708,
+                               782945052770697256, 758176346139918396, 758176352901529601, 782945398431023104,
+                               782944967516618762, 758171089095360533, 782945231985311745, 631225364496121866]
+                for r_id in color_roles:
+                    col_role = interaction.guild.get_role(r_id)
+                    if col_role in to_add_roles:
+                        pass
+                    else:
+                        if col_role in interaction.user.roles:
+                            await interaction.user.remove_roles(col_role)
+                            to_remove_roles.append(col_role)
+                for role in to_add_roles:
+                    try:
+                        await interaction.user.add_roles(role)
+                    except discord.Forbidden:
+                        to_add_roles.remove(role)
+                        invalid_roles.append(f"I am not allowed to add {role.mention} to you.")
+                    except discord.HTTPException:
+                        to_add_roles.remove(role)
+                        invalid_roles.append(f"Something went wrong while adding {role.mention}.")
+                    else:
+                        pass
+        embed = discord.Embed(title="Updated your roles!", color=0xDFA9B1)
+        if len(to_remove_roles) > 0:
+            embed.add_field(name="<:DVB_RoleRemove:969888937394991114> Removed roles",
+                            value="\n".join([f"➳ {role_ob.mention}" for role_ob in to_remove_roles]), inline=True)
+        if len(to_add_roles) > 0:
+            embed.add_field(name="<:DVB_RoleAdd:969888937290104902> Added roles",
+                            value="\n".join([f"➳ {role_ob.mention}" for role_ob in to_add_roles]), inline=True)
+        if len(invalid_roles) > 0 or len(remarks) > 0:
+            embed.add_field(name="\u200b", value="\n".join([f"- {rolestr}" for rolestr in invalid_roles]) if len(
+                invalid_roles) > 0 else remarks, inline=False)
+        await interaction.followup.send(embed=embed)
+
+
+
+def format_emoji(arg: str) -> Union[discord.PartialEmoji, str, None]:
+    """
+    Returns an emoji that can be recognised by Discord's API.
+    """
+    if arg is not None:
+        check = re.match(custom_emoji_regex, arg) is not None
+        if check is True:
+            arg = discord.PartialEmoji.from_str(arg)
+        else:
+            if arg in UNICODE_EMOJI['en']:
+                pass
+            else:
+                raise EmojiNotFound
+    return arg
+
+class EmojiNotFound(Exception):
+    pass
+
+class EmojisDoNotMatchRoles(Exception):
+    pass
+
+class DescriptionsDoNotMatchRoles(Exception):
+    pass
+
+class RoleSelectMenu(discord.ui.View):
+    def __init__(self, client):
+        self.client = client
+        super().__init__(timeout=None)
+
+
+"""class RoleSelect(discord.ui.Select):
+    def __init__(self, roles, role_emojis, role_descriptions, select_placeholder):
+        options = []
+        if len(roles) != len(role_emojis):
+            raise EmojisDoNotMatchRoles
+        elif len(roles) != len(role_descriptions):
+            raise DescriptionsDoNotMatchRoles
+        for role, emoji, description in zip(roles, role_emojis, role_descriptions):
+            try:
+                emoji = format_emoji(emoji)
+            except EmojiNotFound:
+                emoji = None
+            op = discord.SelectOption(
+                label=role.name,
+                value=str(role.id),
+                description=description if isinstance(description, str) and len(description) > 0 else None,
+                emoji=emoji
+            )
+            options.append(op)
+        super().__init__(options, select_placeholder)
+"""
+
+
+
 
 class age(discord.ui.View):
     def __init__(self):
@@ -351,6 +508,47 @@ class BetterSelfroles(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        sr_results = await self.client.db.fetch("SELECT * FROM selfroles")
+        for result in sr_results:
+            placeholder_for_select = result.get('placeholder_for_select')
+            role_ids = result.get('role_ids')
+            emojis = split_string_into_list(result.get('emojis'), str, include_empty_elements=True)
+            descriptions = split_string_into_list(result.get('descriptions'), str, include_empty_elements=True)
+            roles = []
+            guild = self.client.get_guild(result['guild_id'])
+            if guild is not None:
+                role_ids = split_string_into_list(result['role_ids'], int)
+                for role_id in role_ids:
+                    role = guild.get_role(role_id)
+                    if role is not None:
+                        roles.append(role)
+                options = []
+                if len(emojis) == 0:
+                    emojis = [None] * len(roles)
+                if len(descriptions) == 0:
+                    descriptions = [None] * len(roles)
+                if emojis is not None and len(roles) != len(emojis):
+                    print(len(roles), len(emojis))
+                    print(roles, emojis)
+                    raise EmojisDoNotMatchRoles
+                elif descriptions is not None and len(roles) != len(descriptions):
+                    raise DescriptionsDoNotMatchRoles
+                for role, emoji, description in zip(roles, emojis, descriptions):
+                    try:
+                        emoji = format_emoji(emoji)
+                    except EmojiNotFound:
+                        emoji = None
+                    op = discord.SelectOption(
+                        label=role.name,
+                        value=str(role.id),
+                        description=description if isinstance(description, str) and len(description) > 0 else None,
+                        emoji=emoji
+                    )
+                    options.append(op)
+                roleview = RoleSelectMenu(self.client)
+                roleview.add_item(RoleMenu(options, placeholder_for_select, roles, str(result.get('message_id'))))
+                print('adding view')
+                self.client.add_view(roleview)
         selfrolemessages = await self.client.db.fetchrow("SELECT age, gender, location, minigames, event_pings, dank_pings, server_pings, bot_roles, random_color, colors, specialcolors, boostping, vipheist FROM selfrolemessages WHERE guild_id = $1", 595457764935991326)
         categories = ['age', 'gender', 'location', 'minigames', 'event_pings', 'dank_pings', 'server_pings', 'bot_roles', 'random_color', 'colors', 'specialcolors', 'boostping', 'vipheist']
         if selfrolemessages == None:
@@ -506,3 +704,75 @@ class BetterSelfroles(commands.Cog):
             await self.client.db.execute(
                 "INSERT INTO selfrolemessages(guild_id, colors, specialcolors, boostping, vipheist) VALUES($1, $2, $3, $4, $5)", *msgids)
         await ctx.send("Done!")
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name='fixselfroles')
+    async def fixselfroles(self, ctx, message_id: BetterMessageID):
+        """
+        Attempt to fix the current implemented self roles by regenerating the buttons/selectmenus used for them.
+        """
+        selfrole_config = await self.client.db.fetchrow("SELECT * FROM selfroles WHERE message_id = $1", message_id)
+        if selfrole_config is None:
+            return await ctx.send(f"There is no self role set for a message with the ID `{message_id}`.")
+        else:
+            type = selfrole_config.get('type')
+            title = selfrole_config.get('title')
+            placeholder_for_select = selfrole_config.get('placeholder_for_select')
+            role_ids = selfrole_config.get('role_ids')
+            emojis = selfrole_config.get('emojis')
+            descriptions = selfrole_config.get('descriptions')
+            required_role = selfrole_config.get('required_role')
+            role_ids = split_string_into_list(role_ids, int, ',')
+            if len(role_ids) == 0:
+                return await ctx.send("There are no roles to display for this self role.")
+            emojis = split_string_into_list(emojis, str, ',', include_empty_elements=True)
+            descriptions = split_string_into_list(descriptions, str, ',', include_empty_elements=True)
+
+            roles = []
+            for r_id in role_ids:
+                if (role := ctx.guild.get_role(r_id)) is not None:
+                    roles.append(role)
+            if len(emojis) == 0:
+                emojis = [None]*len(roles)
+            if len(descriptions) == 0:
+                descriptions = [None]*len(roles)
+            print(emojis, roles)
+            if len(emojis) != len(roles):
+                raise EmojisDoNotMatchRoles
+            if len(descriptions) != len(roles):
+                raise DescriptionsDoNotMatchRoles
+
+            if 'select' in type:
+                options = []
+                if emojis is not None and len(roles) != len(emojis):
+                    raise EmojisDoNotMatchRoles
+                elif descriptions is not None and len(roles) != len(descriptions):
+                    raise DescriptionsDoNotMatchRoles
+                for role, emoji, description in zip(roles, emojis, descriptions):
+                    try:
+                        emoji = format_emoji(emoji)
+                    except EmojiNotFound:
+                        emoji = None
+                    op = discord.SelectOption(
+                        label=role.name,
+                        value=str(role.id),
+                        description=description if isinstance(description, str) and len(description) > 0 else None,
+                        emoji=emoji
+                    )
+                    options.append(op)
+                roleview = RoleSelectMenu(self.client)
+                roleview.add_item(RoleMenu(options, placeholder_for_select, roles, message_id))
+                if (chan := ctx.guild.get_channel(selfrole_config.get('channel_id'))) is not None:
+                    try:
+                        m = await chan.fetch_message(message_id)
+                    except Exception as e:
+                        return await ctx.send(f"Failed to fetch message with ID `{message_id}`: {e}")
+                    else:
+                        await m.edit(view=roleview)
+                        await ctx.send("Done!")
+                else:
+                    return await ctx.send(f"Channel `{selfrole_config.get('channel_id')}` not found.")
+            elif 'buttons' in type:
+                pass
+
+
