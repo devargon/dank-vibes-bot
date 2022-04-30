@@ -814,8 +814,8 @@ class giveaways(commands.Cog):
 
 
                         winembed = discord.Embed(title=f"You've won the {g_entry.title} giveaway!",
-                                                 description=f"{winnerdmmsg}\n\n[Link to giveaway]({msg_link})",
-                                                 color=self.client.embed_color, timestamp=discord.utils.utcnow())
+                                                 description=f"{winnerdmmsg[1]}\n\n[Link to giveaway]({msg_link})",
+                                                 color=self.client.embed_color, timestamp=discord.utils.utcnow()).set_footer(text=f"Giveaway type: {winnerdmmsg[0]}")
                         winembed.set_author(name=guild.name, icon_url=guild.icon.url)
                         for winner in winners:
                             self.dm_queue.append((winner, None, winembed, None))
