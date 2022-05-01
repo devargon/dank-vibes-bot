@@ -818,7 +818,9 @@ class giveaways(commands.Cog):
                         self.client.add_to_edit_queue(message=gawmessage.channel.get_partial_message(gawmessage.id), embed=embed, view=view, index=0)
                         message = f"{random.choice(guild.emojis)} **{entrant_no}** user(s) entered, {human_join([winner.mention for winner in winners], final='and')} snagged away **{g_entry.title}**!"
                         await channel.send(message, view=GiveawayEndView(msg_link, host))
-                        winnerdmmsg = ['Generic', "Depending on the type of giveaway you won, If you haven't received your prize after 24 hours, contact a mod from <#870880772985344010> "]
+                        winnerdmmsg = ['Generic', "Depending on the type of giveaway you won, you will either receive the prize within 24 hours or need to claim from the giveaway host. If you're unsure, feel free to check with a moderator from <#870880772985344010>."]
+                        if channel.id in [701771740912549938]:
+                            winnerdmmsg = ["Dank Memer", "As you've won a flash giveaway, the prize will be given to you almost immediately. \nYou must accept the trade sent from the giveaway host, or you will be rerolled"]
                         if channel.id in [701771740912549938, 626704430468825089, 741254464303923220, 803039330310029362]:
                             winnerdmmsg = ["Dank Memer", "Please be patient and wait for a DM from `Atlas#2867` notifying you to claim your prize.\nKindly claim within **3** hours after receiving the Atlas DM, do **not** try to claim before the DM."]
                         elif channel.id in [847375661332299786]:
