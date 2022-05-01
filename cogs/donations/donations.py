@@ -302,7 +302,30 @@ class donations(commands.Cog):
         embed.set_thumbnail(url=member.display_avatar.url)
         embed.set_author(name="Success!", icon_url="https://cdn.discordapp.com/emojis/575412409737543694.gif?size=96")
         embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
-        return await ctx.send(embed=embed)
+        await ctx.send(embed=embed)
+        notify_about_logging = await self.client.db.fetchval("SELECT notify_about_logging FROM userconfig WHERE user_id = $1", member.id)
+        if not notify_about_logging:
+            if ctx.channel.id == 652729093649072168:
+                structure = f"/d log [user,amount]"
+                commandname = f"/d option: log args: @{member},amount"
+            elif ctx.channel.id == 847395046301892628:
+                structure = f"/log karuta [user,amount]"
+                commandname = f"/log option: karuta args: @{member},amount"
+            elif ctx.channel.id == 847457835913576508:
+                structure = f"/log owo [user,amount]"
+                commandname = f"/log option: owo args: @{member},amount"
+            elif ctx.channel.id == 878857174099562506:
+                structure = f"/log poke [user,amount]"
+                commandname = f"/log option: poke args: @{member},amount"
+            else:
+                return
+            msg = f"**{ctx.author.display_name}**, remember to start logging your donations!\n\nSlash command: {structure}\nExample: {commandname}"
+            await ctx.message.reply(msg)
+            await self.client.db.execute("INSERT INTO userconfig (user_id, notify_about_logging) VALUES($2, $1) ON CONFLICT (user_id) DO UPDATE SET notify_about_logging = $1", True, member.id)
+
+
+
+
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="removedonations", aliases=["rd"])
