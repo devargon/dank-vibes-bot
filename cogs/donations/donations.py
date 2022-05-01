@@ -319,7 +319,7 @@ class donations(commands.Cog):
                 commandname = f"/log option: poke args: @{member},amount"
             else:
                 return
-            msg = f"**{ctx.author.display_name}**, remember to start logging your donations!\n\nSlash command: {structure}\nExample: {commandname}"
+            msg = f"**{ctx.author.display_name}**, remember to start logging your donations!\n\nSlash command: `{structure}`\nExample: `{commandname}`"
             await ctx.message.reply(msg)
             await self.client.db.execute("INSERT INTO userconfig (user_id, notify_about_logging) VALUES($2, $1) ON CONFLICT (user_id) DO UPDATE SET notify_about_logging = $1", True, member.id)
 
