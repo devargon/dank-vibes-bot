@@ -1161,8 +1161,8 @@ class giveaways(commands.Cog):
     @checks.has_permissions_or_role(manage_roles=True)
     async def start_giveaway(self, ctx: discord.ApplicationContext,
                              duration: discord.Option(str, "The duration of the giveaway"),
-                             winners: discord.Option(int, "The number of winners for the giveaway", min_value=1, max_value=30, default=1),
                              prize: discord.Option(str, "The prize of the giveaway"),
+                             winners: discord.Option(int, "The number of winners for the , defaults to 1", min_value=1, max_value=30, default=1) = 1,
                              donor: discord.Option(discord.Member, "The user who donated for this giveaway.") = None,
                              message: discord.Option(str, "The message to display for the giveaway") = None,
                              required_role: discord.Option(discord.Role, "The role required to participate in the giveaway") = None,
