@@ -148,6 +148,7 @@ class FunSlash(commands.Cog):
                              ):
         if channel is None:
             channel = ctx.channel
+        channel = ctx.guild.get_channel(channel.id)
         if not (channel.permissions_for(ctx.author).send_messages and channel.permissions_for(ctx.author).view_channel):
             ctx.command.reset_cooldown(ctx)
             return await ctx.respond("You are not authorized to view/send messages in that channel.", ephemeral=True)

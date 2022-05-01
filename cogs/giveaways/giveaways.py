@@ -1191,9 +1191,10 @@ class giveaways(commands.Cog):
                              channel: discord.Option(discord.TextChannel, "Specify another channel to start the giveaway there") = None
                              ):
         if channel is None:
-            channel: discord.TextChannel = ctx.channel
+            channel = ctx.channel
+        channel = ctx.guild.get_channel(channel.id) # properly get the permissions
         if not (channel.permissions_for(ctx.author).send_messages and channel.permissions_for(ctx.author).view_channel):
-            return await ctx.respond(f"You are not allowed to start a giveaway in {channel.mention}, as you are not allowed to view that channel or send messages in it.")
+            return await ctx.respond(f"You are not allowed to start a giveaway in {channel.mention}, as you are not allowed to view that channel or send messages in it.", ephemeral=True)
         required_roles = []
         required_roles_set_by_server = False
         if required_role is not None:
