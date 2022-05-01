@@ -670,7 +670,23 @@ class GiveawayView(discord.ui.View):
                                     else:
                                         continue
                         if not qualified:
-                            return await interaction.response.send_message(embed = discord.Embed(title="Unable to join giveaway", description=f"<:DVB_False:887589731515392000> You do not have the following roles to join this giveaway: {', '.join(missing_roles)}", color=discord.Color.yellow()), ephemeral=True)
+                            desc = f"<:DVB_False:887589731515392000> You do not have the following roles to join this giveaway: {', '.join(missing_roles)}"
+
+                            def gway_only_requires_voting() -> bool:
+                                if str(voteid) in desc and len(missing_roles) == 1:
+                                    return True
+                                else:
+                                    return False
+                            if gway_only_requires_voting():
+                                desc += f"\n\n You can get <@&{voteid}> by voting for Dank Vibes!"
+
+                            return await interaction.response.send_message(
+                                embed=discord.Embed(title="Unable to join giveaway",
+                                                    description=desc,
+                                                    color=discord.Color.yellow()),
+                                view=VoteLink() if gway_only_requires_voting() else None,
+                                ephemeral=True
+                            )
 
                     entries_to_insert.append((giveawaymessage.id, interaction.user.id, 0))
                     entered = True
