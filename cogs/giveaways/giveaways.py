@@ -1572,7 +1572,7 @@ class giveaways(commands.Cog):
     async def giveaway_elite(self, ctx, *, text=None):
         await ctx.message.delete()
         if os.getenv('state') == '0':
-            if ctx.channel.id not in [701771740912549938, 741254464303923220, 626704430468825089, 630587061665267713, 616007729718231161]:
+            if ctx.channel.id not in [701771740912549938, 741254464303923220, 630587061665267713, 616007729718231161]:
                 return await ctx.send("You cannot use this command in this channel! �")
         if text is None:
             text = "React to the Elite giveaway above ♡"
