@@ -592,10 +592,11 @@ class GiveawayView(discord.ui.View):
                                     if not qualified:
                                         desc = f"<:DVB_False:887589731515392000> You do not have the following roles to join this giveaway: {', '.join(missing_roles)}"
                                         def gway_only_requires_voting() -> bool:
-                                            if f"<@&{voteid}>" in missing_roles and len(missing_roles) == 1:
+                                            if str(voteid) in desc and len(missing_roles) == 1:
                                                 return True
                                             else:
                                                 return False
+                                        print(f"Giveaway {giveawaymessage.id} only requires voting: {gway_only_requires_voting()}.\n\n{desc}\n{voteid}\n\n{missing_roles}\n{len(missing_roles)}\m=========")
                                         if gway_only_requires_voting():
                                             desc += f"\n\n You can get <@&{voteid}> by voting for Dank Vibes!"
 
