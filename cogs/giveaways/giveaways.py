@@ -820,7 +820,7 @@ class giveaways(commands.Cog):
                         await channel.send(message, view=GiveawayEndView(msg_link, host))
                         winnerdmmsg = ['Generic', "Depending on the type of giveaway you won, you will either receive the prize within 24 hours or need to claim from the giveaway host. If you're unsure, feel free to check with a moderator from <#870880772985344010>."]
                         if channel.id in [701771740912549938]:
-                            winnerdmmsg = ["Dank Memer", "As you've won a flash giveaway, the prize will be given to you almost immediately. \nYou must accept the trade sent from the giveaway host, or you will be rerolled"]
+                            winnerdmmsg = ["Dank Memer", "As this is a flash giveaway, the prize will be given to you almost immediately. \nYou must accept the trade sent from the giveaway host, or you will be rerolled."]
                         if channel.id in [701771740912549938, 626704430468825089, 741254464303923220, 803039330310029362]:
                             winnerdmmsg = ["Dank Memer", "Please be patient and wait for a DM from `Atlas#2867` notifying you to claim your prize.\nKindly claim within **3** hours after receiving the Atlas DM, do **not** try to claim before the DM."]
                         elif channel.id in [847375661332299786]:
@@ -1191,7 +1191,9 @@ class giveaways(commands.Cog):
                              channel: discord.Option(discord.TextChannel, "Specify another channel to start the giveaway there") = None
                              ):
         if channel is None:
-            channel = ctx.channel
+            channel: discord.TextChannel = ctx.channel
+        if not (channel.permissions_for(ctx.author).send_messages and channel.permissions_for(ctx.author).view_channel):
+            return await ctx.respond(f"You are not allowed to start a giveaway in {channel.mention}, as you are not allowed to view that channel or send messages in it.")
         required_roles = []
         required_roles_set_by_server = False
         if required_role is not None:
