@@ -18,7 +18,7 @@ from main import dvvt
 from utils import checks
 from utils.buttons import confirm
 from utils.context import DVVTcontext
-from utils.converters import BetterBetterRoles
+from utils.converters import BetterBetterRoles, BetterMessageID
 from utils.menus import CustomMenu
 from utils.time import humanize_timedelta
 from utils.errors import ArgumentBaseError
@@ -814,8 +814,8 @@ class giveaways(commands.Cog):
 
 
                         winembed = discord.Embed(title=f"You've won the {g_entry.title} giveaway!",
-                                                 description=f"{winnerdmmsg}\n\n[Link to giveaway]({msg_link})",
-                                                 color=self.client.embed_color, timestamp=discord.utils.utcnow())
+                                                 description=f"{winnerdmmsg[1]}\n\n[Link to giveaway]({msg_link})",
+                                                 color=self.client.embed_color, timestamp=discord.utils.utcnow()).set_footer(text=f"Giveaway type: {winnerdmmsg[0]}")
                         winembed.set_author(name=guild.name, icon_url=guild.icon.url)
                         for winner in winners:
                             self.dm_queue.append((winner, None, winembed, None))
@@ -1161,8 +1161,8 @@ class giveaways(commands.Cog):
     @checks.has_permissions_or_role(manage_roles=True)
     async def start_giveaway(self, ctx: discord.ApplicationContext,
                              duration: discord.Option(str, "The duration of the giveaway"),
-                             winners: discord.Option(int, "The number of winners for the giveaway", min_value=1, max_value=30),
                              prize: discord.Option(str, "The prize of the giveaway"),
+                             winners: discord.Option(int, "The number of winners for the , defaults to 1", min_value=1, max_value=30, default=1) = 1,
                              donor: discord.Option(discord.Member, "The user who donated for this giveaway.") = None,
                              message: discord.Option(str, "The message to display for the giveaway") = None,
                              required_role: discord.Option(discord.Role, "The role required to participate in the giveaway") = None,
@@ -1269,7 +1269,7 @@ class giveaways(commands.Cog):
                 m_r_str += "\n(set by server)"
             descriptions.append(m_r_str)
         if channel != ctx.channel:
-            descriptions.append(f"Giveaway will be started in another channel ({channel.mention}")
+            descriptions.append(f"Giveaway will be started in another channel ({channel.mention})")
         embed = discord.Embed(title="Are you ready to start this giveaway?", description="\n".join(descriptions), color=self.client.embed_color)
         confirmview = confirm(ctx, self.client, timeout=30)
         confirmview.response = await ctx.respond(embed=embed, view=confirmview, ephemeral=True)
@@ -1406,37 +1406,9 @@ class giveaways(commands.Cog):
         """
         return await ctx.send("Please use the slash command `/giveaway start` instead.")
 
-    class BetterMessageID(commands.Converter):
-        async def convert(self, ctx, argument):
-            if argument is None:
-                raise ArgumentBaseError(message="1You need to provide a message link or ID.")
-            try:
-                return int(argument)
-            except ValueError:
-                if not (argument.startswith('https') and 'discord.com/channels/' in argument):
-                    raise ArgumentBaseError(message="2You did not provide a valid message link or ID. A message link should start with `https://discord.com/channels/`, `https://ptb.discord.com/channels/` or `https://canary.discord.com/channels/`.")
-                split = argument.split('/')
-                if split[4] == '@me':
-                    raise ArgumentBaseError(message="3You provided a message from DMs, I need a message from a channel.")
-                else:
-                    try:
-                        channel_id = int(split[5])
-                    except:
-                        raise ArgumentBaseError(message="4You did not provide a message link with a valid channel, or ID. A message link should start with `https://discord.com/channels/`, `https://ptb.discord.com/channels/` or `https://canary.discord.com/channels/`.")
-                    channel = ctx.guild.get_channel(channel_id)
-                    if channel is None:
-                        raise ArgumentBaseError(message="4You did not provide a valid message link with a valid channel, or ID.")
-                    else:
-                        try:
-                            message_id = int(split[-1])
-                            if channel.get_partial_message(message_id) is not None:
-                                return message_id
-                        except:
-                            raise ArgumentBaseError(message="5You did not provide a valid message link or ID.")
-
     @checks.has_permissions_or_role(manage_roles=True)
     @giveaway.command(name="cancel", aliases=['c'])
-    async def giveaway_cancel(self, ctx, message_id: BetterMessageID =None):
+    async def giveaway_cancel(self, ctx, message_id: BetterMessageID = None):
         """
         Cancels a giveaway. No winners will be announced.
         """
@@ -1448,6 +1420,7 @@ class giveaways(commands.Cog):
                 await ctx.send(f"No giveaway was found with the message ID {message_id}.", delete_after=5.0)
             with contextlib.suppress(Exception):
                 await ctx.message.delete()
+            return
         else:
             giveaway = GiveawayEntry(result)
             if giveaway.active:
@@ -1471,8 +1444,8 @@ class giveaways(commands.Cog):
             else:
                 with contextlib.suppress(Exception):
                     await ctx.send(f"Either this giveaway was cancelled, or it has already ended.", delete_after=5.0)
-                with contextlib.suppress(Exception):
-                    await ctx.message.delete()
+            with contextlib.suppress(Exception):
+                await ctx.message.delete()
 
 
     @checks.has_permissions_or_role(manage_roles=True)
@@ -1489,6 +1462,7 @@ class giveaways(commands.Cog):
                 await ctx.send(f"No giveaway was found with the message ID {message_id}.", delete_after=5.0)
             with contextlib.suppress(Exception):
                 await ctx.message.delete()
+            return
         else:
             giveaway = GiveawayEntry(result)
             if giveaway.active:
@@ -1516,6 +1490,7 @@ class giveaways(commands.Cog):
                 await ctx.send(f"No giveaway was found with the message ID {message_id}.", delete_after=5.0)
             with contextlib.suppress(Exception):
                 await ctx.message.delete()
+            return
         if winner is None:
             winnernum = 1
         else:
@@ -1597,7 +1572,7 @@ class giveaways(commands.Cog):
     async def giveaway_elite(self, ctx, *, text=None):
         await ctx.message.delete()
         if os.getenv('state') == '0':
-            if ctx.channel.id not in [701771740912549938, 741254464303923220, 626704430468825089, 630587061665267713, 616007729718231161]:
+            if ctx.channel.id not in [701771740912549938, 741254464303923220, 630587061665267713, 616007729718231161]:
                 return await ctx.send("You cannot use this command in this channel! �")
         if text is None:
             text = "React to the Elite giveaway above ♡"

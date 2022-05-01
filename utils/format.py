@@ -205,13 +205,15 @@ class TabularData:
         return '\n'.join(to_draw)
 
 
-def split_string_into_list(string, return_type: Literal[str, int], delimiter=',') -> list:
+def split_string_into_list(string, return_type: Literal[str, int], delimiter=',', include_empty_elements: Optional[bool] = False) -> list:
     """
     Splits a string into a list. It will always return a list.
     """
+    if include_empty_elements is True and return_type == int:
+        raise ValueError("include_empty_elements cannot be True if return_type is int")
     if string is None:
         return []
-    if len(string) is None:
+    if len(string) == 0:
         return []
     split = string.split(delimiter)
     split = [s.strip() for s in split]
@@ -222,6 +224,10 @@ def split_string_into_list(string, return_type: Literal[str, int], delimiter=','
                 new_split.append(s)
             elif return_type == int:
                 new_split.append(int(s))
+        else:
+            if include_empty_elements is True:
+                if return_type == str:
+                    new_split.append(s)
     return new_split
 
 
