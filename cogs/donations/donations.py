@@ -321,7 +321,7 @@ class donations(commands.Cog):
                 return
             msg = f"**{ctx.author.display_name}**, remember to start logging your donations!\n\nSlash command: `{structure}`\nExample: `{commandname}`"
             await ctx.message.reply(msg)
-            await self.client.db.execute("INSERT INTO userconfig (user_id, notify_about_logging) VALUES($1, $2) ON CONFLICT (user_id) DO UPDATE SET notify_about_logging = $2", member.id, True)
+            await self.client.db.execute("INSERT INTO userconfig (user_id, notify_about_logging) VALUES($1, $2) ON CONFLICT (user_id) DO UPDATE SET notify_about_logging = $2", ctx.author.id, True)
 
 
 
