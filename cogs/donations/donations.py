@@ -303,7 +303,7 @@ class donations(commands.Cog):
         embed.set_author(name="Success!", icon_url="https://cdn.discordapp.com/emojis/575412409737543694.gif?size=96")
         embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
         await ctx.send(embed=embed)
-        notify_about_logging = await self.client.db.fetchval("SELECT notify_about_logging FROM userconfig WHERE user_id = $1", member.id)
+        notify_about_logging = await self.client.db.fetchval("SELECT notify_about_logging FROM userconfig WHERE user_id = $1", ctx.author.id)
         if notify_about_logging is not True:
             if ctx.channel.id == 652729093649072168:
                 structure = f"/d log [user,amount]"
