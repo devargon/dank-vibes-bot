@@ -16,14 +16,15 @@ from utils.buttons import confirm
 custom_emoji_regex = re.compile('<(a?):([A-Za-z0-9_]+):([0-9]+)>')
 
 class RoleMenu(discord.ui.Select):
-    def __init__(self, options, select_placeholder, roles, msg_id):
+    def __init__(self, options, select_placeholder, roles, msg_id, max_selectable):
+        if max_selectable is None:
+            max_selectable = len(options)
         super().__init__(options=options,
-        placeholder=select_placeholder if type(select_placeholder) == str else None,
-        custom_id=str(msg_id),
-        min_values=1,
-        max_values=1 if discord.utils.get(roles, id=874897331252760586) or discord.utils.get(roles, id=782945052770697256) or discord.utils.get(roles, id=694795449273548813) else
-        len(roles),
-    )
+                         placeholder=select_placeholder if type(select_placeholder) == str else None,
+                         custom_id=str(msg_id),
+                         min_values=0,
+                         max_values=max_selectable,
+                         )
 
     async def callback(self, interaction: discord.Interaction):
         client = self.view.client
@@ -35,11 +36,16 @@ class RoleMenu(discord.ui.Select):
             selected_role = interaction.guild.get_role(int(selected_role_ids))
             if selected_role is not None:
                 if selected_role in interaction.user.roles:
-                    to_remove_roles.append(selected_role)
+                    invalid_roles.append(f"You already have the {selected_role.mention} role.")
                 else:
                     to_add_roles.append(selected_role)
             else:
                 invalid_roles.append(f"Role {selected_role_ids} not found.")
+
+        for str_role_id in [option.value for option in self.options]:
+            if (r := interaction.guild.get_role(int(str_role_id))) is not None:
+                if str_role_id not in self.values and r in interaction.user.roles:
+                    to_remove_roles.append(r)
         for role in to_remove_roles:
             try:
                 await interaction.user.remove_roles(role)
@@ -53,12 +59,12 @@ class RoleMenu(discord.ui.Select):
                 pass
         remarks = ""
         if len(to_add_roles) > 0:
-            if interaction.message.id in [969859562054246401, 937316404368117811, 937316405362192384]:
-                if len(to_add_roles) > 1:
-                    remarks += "You can only choose **one** color role."
-                    to_add_roles = [to_add_roles[0]]
-            required_roles = await client.db.fetchval("SELECT required_role FROM selfroles WHERE message_id = $1",
-                                                       interaction.message.id)
+            if len(to_add_roles) > 1:
+                max = await client.db.fetchval("SELECT max_gettable_role FROM selfroles WHERE message_id = $1", interaction.message.id)
+                if max is not None:
+                    remarks = f"\n\nYou can only get {max} roles from this message."
+                    to_add_roles = to_add_roles[:max-1]
+            required_roles = await client.db.fetchval("SELECT required_role FROM selfroles WHERE message_id = $1", interaction.message.id)
             required_roles = split_string_into_list(required_roles, int)
             if len(required_roles) == 0:
                 allowed_to_get_roles = True
@@ -73,19 +79,6 @@ class RoleMenu(discord.ui.Select):
                 remarks = "You need to be a " + human_join(
                     [f"__<@&{r_id}>__" for r_id in required_roles]) + " to get this role."
             else:
-                color_roles = [677658283732893701, 740717141782954105, 758172198769917993, 627934465959919656,
-                               631228082728075264, 758171919349710859, 694795449273548813, 631227617651195904,
-                               758172003814866944, 758172076082987028, 758170964340506675, 767031737673842708,
-                               782945052770697256, 758176346139918396, 758176352901529601, 782945398431023104,
-                               782944967516618762, 758171089095360533, 782945231985311745, 631225364496121866]
-                for r_id in color_roles:
-                    col_role = interaction.guild.get_role(r_id)
-                    if col_role in to_add_roles:
-                        pass
-                    else:
-                        if col_role in interaction.user.roles:
-                            await interaction.user.remove_roles(col_role)
-                            to_remove_roles.append(col_role)
                 for role in to_add_roles:
                     try:
                         await interaction.user.add_roles(role)
@@ -104,6 +97,8 @@ class RoleMenu(discord.ui.Select):
         if len(to_add_roles) > 0:
             embed.add_field(name="<:DVB_RoleAdd:969888937290104902> Added roles",
                             value="\n".join([f"➳ {role_ob.mention}" for role_ob in to_add_roles]), inline=True)
+        if len(to_remove_roles) + len(to_add_roles) == 0:
+            embed.add_field(name="No changes were made to your roles.", value="\u200b", inline=True)
         if len(invalid_roles) > 0 or len(remarks) > 0:
             embed.add_field(name="\u200b", value="\n".join([f"- {rolestr}" for rolestr in invalid_roles]) if len(
                 invalid_roles) > 0 else remarks, inline=False)
@@ -546,7 +541,7 @@ class BetterSelfroles(commands.Cog):
                     )
                     options.append(op)
                 roleview = RoleSelectMenu(self.client)
-                roleview.add_item(RoleMenu(options, placeholder_for_select, roles, str(result.get('message_id'))))
+                roleview.add_item(RoleMenu(options, placeholder_for_select, roles, str(result.get('message_id')), result.get('max_gettable_role')))
                 print('adding view')
                 self.client.add_view(roleview)
         selfrolemessages = await self.client.db.fetchrow("SELECT age, gender, location, minigames, event_pings, dank_pings, server_pings, bot_roles, random_color, colors, specialcolors, boostping, vipheist FROM selfrolemessages WHERE guild_id = $1", 595457764935991326)
@@ -761,7 +756,7 @@ class BetterSelfroles(commands.Cog):
                     )
                     options.append(op)
                 roleview = RoleSelectMenu(self.client)
-                roleview.add_item(RoleMenu(options, placeholder_for_select, roles, message_id))
+                roleview.add_item(RoleMenu(options, placeholder_for_select, roles, message_id, selfrole_config.get('max_gettable_role')))
                 if (chan := ctx.guild.get_channel(selfrole_config.get('channel_id'))) is not None:
                     try:
                         m = await chan.fetch_message(message_id)
@@ -774,5 +769,3 @@ class BetterSelfroles(commands.Cog):
                     return await ctx.send(f"Channel `{selfrole_config.get('channel_id')}` not found.")
             elif 'buttons' in type:
                 pass
-
-
