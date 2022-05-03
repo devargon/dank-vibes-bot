@@ -39,8 +39,9 @@ class Whois(commands.Cog):
         if discord.utils.get(ctx.author.roles, id=608495204399448066) or discord.utils.get(ctx.author.roles, id=684591962094829569) or ctx.author.guild_permissions.manage_roles:
             embed.add_field(name="Past nicknames", value="Retrieving their past nicknames...", inline=False)
             embed.add_field(name="Past usernames", value="Retrieving their past usernames...", inline=False)
-            embed.description = '\n'.join(description)
-            uimessage = await ctx.send(embed=embed)
+        embed.description = '\n'.join(description)
+        uimessage = await ctx.send(embed=embed)
+        if discord.utils.get(ctx.author.roles, id=608495204399448066) or discord.utils.get(ctx.author.roles, id=684591962094829569) or ctx.author.guild_permissions.manage_roles:
             past_nicknames = await self.client.db.fetch("SELECT * FROM nickname_changes WHERE member_id = $1 ORDER BY time DESC LIMIT 20", user.id)
             if past_nicknames:
                 nicknames = []
@@ -59,4 +60,4 @@ class Whois(commands.Cog):
                     embed.set_field_at(-1, name="Usernames", value=f"{', '.join(names) if len(names) > 0 else 'No records; usernames are only tracked after 9 January 21.'}\n\nRun `names @{user}` to see their after usernames and the time they were changed.", inline=False)
             else:
                 embed.set_field_at(-1, name="Usernames", value=f"No records; usernames are only tracked after 9 January 2022.", inline=False)
-        await uimessage.edit(embed=embed)
+            await uimessage.edit(embed=embed)
