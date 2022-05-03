@@ -36,26 +36,27 @@ class Whois(commands.Cog):
         embed = discord.Embed(color=self.client.embed_color)
         embed.set_author(name="{}'s Information".format(user.name), icon_url=user.display_avatar.url)
         embed.set_thumbnail(url=user.display_avatar.url)
-        embed.add_field(name="Past nicknames", value="Retrieving their past nicknames...", inline=False)
-        embed.add_field(name="Past usernames", value="Retrieving their past usernames...", inline=False)
-        embed.description = '\n'.join(description)
-        uimessage = await ctx.send(embed=embed)
-        past_nicknames = await self.client.db.fetch("SELECT * FROM nickname_changes WHERE member_id = $1 ORDER BY time DESC LIMIT 20", user.id)
-        if past_nicknames:
-            nicknames = []
-            for nickname in past_nicknames:
-                if nickname.get('nickname'):
-                    nicknames.append(nickname.get('nickname'))
-            embed.set_field_at(-2, name="Nicknames", value=f"{', '.join(nicknames) if len(nicknames) > 0 else 'No records; nicknames are only tracked after 9 January 21.'}\n\nRun `nicknames @{user}` to see their other nicknames and the time they were changed.", inline=False)
-        else:
-            embed.set_field_at(-2, name="Nicknames", value=f"No records; nicknames are only tracked after 9 January 21.", inline=False)
-        past_names = await self.client.db.fetch("SELECT * FROM name_changes WHERE user_id = $1 ORDER BY time DESC LIMIT 20", user.id)
-        if past_names:
-            names = []
-            for name in past_names:
-                if name.get('name'):
-                    names.append(name.get('name'))
-                embed.set_field_at(-1, name="Usernames", value=f"{', '.join(names) if len(names) > 0 else 'No records; usernames are only tracked after 9 January 21.'}\n\nRun `names @{user}` to see their after usernames and the time they were changed.", inline=False)
-        else:
-            embed.set_field_at(-1, name="Usernames", value=f"No records; usernames are only tracked after x January 21.", inline=False)
+        if discord.utils.get(ctx.author.roles, id=608495204399448066) or discord.utils.get(ctx.author.roles, id=684591962094829569) or ctx.author.guild_permissions.manage_roles:
+            embed.add_field(name="Past nicknames", value="Retrieving their past nicknames...", inline=False)
+            embed.add_field(name="Past usernames", value="Retrieving their past usernames...", inline=False)
+            embed.description = '\n'.join(description)
+            uimessage = await ctx.send(embed=embed)
+            past_nicknames = await self.client.db.fetch("SELECT * FROM nickname_changes WHERE member_id = $1 ORDER BY time DESC LIMIT 20", user.id)
+            if past_nicknames:
+                nicknames = []
+                for nickname in past_nicknames:
+                    if nickname.get('nickname'):
+                        nicknames.append(nickname.get('nickname'))
+                embed.set_field_at(-2, name="Nicknames", value=f"{', '.join(nicknames) if len(nicknames) > 0 else 'No records; nicknames are only tracked after 9 January 21.'}\n\nRun `nicknames @{user}` to see their other nicknames and the time they were changed.", inline=False)
+            else:
+                embed.set_field_at(-2, name="Nicknames", value=f"No records; nicknames are only tracked after 9 January 2022.", inline=False)
+            past_names = await self.client.db.fetch("SELECT * FROM name_changes WHERE user_id = $1 ORDER BY time DESC LIMIT 20", user.id)
+            if past_names:
+                names = []
+                for name in past_names:
+                    if name.get('name'):
+                        names.append(name.get('name'))
+                    embed.set_field_at(-1, name="Usernames", value=f"{', '.join(names) if len(names) > 0 else 'No records; usernames are only tracked after 9 January 21.'}\n\nRun `names @{user}` to see their after usernames and the time they were changed.", inline=False)
+            else:
+                embed.set_field_at(-1, name="Usernames", value=f"No records; usernames are only tracked after 9 January 2022.", inline=False)
         await uimessage.edit(embed=embed)
