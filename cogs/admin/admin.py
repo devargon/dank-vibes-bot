@@ -255,7 +255,7 @@ class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', me
             dm_description=[f"You have been blacklisted from using {self.client.user.name} by the developers or an Admin from Dank Vibes.", '', f"**Reason:** {reason}", f"**Blacklisted for**: {'Permanently' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}"]
         else:
             dm_description=[f"You have been **permanently** blacklisted from using {self.client.user.name} by the developers or an Admin from Dank Vibes.", '', f"**Reason:** {reason}"]
-        dm_description.append(f"You will not be able to run **any** commands. You will also not be able to infect any user.\nYou will however, be reminded to vote and get Dank Memer reminders.")
+        dm_description.append(f"You will not be able to:\n• run **any** commands\n• Receive highlights\n• Be nickbetted against\n• Infect a user.\n\nYou will however, be reminded to vote and get Dank Memer reminders.")
         dm_description.append('')
         if duration != 9223372036854775807:
             dm_description.append(f"Your blacklist will end on <t:{timeuntil}>.\n")
