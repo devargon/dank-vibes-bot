@@ -1,3 +1,4 @@
+import re
 import time
 import asyncio
 from typing import Tuple
@@ -13,6 +14,9 @@ from utils.format import print_exception, short_time
 from utils.buttons import *
 import cogs.dankmemer
 
+
+item_name_regex = re.compile(r"^\*\*(.+)\*\*")
+trade_val_re = re.compile(r"^\*\*TRADE\*\* - \u23e3 ([\d,]*)")
 
 async def checkmark(message:discord.Message):
     try:
@@ -591,6 +595,56 @@ class DankMemer(commands.Cog, name='dankmemer'):
         #if message.guild.id != 595457764935991326:
 #            return
         """
+        Let's update trade values first
+        """
+        def get_item_details(m: discord.Message) -> Union[tuple, None]:
+            item_name = None
+            item_code = None
+            item_worth = None
+            item_type = None
+            item_thumbnail_url = None
+            if len(m.embeds) != 1:
+                return
+            embed = m.embeds[0]
+            if type(embed.title) != str:
+                return
+            item_name_matches = re.findall(item_name_regex, embed.title)
+            if len(item_name_matches) != 1:
+                return
+            item_name = item_name_matches[0]
+            if type(embed.fields) == list:
+                for field in embed.fields:
+                    if field.name == "ID":
+                        item_code = field.value.replace('`', '')
+                    if field.name == "Type":
+                        item_type = field.value.replace('`', '')
+            else:
+                return
+            if type(embed.description) == str:
+
+                desc_split = embed.description.splitlines()[-1]
+                item_val_matches = re.findall(trade_val_re, desc_split)
+                if len(item_val_matches) != 1:
+                    return
+                else:
+                    item_worth = int(item_val_matches[0].replace(',', ''))
+            if item_name is None or item_code is None or item_worth is None or item_type is None:
+                return
+            if type(embed.thumbnail.url) == str:
+                item_thumbnail_url = embed.thumbnail.url
+            return item_name, item_code, item_worth, item_type, item_thumbnail_url
+        if (item := get_item_details(message)) is not None:
+            item_name, item_code, item_worth, item_type,  item_thumnail_url = item
+            existing_item = await self.client.db.fetchrow("SELECT * FROM dankitems WHERE idcode = $1", item_code)
+            if existing_item is not None:
+                if existing_item.get('overwrite') is not True:
+                    if existing_item.get('trade_value') != item_worth:
+                        await self.client.db.execute("UPDATE dankitems SET name = $1, trade_value = $2, type = $3, image_url = $4, last_updated = $5 WHERE idcode = $6", item_name, item_worth, item_type, item_thumnail_url, round(time.time()), item_code)
+                else:
+                    pass
+            else:
+                await self.client.db.execute("INSERT INTO dankitems (name, idcode, type, image_url, trade_value, last_updated, overwrite) VALUES ($1, $2, $3, $4, $5, $6, $7)", item_name, item_code, item_type, item_thumnail_url, item_worth, round(time.time()), False)
+        """
         Refer to https://discord.com/channels/871734809154707467/871737332431216661/873142587001827379 to all message events here
         """
         if message.content.lower() in ["pls daily", "pls 24hr"]:
@@ -1040,6 +1094,14 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 nextpettime = round(time.time()) + 43200
                 await self.handle_reminder_entry(member.id, 23, aftermsg.channel.id, aftermsg.guild.id, nextpettime, uses_name=True)
                 await checkmark(beforemsg)
+
+    @commands.command(name="dankitems", aliases=['items'])
+    async def dankitems(self, ctx, item: str):
+        """
+        Fetches values of Dank Memer Items for donations. These values are based off trade values cached from Dank Memer, or manually set.
+        """
+        pass
+
 
     @checks.not_in_gen()
     @commands.command(name="dankreminders", aliases=["dankrm", "drm"])
