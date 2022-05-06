@@ -633,7 +633,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
             if item_name is None or item_code is None or item_worth is None or item_type is None:
                 return
             if item_code == 'cutters':
-                item_code = 'bolt_cutters'
+                item_code = 'boltcutters'
             if type(embed.thumbnail.url) == str:
                 item_thumbnail_url = embed.thumbnail.url
             return item_name, item_code, item_worth, item_type, item_thumbnail_url
