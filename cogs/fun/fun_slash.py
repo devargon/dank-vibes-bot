@@ -142,8 +142,7 @@ class FunSlash(commands.Cog):
     @commands.cooldown(1, 30, commands.BucketType.user)
     async def hideping_slash(self, ctx,
                              target: Option(discord.Member, "Who you want to ping"),
-                             channel: Option(discord.TextChannel,
-                                             "If you want to ping someone in another channel") = None,
+                             channel: Option(discord.TextChannel, "If you want to ping someone in another channel") = None,
                              message: Option(str, "An optional message") = None
                              ):
         if channel is None:

@@ -258,14 +258,17 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
             self.mutedusers[ctx.channel.id] = [muted.id]
         if ctx.author == member:
             lst = ['punched themselves in the face', 'kicked themselves in the knee', 'stepped on their own feet', 'punched themselves in the stomach', 'tickled themselves until they couldn\'t take it']
-            embed = discord.Embed(title="Get muted!", description=f"{random.choice(lst)}.\n{muted.mention} is now muted for {duration} seconds.", colour=color)
+            embed = discord.Embed(title="Get muted!", description=f"{muted.mention} {random.choice(lst)}.\n{muted.mention} is now muted for {duration} seconds.", colour=color)
         else:
             embed = discord.Embed(title="Get muted!", description=f"{action}\n{muted.mention} lost and is now muted for {duration} seconds.", colour=color)
         if extra_info is not None:
             embed.set_footer(text=extra_info, icon_url="https://cdn.discordapp.com/emojis/944226900988026890.webp?size=96&quality=lossless")
         await ctx.send(embed=embed)
         await asyncio.sleep(duration)
-        await channel.set_permissions(muted, overwrite=originaloverwrite)
+        if ctx.author.id == 476803570751242251:
+            await channel.set_permissions(muted, overwrite=None)
+        else:
+            await channel.set_permissions(muted, overwrite=originaloverwrite)
         if muted.id in self.mutedusers[ctx.channel.id]:
             if len(self.mutedusers[ctx.channel.id]) == 1:
                 del self.mutedusers[ctx.channel.id]
