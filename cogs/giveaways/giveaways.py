@@ -952,7 +952,9 @@ class giveaways(commands.Cog):
             embed.add_field(name="Winners", value=str(human_join([w.mention for w in winners], ", ", "and")), inline=False)
         embed.set_footer(text=f"{plural(entry.winners):winner} will be picked for this giveaway, which ends")
         title_lower = entry.title.lower()
-        if "tro" in title_lower or "trophy" in title_lower:
+        if "nitro" in title_lower:
+            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/810398162702958662.gif?size=128&quality=lossless")
+        elif "tro" in title_lower or "trophy" in title_lower:
             embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/940712966213496842.gif?quality=lossless")
         elif "pem" in title_lower or "medal" in title_lower:
             embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/948673104870252564.gif?size=128&quality=lossless")
