@@ -1125,7 +1125,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                             field_details += f"\nThis item's value is preset, not cached from Dank Memer."
                         embed.add_field(name="Details", value=field_details, inline=False)
                         embed.set_thumbnail(url=image_url)
-                        embed.set_footer(text=f"Last updated:")
+                        embed.set_footer(text=f"Last updated")
                         await ctx.send(embed=embed)
                         return
             else:
