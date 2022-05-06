@@ -311,6 +311,7 @@ CREATE TABLE IF NOT EXISTS changelog(version_number serial, version_str text, ch
 CREATE TABLE IF NOT EXISTS watchlist(guild_id bigint, user_id bigint, target_id bigint, remarks text);
 CREATE TABLE IF NOT EXISTS usercleanup(guild_id bigint, target_id bigint, channel_id bigint, message text);
 CREATE TABLE IF NOT EXISTS giveawayconfig(guild_id bigint not null, channel_id bigint not null constraint giveawayconfig_pkey primary key, bypass_roles text, blacklisted_roles text, multi jsonb);
+CREATE TABLE IF NOT EXISTS dankitems(name bigint, IDcode text PRIMARY KEY, image_url text, type text, trade_value int, last_updated bigint default 0, overwrite bool default false);
 CREATE SCHEMA IF NOT EXISTS donations""")
         print("Bot is ready")
 
