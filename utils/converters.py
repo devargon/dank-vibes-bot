@@ -1,5 +1,5 @@
 import discord
-from fuzzywuzzy import process
+from thefuzz import process
 
 from .time import parse_timedelta
 from datetime import timedelta

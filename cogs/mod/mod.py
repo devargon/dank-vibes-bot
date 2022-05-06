@@ -18,7 +18,7 @@ from utils.converters import BetterTimeConverter, MemberUserConverter
 
 import os
 from selenium import webdriver
-from fuzzywuzzy import process
+from thefuzz import process
 from collections import Counter
 from datetime import timedelta, datetime
 import time

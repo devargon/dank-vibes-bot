@@ -2,7 +2,7 @@ import math
 
 import discord
 from discord.ext import commands
-from fuzzywuzzy import process
+from thefuzz import process
 
 from utils import checks
 
