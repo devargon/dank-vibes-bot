@@ -155,10 +155,7 @@ class OwO(commands.Cog, name='owo'):
                                 embed.add_field(name=f"{entry[0]}", value=f"**{entry[1]}** OwOs", inline=False)
                             embeds.append(embed)
                 pagegroups.append(discord.ext.pages.PageGroup(pages=embeds, label=title, description=description, author_check=True, disable_on_timeout=True))
-            if discord.__version__ == '2.0.0b6':
-                paginator = pages.Paginator(pages=pagegroups, show_menu=True, menu_placeholder="View all OwO leaderboards...")
-            else:
-                paginator = pages.Paginator(pages=pagegroups, show_menu=True)
+            paginator = pages.Paginator(pages=pagegroups, show_menu=True, menu_placeholder="View all OwO leaderboards...")
             await paginator.send(ctx)
 
     @tasks.loop(hours=24)
