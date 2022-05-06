@@ -9,8 +9,8 @@ import operator
 from main import dvvt
 from utils import checks, buttons
 from datetime import datetime, timedelta
-from discord.ext import commands, tasks
-from utils.format import print_exception, short_time
+from discord.ext import commands, tasks, pages
+from utils.format import print_exception, short_time, comma_number
 from utils.buttons import *
 import cogs.dankmemer
 
@@ -1096,11 +1096,52 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 await checkmark(beforemsg)
 
     @commands.command(name="dankitems", aliases=['items'])
-    async def dankitems(self, ctx, item: str):
+    async def dankitems(self, ctx, item: str = None):
         """
         Fetches values of Dank Memer Items for donations. These values are based off trade values cached from Dank Memer, or manually set.
         """
-        pass
+        if True:
+            items = await self.client.db.fetch("SELECT * FROM dankitems")
+            if len(items) == 0:
+                return await ctx.send("There are no cached Dank Memer items to display.")
+            else:
+                items_sorted = {}
+                for item in items:
+                    name = item.get('name')
+                    idcode = item.get('idcode')
+                    type = item.get('type')
+                    trade_value = item.get('trade_value')
+                    if type in items_sorted.keys():
+                        items_sorted[type].append((name, idcode, trade_value))
+                    else:
+                        items_sorted[type] = [(name, idcode, trade_value)]
+                all_items = []
+                pagegroups = []
+                for type, lst in items_sorted.items():
+                    embeds = []
+                    for chunked_list in discord.utils.as_chunks(lst, 25):
+                        desc = []
+                        for name, idcode, trade_value in chunked_list:
+                            all_items.append(f"**{name}** `{idcode}`: ⏣ {comma_number(trade_value)}")
+                            desc.append(f"**{name}** `{idcode}`: ⏣ {comma_number(trade_value)}")
+                        embed = discord.Embed(title=f"{type} Items", description="\n".join(desc), color=self.client.embed_color)
+                        embeds.append(embed)
+                    pagegroups.append(discord.ext.pages.PageGroup(pages=embeds, label=type, author_check=True, disable_on_timeout=True))
+                all_items_embeds = []
+                for all_items_chunked in discord.utils.as_chunks(all_items, 25):
+                    embed = discord.Embed(title="All Items", description="\n".join(all_items_chunked), color=self.client.embed_color)
+                    all_items_embeds.append(embed)
+                pagegroups.append(discord.ext.pages.PageGroup(pages=all_items_embeds, label="All Items", author_check=True, disable_on_timeout=True))
+                paginator = pages.Paginator(pages=pagegroups, show_menu=True, menu_placeholder="Dank Memer Item Categories", )
+                await paginator.send(ctx)
+
+
+
+
+
+
+
+
 
 
     @checks.not_in_gen()
