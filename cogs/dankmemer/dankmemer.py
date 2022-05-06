@@ -6,6 +6,8 @@ from typing import Tuple
 import discord
 import operator
 
+from thefuzz import process
+
 from main import dvvt
 from utils import checks, buttons
 from datetime import datetime, timedelta
@@ -1100,8 +1102,38 @@ class DankMemer(commands.Cog, name='dankmemer'):
         """
         Fetches values of Dank Memer Items for donations. These values are based off trade values cached from Dank Memer, or manually set.
         """
-        if True:
-            items = await self.client.db.fetch("SELECT * FROM dankitems")
+        items = await self.client.db.fetch("SELECT * FROM dankitems")
+        if item is not None:
+            item = item.lower()
+            result, ratio = process.extractOne(item, [i.get('idcode') for i in items])
+            if ratio > 65:
+                for checking_item in items:
+                    if checking_item.get('idcode') == result:
+                        name = checking_item.get('name')
+                        type = checking_item.get('type')
+                        image_url = checking_item.get('image_url')
+                        trade_value = checking_item.get('trade_value')
+                        last_updated = checking_item.get('last_updated')
+                        overwrite = checking_item.get('overwrite')
+                        embed = discord.Embed(
+                            title=name,
+                            description=f"```\n⏣ {comma_number(trade_value)}\n```",
+                            color=self.client.embed_color,
+                            timestamp=datetime.fromtimestamp(last_updated))
+                        field_details = f"**Type**: {type}\n**ID**: `{result}`"
+                        if overwrite is True:
+                            field_details += f"\nThis item's value is preset, not cached from Dank Memer."
+                        embed.add_field(name="Details", value=field_details, inline=False)
+                        embed.set_thumbnail(url=image_url)
+                        embed.set_footer(text=f"Last updated:")
+                        await ctx.send(embed=embed)
+                        return
+            else:
+                return await ctx.send(f"<:DVB_False:887589731515392000> I could not find an item with the name `{item}`.")
+
+
+
+        else:
             if len(items) == 0:
                 return await ctx.send("There are no cached Dank Memer items to display.")
             else:
