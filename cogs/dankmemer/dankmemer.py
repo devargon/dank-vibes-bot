@@ -1130,9 +1130,6 @@ class DankMemer(commands.Cog, name='dankmemer'):
                         return
             else:
                 return await ctx.send(f"<:DVB_False:887589731515392000> I could not find an item with the name `{item}`.")
-
-
-
         else:
             if len(items) == 0:
                 return await ctx.send("There are no cached Dank Memer items to display.")
@@ -1158,12 +1155,12 @@ class DankMemer(commands.Cog, name='dankmemer'):
                             desc.append(f"**{name}** `{idcode}`: ⏣ {comma_number(trade_value)}")
                         embed = discord.Embed(title=f"{type} Items", description="\n".join(desc), color=self.client.embed_color)
                         embeds.append(embed)
-                    pagegroups.append(discord.ext.pages.PageGroup(pages=embeds, label=type, author_check=True, disable_on_timeout=True))
+                    pagegroups.append(discord.ext.pages.PageGroup(pages=embeds, label=type, author_check=True, disable_on_timeout=True, description = None))
                 all_items_embeds = []
                 for all_items_chunked in discord.utils.as_chunks(all_items, 25):
                     embed = discord.Embed(title="All Items", description="\n".join(all_items_chunked), color=self.client.embed_color)
                     all_items_embeds.append(embed)
-                pagegroups.append(discord.ext.pages.PageGroup(pages=all_items_embeds, label="All Items", author_check=True, disable_on_timeout=True))
+                pagegroups.append(discord.ext.pages.PageGroup(pages=all_items_embeds, label="All Items", author_check=True, disable_on_timeout=True, description = None))
                 paginator = pages.Paginator(pages=pagegroups, show_menu=True, menu_placeholder="Dank Memer Item Categories", )
                 await paginator.send(ctx)
 
