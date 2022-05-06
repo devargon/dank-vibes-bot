@@ -1150,7 +1150,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 pagegroups = []
                 for type, lst in items_sorted.items():
                     embeds = []
-                    for chunked_list in discord.utils.as_chunks(lst, 25):
+                    for chunked_list in discord.utils.as_chunks(lst, 10):
                         desc = []
                         for name, idcode, trade_value in chunked_list:
                             all_items.append(f"**{name}** `{idcode}`: [⏣ {comma_number(trade_value)}](http://a/)")
@@ -1159,7 +1159,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                         embeds.append(embed)
                     pagegroups.append(discord.ext.pages.PageGroup(pages=embeds, label=type, author_check=True, disable_on_timeout=True, description = None))
                 all_items_embeds = []
-                for all_items_chunked in discord.utils.as_chunks(all_items, 25):
+                for all_items_chunked in discord.utils.as_chunks(all_items, 10):
                     embed = discord.Embed(title="All Items", description="\n".join(all_items_chunked), color=self.client.embed_color)
                     all_items_embeds.append(embed)
                 pagegroups.append(discord.ext.pages.PageGroup(pages=all_items_embeds, label="All Items", author_check=True, disable_on_timeout=True, description = None))
