@@ -1102,7 +1102,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
         """
         Fetches values of Dank Memer Items for donations. These values are based off trade values cached from Dank Memer, or manually set.
         """
-        items = await self.client.db.fetch("SELECT * FROM dankitems")
+        items = await self.client.db.fetch("SELECT * FROM dankitems ORDER BY name")
         if item is not None:
             item = item.lower()
             result, ratio = process.extractOne(item, [i.get('idcode') for i in items])
