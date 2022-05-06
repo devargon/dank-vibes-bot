@@ -523,8 +523,6 @@ class BetterSelfroles(commands.Cog):
                 if len(descriptions) == 0:
                     descriptions = [None] * len(roles)
                 if emojis is not None and len(roles) != len(emojis):
-                    print(len(roles), len(emojis))
-                    print(roles, emojis)
                     raise EmojisDoNotMatchRoles
                 elif descriptions is not None and len(roles) != len(descriptions):
                     raise DescriptionsDoNotMatchRoles
@@ -542,7 +540,6 @@ class BetterSelfroles(commands.Cog):
                     options.append(op)
                 roleview = RoleSelectMenu(self.client)
                 roleview.add_item(RoleMenu(options, placeholder_for_select, roles, str(result.get('message_id')), result.get('max_gettable_role')))
-                print('adding view')
                 self.client.add_view(roleview)
         selfrolemessages = await self.client.db.fetchrow("SELECT age, gender, location, minigames, event_pings, dank_pings, server_pings, bot_roles, random_color, colors, specialcolors, boostping, vipheist FROM selfrolemessages WHERE guild_id = $1", 595457764935991326)
         categories = ['age', 'gender', 'location', 'minigames', 'event_pings', 'dank_pings', 'server_pings', 'bot_roles', 'random_color', 'colors', 'specialcolors', 'boostping', 'vipheist']
