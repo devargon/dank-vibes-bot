@@ -1166,6 +1166,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 paginator = pages.Paginator(pages=pagegroups, show_menu=True, menu_placeholder="Dank Memer Item Categories", )
                 await paginator.send(ctx)
 
+    @checks.has_permissions_or_role(manage_roles=True)
     @dankitems.command(name='set', aliases=['setvalue'])
     async def dankitems_set_value(self, ctx, item: str, value: str):
         """
