@@ -792,9 +792,9 @@ class giveaways(commands.Cog):
                     while len(winners) != g_entry.winners and len(entries) > 0:
                         ### For winners to be selected, they must still be in the server.
                         winner = random.choice(entries)
-                        if winner.get("user_id") not in winners:
-                            member = guild.get_member(winner.get("user_id"))
-                            if member is not None:
+                        member = guild.get_member(winner.get("user_id"))
+                        if member is not None:
+                            if member not in winners:
                                 winners.append(member)
                         entries.remove(winner)
                     msg_link = f"https://discord.com/channels/{guild.id}/{channel.id}/{g_entry.message_id}"
