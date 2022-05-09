@@ -1201,7 +1201,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
 
 
 
-    @checks.in_beta()
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='itemcalc', aliases=['ic'])
     async def item_calc(self, ctx: DVVTcontext, *, arg: str = None):
         """
