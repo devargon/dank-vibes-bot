@@ -12,7 +12,7 @@ from main import dvvt
 from utils import checks, buttons
 from datetime import datetime, timedelta
 from discord.ext import commands, tasks, pages
-from utils.format import print_exception, short_time, comma_number
+from utils.format import print_exception, short_time, comma_number, stringnum_toint
 from utils.buttons import *
 import cogs.dankmemer
 
@@ -1099,7 +1099,7 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 await self.handle_reminder_entry(member.id, 23, aftermsg.channel.id, aftermsg.guild.id, nextpettime, uses_name=True)
                 await checkmark(beforemsg)
 
-    @commands.command(name="dankitems", aliases=['items'])
+    @commands.group(name="dankitems", aliases=['items'], invoke_without_command=True)
     async def dankitems(self, ctx, item: str = None):
         """
         Fetches values of Dank Memer Items for donations. These values are based off trade values cached from Dank Memer, or manually set.
@@ -1166,11 +1166,101 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 paginator = pages.Paginator(pages=pagegroups, show_menu=True, menu_placeholder="Dank Memer Item Categories", )
                 await paginator.send(ctx)
 
+    @dankitems.command(name='set', aliases=['setvalue'])
+    async def dankitems_set_value(self, ctx, item: str, value: str):
+        """
+        Set the value of a Dank Memer item, overwriting it and preventing it from being updated automatically.
+        """
+        items = await self.client.db.fetch("SELECT * FROM dankitems")
+        if item is not None:
+            item = item.lower()
+            result, ratio = process.extractOne(item, [i.get('idcode') for i in items])
+            if ratio > 65:
+                for checking_item in items:
+                    if checking_item.get('idcode') == result:
+                        item = checking_item
+                    else:
+                        continue
+        if type(item) == str:
+            return await ctx.send(f"<:DVB_False:887589731515392000> I could not find an item with the name `{item}`.")
+        processed_value = stringnum_toint(value)
+        if processed_value is None:
+            if value.lower() == 'none':
+                processed_value = None
+            else:
+                return await ctx.send("<:DVB_False:887589731515392000> The value needs to be a number or `none`.")
+        if processed_value is not None:
+            await self.client.db.execute("UPDATE dankitems SET trade_value = $1, overwrite = True, last_updated = $2 WHERE idcode = $3", processed_value, round(time.time()), item.get('idcode'))
+            await ctx.send(f"<:DVB_True:887589686808309791> Set the value of **{item.get('name')}** to `⏣ {comma_number(processed_value)}`.\nTo reset it to Dank Memer trade values, use set `none` as the value.")
+        else:
+            await self.client.db.execute("UPDATE dankitems SET trade_value = 0, overwrite = False, last_updated = $1 WHERE idcode = $2", round(time.time()), item.get('idcode'))
+            await ctx.send(f"<:DVB_True:887589686808309791> Set the value of **{item.get('name')}** to `⏣ 0`.\nPlease run `pls shop {item.get('idcode')}` to update the {item.get('name')} to the current Dank Memer trade value.")
 
 
 
 
 
+    @checks.in_beta()
+    @commands.command(name='itemcalc', aliases=['ic'])
+    async def item_calc(self, ctx: DVVTcontext, *, arg: str = None):
+        """
+        Calculates the total donation value of multiple Dank Memer items.
+        The items should be entered in this format: `[item count] <item name> [item count] <item name> ...`
+        Example: `dv.ic 1 pepe 3 tro`
+        """
+        if arg is None:
+            return await ctx.send("You need to provide a list of Dank items to calculate the total worth.")
+        all_dank_items = await self.client.db.fetch("SELECT * FROM dankitems")
+        item_names = []
+        item_codes = []
+        item_worth = []
+        for item in all_dank_items:
+            item_names.append(item.get('name'))
+            item_codes.append(item.get('idcode'))
+            item_worth.append(item.get('trade_value'))
+        items = []
+        errors = []
+        input_count = None
+        input_name = None
+        for item in arg.split(' '):
+            if item.isdigit():
+                input_count = int(item)
+            else:
+                item = item.lower()
+                result, ratio = process.extractOne(item, item_codes)
+                if ratio > 65:
+                    item_index = item_codes.index(result)
+                    if input_count is None:
+                        input_count = 1
+                    items.append((item_names[item_index], item_worth[item_index], input_count))
+                    input_count = None
+                else:
+                    errormsg = f"`{item}`: Unable to find item"
+                    if errormsg not in errors:
+                        errors.append(errormsg)
+        if len(errors) > 0:
+            errorembed = discord.Embed(title="Encountered some errors when parsing:", description="\n".join(errors)[:3999], color=self.client.embed_color)
+            await ctx.send(embed=errorembed)
+        if len(items) > 0:
+            total_worth = 0
+            item_calc_result = []
+            for item in items:
+                total_worth += item[1] * item[2]
+                item_calc_result.append(f"`{item[2]}` **{item[0]}**: `⏣ {comma_number(item[1] * item[2])}`")
+            item_summary_embed = discord.Embed(title=f"Detected items", description="", color=self.client.embed_color)
+            for item in item_calc_result:
+                if len(item_summary_embed.description) + len(item) > 2000:
+                    await ctx.send(embed=item_summary_embed)
+                    item_summary_embed = discord.Embed(title=f"Detected items", description="", color=self.client.embed_color)
+                item_summary_embed.description += f"{item}\n"
+            if len(item_summary_embed.description) > 0:
+                await ctx.send(embed=item_summary_embed)
+            final_embed = discord.Embed(title="Total worth:", description=f"```\n⏣ {comma_number(total_worth)}\n```", color=self.client.embed_color)
+            await ctx.send(embed=final_embed)
+        else:
+            await ctx.send(embed=discord.Embed(title="You didn't input any items.", color=discord.Color.red()))
+
+        
 
 
 
