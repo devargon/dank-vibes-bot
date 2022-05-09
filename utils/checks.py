@@ -88,11 +88,10 @@ def is_owner_or_perms(**perms):
 
 def in_beta() -> Callable:
     async def predicate(ctx: DVVTcontext):
-        if ctx.author.id in [515725341910892555, 366069251137863681, 650647680837484556, 321892489470410763,
-                                 602066975866355752]:
+        if ctx.author.guild_permissions.manage_roles:
             return True
         else:
-            raise ArgumentBaseError(message="This feature is still in development and is not available to the public at the moment. Be sure to check it again soon!")
+            raise ArgumentBaseError(message="This feature is still in development and is not available to the public at the moment. Be sure to check it out again soon!")
     return commands.check(predicate)
 
 def is_not_blacklisted() -> callable:
