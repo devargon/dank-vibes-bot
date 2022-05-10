@@ -493,12 +493,13 @@ class DankMemer(commands.Cog, name='dankmemer'):
             if len(results) == 0:
                 return
             for result in results:
+                check_reminder_enabled_index = 20 if result.get('remindertype') == 1001 else result.get('remindertype')
                 config = await self.client.db.fetchrow("SELECT member_id, method, daily, weekly, monthly, lottery, work, redeem, hunt, fish, dig, crime, beg, search, snakeeyes, highlow, dailybox, horseshoe, pizza, drop, stream, postmeme, marriage, pet, adventure FROM remindersettings WHERE member_id = $1", result.get('member_id')) # get the user's configuration
                 if config is None: # no config means user doesn't even use this reminder system lol
                     pass
-                elif result.get('remindertype') not in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24]: # if the reminder type is not a valid one
+                elif result.get('remindertype') not in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24, 1001]: # if the reminder type is not a valid one
                     pass
-                elif config[result.get('remindertype')] != 1:  # activity specific reminder check
+                elif config[check_reminder_enabled_index] != 1:  # activity specific reminder check
                     pass
                 elif config.get('method') == 0:  # chose not to be reminded
                     pass
@@ -546,6 +547,8 @@ class DankMemer(commands.Cog, name='dankmemer'):
                             return "**interact with your pet** <:DVB_pet:928236242469011476>"
                         elif reminderaction == 24:
                             return "**continue your adventure** 🚀"
+                        elif reminderaction == 1001:
+                            return "**start a stream again** 🎮"
                     try:
                         member = self.client.get_guild(result.get('guild_id')).get_member(result.get('member_id'))
                         channel = self.client.get_channel(result.get('channel_id'))
@@ -909,7 +912,36 @@ class DankMemer(commands.Cog, name='dankmemer'):
                             if user_name == partner.name:
                                 timetomarriage = round(time.time()) + 54000
                                 await self.handle_reminder_entry(message.mentions[0].id, 22, message.channel.id, message.guild.id, timetomarriage, uses_name=True)
-                                return await message.add_reaction('<:DVB_Ring:928236453920669786>')
+                                await message.add_reaction('<:DVB_Ring:928236453920669786>')
+        """
+        Stream Start Reminder
+        """
+        if message.author.id == 270904126974590976:
+            if len(message.embeds) > 0:
+                embed = message.embeds[0]
+                if type(embed.footer.text) == str:
+                    if "Wait at least half an hour to stream again!" in embed.footer.text:
+                        if embed.author:
+                            if type(embed.author.name) == str:
+                                if embed.author.name.endswith('Stream Manager'):
+                                    def get_member():
+                                        for member in message.guild.members:
+                                            if embed.author.name == f"{member.name}'s Stream Manager":
+                                                return member
+                                        return None
+                                    member = get_member()
+                                    if member:
+                                        if embed.fields is not None:
+                                            field_value = embed.fields[1].value
+                                            try:
+                                                timestamp_of_ended_stream = int(field_value.split(':')[1])
+                                            except:
+                                                pass
+                                            else:
+                                                timestamp_to_restart_stream = timestamp_of_ended_stream + 1800
+                                                if timestamp_to_restart_stream > round(time.time()):
+                                                    await self.handle_reminder_entry(member.id, 1001, message.channel.id, message.guild.id, timestamp_to_restart_stream, uses_name=True)
+                                                    await message.add_reaction("<:DVB_True:887589686808309791>")
 
 
     @commands.Cog.listener()
