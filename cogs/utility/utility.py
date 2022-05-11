@@ -237,6 +237,7 @@ class Utility(TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois,
         embed.add_field(name='Versions', value=f"<:DVB_python:955345550193078272> `{py_version}`\n<:DVB_PyCord:937351289514385428> `{dpy_version}`", inline=True)
         embed.add_field(name='Developers', value=f"{str(self.client.get_user(650647680837484556))}", inline=True)
         embed.add_field(name="Special Thanks To", value=f"{str(await self.client.fetch_user(727498137232736306))}\n{self.client.get_user(321892489470410763)}\n{self.client.get_user(560251854399733760)}\n{self.client.get_user(886598864965103727)} <3", inline=True)
+        embed.add_field(name="Important Links", value="[Documentation](https://docs.dvbot.nogra.me)\n[Status Page](http://status.dvbot.nogra.me/)\n[Terms of Service](https://docs.dvbot.nogra.me/legal/terms/)\n[Privacy Policy](https://docs.dvbot.nogra.me/legal/privacy/)", inline=False)
         if ctx.author.id in [650647680837484556, 515725341910892555, 321892489470410763]:
             loop = asyncio.get_event_loop()
             def get_advanced_details():
