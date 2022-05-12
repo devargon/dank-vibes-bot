@@ -395,8 +395,15 @@ class Grinderutils(commands.Cog, name='grinderutils'):
 <:DVB_start_complete:895172800627769447> Checking daily requirement 
 <:DVB_middle_incomplete:895172800430620742> <a:DVB_typing:955345484648710154> **Updating statistics** 
 <:DVB_end_incomplete:895172799923109919> Notifying grinders and sending a summary""")
-            if discord.utils.utcnow().day == 1:
+            month = await self.client.db.fetchval("SELECT enabled FROM serverconfig WHERE guild_id = $1 AND settings = 'leaderboardmonth'", ctx.guild.id)
+            # month should be true if it's even else false
+            if discord.utils.utcnow().month % 2 == 0:
+                calculated_month = True
+            else:
+                calculated_month = False
+            if calculated_month != month:
                 await self.client.db.execute("UPDATE grinderdata SET past_month = $1", 0)
+                await self.client.db.execute("UPDATE serverconfig SET enabled = $1 WHERE guild_id = $2 AND settings = 'leaderboardmonth'", calculated_month, ctx.guild.id)
             if discord.utils.utcnow().weekday() == 3:
                 reset_week = True
                 week_values = []
