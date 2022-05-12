@@ -112,7 +112,7 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
                 f"**{member.name}** is currently muted in a dumbfight. Wait a few moments before using this command.")
         if member.bot:
             ctx.command.reset_cooldown(ctx)
-            return await ctx.send("Back off my kind. Don't dumbfight bots.")
+            return await ctx.send("This is a **dumb**fight. Use it on dumb people and back off the bots.")
         if member == ctx.me:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("How do you expect me to mute myself?")
