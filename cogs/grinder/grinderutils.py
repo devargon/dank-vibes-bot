@@ -15,6 +15,8 @@ from utils.converters import BetterInt
 from datetime import datetime, timedelta
 
 
+
+
 guildid = 871734809154707467 if os.getenv('state') == '1' else 595457764935991326
 tgrinderroleID = 896052592797417492 if os.getenv('state') == '1' else 827270880182009956
 grinderroleID = 896052612284166204 if os.getenv('state') == '1' else 859494328422367273
@@ -167,6 +169,18 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                 result.get('past_month') + number, result.get('all_time') + number, round(time.time()),
                 ctx.message.jump_url, member.id, column='today')
         await ctx.send(f"<:DVB_checkmark:955345523139805214> `⏣ {comma_number(number)}` successfully logged for **{member}** ({member.id})!\nNew value: `⏣ {comma_number(today)}`")
+        category_name = "dank"
+        QUERY = "INSERT INTO donations.{} VALUES ($1, $2) ON CONFLICT(user_id) DO UPDATE SET value=$2 RETURNING value".format(
+            f"guild{ctx.guild.id}_{category_name.lower()}")
+        currentcount = await self.get_donation_count(member, 'dank')
+        newamount = await self.client.db.fetchval(QUERY, member.id, number + currentcount, column='value')
+        embed = discord.Embed(title=f"Updated {member.name}'s __dank__ donations.",
+                              description=f"**Original amount**: `{comma_number(currentcount)}`\n**Amount added**: `{comma_number(number)}`\n**New amount**: `{comma_number(newamount)}`",
+                              color=discord.Color.green(), timestamp=discord.utils.utcnow())
+        embed.set_thumbnail(url=member.display_avatar.url)
+        embed.set_author(name="Success!", icon_url="https://cdn.discordapp.com/emojis/575412409737543694.gif?size=96")
+        embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
+        await ctx.send(embed=embed)
 
 
     @checks.is_bav_or_mystic()
@@ -202,6 +216,18 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             else:
                 await self.client.db.execute("UPDATE grinderdata SET today = $1, past_week = $2, last_week = $3, past_month = $4, all_time = $5, last_dono_time = $6, last_dono_msg = $7 WHERE user_id = $8", result.get('today') + number, result.get('past_week') + number, result.get('last_week'), result.get('past_month') + number, result.get('all_time') + number, round(time.time()), ctx.message.jump_url, member.id)
             await message.edit(embed=embed)
+        category_name = "dank"
+        QUERY = "INSERT INTO donations.{} VALUES ($1, $2) ON CONFLICT(user_id) DO UPDATE SET value=$2 RETURNING value".format(
+            f"guild{ctx.guild.id}_{category_name.lower()}")
+        currentcount = await self.get_donation_count(member, 'dank')
+        newamount = await self.client.db.fetchval(QUERY, member.id, number + currentcount, column='value')
+        embed = discord.Embed(title=f"Updated {member.name}'s __dank__ donations.",
+                              description=f"**Original amount**: `{comma_number(currentcount)}`\n**Amount added**: `{comma_number(number)}`\n**New amount**: `{comma_number(newamount)}`",
+                              color=discord.Color.green(), timestamp=discord.utils.utcnow())
+        embed.set_thumbnail(url=member.display_avatar.url)
+        embed.set_author(name="Success!", icon_url="https://cdn.discordapp.com/emojis/575412409737543694.gif?size=96")
+        embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
+        await ctx.send(embed=embed)
 
     @checks.is_bav_or_mystic()
     @commands.command(name="gset")
