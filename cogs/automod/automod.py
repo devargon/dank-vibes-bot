@@ -6,6 +6,7 @@ import discord
 from discord.ext import commands, tasks
 
 from utils.context import DVVTcontext
+from utils.format import human_join
 from .freezenick import Freezenick
 from .verification import Verification
 from .timedrole import timedrole
@@ -111,13 +112,21 @@ class AutoMod(reminders_, polledition, AutoStatus, timer, NameLogging, timedrole
                 self.received_daily_potion = self.received_daily_potion + [ctx.author.id]
             else:
                 pass
-        if (duration := await self.client.db.fetchval("SELECT dumbfight_rig_duration FROM userconfig WHERE user_id = $1", ctx.author.id)) is not None:
-            if duration < time.time():
+        item_active_durations = await self.client.db.fetchrow("SELECT dumbfight_rig_duration, snipe_res_duration FROM userconfig WHERE user_id = $1", ctx.author.id)
+        effects_worn_off = []
+        if item_active_durations is not None:
+            if item_active_durations.get('dumbfight_rig_duration') is not None and item_active_durations.get('dumbfight_rig_duration') < time.time():
+                effects_worn_off.append('**Dumbfight Potion**')
                 await self.client.db.execute("UPDATE userconfig SET dumbfight_rig_duration = NULL, dumbfight_result = NULL WHERE user_id = $1", ctx.author.id)
+            if item_active_durations.get('snipe_res_duration') is not None and item_active_durations.get('snipe_res_duration') < time.time():
+                effects_worn_off.append('**Snipe Pill**')
+                await self.client.db.execute("UPDATE userconfig SET snipe_res_duration = NULL, snipe_res_result = NULL WHERE user_id = $1", ctx.author.id)
+            if len(effects_worn_off) > 0:
+                m = f"> **{ctx.author.name}**, the effects of the {human_join(effects_worn_off, final='and')} has worn off."
                 try:
-                    await ctx.reply(f"> **{ctx.author.name}**, the effects of the dumbfight potion has worn off.")
+                    await ctx.reply(m)
                 except Exception as e:
-                    await ctx.send(f"> **{ctx.author.mention}**, the effects of the dumbfight potion has worn off.")
+                    await ctx.send(m)
 
     @tasks.loop(hours=24)
     async def daily_potion_reset(self):
