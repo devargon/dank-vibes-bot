@@ -395,9 +395,9 @@ class ItemGames(commands.Cog):
                                 await self.client.db.execute("UPDATE userconfig SET dumbfight_result = $1, dumbfight_rig_duration = $2 WHERE user_id = $3", result, round(time.time())+7200, ctx.author.id)
                             await asyncio.sleep(3.0)
                             if result is True:
-                                await msgstatus.edit(content=f"{ctx.author} finished the dumbfight potion in one gulp.\nThey are now immune from losing dumbfights for 2 hours! They now have {remaining} Dumbfight Potions left.")
+                                await msgstatus.edit(content=f"**{ctx.author.name}** finished the dumbfight potion in one gulp.\nThey are now immune from losing dumbfights for 2 hours! They now have {remaining} Dumbfight Potions left.")
                             else:
-                                await msgstatus.edit(content=f"Alas! The dumbfight potion that {ctx.author} drank was a bad one, and {ctx.author.name} was poisoned.\nThey will lose all dumbfights for the next 2 hours. They now have {remaining} Dumbfight Potions left.")
+                                await msgstatus.edit(content=f"Alas! The dumbfight potion that **{ctx.author.name}** drank was a bad one, and **{ctx.author.name}** was poisoned 🤒.\nThey will lose all dumbfights for the next 2 hours. They now have {remaining} Dumbfight Potions left.")
                         else:
                             return await ctx.send("It appears that you already have a active dumbfight potion in effect. (1)")
                 else:
@@ -426,7 +426,7 @@ class ItemGames(commands.Cog):
                             if result is True:
                                 msg = f"**{ctx.author.name}** consumed the pill without any problems. Trying to snipe **{ctx.author.name}**'s messages will show gibberish text instead for **{humanize_timedelta(seconds=duration)}**."
                             else:
-                                msg = f"**{ctx.author.name}** consumed the pill without realising it had expired, but it was too late. All of **{ctx.author.name}**'s sniped messages will be OwOified for **{humanize_timedelta(seconds=duration)}**."
+                                msg = f"**{ctx.author.name}** consumed the pill without **realising it had expired**, but it was too late. All of **{ctx.author.name}**'s sniped messages will be OwOified for **{humanize_timedelta(seconds=duration)}**."
                             await ctx.send(f"{msg}\nThey now have {remaining} Snipe Pills left.")
                         else:
                             return await ctx.send("It appears that you already have an active Snipe Pill in effect. (1)")
