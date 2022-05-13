@@ -168,6 +168,16 @@ class snipe(commands.Cog):
                 else:
                     return '\n'.join(splitlines[:len(splitlines)]) if len(splitlines) < 20 else '\n'.join(splitlines[:20]) + "\n" + f"**... and another {len(splitlines) - 20} lines**"
         desc = await desc()
+        if desc == "This message has a blacklisted word and cannot be shown." or desc == "Ha, you got hidepinged!":
+            pass
+        else:
+            snipe_res_result = await self.client.db.fetchval("SELECT snipe_res_result FROM userconfig WHERE user_id = $1", ctx.author.id)
+            if snipe_res_result is True:
+                desc = encrypt(desc)
+            elif snipe_res_result is False:
+                desc = "🥰💖" + owoify.owoify(desc, level='uvu') + "😘😍"
+            else:
+                pass
         embed = discord.Embed(title=f"Message edited by {snipedata['author'].name}", description=desc, color=self.client.embed_color)
         embed.set_author(name=f"{snipedata['author']}", icon_url=snipedata['author'].display_avatar.url)
         embed.set_footer(text=f"Edited {humanize_timedelta(seconds=round(time()) - snipedata['time'])} ago")
@@ -184,15 +194,22 @@ class snipe(commands.Cog):
         if channel.id not in self.removed_reactions:
             return await ctx.send("No one has removed a reaction here.")
         snipedata = self.removed_reactions[channel.id]
-        def emoji():
-            for string in blacklisted:
-                if string in str(snipedata['emoji']):
-                    return "This emoji has a blacklisted name and cannot be shown.", "https://cdn.discordapp.com/attachments/616007729718231161/905702687566336013/DVB_False.png"
-            return f"{snipedata['emoji'].name} (Emoji ID: {snipedata['emoji'].id})", snipedata['url']
+        async def emoji():
+            snipe_res_result = await self.client.db.fetchval("SELECT snipe_res_result FROM userconfig WHERE user_id = $1", ctx.author.id)
+            if snipe_res_result is True:
+                return None
+            else:
+                for string in blacklisted:
+                    if string in str(snipedata['emoji']):
+                        return "This emoji has a blacklisted name and cannot be shown.", "https://cdn.discordapp.com/attachments/616007729718231161/905702687566336013/DVB_False.png"
+                return f"{snipedata['emoji'].name} (Emoji ID: {snipedata['emoji'].id})", snipedata['url']
 
-        emoji = emoji()
-        embed = discord.Embed(title=f"Sniped {snipedata['author'].name}'s reaction:", description=f"Emoji: {emoji[0]}\n\nThe message they reacted to: [Jump to message!]({snipedata['message']})", color=self.client.embed_color)
-        embed.set_author(name=f"{snipedata['author']}", icon_url=snipedata['author'].display_avatar.url)
-        embed.set_thumbnail(url=emoji[1])
-        embed.set_footer(text=f"Reaction removed {humanize_timedelta(seconds=round(time()) - snipedata['time'])} ago")
+        emoji = await emoji()
+        if emoji is not None:
+            embed = discord.Embed(title=f"Sniped {snipedata['author'].name}'s reaction:", description=f"Emoji: {emoji[0]}\n\nThe message they reacted to: [Jump to message!]({snipedata['message']})", color=self.client.embed_color)
+            embed.set_author(name=f"{snipedata['author']}", icon_url=snipedata['author'].display_avatar.url)
+            embed.set_thumbnail(url=emoji[1])
+            embed.set_footer(text=f"Reaction removed {humanize_timedelta(seconds=round(time()) - snipedata['time'])} ago")
+        else:
+            embed = discord.Embed(title="Details hidden as user has an active Snipe Pill effect.")
         await ctx.send(embed=embed)
