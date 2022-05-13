@@ -797,10 +797,11 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
 
     @commands.command(name="active", aliases=['activeitems'])
     async def active_items(self, ctx: DVVTcontext):
-        results = await self.client.db.fetchrow("SELECT dumbfight_rig_duration, dumbfight_result FROM userconfig WHERE user_id = $1", ctx.author.id)
-        dumbfight_result, dumbfight_duration = results.get('dumbfight_result'), results.get('dumbfight_rig_duration')
+        results = await self.client.db.fetchrow("SELECT dumbfight_rig_duration, dumbfight_result, snipe_res_result, snipe_res_duration FROM userconfig WHERE user_id = $1", ctx.author.id)
+        dumbfight_result, dumbfight_duration, snipe_res_result, snipe_res_duration = results.get('dumbfight_result'), results.get('dumbfight_rig_duration'), results.get('snipe_res_result'), results.get('snipe_res_duration')
         reply_emoji = "<:Reply:871808167011549244>"
         dumbfight_potion_emoji = "<:DVB_DumbfightPotion:944226900988026890>"
+        snipe_pill_emoji = "<:DVB_ComingSoon:974491397015089172>"
         summary = []
         if dumbfight_result is not None:
             if dumbfight_duration is None:
@@ -808,6 +809,13 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
             result = "lose all dumbfights" if dumbfight_result is not True else "win all dumbfights"
             duration = f"{reply_emoji} Removed <t:{dumbfight_duration}:R>" if dumbfight_duration > 0 else ""
             text = f"{dumbfight_potion_emoji} **Dumbfight Potion**: {result}\n{duration}"
+            summary.append(text)
+        if snipe_res_result is not None:
+            if snipe_res_duration is None:
+                snipe_res_duration = 0
+            result = "get sniped messages OwOified" if snipe_res_result is not True else "hide all sniped messages"
+            duration = f"{reply_emoji} Removed <t:{snipe_res_duration}:R>" if snipe_res_duration > 0 else ""
+            text = f"{snipe_pill_emoji} **Snipe Pill**: {result}\n{duration}"
             summary.append(text)
         embed = discord.Embed(title="Active items", description="\n\n".join(summary), color=self.client.embed_color, timestamp=discord.utils.utcnow())
         await ctx.send(embed=embed)

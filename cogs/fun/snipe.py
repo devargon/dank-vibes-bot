@@ -5,6 +5,12 @@ import asyncio
 from time import time
 from typing import Optional
 from utils.time import humanize_timedelta
+import owoify
+import base64
+
+
+def encrypt(text: str):
+    return base64.b64encode(text.encode()).decode()
 
 blacklisted = ['discordnltro.com', 'discordairdrop.com', 'n1g@', 'http://discordnitro.click/gift/steam', 'nïgga',
                'https://steamdiscordnitro.ru/gift', 'https://dlscorcl.gift', '░', 'discord.qg', 'retard',
@@ -103,13 +109,24 @@ class snipe(commands.Cog):
             if snipedata['content'].lower().startswith('dv.hp') or snipedata['content'].lower().startswith('dv.hideping'):
                 return "Ha, you got hidepinged!"
             else:
+
                 content = snipedata['content']
                 splitlines = content.split('\n')
                 if len(splitlines) <= 1:
                     return content if len(content) < 2000 else content[:2000] + "..."
                 else:
-                    return '\n'.join(splitlines[:len(splitlines)]) if len(splitlines) < 20 else '\n'.join(splitlines[:20]) + "\n" + f"**... and another {len(splitlines) - 20} lines**"
+                    return '\n'.join(splitlines[:len(splitlines)]) if len(splitlines) < 15 else '\n'.join(splitlines[:20]) + "\n" + f"**... and another {len(splitlines) - 20} lines**"
         desc = await desc()
+        if desc == "This message has a blacklisted word and cannot be shown." or desc == "Ha, you got hidepinged!":
+            pass
+        else:
+            snipe_res_result = await self.client.db.fetchval("SELECT snipe_res_result FROM userconfig WHERE user_id = $1", ctx.author.id)
+            if snipe_res_result is True:
+                desc = encrypt(desc)
+            elif snipe_res_result is False:
+                desc = "🥰💖" + owoify.owoify(desc, level='uvu') + "😘😍"
+            else:
+                pass
         embed = discord.Embed(title=f"Sniped message from {snipedata['author'].name} 🔫", description=desc, color=self.client.embed_color)
         if snipedata['content'].lower().startswith('dv.hp') or snipedata['content'].lower().startswith('dv.hideping'):
             embed.title = "Sniped message from someone..."

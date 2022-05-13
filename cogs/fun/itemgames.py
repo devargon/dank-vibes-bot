@@ -18,6 +18,8 @@ from PIL import Image
 import asyncio
 from io import BytesIO
 
+from utils.time import humanize_timedelta
+
 
 class DisplayItems(menus.ListPageSource):
     def __init__(self, entries, title, description):
@@ -400,6 +402,38 @@ class ItemGames(commands.Cog):
                             return await ctx.send("It appears that you already have a active dumbfight potion in effect. (1)")
                 else:
                     return await ctx.send("It appears that you already have a active dumbfight potion in effect. (2)")
+            elif itemname == 'snipepill':
+                if await self.client.db.fetchval("SELECT snipe_res_result FROM userconfig WHERE user_id = $1", ctx.author.id) is None:
+                    confirmview = confirm(ctx, self.client, 20.0)
+                    embed = discord.Embed(title=f"Are you sure you want to use a {itemdata.get('fullname')}?", description="Consuming a Snipe Pill might help to hide your sniped messages or make them worse, for a random period of time.")
+                    try:
+                        confirmview.response = await ctx.reply(embed=embed, view=confirmview)
+                    except:
+                        confirmview.response = await ctx.send(embed=embed, view=confirmview)
+                    await confirmview.wait()
+                    if confirmview.returning_value is not True:
+                        embed.color, embed.description = discord.Color.red(), "You decided not to use the Snipe Pill.."
+                        await confirmview.response.edit(embed=embed)
+                    else:
+                        embed.color = discord.Color.green()
+                        await confirmview.response.edit(embed=embed)
+                        userconf = await self.client.db.fetchrow("SELECT * FROM userconfig WHERE user_id = $1", ctx.author.id)
+                        if userconf is None or userconf.get('snipe_res_result') is None and await self.get_item_count(itemname, ctx.author) > 0:
+                            remaining = await self.remove_item_count(itemname, ctx.author, 1)
+                            duration = random.randint(600, 3600)
+                            result = random.choice([True, False])
+                            await self.client.db.execute("INSERT INTO userconfig (user_id, snipe_res_result, snipe_res_duration) VALUES($1, $2, $3) ON CONFLICT(user_id) DO UPDATE SET snipe_res_result = $2, snipe_res_duration = $3", ctx.author.id, result, round(time.time()) + duration)
+                            if result is True:
+                                msg = f"**{ctx.author.name}** consumed the pill without any problems. Trying to snipe **{ctx.author.name}**'s messages will show gibberish text instead for **{humanize_timedelta(seconds=duration)}**."
+                            else:
+                                msg = f"**{ctx.author.name}** consumed the pill without realising it had expired, but it was too late. All of **{ctx.author.name}**'s sniped messages will be OwOified for **{humanize_timedelta(seconds=duration)}**."
+                            await ctx.send(f"{msg}\nThey now have {remaining} Snipe Pills left.")
+                        else:
+                            return await ctx.send("It appears that you already have an active Snipe Pill in effect. (1)")
+                else:
+                    return await ctx.send("It appears that you already have an active Snipe Pill in effect. (2)")
+
+
             else:
                 return await ctx.send("Invalid")
         else:
