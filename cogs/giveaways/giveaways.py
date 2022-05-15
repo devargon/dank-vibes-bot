@@ -1353,6 +1353,8 @@ class giveaways(commands.Cog):
         if channel != ctx.channel:
             await ctx.respond(f"{DVB_True} Giveaway started!", ephemeral=True)
         await asyncio.sleep(60.0)
+        g_view.children[2].disabled = True
+        await giveawaymessage.edit(view=g_view)
         if len(g_view.thankers) > 3:
             thankers = [user.display_name for user in g_view.thankers]
             if len(thankers) <= 20:
@@ -1360,8 +1362,7 @@ class giveaways(commands.Cog):
             else:
                 thank_str = ", ".join(thankers[:20]) + f" and {len(thankers) - 20} others"
             gen_chat = ctx.guild.get_channel(gen_chat_id)
-            g_view.children[2].disabled = True
-            await giveawaymessage.edit(view=g_view)
+
             if gen_chat is not None:
                 await gen_chat.send(f"**{thank_str}** {'has' if len(thankers) == '0' else 'have'} thanked **{donor.mention}** for their **{prize}** giveaway in {giveawaymessage.channel.mention}! {random.choice(['<:dv_textThankyouOwO:837712265469231166>', '<:dv_catBlushOwO:837713048738332672>', '<a:dv_ghostLoveOwO:837712735927533609>', '<:dv_heartFloatOwO:837681322474340432>', '<:dv_frogLoveOwO:837667445316517929>', '<:dv_nyaHugOwO:837669886020812870>', '<a:dv_nyaHugOwO:837735002191560714>', '<a:dv_pandaHeartsOwO:837769010691047485>', '<a:dv_pandaLoveOwO:837769036333973555>', '<a:dv_pandaSnuggleOwO:837771845767528468>', '<:dv_pandaPeaceOwO:837699353191776346>', '<:dv_paulLoveOwO:837712577466597446>', '<:dv_remHeartOwO:837681472965181511>', '<:dv_textThankyouOwO:837712265469231166>'])}")
                 
