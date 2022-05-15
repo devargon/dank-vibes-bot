@@ -2,7 +2,7 @@ import os
 import time
 import typing
 from typing import Optional
-
+from amari import api
 import discord
 import asyncpg
 import datetime
@@ -52,6 +52,7 @@ database = os.getenv('DATABASE')
 user = os.getenv('dbUSER')
 port = int(os.getenv('dbPORT'))
 password = os.getenv('dbPASSWORD')
+amari_key = os.getenv('AMARI_KEY')
 
 
 intents = discord.Intents(guilds = True, members = True, presences = True, messages = True, reactions = True, emojis = True, invites = True, voice_states = True, message_content = True)
@@ -61,6 +62,7 @@ allowed_mentions = discord.AllowedMentions(everyone=False, roles=False)
 class dvvt(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix = self.get_prefix, intents=intents, allowed_mentions=allowed_mentions, case_insensitive=True)
+        self.AmariClient = api.AmariClient(amari_key)
         self.prefixes = {}
         self.uptime = None
         self.embed_color: int = 0x57F0F0
@@ -240,7 +242,7 @@ class dvvt(commands.Bot):
             if len(missing_tables) == 0:
                 pass
             else:
-                print("Some databases do not exist, creating them now...")
+                print(f"Some databases do not exist, creating them now...")
                 await self.db.execute("""CREATE TABLE IF NOT EXISTS autoreactions(guild_id bigint, trigger text, response text);
 CREATE TABLE IF NOT EXISTS autorole(member_id bigint, guild_id bigint, role_id bigint, time bigint);
 CREATE TABLE IF NOT EXISTS blacklist(incident_id serial, user_id bigint, moderator_id bigint, blacklist_active boolean, time_until bigint, reason text);
@@ -313,7 +315,7 @@ CREATE TABLE IF NOT EXISTS usercleanup(guild_id bigint, target_id bigint, channe
 CREATE TABLE IF NOT EXISTS giveawayconfig(guild_id bigint not null, channel_id bigint not null constraint giveawayconfig_pkey primary key, bypass_roles text, blacklisted_roles text, multi jsonb);
 CREATE TABLE IF NOT EXISTS dankitems(name bigint, IDcode text PRIMARY KEY, image_url text, type text, trade_value int, last_updated bigint default 0, overwrite bool default false);
 CREATE SCHEMA IF NOT EXISTS donations""")
-        print("Bot is ready")
+        print(f"{self.user} ({self.user.id}) is ready")
 
     @property
     def error_channel(self):
@@ -378,8 +380,9 @@ CREATE SCHEMA IF NOT EXISTS donations""")
 
     def starter(self):
         """starts the bot properly."""
+        start = time.time()
+        print(f"{round(time.time() - start, 2)}s | Starting Bot")
         try:
-            start = time.time()
             pool_pg = self.loop.run_until_complete(asyncpg.create_pool(
                 host=host,
                 port=port,
@@ -392,7 +395,7 @@ CREATE SCHEMA IF NOT EXISTS donations""")
         else:
             self.uptime = discord.utils.utcnow()
             self.db = pool_pg
-            print(f"Connected to the database ({round(time.time() - start, 2)})s")
+            print(f"{round(time.time() - start, 2)}s | Connected to the database")
             self.loop.create_task(self.after_ready())
             self.loop.create_task(self.load_maintenance_data())
             self.loop.create_task(self.get_all_blacklisted_users())
