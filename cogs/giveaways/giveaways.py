@@ -27,6 +27,7 @@ from utils.format import plural, stringtime_duration, grammarformat, human_join
 voteid = 874897331252760586 if os.getenv('state') == '1' else 683884762997587998
 elite_gw_channel = 871737332431216661 if os.getenv('state') == '1' else 741254464303923220
 level_100id = 943883531573157889 if os.getenv('state') == '1' else 717120742512394323
+gen_chat_id = 871737314831908974 if os.getenv('state') == '1' else 608498967474601995
 
 
 DVB_True = "<:DVB_True:887589686808309791>"
@@ -531,6 +532,7 @@ class GiveawayView(discord.ui.View):
     def __init__(self, client, cog):
         self.cog: cogs.giveaways.giveaways = cog
         self.client: dvvt = client
+        self.thankers = []
         super().__init__(timeout=None)
 
     @discord.ui.button(emoji=discord.PartialEmoji.from_str("<a:dv_iconOwO:837943874973466664>"), label="Join giveaway", style=discord.ButtonStyle.green, custom_id="dvb:giveawayjoin")
@@ -720,6 +722,12 @@ class GiveawayView(discord.ui.View):
             return
         embed = await self.cog.format_giveaway_details_embed(giveawayentry)
         await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @discord.ui.button(emoji=discord.PartialEmoji.from_str("<:dv_textThankyouOwO:837712265469231166>"), style=discord.ButtonStyle.grey, custom_id='dvb:giveawaythankyou')
+    async def ThankYou(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if interaction.user not in self.thankers:
+            await interaction.response.send_message("Something", ephemeral=True)
+            self.thankers.append(interaction.user)
 
 
 class AddOrRemoveView(discord.ui.View):
@@ -1327,10 +1335,11 @@ class giveaways(commands.Cog):
                                      ctx.guild.id, channel.id, giveawaymessage.id, prize, ctx.author.id, donor.id if donor is not None else None, winners, required_role_list_str, blacklisted_role_list_str, bypass_role_list_str, json.dumps(multi), duration, round(time() + duration), show_count)
         giveawayrecord = await self.fetch_giveaway(giveawaymessage.id)
         embed = await self.format_giveaway_embed(giveawayrecord, None)
-        await giveawaymessage.edit(embed=embed, view=GiveawayView(self.client, self))
+        g_view = GiveawayView(self.client, self)
+        await giveawaymessage.edit(embed=embed, view=g_view)
+        if donor is None:
+            donor = ctx.author
         if message is not None:
-            if donor is None:
-                donor = ctx.author
             dis_name = f"{donor.display_name} (sponsor)" if len(donor.display_name) <= 22 else donor.display_name
             webh = await self.client.get_webhook(giveawaymessage.channel)
             if webh is not None:
@@ -1343,6 +1352,19 @@ class giveaways(commands.Cog):
             await giveawaymessage.channel.send(embed=discord.Embed(description=message, color=self.client.embed_color).set_author(name=dis_name, icon_url=donor.display_avatar.url))
         if channel != ctx.channel:
             await ctx.respond(f"{DVB_True} Giveaway started!", ephemeral=True)
+        await asyncio.sleep(60.0)
+        if len(g_view.thankers) > 3:
+            thankers = [user.display_name for user in g_view.thankers]
+            if len(thankers) <= 20:
+                thank_str = human_join(thankers, final='and')
+            else:
+                thank_str = ", ".join(thankers[:20]) + f" and {len(thankers) - 20} others"
+            gen_chat = ctx.guild.get_channel(gen_chat_id)
+            g_view.children[2].disabled = True
+            await giveawaymessage.edit(view=g_view)
+            if gen_chat is not None:
+                await gen_chat.send(f"**{thank_str}** {'has' if len(thankers) == '0' else 'have'} thanked **{donor.mention}** for their **{prize}** giveaway in {giveawaymessage.channel.mention}! {random.choice(['<:dv_textThankyouOwO:837712265469231166>', '<:dv_catBlushOwO:837713048738332672>', '<a:dv_ghostLoveOwO:837712735927533609>', '<:dv_heartFloatOwO:837681322474340432>', '<:dv_frogLoveOwO:837667445316517929>', '<:dv_nyaHugOwO:837669886020812870>', '<a:dv_nyaHugOwO:837735002191560714>', '<a:dv_pandaHeartsOwO:837769010691047485>', '<a:dv_pandaLoveOwO:837769036333973555>', '<a:dv_pandaSnuggleOwO:837771845767528468>', '<:dv_pandaPeaceOwO:837699353191776346>', '<:dv_paulLoveOwO:837712577466597446>', '<:dv_remHeartOwO:837681472965181511>', '<:dv_textThankyouOwO:837712265469231166>'])}")
+                
 
 
     @checks.has_permissions_or_role(manage_roles=True)
