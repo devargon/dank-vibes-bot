@@ -1,7 +1,8 @@
 import os
 import time
-import typing
-from typing import Optional
+from typing import Optional, Union, Tuple
+
+import amari.exceptions
 from amari import api
 import discord
 import asyncpg
@@ -11,6 +12,9 @@ from discord import client
 from discord.ext import commands, tasks
 from utils.context import DVVTcontext
 from utils.format import print_exception
+from utils.specialobjects import MISSING
+from utils.errors import AmariUserNotFound, AmariDataNotFound, AmariError, AmariDeveloperError
+
 
 class EditContent:
     __slots__ = ('content', 'embed', 'embeds')
@@ -74,9 +78,88 @@ class dvvt(commands.Bot):
         self.editqueue = []
         self.deleted_edit_messages = []
         self.webhooks = {}
-
+        self.amari_data = {}
+        self.sample_amari_data = {
+            595457764935991326: {
+                'leaderboard': "a api.Leaderboard object",
+                'last_updated': 0
+            }
+        }
         for ext in self.available_extensions:
             self.load_extension(ext)
+
+    async def fetch_amari_data(self, user_id: int, guild_id: int) -> Tuple[Union[None, api.User], int]:
+        guild_data = self.amari_data.get(guild_id, None)
+        if guild_data is None:
+            self.amari_data[guild_id] = {
+                'leaderboard': None,
+                'last_updated': 0
+            }
+            guild_data = self.amari_data.get(guild_id, None)
+            if guild_data is None:
+                raise AmariError(AmariDataNotFound, 1)
+
+        data_last_updated = guild_data.get('last_updated', 0)
+        leaderboard: api.Leaderboard = guild_data.get('leaderboard', None)
+
+        needs_updating = False
+        if leaderboard is MISSING:
+            if round(time.time()) - data_last_updated < 60:
+                raise AmariError(AmariDataNotFound, 60-(round(time.time())-data_last_updated))
+            else:
+                needs_updating = True
+        elif leaderboard is None:
+            needs_updating = True
+        else:
+            if isinstance(leaderboard, api.Leaderboard):
+                if round(time.time()) - data_last_updated > 8:
+                    needs_updating = True
+            elif type(leaderboard) == amari.exceptions.InvalidToken:
+                raise AmariDeveloperError(leaderboard)
+            elif type(leaderboard) in [amari.exceptions.HTTPException, amari.exceptions.NotFound, amari.exceptions.RatelimitException, amari.exceptions.AmariServerError]:
+                if round(time.time()) - data_last_updated < 60:
+                    raise AmariError(leaderboard, 60-(round(time.time())-data_last_updated))
+                else:
+                    needs_updating = True
+
+        if needs_updating:
+            try:
+                print('data was fetched')
+                leaderboard = await self.AmariClient.fetch_leaderboard(guild_id)
+            except amari.exceptions.NotFound as e:
+                self.amari_data[guild_id]['leaderboard'] = e
+                self.amari_data[guild_id]['last_updated'] = round(time.time())
+                raise AmariError(e, 60-(round(time.time())-data_last_updated))
+            except amari.exceptions.InvalidToken as e:
+                self.amari_data[guild_id]['leaderboard'] = e
+                self.amari_data[guild_id]['last_updated'] = round(time.time())
+                raise AmariDeveloperError(e)
+            except amari.exceptions.RatelimitException as e:
+                self.amari_data[guild_id]['leaderboard'] = e
+                self.amari_data[guild_id]['last_updated'] = round(time.time())
+                raise AmariError(e, 60-(round(time.time())-data_last_updated))
+            except amari.exceptions.AmariServerError as e:
+                self.amari_data[guild_id]['leaderboard'] = e
+                self.amari_data[guild_id]['last_updated'] = round(time.time())
+                raise AmariError(e, 60-(round(time.time())-data_last_updated))
+            except amari.exceptions.HTTPException as e:
+                self.amari_data[guild_id]['leaderboard'] = e
+                self.amari_data[guild_id]['last_updated'] = round(time.time())
+                raise AmariError(e, 60-(round(time.time())-data_last_updated))
+            except Exception as e:
+                self.amari_data[guild_id]['leaderboard'] = MISSING
+                self.amari_data[guild_id]['last_updated'] = round(time.time())
+                raise e
+            else:
+                self.amari_data[guild_id]['leaderboard'] = leaderboard
+                self.amari_data[guild_id]['last_updated'] = round(time.time())
+        data_last_updated = self.amari_data[guild_id]['last_updated']
+
+        return (leaderboard.get_user(user_id), data_last_updated)
+
+
+
+
 
     @tasks.loop(seconds=0.1)
     async def edit_message(self):
@@ -85,7 +168,7 @@ class dvvt(commands.Bot):
         if len(self.editqueue) > 0:
             #print(self.editqueue)
             tup = self.editqueue.pop(0)
-            m: typing.Union[discord.PartialMessage, discord.Message] = tup[0]
+            m: Union[discord.PartialMessage, discord.Message] = tup[0]
             content: str = tup[1]
             embed: discord.Embed = tup[2]
             view: discord.ui.View = tup[3]
@@ -156,7 +239,7 @@ class dvvt(commands.Bot):
                 await self.get_channel(906433823594668052).send(embed=embed)
         await self.get_all_blacklisted_users()
 
-    def add_to_edit_queue(self, message: typing.Union[discord.PartialMessage, discord.Message] = 0, content: str = 0, embed: discord.Embed = 0, view: discord.ui.View = 0, index: Optional[int] = None):
+    def add_to_edit_queue(self, message: Union[discord.PartialMessage, discord.Message] = 0, content: str = 0, embed: discord.Embed = 0, view: discord.ui.View = 0, index: Optional[int] = None):
         tup = (message, content, embed, view)
         if index is None:
             self.editqueue.append(tup)
