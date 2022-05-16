@@ -1,3 +1,6 @@
+from typing import Any
+
+
 class Reminder:
     __slots__ = ('time', 'name', 'channel', 'guild', 'message', 'id', 'user', 'created_time', 'repeat', 'interval')
 
@@ -12,3 +15,16 @@ class Reminder:
         self.name = record.get('name')
         self.repeat = record.get('repeat')
         self.interval = record.get('interval')
+
+class _MissingSentinel:
+    def __eq__(self, other):
+        return False
+
+    def __bool__(self):
+        return False
+
+    def __repr__(self):
+        return "..."
+
+
+MISSING: Any = _MissingSentinel()
