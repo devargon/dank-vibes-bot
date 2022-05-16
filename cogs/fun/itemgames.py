@@ -420,8 +420,11 @@ class ItemGames(commands.Cog):
                         userconf = await self.client.db.fetchrow("SELECT * FROM userconfig WHERE user_id = $1", ctx.author.id)
                         if userconf is None or userconf.get('snipe_res_result') is None and await self.get_item_count(itemname, ctx.author) > 0:
                             remaining = await self.remove_item_count(itemname, ctx.author, 1)
-                            duration = random.randint(600, 3600)
                             result = random.choice([True, False])
+                            if result is True:
+                                duration = random.randint(60, 300)
+                            else:
+                                duration = 86400
                             await self.client.db.execute("INSERT INTO userconfig (user_id, snipe_res_result, snipe_res_duration) VALUES($1, $2, $3) ON CONFLICT(user_id) DO UPDATE SET snipe_res_result = $2, snipe_res_duration = $3", ctx.author.id, result, round(time.time()) + duration)
                             if result is True:
                                 msg = f"**{ctx.author.name}** consumed the pill without any problems. Trying to snipe **{ctx.author.name}**'s messages will show gibberish text instead for **{humanize_timedelta(seconds=duration)}**."
