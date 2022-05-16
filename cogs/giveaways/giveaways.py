@@ -1198,6 +1198,8 @@ class giveaways(commands.Cog):
                              required_role: discord.Option(discord.Role, "The role required to participate in the giveaway") = None,
                              required_role2: discord.Option(discord.Role, "A second required role to participate in the giveaway") = None,
                              required_role3: discord.Option(discord.Role, "A third required role to participate in the giveaway") = None,
+                             amari_level: discord.Option(int, "An optional Amari Level requirement") = 0,
+                             amari_weekly_xp: discord.Option(int, "An optional Amari Weekly XP requirement") = 0,
                              channel: discord.Option(discord.TextChannel, "Specify another channel to start the giveaway there") = None
                              ):
         if channel is None:
@@ -1310,6 +1312,11 @@ class giveaways(commands.Cog):
             if multi_set_by_server:
                 m_r_str += "\n(set by server)"
             descriptions.append(m_r_str)
+        if amari_level > 0:
+            descriptions.append(f"<:DVB_Amari:975377537658134528> **Amari Level**: {amari_level}")
+        if amari_weekly_xp > 0:
+            descriptions.append(f"<:DVB_Amari:975377537658134528> **Amari Weekly XP**: {amari_weekly_xp}")
+
         if channel != ctx.channel:
             descriptions.append(f"Giveaway will be started in another channel ({channel.mention})")
         embed = discord.Embed(title="Are you ready to start this giveaway?", description="\n".join(descriptions), color=self.client.embed_color)
@@ -1331,8 +1338,8 @@ class giveaways(commands.Cog):
             bypass_role_list_str = None
         giveawaymessage = await channel.send(embed=discord.Embed(title="<a:DVB_Loading:909997219644604447> Initializing giveaway...", color=self.client.embed_color))
         multi = {str(r.id): m_count for r, m_count in multi.items()}
-        await self.client.db.execute("INSERT INTO giveaways (guild_id, channel_id, message_id, title, host_id, donor_id, winners, required_roles, blacklisted_roles, bypass_roles, multi, duration, end_time, showentrantcount) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
-                                     ctx.guild.id, channel.id, giveawaymessage.id, prize, ctx.author.id, donor.id if donor is not None else None, winners, required_role_list_str, blacklisted_role_list_str, bypass_role_list_str, json.dumps(multi), duration, round(time() + duration), show_count)
+        await self.client.db.execute("INSERT INTO giveaways (guild_id, channel_id, message_id, title, host_id, donor_id, winners, required_roles, blacklisted_roles, amari_level, amari_weekly_xp, bypass_roles, multi, duration, end_time, showentrantcount) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)",
+                                     ctx.guild.id, channel.id, giveawaymessage.id, prize, ctx.author.id, donor.id if donor is not None else None, winners, required_role_list_str, blacklisted_role_list_str, amari_level, amari_weekly_xp, bypass_role_list_str, json.dumps(multi), duration, round(time() + duration), show_count)
         giveawayrecord = await self.fetch_giveaway(giveawaymessage.id)
         embed = await self.format_giveaway_embed(giveawayrecord, None)
         g_view = GiveawayView(self.client, self)
