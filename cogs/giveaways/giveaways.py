@@ -7,6 +7,7 @@ from collections import Counter
 from time import time, perf_counter
 from datetime import datetime
 
+import amari
 import discord
 from discord import SlashCommandGroup
 from discord.ext import commands, tasks, menus, pages
@@ -21,8 +22,8 @@ from utils.context import DVVTcontext
 from utils.converters import BetterBetterRoles, BetterMessageID
 from utils.menus import CustomMenu
 from utils.time import humanize_timedelta
-from utils.errors import ArgumentBaseError
-from utils.format import plural, stringtime_duration, grammarformat, human_join
+from utils.errors import ArgumentBaseError, AmariDataNotFound, AmariError, AmariDeveloperError
+from utils.format import plural, stringtime_duration, grammarformat, human_join, print_exception
 
 voteid = 874897331252760586 if os.getenv('state') == '1' else 683884762997587998
 elite_gw_channel = 871737332431216661 if os.getenv('state') == '1' else 741254464303923220
@@ -537,6 +538,7 @@ class GiveawayView(discord.ui.View):
 
     @discord.ui.button(emoji=discord.PartialEmoji.from_str("<a:dv_iconOwO:837943874973466664>"), label="Join giveaway", style=discord.ButtonStyle.green, custom_id="dvb:giveawayjoin")
     async def JoinGiveaway(self, button: discord.ui.Button, interaction: discord.Interaction):
+        edit_final = False
         giveawaymessage = interaction.message
         giveawayentry = await self.cog.fetch_giveaway(giveawaymessage.id)
         if len(giveawayentry.multi.keys()) > 0:
@@ -544,14 +546,22 @@ class GiveawayView(discord.ui.View):
         else:
             giveaway_uses_multiple_entries = False
         entries_to_insert = []
+        if giveawayentry.amari_level > 0:
+            giveaway_has_amarilevelreq = True
+        else:
+            giveaway_has_amarilevelreq = False
+        if giveawayentry.amari_weekly_xp > 0:
+            giveaway_has_weeklyxp = True
+        else:
+            giveaway_has_weeklyxp = False
         if giveawayentry.active:
             entered = False
             user_entries = await self.cog.fetch_user_entries(interaction.user.id, giveawaymessage.id)
             summary_embed = discord.Embed(color=self.client.embed_color)
             if giveaway_uses_multiple_entries:
                 entries = Counter(entry.get('entrytype') for entry in user_entries)
-                entry_list = []
-                entry_list.append({'role_id': 0, 'allowed_entries': 1, 'valid_role': True, 'entered_entries': entries.get(0, 0)})
+                entry_list = [
+                    {'role_id': 0, 'allowed_entries': 1, 'valid_role': True, 'entered_entries': entries.get(0, 0)}]
                 for role_id, multi_count in giveawayentry.multi.items():
                     role_id = int(role_id)
                     role = interaction.guild.get_role(role_id)
@@ -571,7 +581,7 @@ class GiveawayView(discord.ui.View):
                                         if role.id in giveawayentry.blacklisted_roles:
                                             return await interaction.response.send_message(embed=discord.Embed(title="Failed to join giveaway", description=f"You have the role {role.mention} which is blacklisted from entering this giveaway.", color=discord.Color.red()), ephemeral=True)
                                 if len(giveawayentry.required_roles) > 0:
-                                    #print('giveaway has required roles')
+                                    # print('giveaway has required roles')
                                     missing_roles = []
                                     for r_id in giveawayentry.required_roles:
                                         if (r := interaction.guild.get_role(r_id)) is not None:
@@ -579,10 +589,10 @@ class GiveawayView(discord.ui.View):
                                                 missing_roles.append(f"<@&{r_id}>")
                                             else:
                                                 pass
-                                    #print(missing_roles)
+                                    # print(missing_roles)
                                     if len(missing_roles) > 0:
                                         if len(giveawayentry.bypass_roles) > 0:
-                                            #print('giveaway has bypass roles')
+                                            # print('giveaway has bypass roles')
                                             for r_id in giveawayentry.bypass_roles:
                                                 if discord.utils.get(interaction.user.roles, id=r_id):
                                                     qualified = True
@@ -593,21 +603,76 @@ class GiveawayView(discord.ui.View):
                                         qualified = True
                                     if not qualified:
                                         desc = f"<:DVB_False:887589731515392000> You do not have the following roles to join this giveaway: {', '.join(missing_roles)}"
+
                                         def gway_only_requires_voting() -> bool:
                                             if str(voteid) in desc and len(missing_roles) == 1:
                                                 return True
                                             else:
                                                 return False
-                                        print(f"Giveaway {giveawaymessage.id} only requires voting: {gway_only_requires_voting()}.\n\n{desc}\n{voteid}\n\n{missing_roles}\n{len(missing_roles)}\m=========")
                                         if gway_only_requires_voting():
                                             desc += f"\n\n You can get <@&{voteid}> by voting for Dank Vibes!"
-
                                         return await interaction.response.send_message(
                                             embed=discord.Embed(title="Unable to join giveaway",
                                                                 description=desc,
-                                                                color=discord.Color.yellow()), view = VoteLink() if gway_only_requires_voting() else None,
+                                                                color=discord.Color.yellow()), view =VoteLink() if gway_only_requires_voting() else None,
                                                                 ephemeral=True
                                         )
+                                if giveaway_has_weeklyxp or giveaway_has_amarilevelreq:
+                                    qualified = False
+                                    await interaction.response.send_message(embed=discord.Embed(title="Please wait...", description=f"I'm communicating with AmariBot to know what your Level and/or Weekly XP is!").set_thumbnail(url="https://cdn.discordapp.com/avatars/339254240012664832/0cfec781df368dbce990d440d075a2d7.png?size=1024"), ephemeral=True)
+                                    edit_final = True
+                                    failembed = discord.Embed(title="An error occured when I tried talking to AmariBot.", color=discord.Color.red()).set_thumbnail(url="https://media.discordapp.net/attachments/656173754765934612/671895577986072576/Status.png")
+                                    try:
+                                        user_amari_details, last_updated = await self.client.fetch_amari_data(interaction.user.id, interaction.guild.id)
+                                    except AmariDeveloperError as e:
+                                        failembed.description = "**An error occured when trying to contact AmariBot. This error can only be solved by the developer.**\nThe developer has been notified and will try to solve this issue as soon as possible."
+                                        await interaction.response.edit_original_message(embed=failembed)
+                                        traceback_error = print_exception(e.exception, "Ignoring Exception in AmariDataGetter:")
+                                        traceback_embed = discord.Embed(title="Traceback", description=traceback_error, color=discord.Color.red())
+                                        return await self.client.error_channel().send(embed=traceback_embed)
+                                    except AmariError as e:
+                                        if e.exception == AmariDataNotFound:
+                                            failembed.description = "I could not find your AmariBot data."
+                                            failembed.set_footer(text=f"I will try again in {humanize_timedelta(seconds=e.retry_after)}.")
+                                        elif e.exception == amari.exceptions.NotFound:
+                                            failembed.description = f"I could not find **your** data or **{interaction.guild.name}**'s AmariBot data."
+                                            failembed.set_footer(text=f"I will try again in {humanize_timedelta(seconds=e.retry_after)}.")
+                                        elif e.exception == amari.exceptions.RatelimitException:
+                                            failembed.description = f"**{self.client.user.name} has been ratelimited from contacting AmariBot.**\nI will temporarily be unable to contact AmariBot until the ratelimit is over."
+                                            failembed.set_footer(text=f"I will try again in {humanize_timedelta(seconds=e.retry_after)}.")
+                                        elif e.exception == amari.exceptions.AmariServerError:
+                                            failembed.description = "**AmariBot is having problems.**\nI will temporarily be unable to contact AmariBot until their servers are back online."
+                                            failembed.set_footer(text=f"I will try again in {humanize_timedelta(seconds=e.retry_after)}.")
+                                        else:
+                                            failembed.description = f"**There was an error while talking to AmariBot.**\n```{e.exception}\n```"
+                                            failembed.set_footer(text=f"I will try again in {humanize_timedelta(seconds=e.retry_after)}.")
+                                        return await interaction.response.edit_original_message(embed=failembed)
+                                    except Exception as e:
+                                        failembed.description = f"**An error occured while talking to AmariBot.**\n```{e}```"
+                                        return await interaction.response.edit_original_message(embed=failembed)
+                                    else:
+                                        if user_amari_details is None:
+                                            print('obj was none')
+                                            level = 0
+                                            weekly_xp = 0
+                                        else:
+                                            level = user_amari_details.level
+                                            weekly_xp = user_amari_details.weeklyexp
+                                        missing_amari_requirements = []
+                                        if giveaway_has_amarilevelreq and level < giveawayentry.amari_level:
+                                            missing_amari_requirements.append(f"<a:DVB_arrow:975663275306024971> Your current Level is **{level}**. __You need to be **Level {giveawayentry.amari_level}** to enter the giveaway.__")
+
+                                        if giveaway_has_amarilevelreq and weekly_xp < giveawayentry.amari_weekly_xp:
+                                            missing_amari_requirements.append(f"<a:DVB_arrow:975663275306024971> You currently have **{weekly_xp}** Weekly EXP. __You need another {giveawayentry.amari_weekly_xp - weekly_xp} Weekly EXP to join the giveaway__, which has a requirement of **{giveawayentry.amari_weekly_xp}** Weekly EXP.")
+                                        if len(missing_amari_requirements) > 0:
+                                            desc = '\n'.join(missing_amari_requirements)
+                                            return await interaction.edit_original_message(
+                                                embed=discord.Embed(title="Unable to join giveaway",
+                                                                    description=desc,
+                                                                    color=discord.Color.yellow())
+                                            )
+                                        else:
+                                            qualified = True
                                 for i in range(entry_dict['allowed_entries'] - entry_dict['entered_entries']):
                                     entries_to_insert.append((giveawaymessage.id, interaction.user.id, entry_dict['role_id']))
                                     newly_entered_entries += 1
@@ -644,7 +709,7 @@ class GiveawayView(discord.ui.View):
                 summary_embed.set_footer(text=f"Your total entries: {final_number_of_entries}")
             else:
                 if len(user_entries) > 0:
-                    #print('user already entered')
+                    # print('user already entered')
                     summary_embed.description = f"Your total entries: {len(user_entries)}"
                 else:
                     qualified = False
@@ -653,7 +718,7 @@ class GiveawayView(discord.ui.View):
                             if role.id in giveawayentry.blacklisted_roles:
                                 return await interaction.response.send_message(embed=discord.Embed(title="Failed to join giveaway", description=f"You have the role {role.mention} which is blacklisted from entering this giveaway.", color=discord.Color.red()), ephemeral=True)
                     if len(giveawayentry.required_roles) > 0:
-                        #print('giveaway has required roles')
+                        # print('giveaway has required roles')
                         missing_roles = []
                         for r_id in giveawayentry.required_roles:
                             if (r := interaction.guild.get_role(r_id)) is not None:
@@ -662,7 +727,7 @@ class GiveawayView(discord.ui.View):
                                 else:
                                     qualified = True
                                     break
-                        #print(missing_roles)
+                        # print(missing_roles)
                         if len(missing_roles) > 0:
                             if len(giveawayentry.bypass_roles) > 0:
                                 for r_id in giveawayentry.bypass_roles:
@@ -681,7 +746,6 @@ class GiveawayView(discord.ui.View):
                                     return False
                             if gway_only_requires_voting():
                                 desc += f"\n\n You can get <@&{voteid}> by voting for Dank Vibes!"
-
                             return await interaction.response.send_message(
                                 embed=discord.Embed(title="Unable to join giveaway",
                                                     description=desc,
@@ -689,7 +753,76 @@ class GiveawayView(discord.ui.View):
                                 view=VoteLink() if gway_only_requires_voting() else None,
                                 ephemeral=True
                             )
+                    if giveaway_has_weeklyxp or giveaway_has_amarilevelreq:
+                        qualified = False
+                        await interaction.response.send_message(embed=discord.Embed(title="Please wait...",
+                                                                                    description=f"I'm communicating with AmariBot to know what your Level and/or Weekly XP is!").set_thumbnail(
+                            url="https://cdn.discordapp.com/avatars/339254240012664832/0cfec781df368dbce990d440d075a2d7.png?size=1024"),
+                                                                ephemeral=True)
+                        edit_final = True
+                        failembed = discord.Embed(title="An error occured when I tried talking to AmariBot.",
+                                                  color=discord.Color.red()).set_thumbnail(
+                            url="https://media.discordapp.net/attachments/656173754765934612/671895577986072576/Status.png")
+                        try:
+                            user_amari_details, last_updated = await self.client.fetch_amari_data(interaction.user.id,
+                                                                                                  interaction.guild.id)
+                        except AmariDeveloperError as e:
+                            failembed.description = "**An error occured when trying to contact AmariBot. This error can only be solved by the developer.**\nThe developer has been notified and will try to solve this issue as soon as possible."
+                            await interaction.edit_original_message(embed=failembed)
+                            traceback_error = print_exception(e.exception, "Ignoring Exception in AmariDataGetter:")
+                            traceback_embed = discord.Embed(title="Traceback", description=traceback_error,
+                                                            color=discord.Color.red())
+                            return await self.client.error_channel().send(embed=traceback_embed)
+                        except AmariError as e:
+                            if e.exception == AmariDataNotFound:
+                                failembed.description = "I could not find your AmariBot data."
+                                failembed.set_footer(
+                                    text=f"I will try again in {humanize_timedelta(seconds=e.retry_after)}.")
+                            elif e.exception == amari.exceptions.NotFound:
+                                failembed.description = f"I could not find **your** data or **{interaction.guild.name}**'s AmariBot data."
+                                failembed.set_footer(
+                                    text=f"I will try again in {humanize_timedelta(seconds=e.retry_after)}.")
+                            elif e.exception == amari.exceptions.RatelimitException:
+                                failembed.description = f"**{self.client.user.name} has been ratelimited from contacting AmariBot.**\nI will temporarily be unable to contact AmariBot until the ratelimit is over."
+                                failembed.set_footer(
+                                    text=f"I will try again in {humanize_timedelta(seconds=e.retry_after)}.")
+                            elif e.exception == amari.exceptions.AmariServerError:
+                                failembed.description = "**AmariBot is having problems.**\nI will temporarily be unable to contact AmariBot until their servers are back online."
+                                failembed.set_footer(
+                                    text=f"I will try again in {humanize_timedelta(seconds=e.retry_after)}.")
+                            else:
+                                failembed.description = f"**There was an error while talking to AmariBot.**\n```{e.exception}\n```"
+                                failembed.set_footer(
+                                    text=f"I will try again in {humanize_timedelta(seconds=e.retry_after)}.")
+                            return await interaction.response.edit_original_message(embed=failembed)
+                        except Exception as e:
+                            failembed.description = f"**An error occured while talking to AmariBot.**\n```{e}```"
+                            return await interaction.response.edit_original_message(embed=failembed)
+                        else:
+                            if user_amari_details is None:
+                                print('obj was none')
+                                level = 0
+                                weekly_xp = 0
+                            else:
+                                level = user_amari_details.level
+                                weekly_xp = user_amari_details.weeklyexp
+                            missing_amari_requirements = []
+                            if giveaway_has_amarilevelreq and level < giveawayentry.amari_level:
+                                missing_amari_requirements.append(
+                                    f"<a:DVB_arrow:975663275306024971> Your current Level is **{level}**. __You need to be **Level {giveawayentry.amari_level}** to enter the giveaway.__")
 
+                            if giveaway_has_amarilevelreq and weekly_xp < giveawayentry.amari_weekly_xp:
+                                missing_amari_requirements.append(
+                                    f"<a:DVB_arrow:975663275306024971> You currently have **{weekly_xp}** Weekly EXP. __You need another {giveawayentry.amari_weekly_xp - weekly_xp} Weekly EXP to join the giveaway__, which has a requirement of **{giveawayentry.amari_weekly_xp}** Weekly EXP.")
+                            if len(missing_amari_requirements) > 0:
+                                desc = '\n'.join(missing_amari_requirements)
+                                return await interaction.edit_original_message(
+                                    embed=discord.Embed(title="Unable to join giveaway",
+                                                        description=desc,
+                                                        color=discord.Color.yellow()),
+                                )
+                            else:
+                                qualified = True
                     entries_to_insert.append((giveawaymessage.id, interaction.user.id, 0))
                     entered = True
                 summary_embed.description = f"Your total entries: 1"
@@ -702,19 +835,26 @@ class GiveawayView(discord.ui.View):
             if giveaway_uses_multiple_entries is True:
                 embed = discord.Embed(description=f"Your total entries: {final_number_of_entries}")
                 embed.title = content
+                embed.color = discord.Color.green()
                 summary_embed.title = content
                 summary_embed.set_footer(text=f"Your total entries: {final_number_of_entries}")
-                await interaction.response.send_message(embed=embed, view=MultiEntryView(giveawaymessage.id, self.cog, self.client, summary_embed), ephemeral=True)
+                if edit_final is True:
+                    await interaction.edit_original_message(embed=embed, view=MultiEntryView(giveawaymessage.id, self.cog, self.client, summary_embed))
+                else:
+                    await interaction.response.send_message(embed=embed, view=MultiEntryView(giveawaymessage.id, self.cog, self.client, summary_embed), ephemeral=True)
             else:
                 summary_embed.title = content
                 summary_embed.description = f"Your total entries: {final_number_of_entries}"
-                await interaction.response.send_message(embed=summary_embed, view=SingleEntryView(giveawaymessage.id, self.cog, self.client), ephemeral=True)
-
+                summary_embed.color = discord.Color.green()
+                if edit_final is True:
+                    await interaction.edit_original_message(embed=summary_embed, view=SingleEntryView(giveawaymessage.id, self.cog, self.client))
+                else:
+                    await interaction.response.send_message(embed=summary_embed, view=SingleEntryView(giveawaymessage.id, self.cog, self.client), ephemeral=True)
         else:
-            return await interaction.response.send_message("It appears that this giveaway doesn't exist or has ended.", ephemeral=True)
+            return await interaction.response.send_message("It appears that this giveaway doesn't exist or has ended.", embed = None, ephemeral=True)
 
     @discord.ui.button(emoji=discord.PartialEmoji.from_str("<:DVB_information_check:955345547542294559>"), custom_id="dvb:giveawayshowinfo")
-    async def ShowGiveawayInfo(self, button: discord.ui.Button, interaction: discord.Interaction):
+    async def showgiveawayinfo(self, button: discord.ui.Button, interaction: discord.Interaction):
         giveawaymessage = interaction.message
         giveawayentry = await self.cog.fetch_giveaway(giveawaymessage.id)
         if giveawayentry is None:
@@ -724,7 +864,7 @@ class GiveawayView(discord.ui.View):
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @discord.ui.button(emoji=discord.PartialEmoji.from_str("<:dv_textThankyouOwO:837712265469231166>"), style=discord.ButtonStyle.grey, custom_id='dvb:giveawaythankyou')
-    async def ThankYou(self, button: discord.ui.Button, interaction: discord.Interaction):
+    async def thankyou(self, button: discord.ui.Button, interaction: discord.Interaction):
         if interaction.user not in self.thankers:
             await interaction.response.send_message("Something", ephemeral=True)
             self.thankers.append(interaction.user)
@@ -884,14 +1024,27 @@ class giveaways(commands.Cog):
         embed.add_field(name="\u200b", value="\n".join(date_and_time), inline=False)
 
         embed.description = "\n".join(descriptions)
-        if entry.required_roles and guild is not None:
+        if (entry.required_roles or entry.amari_weekly_xp > 0 or entry.amari_level > 0) and guild is not None:
             req_list = []
-            for req in entry.required_roles:
-                role = guild.get_role(req)
-                role = role.mention if role else f"{req} (Unknown role)"
-                req_list.append(role)
+            amari_reqs = []
+            req_str = ""
+            if entry.required_roles is not None:
+                for req in entry.required_roles:
+                    role = guild.get_role(req)
+                    role = role.mention if role else f"{req} (Unknown role)"
+                    req_list.append(role)
+            if entry.amari_level > 0:
+                amari_reqs.append(f"<:DVB_Amari:975377537658134528> Amari **Level**: `{entry.amari_level}`")
+            if entry.amari_weekly_xp > 0:
+                amari_reqs.append(f"<:DVB_Amari:975377537658134528> Amari **Weekly XP**: `{entry.amari_weekly_xp} XP`")
             if len(req_list) > 0:
-                embed.add_field(name="Requirements", value=", ".join(req_list), inline=True)
+                req_str += ", ".join(req_list)
+            if len(amari_reqs) > 0:
+                if req_str == "":
+                    req_str = "\n".join(amari_reqs)
+                else:
+                    req_str = req_str + "\n" + "\n".join(amari_reqs)
+                embed.add_field(name="Requirements", value=req_str, inline=True)
         if entry.bypass_roles and guild is not None:
             req_list = []
             for req in entry.bypass_roles:
@@ -922,7 +1075,7 @@ class giveaways(commands.Cog):
     async def format_giveaway_embed(self, entry: GiveawayEntry, winners: typing.Optional[list] = None) -> discord.Embed:
         guild = self.client.get_guild(entry.guild_id)
         embed = discord.Embed(title=entry.title, color=self.client.embed_color, timestamp = datetime.fromtimestamp(entry.end_time))
-        if entry.active is True:
+        if entry.active is True and winners is not None:
             descriptions = ["Press the button to enter!"]
         else:
             descriptions = []
@@ -948,14 +1101,27 @@ class giveaways(commands.Cog):
         if (user := self.client.get_user(entry.donor_id)) is not None:
             descriptions.append(f"**Donor:** {user.mention}")
         embed.description = "\n".join(descriptions)
-        if entry.required_roles and guild is not None:
+        if (entry.required_roles or entry.amari_weekly_xp > 0 or entry.amari_level > 0) and guild is not None:
             req_list = []
-            for req in entry.required_roles:
-                role = guild.get_role(req)
-                role = role.mention if role else f"{req} (Unknown role)"
-                req_list.append(role)
+            amari_reqs = []
+            req_str = ""
+            if entry.required_roles is not None:
+                for req in entry.required_roles:
+                    role = guild.get_role(req)
+                    role = role.mention if role else f"{req} (Unknown role)"
+                    req_list.append(role)
+            if entry.amari_level > 0:
+                amari_reqs.append(f"<:DVB_Amari:975377537658134528> Amari **Level**: `{entry.amari_level}`")
+            if entry.amari_weekly_xp > 0:
+                amari_reqs.append(f"<:DVB_Amari:975377537658134528> Amari **Weekly XP**: `{entry.amari_weekly_xp} XP`")
             if len(req_list) > 0:
-                embed.add_field(name="Requirements", value=", ".join(req_list), inline=True)
+                req_str += ", ".join(req_list)
+            if len(amari_reqs) > 0:
+                if req_str == "":
+                    req_str = "\n".join(amari_reqs)
+                else:
+                    req_str = req_str + "\n" + "\n".join(amari_reqs)
+                embed.add_field(name="Requirements", value=req_str, inline=True)
         if winners is not None and len(winners) > 0:
             embed.add_field(name="Winners", value=str(human_join([w.mention for w in winners], ", ", "and")), inline=False)
         embed.set_footer(text=f"{plural(entry.winners):winner} will be picked for this giveaway, which ends")
