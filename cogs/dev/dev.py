@@ -1008,11 +1008,10 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
                 await msg.edit(content="All retrieved in `{}`ms".format(round((time.perf_counter() - now) * 1000)),
                                embed=embed)
 
+    @checks.dev()
     @github_cmd.command(name='pull', hidden=True)
     async def github_pull(self, ctx):
         """Runs `git pull`."""
-
-
         async with ctx.typing():
             content = f"{getpass.getuser()}@{os.getcwd()} $ git pull\n\n"
             msg = await ctx.send("```\n" + content + "\n```")
@@ -1020,3 +1019,21 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
             stdout, stderr = await self.run_process('git pull')
             content += f"{stdout}\n\nCompleted in {round((time.perf_counter() - now) * 1000, 3)}ms"
             await msg.edit(content="```\n" + content + "\n```")
+
+    @checks.dev()
+    @commands.command(name="bash", hidden=True, aliases=['cmd', 'terminal'])
+    async def bash(self, ctx, *, cmd):
+        cmds = cmd.splitlines()
+        front_of_cmd = f"{getpass.getuser()}@{os.getcwd()} $ "
+        if len(cmds) > 0:
+            content = front_of_cmd
+            basemsg = await ctx.send(f"```\n{content}\n```")
+            now = time.perf_counter()
+            for index, cmd in enumerate(cmds):
+                content += f"{cmd}\n\n"
+                await basemsg.edit(content="```\n" + content + "\n```")
+                stdout, stderr = await self.run_process(cmd)
+                content += f"{stdout}\n\n{front_of_cmd}"
+                await basemsg.edit(content="```\n" + content + "\n```")
+            content += f"\n\nCompleted in {round((time.perf_counter() - now) * 1000, 3)}ms"
+            await basemsg.edit(content="```\n" + content + "\n```")
