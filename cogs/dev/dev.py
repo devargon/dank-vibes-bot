@@ -1013,7 +1013,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
     async def github_pull(self, ctx):
         """Runs `git pull`."""
         async with ctx.typing():
-            content = f"{getpass.getuser()}@{os.getcwd()} $ git pull\n\n"
+            content = f"{getpass.getuser()}@{os.getcwd()}:~$ git pull\n\n"
             msg = await ctx.send("```\n" + content + "\n```")
             now = time.perf_counter()
             stdout, stderr = await self.run_process('git pull')
@@ -1024,7 +1024,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
     @commands.command(name="bash", hidden=True, aliases=['cmd', 'terminal'])
     async def bash(self, ctx, *, cmd):
         cmds = cmd.splitlines()
-        front_of_cmd = f"{getpass.getuser()}@{os.getcwd()} $ "
+        front_of_cmd = f"{getpass.getuser()}@{os.getcwd()}:~$ "
         if len(cmds) > 0:
             content = front_of_cmd
             basemsg = await ctx.send(f"```\n{content}\n```")
