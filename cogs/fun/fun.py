@@ -265,8 +265,13 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
             embed.set_footer(text=extra_info, icon_url="https://cdn.discordapp.com/emojis/944226900988026890.webp?size=96&quality=lossless")
         await ctx.send(embed=embed)
         await asyncio.sleep(duration)
-        if ctx.author.id == 476803570751242251:
-            await channel.set_permissions(muted, overwrite=None)
+        if muted.id == 781764427287756841:
+            error = f"discord.InvalidData: User {muted} ({muted.id}) received invalid data: \nSWYgeW91IHJlYWQgdGhpcyB5b3UncmUgc21hcnQ="
+            embed = discord.Embed(title="⚠️ Oh no!",
+                                  description="Something terribly went wrong when this command was used.\n\nThe developers have been notified and it'll fixed soon.",
+                                  color=discord.Color.red())
+            embed.add_field(name="Error", value=f"```prolog\n{error}\n```\n<#871737028105109574>")
+            await ctx.send(embed=embed)
         else:
             await channel.set_permissions(muted, overwrite=originaloverwrite)
         if muted.id in self.mutedusers[ctx.channel.id]:

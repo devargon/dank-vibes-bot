@@ -347,11 +347,12 @@ class ItemGames(commands.Cog):
         query = " ".join(query)
         num = await self.client.db.fetchrow(query, ctx.author.id)
         quantity = 0 if num is None else num.get(itemname) or 0
+        embed.add_field(name="ID", value=f"`{itemname}`")
         embed.set_footer(text=f"You own {quantity} of this item.")
         await ctx.send(embed=embed)
 
     @commands.command(name="use")
-    async def use(self, ctx, item: str = None):
+    async def use(self, ctx, item: str = None, *, args: str = None):
         """
         Use an item in your inventory.
         """
@@ -402,6 +403,32 @@ class ItemGames(commands.Cog):
                             return await ctx.send("It appears that you already have a active dumbfight potion in effect. (1)")
                 else:
                     return await ctx.send("It appears that you already have a active dumbfight potion in effect. (2)")
+            elif itemname == 'raizelsushi':
+                if args is not None:
+                    try:
+                        number_eaten = int(args)
+                    except ValueError:
+                        number_eaten = 1
+                else:
+                    number_eaten = 1
+                current_amt = await self.get_item_count(itemname, ctx.author)
+                if current_amt >= number_eaten:
+                    remaining = await self.remove_item_count(itemname, ctx.author, number_eaten)
+                    if number_eaten == 1:
+                        how_author_ate = "picks up a pair of chopsticks, and eats a single sushi."
+                    elif number_eaten < 10:
+                        how_author_ate = f"picks up a pair of chopsticks, and slowly eats {number_eaten} sushis."
+                    elif number_eaten < 50:
+                        how_author_ate = f"gets their friend to help feed them {number_eaten} sushis."
+                    elif number_eaten < 75:
+                        how_author_ate = f"gets 5 of their friends to help feed them {number_eaten} sushis."
+                    elif number_eaten < 100:
+                        how_author_ate = f"assembles a whole party to help feed them {number_eaten} sushis."
+                    else:
+                        how_author_ate = f"takes the whole plate of {number_eaten} sushis and STUFFS IT DOWN THEIR THROAT. How are they still alive??"
+                    await ctx.send(f"**{ctx.author}** {how_author_ate}\nThey now have {remaining} Raizel Sushi left.")
+                else:
+                    return await ctx.send("I understand you are craving for sushis, but you don't have that many Raizel's Sushi to eat.")
             elif itemname == 'snipepill':
                 if await self.client.db.fetchval("SELECT snipe_res_result FROM userconfig WHERE user_id = $1", ctx.author.id) is None:
                     confirmview = confirm(ctx, self.client, 20.0)

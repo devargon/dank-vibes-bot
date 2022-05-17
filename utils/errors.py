@@ -1,5 +1,25 @@
 from discord.ext import commands
 
+class AmariError(Exception):
+    __slots__ = ('exception', 'retry_after')
+
+    def __init__(self, exception, retry_after):
+        self.exception = exception
+        self.retry_after = retry_after
+
+class AmariDeveloperError(Exception):
+    __slots__ = ('exception')
+
+    def __init__(self, exception):
+        self.exception = exception
+
+
+class AmariDataNotFound(Exception):
+    pass
+
+class AmariUserNotFound(Exception):
+    pass
+
 class ArgumentBaseError(commands.UserInputError):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
