@@ -936,6 +936,7 @@ class giveaways(commands.Cog):
                             b.disabled = True
                     #await gawmessage.edit(view=view)
                     entries = await self.client.db.fetch("SELECT * FROM giveawayentrants WHERE message_id = $1", g_entry.message_id)
+                    random.shuffle(entries)
                     winners = []
                     while len(winners) != g_entry.winners and len(entries) > 0:
                         ### For winners to be selected, they must still be in the server.
