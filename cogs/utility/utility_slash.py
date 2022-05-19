@@ -18,7 +18,7 @@ class UtilitySlash(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    @commands.message_command(name="View raw", guild_ids=[871734809154707467])
+    @commands.message_command(name="View raw")
     async def view_raw(self, ctx: discord.ApplicationContext, message: discord.Message):
         """View the raw content of a message."""
         m_content = message.content
