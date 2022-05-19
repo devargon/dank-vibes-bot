@@ -11,7 +11,7 @@ class ViewEmbedJSONs(discord.ui.View):
     @discord.ui.button(label="View raw JSON embeds", style=discord.ButtonStyle.primary, emoji=discord.PartialEmoji.from_str("<:DVB_Embed:976499722070151258>"))
     async def view_raw_json(self, button: discord.ui.Button, interaction: discord.Interaction):
         button.disabled = True
-        await interaction.response.edit(embeds=self.embeds, view=self)
+        await interaction.response.edit_message(embeds=self.embeds, view=self)
 
 
 class UtilitySlash(commands.Cog):
@@ -28,8 +28,8 @@ class UtilitySlash(commands.Cog):
                 embeds = []
                 for embed in message.embeds:
                     embed_json = json.dumps(embed.to_dict())
-                    content_embed_raw = discord.Embed(title="Raw Embed (JSON)", description=f"```\n{embed_json}\n```", color=self.client.embed_color)
-                    embeds.append(content_embed_raw)
+                    content_embed = discord.Embed(title="Raw Embed (JSON)", description=f"```\n{embed_json}\n```", color=self.client.embed_color)
+                    embeds.append(content_embed)
                 await ctx.respond(embed=content_embed_raw, view=ViewEmbedJSONs(embeds), ephemeral=True)
             else:
                 await ctx.respond(embed=content_embed_raw, ephemeral=True)
