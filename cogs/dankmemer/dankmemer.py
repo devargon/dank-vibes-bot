@@ -8,6 +8,7 @@ import operator
 
 from thefuzz import process
 
+from cogs.dankmemer.lottery import Lottery
 from main import dvvt
 from utils import checks, buttons
 from datetime import datetime, timedelta
@@ -358,7 +359,7 @@ def get_shared_user_name(embed: discord.Embed):
                         return userdetail_field[:-len(ending_type)]
 
 
-class DankMemer(commands.Cog, name='dankmemer'):
+class DankMemer(Lottery, commands.Cog, name='dankmemer'):
     """
     Dank Memer utilities
     """
