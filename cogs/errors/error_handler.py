@@ -148,7 +148,13 @@ class ErrorHandler(commands.Cog):
             await send_error(error)
         elif isinstance(error, commands.BadArgument):
             ctx.command.reset_cooldown(ctx)
-            await send_error(error, delete_after=10)
+            if str(error).startswith("Converting to \"int\" failed"):
+                actual_format, parameter = str(error).split('"')[1], str(error).split('"')[3]
+                if actual_format == 'int':
+                    actual_format = 'number'
+                await send_error(f"`{parameter}` should be in the form of a **{actual_format}**.")
+            else:
+                await send_error(error, delete_after=10)
         elif isinstance(error, discord.errors.DiscordServerError):
             return
         else:
