@@ -9,9 +9,8 @@ from utils import checks
 from discord.ext import commands
 from utils.format import get_command_name, split_string_into_list, human_join
 from utils.converters import BetterRoles, AllowDeny, BetterMessageID
-import json
-from utils.format import ordinal
-from utils.buttons import confirm
+
+from cogs.admin.contests import SubmissionApproval
 
 custom_emoji_regex = re.compile('<(a?):([A-Za-z0-9_]+):([0-9]+)>')
 
@@ -249,19 +248,24 @@ class BetterSelfroles(commands.Cog):
                 self.client.add_view(roleview)
         selfrolemessages = await self.client.db.fetchrow("SELECT random_color,  boostping, vipheist FROM selfrolemessages WHERE guild_id = $1", 595457764935991326)
         categories = ['random_color', 'boostping', 'vipheist']
-        if selfrolemessages == None:
-            return
-        if not self.selfroleviews_added:
-            if len(selfrolemessages) == 0:
-                self.selfroleviews_added = True
-                return
-            if selfrolemessages.get('random_color'):
-                self.client.add_view(random_color())
-            if selfrolemessages.get('boostping'):
-                self.client.add_view(BoostPing(), message_id=selfrolemessages.get('boostping'))
-            if selfrolemessages.get('vipheist'):
-                self.client.add_view(VIPHeist(), message_id=selfrolemessages.get('vipheist'))
-            self.selfroleviews_added = True
+        if selfrolemessages is not None:
+            if not self.selfroleviews_added:
+                if len(selfrolemessages) == 0:
+                    self.selfroleviews_added = True
+                    return
+                if selfrolemessages.get('random_color'):
+                    self.client.add_view(random_color())
+                if selfrolemessages.get('boostping'):
+                    self.client.add_view(BoostPing(), message_id=selfrolemessages.get('boostping'))
+                if selfrolemessages.get('vipheist'):
+                    self.client.add_view(VIPHeist(), message_id=selfrolemessages.get('vipheist'))
+        unapproved_contest_entries = await self.client.db.fetch("SELECT * FROM contest_submissions WHERE approve_id IS NOT NULL and approved = FALSE")
+        if len(unapproved_contest_entries) > 0:
+            for entry in unapproved_contest_entries:
+                h = SubmissionApproval(self.client, entry.get('contest_id'), entry.get('entry_id'), entry.get('submitter_id'))
+                self.client.add_view(h)
+        self.selfroleviews_added = True
+
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='fixselfroles')
