@@ -2,6 +2,7 @@ from abc import ABC
 from discord.ext import menus
 
 from utils.converters import BetterInt, BetterTimeConverter
+from .contests import Contests
 from .serverrule import ServerRule
 from .joining import Joining
 from .betterselfroles import BetterSelfroles
@@ -114,7 +115,8 @@ class ServerConfigView(discord.ui.View):
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
 
-class Admin(BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass):
+
+class Admin(Contests, BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass):
     """
     Server Commands
     """

@@ -134,7 +134,7 @@ class VoteView(discord.ui.View):
                 successembed = discord.Embed(title=f"<:DVB_True:887589686808309791> You have voted for Submission #{submission.entry_id}!", description="The results of voting will be out when the contest is over.", color=self.view.client.embed_color)
                 await interaction.followup.send(embed=successembed, ephemeral=True)
 
-        self.add_item(Vote(style=discord.ButtonStyle.green, emoji=discord.PartialEmoji.from_str("<:DVB_Upvote:977772469945499709>")))
+        self.add_item(Vote(style=discord.ButtonStyle.green, emoji=discord.PartialEmoji.from_str("<:DVB_Upvote:977772469945499709>"), custom_id='contestvote'))
 
 
 

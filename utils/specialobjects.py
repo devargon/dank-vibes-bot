@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Union
 
 
 class Reminder:
@@ -25,6 +25,40 @@ class _MissingSentinel:
 
     def __repr__(self):
         return "..."
+
+
+class ContestSubmission:
+    __slots__ = ('contest_id', 'entry_id', 'submitter_id', 'media_link', 'second_media_link', 'approve_id', 'msg_id', 'approved')
+
+    def __init__(self, record):
+        self.contest_id: int = record.get('contest_id')
+        self.entry_id: int = record.get('entry_id')
+        self.submitter_id: int = record.get('submitter_id')
+        self.media_link: str = record.get('media_link')
+        self.second_media_link: str = record.get('second_media_link')
+        self.approve_id: Union[int, None] = record.get('approve_id')
+        self.msg_id: Union[int, None] = record.get('msg_id')
+        self.approved: bool = record.get('approved')
+
+    def __repr__(self):
+        return f"<ContestSubmission contest_id={self.contest_id} entry_id={self.entry_id} submitter_id={self.submitter_id} media_link={self.media_link} second_media_link={self.second_media_link} approve_id={self.approve_id} msg_id={self.msg_id} approved={self.approved}>"
+
+
+class Contest:
+    __slots__ = ('contest_id', 'guild_id', 'contest_starter_id', 'contest_channel_id', 'name', 'created', 'active', 'voting')
+
+    def __init__(self, record):
+        self.contest_id: int = record.get('contest_id')
+        self.guild_id: int = record.get('guild_id')
+        self.contest_starter_id: int = record.get('contest_starter_id')
+        self.contest_channel_id: int = record.get("contest_channel_id")
+        self.name: str = record.get('name')
+        self.created: int = record.get('created')
+        self.active: bool = record.get('active')
+        self.voting: bool = record.get('voting')
+
+    def __repr__(self) -> str:
+        return f"<ContestSubmission contest_id={self.contest_id} guild_id={self.guild_id} contest_starter_id={self.contest_starter_id} contest_channel_id={self.contest_channel_id} name={self.name} created={self.created} active={self.active} voting={self.voting}>"
 
 
 MISSING: Any = _MissingSentinel()
