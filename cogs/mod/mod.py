@@ -506,7 +506,7 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='ban', aliases=['b'])
-    async def ban(self, ctx, member: Union[discord.Member, discord.User] = None, *, reason: str = None):
+    async def ban(self, ctx: DVVTcontext, member: Union[discord.Member, discord.User] = None, *, reason: str = None):
         if member == ctx.me:
             return await ctx.send("bye im not banning myself")
         if member == ctx.author:
@@ -529,7 +529,7 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
             except Exception as e:
                 await ctx.send(f"I couldn't inform {member.mention} on why they were banned.")
         try:
-            await ctx.guild.ban(member, reason=auditreason)
+            await ctx.guild.ban(member, reason=auditreason, delete_message_days=0)
         except Exception as e:
             await ctx.send(f"An error occured while trying to ban the user.\n{e}")
         else:
