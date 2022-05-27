@@ -134,7 +134,7 @@ class VoteView(discord.ui.View):
                 successembed = discord.Embed(title=f"<:DVB_True:887589686808309791> You have voted for Submission #{submission.entry_id}!", description="The results of voting will be out when the contest is over.", color=self.view.client.embed_color)
                 await interaction.followup.send(embed=successembed, ephemeral=True)
 
-        self.add_item(Vote(style=discord.ButtonStyle.green, emoji=discord.PartialEmoji.from_str("<:DVB_Upvote:977772469945499709>"), custom_id='contestvote'))
+        self.add_item(Vote(style=discord.ButtonStyle.green, emoji=discord.PartialEmoji.from_str("<:DVB_Upvote:977772469945499709>"), custom_id='contestvote', disabled=self.disabled))
 
 
 
@@ -167,12 +167,12 @@ class SubmissionApproval(discord.ui.View):
                     try:
                         submission_msg = await contest_channel.fetch_message(submission.msg_id)
                     except Exception as e:
-                        result_message = await contest_channel.send(embed=entry_embed)
+                        result_message = await contest_channel.send(embed=entry_embed, view=VoteView(self.view.client, True))
                     else:
-                        await submission_msg.edit(embed=entry_embed)
+                        await submission_msg.edit(embed=entry_embed, view=VoteView(self.view.client, True))
                         result_message = submission_msg
                 else:
-                    result_message = await contest_channel.send(embed=entry_embed)
+                    result_message = await contest_channel.send(embed=entry_embed, view=VoteView(self.view.client, True))
                 if submission.second_media_link is not None:
                     await self.view.client.db.execute("UPDATE contest_submissions SET msg_id = $1, media_link = second_media_link, approve_id = NULL, approved = TRUE WHERE entry_id = $2 AND contest_id = $3", result_message.id, derived_entry_id, derived_contest_id)
                     await self.view.client.db.execute("UPDATE contest_submissions SET second_media_link = NULL WHERE entry_id = $1 AND contest_id = $2", derived_entry_id, derived_contest_id)
@@ -317,6 +317,53 @@ class Contests(commands.Cog):
         with contextlib.suppress(discord.Forbidden):
             await ctx.author.send(embed=embed_success)
         await ctx.send(embed=embed_success.set_footer(text="A copy of this has been sent to your DMs."))
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @contest.command(name='vote')
+    async def contest_vote(self, ctx: DVVTcontext, contest_id: int):
+        """
+        Changes a contest to the **Voting** stage. No new submissions can be entered, but voting will commence.
+        Requires all pending entries to be approved/denied.
+        """
+        if (contest := await self.client.db.fetchrow("SELECT * FROM contests WHERE contest_id = $1 AND guild_id = $2", contest_id, ctx.guild.id)) is None:
+            return await ctx.send(f"A contest with the ID `{contest_id}` doesn't exist in your server.")
+        contest = Contest(contest)
+        if contest.active is not True:
+            if contest.voting is not True:
+                return await ctx.send(f"Looks like Contest `{contest_id}` is already over.")
+            else:
+                return await ctx.send(f"Contest `{contest_id}` is already in the voting stage.")
+        contest_submissions = await self.client.db.fetch("SELECT * FROM contest_submissions WHERE contest_id = $1", contest_id)
+        if len(contest_submissions) > 0:
+            warnings = []
+            for sub in contest_submissions:
+                sub = ContestSubmission(sub)
+                if sub.approve_id is None and sub.approved is not True:
+                    warnings.append(f"You need to approve/deny [Submission #{sub.entry_id}](https://discord.com/channels/{ctx.guild.id}/{approving_channel_id}/{sub.approve_id}) before proceeding.")
+            if len(warnings) > 0:
+                return await ctx.send(embed=discord.Embed(title="Unable to proceed", description="\n".join(warnings), color=discord.Color.red()))
+        confirmview = confirm(ctx, self.client, 30.0)
+        confirmembed = discord.Embed(title=f"Are you sure you want to stop submissions?", description="This will make this contest move on to the VOTING stage.", color=discord.Color.yellow())
+        confirmview.response = await ctx.send(embed=confirmembed, view=confirmview)
+        await confirmview.wait()
+        if confirmview.returning_value is not True:
+            confirmembed.color = discord.Color.red()
+            return await confirmview.response.edit(embed=confirmembed)
+        else:
+            confirmembed.color = discord.Color.green()
+            await confirmview.response.edit(embed=confirmembed)
+
+        await self.client.db.execute("UPDATE contests SET active = FALSE, voting = TRUE WHERE contest_id = $1", contest_id)
+        async with ctx.typing():
+            for sub in contest_submissions:
+                sub = ContestSubmission(sub)
+                try:
+                    await ctx.guild.get_channel(contest.contest_channel_id).get_partial_message(sub.msg_id).edit(view=VoteView(self.client, False))
+                except Exception as e:
+                    await ctx.send(f"Could not add a Vote button for entry {sub.entry_id}: {str(e)}")
+        return await ctx.send(embed=discord.Embed(title=f"Contest #{contest_id} is now in the VOTING stage.", description=f"Users can now vote for their favorite entries in <#{contest.contest_channel_id}>", color=discord.Color.green()))
+
+
 
     @commands.slash_command(name="submit")
     async def contest_submit(self, ctx: discord.ApplicationContext, *, submission: discord.Option(discord.Attachment, description="Your submission for the contest.")):
