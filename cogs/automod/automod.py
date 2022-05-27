@@ -88,6 +88,8 @@ class AutoMod(reminders_, polledition, AutoStatus, timer, NameLogging, timedrole
 
     @commands.Cog.listener()
     async def on_command(self, ctx: DVVTcontext):
+        if ctx.guild is None:
+            return
         if ctx.author.id not in self.received_daily_potion:
             entry = await self.client.db.fetchrow("SELECT * FROM userconfig WHERE user_id = $1", ctx.author.id)
             if entry is None:
