@@ -267,7 +267,6 @@ class Contests(commands.Cog):
         """
         return await ctx.help()
 
-    @checks.has_permissions_or_role(manage_roles=True)
     @contest.command(name='list')
     async def contest_list(self, ctx: DVVTcontext):
         """
@@ -281,9 +280,13 @@ class Contests(commands.Cog):
         else:
             submissions = await self.client.db.fetch("SELECT * FROM contest_submissions WHERE contest_id = $1", active_contest.get('contest_id'))
             submissions_sorted = Counter([submission.get('approved') for submission in submissions])
-            submission_str = f"{sum(submissions_sorted.values())} Submissions ({submissions_sorted[True]} Approved, {submissions_sorted[False]} Pending Approval)"
-            channel_str = f"Channel: <#{active_contest.get('channel_id')}>"
+            if ctx.author.guild_permissions.manage_roles is True:
+                submission_str = f"{sum(submissions_sorted.values())} Submissions ({submissions_sorted[True]} Approved, {submissions_sorted[False]} Pending Approval)"
+            else:
+                submission_str = f"{submissions_sorted[True]} Approved Submissions"
+            channel_str = f"Channel: <#{active_contest.get('contest_channel_id')}>"
             active_contest = f"**Contest #{active_contest.get('contest_id')}: {active_contest.get('name')}**\n{channel_str}\n{submission_str}"
+
         embed_contest_list.add_field(name="Active Contest", value=active_contest, inline=False)
         if len(past_contests) > 0:
             past_contests_lst = []
@@ -452,10 +455,24 @@ class Contests(commands.Cog):
             elif contest_obj.get('voting') is True:
                 await ctx.respond("The time to submit your entry is over. Sorry if you missed it!\n\nGet **Media Events Ping** to be notified when a contest starts!", view=GetMediaEventsPing(), ephemeral=True)
 
+    @checks.has_permissions_or_role(manage_roles=True)
+    @contest.command(name="end")
+    async def contest_end(self, ctx: DVVTcontext, contest_id: int):
+        """
+        End a contest. This will:
+        1) Send a custom leaderboard in the specified contest channel.
+        2) Remove all upvote buttons and add the names and number of votes to each contest entry.
+        """
+        return await ctx.send("This command is still in development :(")
 
-
-
-
+    @checks.has_permissions_or_role(manage_roles=True)
+    @contest.command(name="leaderboard")
+    async def contest_leaderboard(self, ctx: DVVTcontext, contest_id: int):
+        """
+        See all the leaderboard and check out all the entries of a previous contest.
+        Cannot be used for ongoing contests.
+        """
+        return await ctx.send("This command is still in development :(")
 
 
     @checks.dev()
