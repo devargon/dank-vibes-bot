@@ -53,7 +53,7 @@ class HowToSubmit2(discord.ui.View):
                 b.style = discord.ButtonStyle.green
             else:
                 b.style = discord.ButtonStyle.grey
-        await interaction.response.edit_message(content="Here's a video on how to submit your entry via Desktop: https://cdn.discordapp.com/attachments/871737314831908974/979760235415732304/Desktop_Final_V1.mp4", view=self)
+        await interaction.response.edit_message(content="Here's a video on how to submit your entry via Desktop: https://cdn.discordapp.com/attachments/871737314831908974/980132318750580736/HowToSubmit_Desktop.mp4", view=self)
 
 
     @discord.ui.button(label="I'm on Mobile", emoji="📱")
@@ -63,7 +63,7 @@ class HowToSubmit2(discord.ui.View):
                 b.style = discord.ButtonStyle.green
             else:
                 b.style = discord.ButtonStyle.grey
-        await interaction.response.edit_message(content="Here's a video on how to submit your entry via Mobile: https://cdn.discordapp.com/attachments/871737314831908974/979760236019724348/Mobile_Final_V1.mp4", view=self)
+        await interaction.response.edit_message(content="Here's a video on how to submit your entry via Mobile: https://cdn.discordapp.com/attachments/871737314831908974/980132319417483314/HowToSubmit_Mobile.mp4", view=self)
 
 
 class HowToSubmit1(discord.ui.View):
