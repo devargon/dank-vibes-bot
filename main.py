@@ -312,7 +312,9 @@ class dvvt(commands.Bot):
                       'donation_categories', 'christmaseventconfig', 'commandaccess', 'ignoredchristmascat',
                       'ignoredchristmaschan', 'perkremoval', 'commandlog', 'timedunlock', 'nickname_changes',
                       'name_changes', 'timers', 'infections', 'polls', 'pollvotes', 'highlight', 'highlight_ignores',
-                      'reminders', 'userconfig', 'modlog', 'watchlist', 'usercleanup', 'giveawayconfig']
+                      'reminders', 'userconfig', 'modlog', 'watchlist', 'usercleanup', 'giveawayconfig', 'contests',
+                      'contest_submissions', 'contest_votes']
+        print("Checking for missing databases")
         tables = await self.db.fetch("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';")
         tables = [i.get('table_name') for i in tables]
         if tables is None:
@@ -397,6 +399,10 @@ CREATE TABLE IF NOT EXISTS watchlist(guild_id bigint, user_id bigint, target_id 
 CREATE TABLE IF NOT EXISTS usercleanup(guild_id bigint, target_id bigint, channel_id bigint, message text);
 CREATE TABLE IF NOT EXISTS giveawayconfig(guild_id bigint not null, channel_id bigint not null constraint giveawayconfig_pkey primary key, bypass_roles text, blacklisted_roles text, multi jsonb);
 CREATE TABLE IF NOT EXISTS dankitems(name bigint, IDcode text PRIMARY KEY, image_url text, type text, trade_value int, last_updated bigint default 0, overwrite bool default false);
+CREATE TABLE IF NOT EXISTS contests(contest_id serial, guild_id bigint not null, contest_starter_id bigint not null, contest_channel_id bigint not null, name text, created bigint, active bool default true, voting bool default false);
+CREATE TABLE IF NOT EXISTS contest_submissions(contest_id int not null, entry_id int, submitter_id bigint not null, media_link text not null, second_media_link text, approve_id bigint, msg_id bigint, approved bool default false);
+CREATE TABLE IF NOT EXISTS contest_votes(contest_id int not null, entry_id int, user_id bigint not null);
+ 
 CREATE SCHEMA IF NOT EXISTS donations""")
         print(f"{self.user} ({self.user.id}) is ready")
 
