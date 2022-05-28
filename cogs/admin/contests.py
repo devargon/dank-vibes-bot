@@ -42,6 +42,39 @@ class DenyWithReason(discord.ui.Modal):
         self.interaction = interaction
         self.stop()
 
+class HowToSubmit2(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="I'm on Desktop", emoji="💻")
+    async def desktop(self, button: discord.ui.Button, interaction: discord.Interaction):
+        for b in self.children:
+            if b == button:
+                b.style = discord.ButtonStyle.green
+            else:
+                b.style = discord.ButtonStyle.grey
+        await interaction.response.edit_message(content="Here's a video on how to submit your entry via Desktop: https://cdn.discordapp.com/attachments/871737314831908974/979760235415732304/Desktop_Final_V1.mp4", view=self)
+
+
+    @discord.ui.button(label="I'm on Mobile", emoji="📱")
+    async def mobile(self, button: discord.ui.Button, interaction: discord.Interaction):
+        for b in self.children:
+            if b == button:
+                b.style = discord.ButtonStyle.green
+            else:
+                b.style = discord.ButtonStyle.grey
+        await interaction.response.edit_message(content="Here's a video on how to submit your entry via Mobile: https://cdn.discordapp.com/attachments/871737314831908974/979760236019724348/Mobile_Final_V1.mp4", view=self)
+
+
+class HowToSubmit1(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="How to submit?", style=discord.ButtonStyle.green, custom_id='howtosubmit')
+    async def how_to_submit(self, button: discord.ui.Button, interaction: discord.Interaction):
+        await interaction.response.send_message("Select the device that you're currently on.", ephemeral=True, view=HowToSubmit2())
+
+
 class interactionconfirm(discord.ui.View):
     def __init__(self, author: Union[discord.User, discord.Member], client, timeout):
         self.timeout = timeout
