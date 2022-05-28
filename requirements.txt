@@ -45,3 +45,5 @@ parsedatetime
 hyperframe==5.2.0
 owoify-py
 bugsnag
+amari.py
+python-Levenshtein
