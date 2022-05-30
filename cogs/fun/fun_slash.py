@@ -182,7 +182,7 @@ class FunSlash(commands.Cog):
                        message: discord.Option(str, "What to DM to the user")
                        ):
         if member.id == self.client.user.id:
-            return await ctx.respond("Just DM me already... Do you not know how to DM me??\nhttps://cdn.nogra.me/core/how_to_dm_a_bot.gif", ephemeral=True)
+            return await ctx.respond("Just DM me already... Do you not know how to DM me??\nhttps://cdn.nogra.xyz/core/how_to_dm_a_bot.gif", ephemeral=True)
         if member.bot:
             return await ctx.respond(f"🤖 **{member}**: `Do not speak to me, you inferior human being.`", ephemeral=True)
         if len(message) > 4000:

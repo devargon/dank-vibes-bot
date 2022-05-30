@@ -456,7 +456,7 @@ class games(commands.Cog):
         embed.title = f"{member.name} chose {'Heads! <:DVB_CoinHead:905400213785690172>' if coinpickview.returning_value == True else 'Tails! <:DVB_CoinTail:905400213676638279>'}"
         olddesc = f"{embed.description.splitlines()[0]}\n{embed.description.splitlines()[1]}\n"
         embed.description = f"{olddesc}\nI'm flipping the coin..."
-        embed.set_thumbnail(url="https://cdn.nogra.me/core/coin_spin.gif")
+        embed.set_thumbnail(url="https://cdn.nogra.xyz/core/coin_spin.gif")
         try:
             await coinpickmsg.edit(embed=embed)
         except:

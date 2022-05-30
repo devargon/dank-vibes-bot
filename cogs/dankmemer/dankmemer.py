@@ -282,7 +282,7 @@ class dankreminders(discord.ui.View):
             elif str(emoji) == "🎮":
                 await self.client.db.execute("UPDATE remindersettings SET stream = $1 WHERE member_id = $2", numberswitcher(self.result.get('stream')), ctx.author.id)
                 if self.result.get('stream') != 1:
-                    await interaction.response.send_message("__**Important!**__\nThis uses the username shown in the Stream Manager embed from Dank Memer to identify who used the command. If there're people with the same name as you, the reminder may not work.\nhttps://cdn.nogra.me/screenshots/Discord_cAJOC18PCV.png", ephemeral=True)
+                    await interaction.response.send_message("__**Important!**__\nThis uses the username shown in the Stream Manager embed from Dank Memer to identify who used the command. If there're people with the same name as you, the reminder may not work.\nhttps://cdn.nogra.xyz/screenshots/Discord_cAJOC18PCV.png", ephemeral=True)
             elif str(emoji) == "<:DVB_Laptop:915524266940854303>":
                 await self.client.db.execute("UPDATE remindersettings SET postmeme = $1 WHERE member_id = $2", numberswitcher(self.result.get('postmeme')), ctx.author.id)
             elif str(emoji) == "<:DVB_Ring:928236453920669786>":
@@ -292,7 +292,7 @@ class dankreminders(discord.ui.View):
             elif str(emoji) == "<:DVB_pet:928236242469011476>":
                 await self.client.db.execute("UPDATE remindersettings SET pet = $1 WHERE member_id = $2", numberswitcher(self.result.get('pet')), ctx.author.id)
                 if self.result.get('pet') != 1:
-                    await interaction.response.send_message("__**Important!**__\nThis uses the username shown in your pet's embed from Dank Memer to identify who used the command. If there're people with the same username as you, the reminder may not work.\nhttps://cdn.nogra.me/screenshots/Discord_YVzJYHhFVa.png", ephemeral=True)
+                    await interaction.response.send_message("__**Important!**__\nThis uses the username shown in your pet's embed from Dank Memer to identify who used the command. If there're people with the same username as you, the reminder may not work.\nhttps://cdn.nogra.xyz/screenshots/Discord_YVzJYHhFVa.png", ephemeral=True)
             elif str(emoji) == "🚀":
                 await self.client.db.execute("UPDATE remindersettings SET adventure = $1 WHERE member_id = $2", numberswitcher(self.result.get('adventure')), ctx.author.id)
             self.result = await self.client.db.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)

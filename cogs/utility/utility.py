@@ -148,7 +148,7 @@ class Utility(UtilitySlash, TimeoutTracking, reminders, Highlight, Autoreaction,
         List all languages available for translation.
         """
         embed = discord.Embed(title="Languages", description="To specify a language when using the `translate` command, type the two letter codes of the language, with the exception of Chinese (Simplified) and Chinese (Traditional), which you must use the full code (`zh-cn`/`zh-tw`).\nAn example is: If I wanted to get the Hindi version of 永远不会放弃你, I will run `dv.translate hi 永远不会放弃你`, as `hi` stands for the Hindi language shown below.", color=self.client.embed_color, timestamp=discord.utils.utcnow())
-        embed.set_image(url="https://cdn.nogra.me/core/dvb_trans_languages.png")
+        embed.set_image(url="https://cdn.nogra.xyz/core/dvb_trans_languages.png")
         await ctx.send(embed=embed)
 
 
@@ -238,7 +238,7 @@ class Utility(UtilitySlash, TimeoutTracking, reminders, Highlight, Autoreaction,
         embed.add_field(name='Versions', value=f"<:DVB_python:955345550193078272> `{py_version}`\n<:DVB_PyCord:937351289514385428> `{dpy_version}`", inline=True)
         embed.add_field(name='Developers', value=f"{str(self.client.get_user(650647680837484556))}", inline=True)
         embed.add_field(name="Special Thanks To", value=f"{str(await self.client.fetch_user(727498137232736306))}\n{self.client.get_user(321892489470410763)}\n{self.client.get_user(560251854399733760)}\n{self.client.get_user(886598864965103727)} <3", inline=True)
-        embed.add_field(name="Important Links", value="[Documentation](https://docs.dvbot.nogra.me)\n[Status Page](http://status.dvbot.nogra.me/)\n[Terms of Service](https://docs.dvbot.nogra.me/legal/terms/)\n[Privacy Policy](https://docs.dvbot.nogra.me/legal/privacy/)", inline=False)
+        embed.add_field(name="Important Links", value="[Documentation](https://docs.dvbot.nogra.xyz)\n[Status Page](http://status.dvbot.nogra.xyz/)\n[Terms of Service](https://docs.dvbot.nogra.xyz/legal/terms/)\n[Privacy Policy](https://docs.dvbot.nogra.xyz/legal/privacy/)", inline=False)
         if ctx.author.id in [650647680837484556, 515725341910892555, 321892489470410763]:
             loop = asyncio.get_event_loop()
             def get_advanced_details():

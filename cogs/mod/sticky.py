@@ -113,18 +113,18 @@ class Sticky(commands.Cog):
             return await ctx.send(f"Your message is currently {len(content)} characters long. It can only be 2000 characters long. Consider using a embed instead, as its description supports up to 4096 characters.")
         all = await self.client.db.fetch("SELECT * FROM stickymessages WHERE guild_id = $1", ctx.guild.id)
         if len(all) > 1:
-            await ctx.send("You have already created **2** sticky messages with Dank Vibes Bot. To create more sticky messages, purchase Premium for Dank Vibes Bot. <http://premium.dvbot.nogra.me/>", delete_after = 3.0)
+            await ctx.send("You have already created **2** sticky messages with Dank Vibes Bot. To create more sticky messages, purchase Premium for Dank Vibes Bot. <http://premium.dvbot.nogra.xyz/>", delete_after = 3.0)
         if message_type == "embed":
             try:
                 embedjson = json.loads(content)
             except json.decoder.JSONDecodeError:
-                return await ctx.send(f"<:DVB_eyeroll:878146268277374976> You did not give me a proper JSON code. Get the JSON code directly from Carlbot's embed generator: https://cdn.nogra.me/core/embed.gif")
+                return await ctx.send(f"<:DVB_eyeroll:878146268277374976> You did not give me a proper JSON code. Get the JSON code directly from Carlbot's embed generator: https://cdn.nogra.xyz/core/embed.gif")
             else:
                 try:
                     message = await channel.send(embed=discord.Embed.from_dict(embedjson))
                 except discord.HTTPException as e:
                     return await ctx.send(
-                        f"<:DVB_eyeroll:878146268277374976> You entered a JSON code, but Discord was not able to decode it. More details: `{e}`.\nGet the JSON code directly from Carlbot's embed generator: https://cdn.nogra.me/core/embed.gif")
+                        f"<:DVB_eyeroll:878146268277374976> You entered a JSON code, but Discord was not able to decode it. More details: `{e}`.\nGet the JSON code directly from Carlbot's embed generator: https://cdn.nogra.xyz/core/embed.gif")
                 else:
                     await self.client.db.execute("INSERT INTO stickymessages VALUES($1, $2, $3, $4, $5)", ctx.guild.id, channel.id, message.id, 0, content)
                     return await ctx.send(f"<:DVB_checkmark:955345523139805214> I am now sending a sticky embed message in {channel.mention}.")
