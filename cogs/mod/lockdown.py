@@ -25,7 +25,7 @@ class start_or_end(discord.ui.View):
         self.returning_value = 0
         for b in self.children:
             b.disabled = True
-        await self.response.edit(view=self)
+        await interaction.response.edit_message(view=self)
         self.stop()
 
     @discord.ui.button(label="When lockdown ends", style=discord.ButtonStyle.primary, emoji="⏹")
@@ -33,7 +33,7 @@ class start_or_end(discord.ui.View):
         self.returning_value = 1
         for b in self.children:
             b.disabled = True
-        await self.response.edit(view=self)
+        await interaction.response.edit_message(view=self)
         self.stop()
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:

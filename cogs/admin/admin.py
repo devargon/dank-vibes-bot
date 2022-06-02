@@ -93,7 +93,7 @@ class ServerConfigView(discord.ui.View):
             elif button.label == "Timeout Log":
                 new_setting = await handle_toggle(self.guild, "timeoutlog")
                 button.style = get_style(new_setting)
-            await self.response.edit(view=self)
+            await interaction.response.edit(view=self)
 
         class Button(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):

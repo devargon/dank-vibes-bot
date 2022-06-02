@@ -238,7 +238,7 @@ class games(commands.Cog):
                 self.returning_value = True
                 for b in self.children:
                     b.disabled = True
-                await self.response.edit(view=self)
+                await interaction.response.edit_message(view=self)
                 self.stop()
 
             @discord.ui.button(label="No", style=discord.ButtonStyle.red)
@@ -246,7 +246,7 @@ class games(commands.Cog):
                 self.returning_value = False
                 for b in self.children:
                     b.disabled = True
-                await self.response.edit(view=self)
+                await interaction.response.edit_message(view=self)
                 self.stop()
 
             async def interaction_check(self, interaction: discord.Interaction) -> bool:
@@ -371,7 +371,7 @@ class games(commands.Cog):
                     if self.agree == 2:
                         for b in self.children:
                             b.disabled = True
-                    await self.response.edit(view=self)
+                    await interaction.response.edit_message(view=self)
                     if self.agree == 2:
                         self.stop()
 
@@ -417,7 +417,7 @@ class games(commands.Cog):
                 self.returning_value = True
                 for b in self.children:
                     b.disabled = True
-                await self.response.edit(view=self)
+                await interaction.response.edit_message(view=self)
                 self.stop()
 
             @discord.ui.button(label="Tails", emoji=discord.PartialEmoji.from_str("<:DVB_CoinTail:905400213676638279>"))
@@ -426,7 +426,7 @@ class games(commands.Cog):
                 self.returning_value = False
                 for b in self.children:
                     b.disabled = True
-                await self.response.edit(view=self)
+                await interaction.response.edit_message(view=self)
                 self.stop()
 
             async def interaction_check(self, interaction: discord.Interaction) -> bool:

@@ -298,27 +298,30 @@ class dankreminders(discord.ui.View):
             self.result = await self.client.db.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
             self.children[reminderemojis.index(str(emoji))].style = discord.ButtonStyle.red if is_enabled[reminderemojis.index(str(emoji))] is True else discord.ButtonStyle.green
             is_enabled[reminderemojis.index(str(emoji))] = False if is_enabled[reminderemojis.index(str(emoji))] is True else True
-            await self.response.edit(view=self)
+            if interaction.response.is_done():
+                await interaction.followup.edit_message(message_id=interaction.message.id, view=self)
+            else:
+                await interaction.response.edit_message(view=self)
 
-        async def change_view2():
+        async def change_view2(interaction):
             self.clear_items()
             self.add_item(VoteSetting(self.client, self.context, self.response))
             self.add_item(somebutton(label="Toggle reminders", style=discord.ButtonStyle.grey))
-            await self.response.edit(view=self)
+            await interaction.response.edit_message(view=self)
 
-        async def change_view1():
+        async def change_view1(interaction):
             self.clear_items()
             for emoji in reminderemojis:
                 self.add_item(somebutton(emoji=discord.PartialEmoji.from_str(emoji), label=labels[reminderemojis.index(emoji)] + f"{'' if self.rmtimes[reminderemojis.index(emoji)] is None else f' - {short_time(self.rmtimes[reminderemojis.index(emoji)])}'}", style=discord.ButtonStyle.green if is_enabled[ reminderemojis.index(emoji)] else discord.ButtonStyle.red))
             self.add_item(somebutton(label="Change Reminder type", style=discord.ButtonStyle.grey))
-            await self.response.edit(view=self)
+            await interaction.response.edit_message(view=self)
 
         class somebutton(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
                 if self.label == "Change Reminder type":
-                    await change_view2()
+                    await change_view2(interaction)
                 elif self.label == "Toggle reminders":
-                    await change_view1()
+                    await change_view1(interaction)
                 else:
                     await update_message(self.emoji, interaction)
 

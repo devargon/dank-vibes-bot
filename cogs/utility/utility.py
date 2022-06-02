@@ -429,7 +429,7 @@ class Utility(UtilitySlash, TimeoutTracking, reminders, Highlight, Autoreaction,
                 self.response = None
                 super().__init__(timeout=None)
 
-                async def update_message(label, button):
+                async def update_message(label, button, interaction):
                     if label == 'Avatar':
                         new_embed = generate_embed(self.user, label, self.avatar_url)
                     elif label == 'Server Avatar':
@@ -443,7 +443,7 @@ class Utility(UtilitySlash, TimeoutTracking, reminders, Highlight, Autoreaction,
                             b.style = discord.ButtonStyle.grey
                         if b == button:
                             b.style = discord.ButtonStyle.green
-                    await self.response.edit(embed=new_embed, view=self)
+                    await interaction.response.edit_message(embed=new_embed, view=self)
 
 
 
@@ -452,7 +452,7 @@ class Utility(UtilitySlash, TimeoutTracking, reminders, Highlight, Autoreaction,
                         if self.style == discord.ButtonStyle.green:
                             return
                         else:
-                            await update_message(self.label, self)
+                            await update_message(self.label, self, interaction)
 
                 self.add_item(SelectButton(label='Avatar', style=discord.ButtonStyle.green if init_picked == 'av' else discord.ButtonStyle.grey))
                 self.add_item(SelectButton(label='Server Avatar', style=discord.ButtonStyle.green if init_picked == 'sav' else discord.ButtonStyle.grey, disabled=True if d_avatar_url is None else False))

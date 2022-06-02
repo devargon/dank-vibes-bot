@@ -65,16 +65,16 @@ class toggledevmode(discord.ui.View):
         super().__init__(timeout=5.0)
         init_enabled = self.enabled
 
-        async def update_message():
+        async def update_message(interaction):
             self.enabled = False if self.enabled else True
             await self.client.db.execute("UPDATE devmode SET enabled = $1 WHERE user_id = $2", self.enabled, ctx.author.id)
             self.children[0].style = discord.ButtonStyle.green if self.enabled else discord.ButtonStyle.red
             self.children[0].label = "Dev Mode is enabled" if self.enabled else "Dev mode is disabled"
-            await self.response.edit(view=self)
+            await interaction.response.edit_message(view=self)
 
         class somebutton(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
-                await update_message()
+                await update_message(interaction)
         self.add_item(somebutton(emoji="🛠️", label = "Dev Mode is enabled" if init_enabled else "Dev mode is disabled", style=discord.ButtonStyle.green if init_enabled else discord.ButtonStyle.red))
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
