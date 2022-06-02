@@ -2,16 +2,17 @@ import os
 import time
 import contextlib
 from collections import Counter
-from typing import Union
+from datetime import datetime
+from typing import Union, Optional
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, pages
 
 from main import dvvt
 from utils import checks
 from utils.buttons import confirm
 from utils.context import DVVTcontext
-from utils.format import plural
+from utils.format import plural, box, ordinal
 from utils.specialobjects import Contest, ContestSubmission
 
 media_events_id = 978493758427512853 if os.getenv('state') == '1' else 685237146415792128
@@ -42,28 +43,107 @@ class DenyWithReason(discord.ui.Modal):
         self.interaction = interaction
         self.stop()
 
+class RemoveVote(discord.ui.View):
+    def __init__(self, client, original_message_id):
+        self.client = client
+        self.original_message_id = original_message_id
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Remove Vote", disabled=False, style=discord.ButtonStyle.red, emoji=discord.PartialEmoji.from_str('<:DVB_crossmark:955345521151737896>'))
+    async def callback(self, button: discord.ui.Button, interaction: discord.Interaction):
+        contest_id = await self.client.db.fetchval("SELECT contest_id FROM contest_submissions WHERE msg_id = $1", self.original_message_id)
+        if contest_id is None:
+            return await interaction.response.send_message("There doesn't seem to be a contest associated with this message.", ephemeral=True)
+        await self.client.db.execute("DELETE FROM contest_votes WHERE user_id = $1 AND contest_id = $2", interaction.user.id, contest_id)
+        button.disabled = True
+        await interaction.response.send_message("Your votes for this contest has been removed. Feel free to vote for any entry you like.", ephemeral=True)
+        return await interaction.followup.edit_message(view=self, message_id=interaction.message.id)
+
+
+class DisplayVoteView(discord.ui.View):
+    def __init__(self, client, votecount: Optional[int] = None):
+        self.client = client
+        self.votecount = votecount
+        super().__init__(timeout=None)
+
+        class UpvotesButton(discord.ui.Button):
+            async def callback(self, interaction: discord.Interaction):
+                print("detected interaction")
+                submission = await self.view.client.db.fetchrow("SELECT * FROM contest_submissions WHERE msg_id = $1", interaction.message.id)
+                if submission is None:
+                    return await interaction.response.send_message("There doesn't seem to be a valid contest submission associated with this message.", ephemeral=True)
+                SubmissionObj = ContestSubmission(submission)
+                user_ids = await self.view.client.db.fetch("SELECT user_id FROM contest_votes WHERE contest_id = $1 AND entry_id = $2", SubmissionObj.contest_id, SubmissionObj.entry_id)
+                class ViewVoterEmbed(discord.Embed):
+                    def __init__(self, *args, **kwargs):
+                        super().__init__(color=0x57F0F0, *args, **kwargs)
+                        self.title= f"Submission #{SubmissionObj.entry_id}'s Voters"
+
+                if len(user_ids) == 0:
+                    votepages = [ViewVoterEmbed(description="No one upvoted this submission.")]
+                else:
+                    votepages = []
+                    for chunk in discord.utils.as_chunks(user_ids, 15):
+                        embed = ViewVoterEmbed()
+                        users = []
+                        for user_id in chunk:
+                            user = self.view.client.get_user(user_id.get('user_id'))
+                            if user is None:
+                                user = f"{user_id.get('user_id')}"
+                            else:
+                                user = f"{user.name}#{user.discriminator} ({user.id}"
+                            users.append(user)
+                        embed.description = "\n".join(users)
+                        votepages.append(embed)
+                paginator = pages.Paginator(pages=votepages, author_check=True)
+                await paginator.respond(interaction, ephemeral=True)
+
+        if self.votecount is not None:
+            self.add_item(item=UpvotesButton(style=discord.ButtonStyle.grey, label=f"{plural(self.votecount): upvote}", disabled=False, custom_id=f"contest_end_view_results"))
+        else:
+            self.add_item(
+                item=UpvotesButton(style=discord.ButtonStyle.grey, label=f"placeholder string", disabled=False, custom_id=f"contest_end_view_results"))
+
 class HowToSubmit2(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
     @discord.ui.button(label="I'm on Desktop", emoji="💻")
     async def desktop(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if (
+            isinstance(interaction.user, discord.Member) and interaction.user.top_role is not None
+            and interaction.user.top_role.id in [674774385894096896, 722871699325845626, 795914641191600129, 870850266868633640, 608495204399448066]
+        ):
+            video_link = "https://cdn.discordapp.com/attachments/871737314831908974/981759680906944562/P_DesktopSubmission.mp4"
+        else:
+            video_link = "https://cdn.discordapp.com/attachments/871737314831908974/980132318750580736/HowToSubmit_Desktop.mp4"
+        instructions = "1. Type `/submit` to find the slash command.\n2. Click on the `/submit` slash command.\n3. Click the upload box.\n4. Select the file you're submitting.\n5. Click `⏎ Enter` to submit."
         for b in self.children:
             if b == button:
                 b.style = discord.ButtonStyle.green
             else:
                 b.style = discord.ButtonStyle.grey
-        await interaction.response.edit_message(content="Here's a video on how to submit your entry via Desktop: https://cdn.discordapp.com/attachments/871737314831908974/980132318750580736/HowToSubmit_Desktop.mp4", view=self)
+        await interaction.response.edit_message(content=f"{instructions}\n\nIf you're still unsure, watch this video: {video_link}", view=self)
 
 
     @discord.ui.button(label="I'm on Mobile", emoji="📱")
     async def mobile(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if (
+                isinstance(interaction.user, discord.Member) and interaction.user.top_role is not None
+                and interaction.user.top_role.id in [674774385894096896, 722871699325845626, 795914641191600129,
+                                                     870850266868633640, 608495204399448066]
+        ):
+            video_link = "https://cdn.discordapp.com/attachments/871737314831908974/981759681586409472/P_MobileSubmission.mp4"
+        else:
+            video_link = "https://cdn.discordapp.com/attachments/871737314831908974/980132319417483314/HowToSubmit_Mobile.mp4"
+        instructions = "1. Update Discord.\n2. Type `/submit` to find the slash command.\n3. Tap the `/submit` slash command.\n4. Tap the `submission` button/the `/submit` slash command.\n4. Tap on the image that you're submitting.\n5. Tap the Send button to submit."
         for b in self.children:
             if b == button:
                 b.style = discord.ButtonStyle.green
             else:
                 b.style = discord.ButtonStyle.grey
-        await interaction.response.edit_message(content="Here's a video on how to submit your entry via Mobile: https://cdn.discordapp.com/attachments/871737314831908974/980132319417483314/HowToSubmit_Mobile.mp4", view=self)
+        await interaction.response.edit_message(
+            content=f"{instructions}\n\nIf you're still unsure, watch this video: {video_link}", view=self)
 
 
 class HowToSubmit1(discord.ui.View):
@@ -155,8 +235,8 @@ class VoteView(discord.ui.View):
                     color=self.view.client.embed_color)
                 if (vote := await self.view.client.db.fetchrow("SELECT * FROM contest_votes WHERE contest_id = $1 AND user_id = $2", submission.contest_id, interaction.user.id)) is not None:
                     if vote.get('entry_id') == submission.entry_id:
-                        successembed.title = f"<:DVB_True:887589686808309791> You already voted for Submission #{submission.entry_id}."
-                        return await interaction.followup.send(embed=successembed, ephemeral=True)
+                        successembed.title = f"<:DVB_True:887589686808309791> You already voted for this entry."
+                        return await interaction.followup.send(embed=successembed, view=RemoveVote(self.view.client, interaction.message.id), ephemeral=True)
                     confirmview = interactionconfirm(interaction.user, self.view.client, 30.0)
                     confirmview.response = await interaction.followup.send(f"You have previously voted for [this entry](https://discord.com/channels/{interaction.guild.id}/{contest.contest_channel_id}/{submission.msg_id}).\nAre you sure you want to change your vote?", view=confirmview, wait=True)
                     await confirmview.wait()
@@ -165,7 +245,7 @@ class VoteView(discord.ui.View):
                     await self.view.client.db.execute("DELETE FROM contest_votes WHERE contest_id = $1 AND user_id = $2", submission.contest_id, interaction.user.id)
                 await self.view.client.db.execute("INSERT INTO contest_votes(contest_id, entry_id, user_id) VALUES($1, $2, $3)", contest.contest_id, submission.entry_id, interaction.user.id)
                 successembed = discord.Embed(title=f"<:DVB_True:887589686808309791> You have voted for Submission #{submission.entry_id}!", description="The results of voting will be out when the contest is over.", color=self.view.client.embed_color)
-                await interaction.followup.send(embed=successembed, ephemeral=True)
+                await interaction.followup.send(embed=successembed, view=RemoveVote(self.view.client, interaction.message.id), ephemeral=True)
 
         self.add_item(Vote(style=discord.ButtonStyle.green, emoji=discord.PartialEmoji.from_str("<:DVB_Upvote:977772469945499709>"), custom_id='contestvote', disabled=self.disabled))
 
@@ -410,9 +490,10 @@ class Contests(commands.Cog):
         if (contest_obj := await self.client.db.fetchrow("SELECT * FROM contests WHERE guild_id = $1 AND (active = TRUE or voting = TRUE)", ctx.guild.id)) is None:
             return await ctx.respond("There are no contests taking place now.\n\nGet **Media Events Ping** to be notified when a contest starts!", view=GetMediaEventsPing(), ephemeral=True)
         else:
+            contest_obj = Contest(contest_obj)
             await ctx.defer(ephemeral=True)
-            contest_id = contest_obj.get('contest_id')
-            if contest_obj.get('active') is True:
+            contest_id = contest_obj.contest_id
+            if contest_obj.active is True:
                 if submission.content_type not in ['image/jpeg', 'image/png']:
                     filename = submission.filename.split('.')
                     if len(filename) > 1:
@@ -428,7 +509,7 @@ class Contests(commands.Cog):
                     existing = False
                     if existing_submission.approved is True:
                         existing = True
-                        confirmview.response = await ctx.respond("You already have a submission that's approved. Are you sure you want to resubmit again?", view=confirmview)
+                        confirmview.response = await ctx.respond(f"You already have a [submission that's approved](https://discord.com/channels/{ctx.guild.id}/{contest_obj.contest_channel_id}/{existing_submission.msg_id}). Are you sure you want to resubmit again?", view=confirmview)
                     elif existing_submission.approve_id is not None:
                         existing = True
                         confirmview.response = await ctx.respond("You already have a submission that's waiting to be approved. Are you sure you want to resubmit again?", view=confirmview)
@@ -485,7 +566,7 @@ class Contests(commands.Cog):
                         await ctx.author.send(embed=dm_embed)
                 else:
                     await ctx.respond("I could not find a channel to send your entry to await approval.", ephemeral=True)
-            elif contest_obj.get('voting') is True:
+            elif contest_obj.voting is True:
                 await ctx.respond("The time to submit your entry is over. Sorry if you missed it!\n\nGet **Media Events Ping** to be notified when a contest starts!", view=GetMediaEventsPing(), ephemeral=True)
 
     @checks.has_permissions_or_role(manage_roles=True)
@@ -496,6 +577,102 @@ class Contests(commands.Cog):
         1) Send a custom leaderboard in the specified contest channel.
         2) Remove all upvote buttons and add the names and number of votes to each contest entry.
         """
+        if (contest := await self.client.db.fetchrow("SELECT * FROM contests WHERE contest_id = $1 AND guild_id = $2", contest_id, ctx.guild.id)) is None:
+            return await ctx.send(f"A contest with the ID `{contest_id}` doesn't exist in your server.")
+        contest = Contest(contest)
+        if contest.active is not True:
+            if contest.voting is not True:
+                return await ctx.send(f"Looks like Contest `{contest_id}` is already over.")
+        elif contest.active is True:
+            return await ctx.send(f"Looks like Contest `{contest_id}` is still accepting submissions. You'll need to use `{ctx.prefix}contest vote {contest_id}` to start the voting process for this contest, before running this command again.")
+        confirmview = confirm(ctx, self.client, 30.0)
+        confirmview.response = await ctx.send("This command will: 1) Send a custom leaderboard in the specified contest channel.\n2) Remove all upvote buttons and add the names and number of votes to each contest entry.", view=confirmview)
+        await confirmview.wait()
+        if confirmview.returning_value is True:
+            statustext = "Setting state of contest to VOTING = FALSE, ACTIVE = FALSE..."
+            statusmsg = await ctx.send(box(statustext))
+            await self.client.db.execute("UPDATE contests SET voting = FALSE, active = FALSE where contest_id = $1 AND guild_id = $2", contest_id, ctx.guild.id)
+            statustext += f" Done.\nCollating results..."
+            await statusmsg.edit(content=box(statustext))
+            submissions = await self.client.db.fetch("SELECT * FROM contest_submissions WHERE contest_id = $1", contest_id)
+            votes = await self.client.db.fetch("SELECT * FROM contest_votes WHERE contest_id = $1", contest_id)
+            votes = Counter(vote.get('entry_id') for vote in votes)
+            votes = dict(votes)
+            for submission in submissions:
+                if submission.get('entry_id') not in votes:
+                    votes[submission.get('entry_id')] = 0
+            statustext += f" Done.\nUpdating messages and sending a leaderboard..."
+            await statusmsg.edit(content=box(statustext))
+            emojis = {
+                0: "🏆",
+                1: "🥈",
+                2: "🥉",
+            }
+
+            def get_submission(entryid) -> Union[None, ContestSubmission]:
+                for submission_record in submissions:
+                    if submission_record.get('entry_id') == entryid:
+                        return ContestSubmission(submission_record)
+                return None
+
+            index = 0
+            leaderboardembed = discord.Embed(title=f"Results for Contest #{contest_id}", color=self.client.embed_color)
+            for entry_id, number_of_votes in dict(votes).items():
+                submission = get_submission(entry_id)
+                if submission is not None:
+                    user = self.client.get_user(submission.submitter_id)
+                    if user is None:
+                        user_proper = str(submission.submitter_id)
+                        user_id = str(submission.submitter_id)
+                        user_avatar = discord.Embed.Empty
+                    else:
+                        user_proper = f"{user.name}#{user.discriminator}"
+                        user_id = f"{user.id}"
+                        user_avatar = user.display_avatar.with_size(128).url
+                    emoji = emojis.get(index, "🏅")
+                    place = f"{ordinal(index + 1)} Place"
+                    if index < 5:
+                        place_str = f": {emoji} {place} {emoji}"
+
+                        leaderboardembed.add_field(
+                            name=f"{emoji} {place} ({plural(number_of_votes):vote}) {emoji}",
+                            value=f"{user.mention if user is not None else user_id}\n[Link to submission](https://discord.com/channels/{ctx.guild.id}/{contest.contest_channel_id}/{submission.msg_id})",
+                            inline=False if index == 0 else True
+                        )
+                        if index == 2:
+                            leaderboardembed.add_field(name="\u200b", value="\u200b", inline=False)
+                    else:
+                        place_str = ""
+
+                    embed = discord.Embed(title=f"Submission {submission.entry_id}#{place_str}", color=self.client.embed_color)
+                    embed.set_author(icon_url=user_avatar, name=user_proper)
+                    embed.set_footer(text=f"Submitter ID: {user_id}")
+                    embed.set_image(url=submission.media_link)
+                    p_message = ctx.guild.get_channel(contest.contest_channel_id).get_partial_message(submission.msg_id)
+                    try:
+                        await p_message.edit(embed=embed, view=DisplayVoteView(self.client, number_of_votes))
+                    except Exception as e:
+                        await ctx.send(f"Could not update the submission post by {user_proper}: {str(e)}")
+                    else:
+                        pass
+                    index += 1
+                else:
+                    await ctx.send(f"Could not find a submission with entry ID `{entry_id}`.")
+            await ctx.guild.get_channel(contest.contest_channel_id).send(embed=leaderboardembed)
+            await ctx.send(f"Process of ending Contest `{contest_id}` finished.")
+
+
+
+
+
+
+
+
+
+
+
+
+
         return await ctx.send("This command is still in development :(")
 
     @checks.has_permissions_or_role(manage_roles=True)
