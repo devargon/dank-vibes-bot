@@ -1,5 +1,7 @@
+from collections import Counter
+
 import discord
-from discord.ext import commands
+from discord.ext import commands, pages
 
 import re
 import os
@@ -18,6 +20,8 @@ from googletrans import Translator
 import googletrans, googletrans.models
 
 from utils import checks
+from utils.context import DVVTcontext
+from utils.specialobjects import ContestSubmission, Contest
 from utils.time import humanize_timedelta
 from utils.errors import ArgumentBaseError
 from utils.converters import BetterTimeConverter
@@ -509,5 +513,68 @@ class Utility(UtilitySlash, TimeoutTracking, reminders, Highlight, Autoreaction,
         paginator = discord.ext.pages.Paginator(pages=pages)
         await paginator.send(ctx)
 
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name="contestleaderboard", aliases=['clb', 'contestlb'])
+    async def contest_leaderboard(self, ctx: DVVTcontext, contest_id: int):
+        """
+        See all the leaderboard and check out all the entries of a previous contest.
+        Cannot be used for ongoing contests.
+        """
+        if (contest := await self.client.db.fetchrow("SELECT * FROM contests WHERE contest_id = $1 AND guild_id = $2", contest_id, ctx.guild.id)) is None:
+            return await ctx.send(f"A contest with the ID `{contest_id}` doesn't exist in your server.")
+        contest = Contest(contest)
+        if contest.active is True or contest.voting is True:
+            return await ctx.send(f"**Contest #{contest_id} is still active!**\nWait until the contest is over before checking its leaderboard.")
+        submissions = await self.client.db.fetch("SELECT * FROM contest_submissions WHERE contest_id = $1", contest_id)
+        votes = await self.client.db.fetch("SELECT * FROM contest_votes WHERE contest_id = $1", contest_id)
+        votes = Counter(vote.get('entry_id') for vote in votes)
+        votes = dict(votes)
+        for submission in submissions:
+            if submission.get('entry_id') not in votes:
+                votes[submission.get('entry_id')] = 0
+        emojis = {
+            0: "🏆",
+            1: "🥈",
+            2: "🥉",
+        }
 
+        def get_submission(entryid) -> typing.Union[None, ContestSubmission]:
+            for submission_record in submissions:
+                if submission_record.get('entry_id') == entryid:
+                    return ContestSubmission(submission_record)
+            return None
 
+        index = 0
+        pag_pages = []
+
+        for entry_id, number_of_votes in dict(votes).items():
+
+            submission = get_submission(entry_id)
+            if submission is not None:
+                user = self.client.get_user(submission.submitter_id)
+                if user is None:
+                    user_proper = str(submission.submitter_id)
+                    user_id = str(submission.submitter_id)
+                    user_avatar = discord.Embed.Empty
+                else:
+                    user_proper = f"{user.name}#{user.discriminator}"
+                    user_id = f"{user.id}"
+                    user_avatar = user.display_avatar.with_size(128).url
+                emoji = emojis.get(index, "🏅") if index < 5 else ""
+                place = f"{ordinal(index + 1)} Place"
+                if index < 5:
+                    place_str = f"{emoji} {place} {emoji}"
+                else:
+                    place_str = ""
+                leaderboardembed = discord.Embed(title=place_str, color=self.client.embed_color)
+                leaderboardembed.add_field(name="Votes", value=str(number_of_votes), inline=True)
+                leaderboardembed.add_field(name="Link", value=f"[Link to submission](https://discord.com/channels/{ctx.guild.id}/{contest.contest_channel_id}/{submission.msg_id})", inline=True)
+                leaderboardembed.set_author(name=user_proper, icon_url=user_avatar)
+                leaderboardembed.set_image(url=submission.media_link)
+                leaderboardembed.set_footer(text=f"Submitter ID: {user_id}")
+                pag_pages.append(leaderboardembed)
+                index += 1
+            else:
+                pass
+        paginator = pages.Paginator(pag_pages, author_check=True)
+        await paginator.send(ctx)

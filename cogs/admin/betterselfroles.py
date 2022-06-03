@@ -10,7 +10,7 @@ from discord.ext import commands
 from utils.format import get_command_name, split_string_into_list, human_join
 from utils.converters import BetterRoles, AllowDeny, BetterMessageID
 
-from cogs.admin.contests import SubmissionApproval, VoteView, HowToSubmit1
+from cogs.admin.contests import SubmissionApproval, VoteView, HowToSubmit1, DisplayVoteView
 
 custom_emoji_regex = re.compile('<(a?):([A-Za-z0-9_]+):([0-9]+)>')
 
@@ -208,6 +208,7 @@ class BetterSelfroles(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        self.client.add_view(DisplayVoteView(self.client))
         self.client.add_view(VoteView(self.client, False))
         self.client.add_view(HowToSubmit1())
         sr_results = await self.client.db.fetch("SELECT * FROM selfroles")

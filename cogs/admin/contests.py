@@ -91,7 +91,7 @@ class DisplayVoteView(discord.ui.View):
                             if user is None:
                                 user = f"{user_id.get('user_id')}"
                             else:
-                                user = f"{user.name}#{user.discriminator} ({user.id}"
+                                user = f"**{user.name}#{user.discriminator}** ({user.id})"
                             users.append(user)
                         embed.description = "\n".join(users)
                         votepages.append(embed)
@@ -661,30 +661,6 @@ class Contests(commands.Cog):
             await ctx.guild.get_channel(contest.contest_channel_id).send(embed=leaderboardembed)
             await ctx.send(f"Process of ending Contest `{contest_id}` finished.")
 
-
-
-
-
-
-
-
-
-
-
-
-
-        return await ctx.send("This command is still in development :(")
-
-    @checks.has_permissions_or_role(manage_roles=True)
-    @contest.command(name="leaderboard")
-    async def contest_leaderboard(self, ctx: DVVTcontext, contest_id: int):
-        """
-        See all the leaderboard and check out all the entries of a previous contest.
-        Cannot be used for ongoing contests.
-        """
-        return await ctx.send("This command is still in development :(")
-
-
     @checks.dev()
     @contest.command(name='forceend')
     async def contest_forceend(self, ctx: DVVTcontext, contest_id: int):
@@ -693,4 +669,3 @@ class Contests(commands.Cog):
         """
         await self.client.db.execute("UPDATE contests SET active = FALSE, voting = FALSE WHERE contest_id = $1", contest_id)
         await ctx.send("Contest ended.")
-
