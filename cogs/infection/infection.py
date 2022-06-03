@@ -11,19 +11,10 @@ import pytz
 class infection(commands.Cog):
     def __init__(self, client):
         self.client: dvvt = client
-        self.infected = None
-        self.check_infection.start()
-
-    @tasks.loop(seconds=60.0)
-    async def check_infection(self):
-        await self.client.wait_until_ready()
-        infections = await self.client.db.fetch("SELECT member_id FROM infections")
-        self.infected = [i.get('member_id') for i in infections]
 
     @commands.Cog.listener()
     async def on_ready(self):
-        infections = await self.client.db.fetch("SELECT member_id FROM infections")
-        self.infected = [i.get('member_id') for i in infections]
+        pass
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -75,30 +66,7 @@ class infection(commands.Cog):
                             um = f"{tempstr}\n"
                     await message.channel.send(um)
                     await message.channel.send("What it means:\n<:DVB_ban:930310804203503626> - Ban\n<:DVB_Mute:930308084885241926> - Mute\n<:DVB_Unmute:930308214132707338> - Unmute\n<:DVB_Unban:930308373440765982> - Unban\n<:DVB_warn:930312114629931028> - Warn\n<:DVB_tempban:930310741213454336> - Tempban")
-        if message.author.bot:
-            return
-        if type(self.infected) is not list:
-            return
-        if message.author.id not in self.infected:
-            return
-        if message.author.id in self.client.blacklist:
-            return
-        if len(message.mentions) > 0:
-            infected_thisSession = []
-            for member in message.mentions:
-                if member.id == self.client.user.id:
-                    return
-                if member.id in self.infected:
-                    pass
-                else:
-                    self.infected.append(member.id)
-                    infected_thisSession.append(member.id)
-                    await self.client.db.execute("INSERT INTO infections (member_id, guild_id, channel_id, message_id, infector, timeinfected) VALUES ($1, $2, $3, $4, $5, $6)", member.id, message.guild.id, message.channel.id, message.id, message.author.id, round(time()))
-            if len(infected_thisSession) > 0:
-                with contextlib.suppress(Exception):
-                    await message.add_reaction('😷')
-        else:
-            return
+
 
     @commands.Cog.listener()
     async def on_member_update(self, member_before, member_after):
@@ -125,4 +93,4 @@ class infection(commands.Cog):
                                               member_before.guild.id, member_before.id, new_nickname, round(time()))
 
     def cog_unload(self) -> None:
-        self.check_infection.stop()
+        pass
