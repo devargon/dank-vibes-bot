@@ -1207,6 +1207,7 @@ class DankMemer(Lottery, commands.Cog, name='dankmemer'):
     async def dankitems_set_value(self, ctx, item: str, value: str):
         """
         Set the value of a Dank Memer item, overwriting it and preventing it from being updated automatically.
+        To reset a item's value, use `none` for the value, and use `pls shop <item>`.
         """
         items = await self.client.db.fetch("SELECT * FROM dankitems")
         if item is not None:
