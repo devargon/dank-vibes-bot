@@ -376,7 +376,7 @@ class Lottery(commands.Cog):
         if await self.check_non_hoster_consent(ctx, lotto_object.get('starter_id')) is True:
             max_lotto_no = await self.client.db.fetchval("SELECT MAX(lottery_number) FROM lottery_entries WHERE lottery_id = $1", lottery_id)
             confirmview = confirm(ctx, self.client, 30.0)
-            confirmembed = discord.Embed(title=f"Are you sure you want to end lottery #{lottery_id}?\n\nNumber of entries: {max_lotto_no}\n", color=discord.Color.orange())
+            confirmembed = discord.Embed(title=f"Are you sure you want to end lottery #{lottery_id}?\n\nNumber of entries: {max_lotto_no}\n", description="Any unadded reserved lottery entries will be added automatically.", color=discord.Color.orange())
             confirmview.response = await ctx.send(embed=confirmembed, view=confirmview)
             await confirmview.wait()
             if confirmview.returning_value is not True:
@@ -385,6 +385,20 @@ class Lottery(commands.Cog):
             else:
                 confirmembed.color = discord.Color.green()
                 await confirmview.response.edit(embed=confirmembed)
+                remaining_reserved_entries = await self.client.db.fetch("SELECT * FROM reserved_entries WHERE lottery_id = $1 AND lottery_number > $2 ORDER BY lottery_number", lottery_id, max_lotto_no)
+
+                type_of_lottery = lotto_object.get('lottery_type')
+                if len(remaining_reserved_entries) > 0:
+                    for reserved_entry in remaining_reserved_entries:
+                        max_lotto_no += 1
+                        await self.client.db.execute("INSERT INTO lottery_entries(lottery_id, lottery_number, lottery_user) VALUES ($1, $2, $3)", lottery_id, max_lotto_no, reserved_entry.get('lottery_user'))
+                        lottery_chan_id = get_lotto_channel(ctx.guild.id, type_of_lottery)
+                        if (chan := ctx.guild.get_channel(lottery_chan_id)) is not None:
+                            us = self.client.get_user(reserved_entry.get('lottery_user'))
+                            us = f"{us.mention} (`{us}`)" if us is not None else reserved_entry.get('lottery_user')
+                            em = discord.Embed(description=f"{max_lotto_no}. {us}", color=discord.Color.random())
+                            await chan.send(embed=em)
+                        await ctx.send(f"User `{reserved_entry.get('lottery_user')}` has been added to the back of the lottery since they have a reserved number.")
                 if max_lotto_no < 1:
                     the_chosen_one = 0
                 else:
