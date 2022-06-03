@@ -8,7 +8,8 @@ from time import time
 from datetime import datetime
 import pytz
 
-class infection(commands.Cog):
+
+class on_message(commands.Cog):
     def __init__(self, client):
         self.client: dvvt = client
 

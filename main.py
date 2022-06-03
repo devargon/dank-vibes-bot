@@ -44,7 +44,7 @@ AVAILABLE_EXTENSIONS = ['cogs.dev',
 'cogs.giveaways',
 'cogs.donations',
 'cogs.dankmemer',
-'cogs.infection',
+'cogs.events',
 'cogs.imgen',
 'cogs.disboard'
 ]
@@ -79,12 +79,6 @@ class dvvt(commands.Bot):
         self.deleted_edit_messages = []
         self.webhooks = {}
         self.amari_data = {}
-        self.sample_amari_data = {
-            595457764935991326: {
-                'leaderboard': "a api.Leaderboard object",
-                'last_updated': 0
-            }
-        }
         for ext in self.available_extensions:
             self.load_extension(ext)
 
