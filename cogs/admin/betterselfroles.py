@@ -35,7 +35,10 @@ class RoleMenu(discord.ui.Select):
             selected_role = interaction.guild.get_role(int(selected_role_ids))
             if selected_role is not None:
                 if selected_role in interaction.user.roles:
-                    invalid_roles.append(f"You already have the {selected_role.mention} role.")
+                    if self.max_values == 1:
+                        to_remove_roles.append(selected_role)
+                    else:
+                        invalid_roles.append(f"You already have the {selected_role.mention} role.")
                 else:
                     to_add_roles.append(selected_role)
             else:
