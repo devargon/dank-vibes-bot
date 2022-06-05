@@ -138,6 +138,12 @@ class ServerConfigView(discord.ui.View):
                 elif self.custom_id == "timeoutlog":
                     self.serverconfig.timeoutlog = update_bool(self.serverconfig.timeoutlog)
                     self.style = get_style(self.serverconfig.timeoutlog)
+                elif self.custom_id == 'pls_ar':
+                    self.serverconfig.pls_ar = update_bool(self.serverconfig.pls_ar)
+                    self.style = get_style(self.serverconfig.pls_ar)
+                elif self.custom_id == 'mrob_ar':
+                    self.serverconfig.mrob_ar = update_bool(self.serverconfig.mrob_ar)
+                    self.style = get_style(self.serverconfig.mrob_ar)
                 elif self.custom_id == "statusroleenabled":
                     self.serverconfig.statusroleenabled = update_bool(self.serverconfig.statusroleenabled)
                     self.style = get_style(self.serverconfig.statusroleenabled)
@@ -220,6 +226,8 @@ class ServerConfigView(discord.ui.View):
         self.add_item(BaseToggleButton(self.serverconfig, self.client, label="Verification", custom_id="verification", style=get_style(self.serverconfig.verification)))
         self.add_item(BaseToggleButton(self.serverconfig, self.client, label="Censor", custom_id="censor", style=get_style(self.serverconfig.censor)))
         self.add_item(BaseToggleButton(self.serverconfig, self.client, label="Timeout Log", custom_id="timeoutlog", style=get_style(self.serverconfig.timeoutlog)))
+        self.add_item(BaseToggleButton(self.serverconfig, self.client, label="pls command AR", custom_id="pls_ar", style=get_style(self.serverconfig.pls_ar)))
+        self.add_item(BaseToggleButton(self.serverconfig, self.client, label="MafiaBot Rob AR", custom_id="mrob_ar", style=get_style(self.serverconfig.mrob_ar)))
         self.add_item(BaseToggleButton(self.serverconfig, self.client, label="Status Role", custom_id="statusroleenabled", style=get_style(self.serverconfig.statusroleenabled)))
         self.add_item(ChangeRoleID(label="Status Reward -> Role ID (Click here to change)"))
         self.add_item(StatusText(label="Status Text (Click here to change)"))
@@ -278,6 +286,8 @@ class Admin(Contests, BetterSelfroles, Joining, ServerRule, commands.Cog, name='
         embed.add_field(name=f"Censor - {return_emoji(serverconf.votelb)}", value=f"Deletes blacklisted words.")
         embed.add_field(name=f"Vote Leaderboard - {return_emoji(serverconf.votelb)}", value=f"Shows the Vote Leaderboard every 24 hours.")
         embed.add_field(name=f"Timeout Log - {return_emoji(serverconf.timeoutlog)}", value=f"Logs timeouts in #mod-log.")
+        embed.add_field(name=f"`pls` AR - {return_emoji(serverconf.pls_ar)}", value=f"Responds to `pls ...` in #general or #bot-lounge.")
+        embed.add_field(name=f"MafiaBot Rob AR - {return_emoji(serverconf.mrob_ar)}", value=f"Responds to `m.rob`.")
         embed.add_field(name=f"Status Rewards - {return_emoji(serverconf.statusroleenabled)}", value=f"Whether status role rewards are enabled.")
         embed.add_field(name=f"Status Text - `{serverconf.statustext}`", value=f"The text in a user's status to be able to obtain the role.", inline=False)
         embed.add_field(name=f"Status Role - `{ctx.guild.get_role(serverconf.statusroleid) or serverconf.statusroleid}`", value=f"The ID of the role that can be obtained.", inline=False)
