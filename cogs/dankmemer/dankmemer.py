@@ -1239,6 +1239,7 @@ class DankMemer(Lottery, commands.Cog, name='dankmemer'):
 
 
     @checks.has_permissions_or_role(manage_roles=True)
+    @checks.not_in_gen()
     @commands.command(name='itemcalc', aliases=['ic'])
     async def item_calc(self, ctx: DVVTcontext, *, arg: str = None):
         """
@@ -1286,14 +1287,25 @@ class DankMemer(Lottery, commands.Cog, name='dankmemer'):
                 total_worth += item[1] * item[2]
                 item_calc_result.append(f"`{item[2]}` **{item[0]}**: `⏣ {comma_number(item[1] * item[2])}`")
             item_summary_embed = discord.Embed(title=f"Detected items", description="", color=self.client.embed_color)
+            embed_count = 0
+            hidden_items = 0
             for item in item_calc_result:
-                if len(item_summary_embed.description) + len(item) > 2000:
-                    await ctx.send(embed=item_summary_embed)
-                    item_summary_embed = discord.Embed(title=f"Detected items", description="", color=self.client.embed_color)
-                item_summary_embed.description += f"{item}\n"
+                if embed_count > 3:
+                    hidden_items += 1
+                else:
+                    if len(item_summary_embed.description) + len(item) > 4000:
+                        await ctx.send(embed=item_summary_embed)
+                        embed_count += 1
+                        item_summary_embed = discord.Embed(title=f"Detected items", description="", color=self.client.embed_color)
+                    if embed_count > 3:
+                        hidden_items += 1
+                    else:
+                        item_summary_embed.description += f"{item}\n"
             if len(item_summary_embed.description) > 0:
                 await ctx.send(embed=item_summary_embed)
             final_embed = discord.Embed(title="Total worth:", description=f"```\n⏣ {comma_number(total_worth)}\n```", color=self.client.embed_color)
+            if hidden_items > 0:
+                final_embed.set_footer(text=f"{hidden_items} items were hidden due to to many embeds sent.")
             await ctx.send(embed=final_embed)
         else:
             await ctx.send(embed=discord.Embed(title="You didn't input any items.", color=discord.Color.red()))
