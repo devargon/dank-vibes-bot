@@ -163,12 +163,18 @@ class ServerConfigView(discord.ui.View):
                         else:
                             await modal.interaction.response.send_message(f"A role with ID **{modal.role_id}** does not exist.", ephemeral=True)
                     else:
-                        self.view.serverconfig.statusroleid = modal.role_id
-                        await self.view.serverconfig.update(self.view.client)
-                        if modal.interaction.response.is_done():
-                            await modal.interaction.followup.send(f"Status role has been changed to **{role.name}**.", ephemeral=True)
+                        if role.is_default() or role.is_bot_managed() or role.is_premium_subscriber() or role.managed or role.is_integration():
+                            if modal.interaction.response.is_done():
+                                await modal.interaction.followup.send(f"**{role}** is integrated/managed and cannot be added.", ephemeral=True)
+                            else:
+                                await modal.interaction.response.send_message(f"**{role}** is integrated/managed and cannot be added.", ephemeral=True)
                         else:
-                            await modal.interaction.response.send_message(f"Status role has been changed to **{role.name}**.", ephemeral=True)
+                            self.view.serverconfig.statusroleid = modal.role_id
+                            await self.view.serverconfig.update(self.view.client)
+                            if modal.interaction.response.is_done():
+                                await modal.interaction.followup.send(f"Status role has been changed to **{role.name}**.", ephemeral=True)
+                            else:
+                                await modal.interaction.response.send_message(f"Status role has been changed to **{role.name}**.", ephemeral=True)
                 else:
                     if modal.interaction.response.is_done():
                         await modal.interaction.followup.send("You did not provide a valid Role ID.", ephemeral=True)
