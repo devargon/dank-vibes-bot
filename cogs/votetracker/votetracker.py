@@ -5,6 +5,8 @@ import discord
 import random
 from PIL import ImageFont, Image, ImageDraw
 from discord.ext import commands, tasks
+
+from main import dvvt
 from utils.format import print_exception, ordinal, plural, short_time
 from io import BytesIO
 from utils.buttons import *
@@ -76,7 +78,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
     Vote tracker commands
     """
     def __init__(self, client):
-        self.client = client
+        self.client: dvvt = client
         self.description = "Vote tracker commands"
         self.reminders.start()
         self.leaderboardloop.start()
@@ -137,7 +139,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
     @tasks.loop(hours=24.0)
     async def leaderboardloop(self):
         await self.client.wait_until_ready()
-        if await self.client.db.fetchval("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", guildid, 'votelb'):
+        if (await self.client.fetch_guild_settings(guildid)).votelb is True:
             votecount = await self.client.db.fetch("SELECT * FROM votecount ORDER BY count DESC LIMIT 10")  # gets top 10 voters
             leaderboard = []
             guild = self.client.get_guild(guildid)

@@ -2,9 +2,12 @@ import discord
 from discord.ext import commands, tasks
 from time import time
 
+from main import dvvt
+
+
 class Verification(commands.Cog):
     def __init__(self, client):
-        self.client = client
+        self.client: dvvt = client
         self.check_verification.start()
 
     @tasks.loop(seconds=120.0)
@@ -12,8 +15,8 @@ class Verification(commands.Cog):
         await self.client.wait_until_ready()
         try:
             for guild in self.client.guilds:
-                is_enabled = await self.client.db.fetchval("SELECT enabled FROM serverconfig WHERE settings = $1 and guild_id = $2", 'verification', guild.id)
-                if is_enabled:
+                g = await self.client.fetch_guild_settings(guild.id)
+                if g.verification is True:
                     has_not_verified = []
                     for member in guild.members:
                         if member.bot:
@@ -44,8 +47,8 @@ class Verification(commands.Cog):
     async def on_member_update(self, member_before, member_after):
         if time() - member_before.joined_at.timestamp() > 86400:
             return
-        is_enabled = await self.client.db.fetchval("SELECT enabled FROM serverconfig WHERE settings = $1 and guild_id = $2", 'verification', member_after.guild.id)
-        if is_enabled != True:
+        sc = await self.client.fetch_guild_settings(member_after.guild.id)
+        if sc.verification is not True:
             return
         if member_before.pending != True or member_after.pending != False or member_before.bot:
             return

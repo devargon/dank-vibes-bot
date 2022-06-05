@@ -60,5 +60,41 @@ class Contest:
     def __repr__(self) -> str:
         return f"<ContestSubmission contest_id={self.contest_id} guild_id={self.guild_id} contest_starter_id={self.contest_starter_id} contest_channel_id={self.contest_channel_id} name={self.name} created={self.created} active={self.active} voting={self.voting}>"
 
+class ServerConfig:
+    __slots__ = ('guild_id', 'owodailylb', 'verification', 'censor', 'owoweeklylb', 'votelb', 'timeoutlog', 'statusroleenabled', 'statusroleid', 'statustext')
+
+    def __init__(self, record):
+        self.guild_id: int = record.get('guild_id')
+        self.owodailylb: bool = record.get('owodailylb')
+        self.verification: bool = record.get('verification')
+        self.censor: bool = record.get('censor')
+        self.owoweeklylb: bool = record.get('owoweeklylb')
+        self.votelb: bool = record.get('votelb')
+        self.timeoutlog: bool = record.get('timeoutlog')
+        self.statusroleenabled: bool = record.get('statusrole')
+        self.statusroleid: int = record.get('statusroleid')
+        self.statustext: int = record.get('statustext')
+
+
+class ServerConfiguration:
+    __slots__ = ('guild_id', 'owodailylb', 'verification', 'censor', 'owoweeklylb', 'votelb', 'timeoutlog', 'statusroleenabled', 'statusroleid', 'statustext')
+
+    def __init__(self, record):
+        self.guild_id: int = record.get('guild_id')
+        self.owodailylb: bool = record.get('owodailylb')
+        self.verification: bool = record.get('verification')
+        self.censor: bool = record.get('censor')
+        self.owoweeklylb: bool = record.get('owoweeklylb')
+        self.votelb: bool = record.get('votelb')
+        self.timeoutlog: bool = record.get('timeoutlog')
+        self.statusroleenabled: bool = record.get('statusrole')
+        self.statusroleid: int = record.get('statusroleid')
+        self.statustext: int = record.get('statustext')
+
+    def __repr__(self) -> str:
+        return f"<ServerConfiguration guild_id={self.guild_id} owodailylb={self.owodailylb} verification={self.verification} censor={self.censor} owoweeklylb={self.owoweeklylb} votelb={self.votelb} timeoutlog={self.timeoutlog} statusroleenabled={self.statusroleenabled} statusroleid={self.statusroleid} statustext={self.statustext}>"
+    async def update(self, client):
+        await client.db.execute("UPDATE serverconfig SET owodailylb=$1, verification=$2, censor=$3, owoweeklylb=$4, votelb=$5, timeoutlog=$6, statusrole=$7, statusroleid=$8, statustext=$9 WHERE guild_id=$10",
+                                self.owodailylb, self.verification, self.censor, self.owoweeklylb, self.votelb, self.timeoutlog, self.statusroleenabled, self.statusroleid, self.statustext, self.guild_id)
 
 MISSING: Any = _MissingSentinel()

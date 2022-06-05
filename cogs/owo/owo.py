@@ -5,6 +5,8 @@ import discord
 import contextlib
 from typing import Optional
 from datetime import datetime, timedelta
+
+from main import dvvt
 from utils.menus import CustomMenu
 from discord.ext import commands, menus, tasks, pages
 from utils import checks
@@ -31,7 +33,7 @@ class OwO(commands.Cog, name='owo'):
     OwO related commands
     """
     def __init__(self, client):
-        self.client = client
+        self.client: dvvt = client
         self.waitlist = []
         self.active = True
         self.daily_owo_reset.start()
@@ -166,7 +168,7 @@ class OwO(commands.Cog, name='owo'):
         owo100 = guild.get_role(owo100_id)
         self.active = False
         if discord.utils.utcnow().weekday() == 6:
-            if await self.client.db.fetchval("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", guild.id, "owoweeklylb"): # check if the weekly owo lb is enabled or not
+            if (await self.client.fetch_guild_settings(guild.id)).owoweeklylb is True:
                 query = "SELECT member_id, weekly_count FROM owocount ORDER BY weekly_count DESC LIMIT $1"
                 embed = await self.get_leaderboard(guild, query, top=5)
                 embed.title = "This week's OwO leaderboard"
@@ -179,7 +181,7 @@ class OwO(commands.Cog, name='owo'):
             for res in weekly_res:
                 reset_values.append((0, res.get('weekly_count'), res.get('member_id')))
             await self.client.db.executemany("UPDATE owocount SET weekly_count=$1, last_week=$2 WHERE member_id=$3", reset_values)
-        if await self.client.db.fetchval("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", guild.id, "owodailylb"): # check if the daily owo lb is enabled or not
+        if (await self.client.fetch_guild_settings(guild.id)).owodailylb is True:
             query = "SELECT member_id, daily_count FROM owocount ORDER BY daily_count DESC LIMIT $1"
             embed = await self.get_leaderboard(guild, query, top=5)
             embed.title = "Today's OwO leaderboard"

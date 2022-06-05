@@ -12,7 +12,7 @@ from discord import client
 from discord.ext import commands, tasks
 from utils.context import DVVTcontext
 from utils.format import print_exception
-from utils.specialobjects import MISSING
+from utils.specialobjects import MISSING, ServerConfiguration
 from utils.errors import AmariUserNotFound, AmariDataNotFound, AmariError, AmariDeveloperError
 
 
@@ -27,26 +27,28 @@ class EditContent:
     def __repr__(self) -> str:
         return f"<EditContent content={self.content} embed={self.embed} embeds={self.embeds}>"
 
-AVAILABLE_EXTENSIONS = ['cogs.dev',
-'cogs.errors',
-'cogs.admin',
-'cogs.autoreaction',
-'cogs.banbattle',
-'cogs.fun',
-'cogs.help',
-'cogs.mod',
-'cogs.owo',
-'cogs.utility',
-'cogs.votetracker',
-'cogs.messagetracking',
-'cogs.grinder',
-'cogs.automod',
-'cogs.giveaways',
-'cogs.donations',
-'cogs.dankmemer',
-'cogs.events',
-'cogs.imgen',
-'cogs.disboard'
+
+AVAILABLE_EXTENSIONS = [
+    'cogs.dev',
+    'cogs.errors',
+    'cogs.admin',
+    'cogs.autoreaction',
+    'cogs.banbattle',
+    'cogs.fun',
+    'cogs.help',
+    'cogs.mod',
+    'cogs.owo',
+    'cogs.utility',
+    'cogs.votetracker',
+    'cogs.messagetracking',
+    'cogs.grinder',
+    'cogs.automod',
+    'cogs.giveaways',
+    'cogs.donations',
+    'cogs.dankmemer',
+    'cogs.events',
+    'cogs.imgen',
+    'cogs.disboard'
 ]
 
 load_dotenv('credentials.env')
@@ -59,7 +61,7 @@ password = os.getenv('dbPASSWORD')
 amari_key = os.getenv('AMARI_KEY')
 
 
-intents = discord.Intents(guilds = True, members = True, presences = True, messages = True, reactions = True, emojis = True, invites = True, voice_states = True, message_content = True)
+intents = discord.Intents(guilds=True, members=True, presences=True, messages=True, reactions=True, emojis=True, invites=True, voice_states=True, message_content=True)
 allowed_mentions = discord.AllowedMentions(everyone=False, roles=False)
 
 
@@ -106,7 +108,7 @@ class dvvt(commands.Bot):
             needs_updating = True
         else:
             if isinstance(leaderboard, api.Leaderboard):
-                if round(time.time()) - data_last_updated > 8:
+                if round(time.time()) - data_last_updated > 30:
                     needs_updating = True
             elif type(leaderboard) == amari.exceptions.InvalidToken:
                 raise AmariDeveloperError(leaderboard)
@@ -119,7 +121,7 @@ class dvvt(commands.Bot):
         if needs_updating:
             try:
                 print('data was fetched')
-                leaderboard = await self.AmariClient.fetch_leaderboard(guild_id)
+                leaderboard = await self.AmariClient.fetch_full_leaderboard(guild_id)
             except amari.exceptions.NotFound as e:
                 self.amari_data[guild_id]['leaderboard'] = e
                 self.amari_data[guild_id]['last_updated'] = round(time.time())
@@ -364,7 +366,7 @@ CREATE TABLE IF NOT EXISTS rmpreference(member_id bigint PRIMARY KEY, rmtype int
 CREATE TABLE IF NOT EXISTS roleremove(member_id bigint PRIMARY KEY);
 CREATE TABLE IF NOT EXISTS rules(guild_id bigint, command text, role_id bigint, whitelist boolean);
 CREATE TABLE IF NOT EXISTS selfrolemessages(guild_id bigint, age bigint, gender bigint, location bigint, minigames bigint, event_pings bigint, dank_pings bigint, server_pings bigint, bot_roles bigint, random_color bigint, colors bigint, specialcolors bigint, boostping bigint, vipheist bigint);
-CREATE TABLE IF NOT EXISTS serverconfig(guild_id bigint, settings text, enabled boolean);
+CREATE TABLE IF NOT EXISTS serverconfig(guild_id bigint PRIMARY KEY NOT NULL, owodailylb bool NOT NULL DEFAULT FALSE, verification bool NOT NULL DEFAULT TRUE, censor bool NOT NULL DEFAULT FALSE, owoweeklylb bool NOT NULL DEFAULT TRUE, votelb bool NOT NULL DEFAULT TRUE, timeoutlog bool NOT NULL DEFAULT FALSE, statusrole bool NOT NULL DEFAULT FALSE, statusroleid bigint NOT NULL DEFAULT 0, statustext text NOT NULL DEFAULT 'lorem ipsum');
 CREATE TABLE IF NOT EXISTS stats(member_id bigint, remindertype integer, time bigint);
 CREATE TABLE IF NOT EXISTS stickmessages(guild_id bigint PRIMARY KEY, channel_id bigint, message_id bigint, type integer, message text);
 CREATE TABLE IF NOT EXISTS suggestion_response(suggestion_id integer, user_id bigint, response_id bigint, message_id bigint, message text);
@@ -433,6 +435,13 @@ CREATE SCHEMA IF NOT EXISTS donations""")
             if word.get('string') in string.lower():
                 return True
         return False
+
+    async def fetch_guild_settings(self, guild_id):
+        serverconfig = await self.db.fetchrow("SELECT * FROM serverconfig WHERE guild_id=$1", guild_id)
+        if serverconfig is None:
+            await self.db.execute("INSERT INTO serverconfig(guild_id) VALUES ($1)")
+            serverconfig = await self.db.fetchrow("SELECT * FROM serverconfig WHERE guild_id=$1", guild_id)
+        return ServerConfiguration(serverconfig)
 
     async def get_all_blacklisted_users(self):
         blacklist_dict = {}
