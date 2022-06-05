@@ -1,7 +1,9 @@
 from abc import ABC
 from discord.ext import menus
 
+from main import dvvt
 from utils.converters import BetterInt, BetterTimeConverter
+from utils.specialobjects import ServerConfiguration
 from .contests import Contests
 from .serverrule import ServerRule
 from .joining import Joining
@@ -15,6 +17,15 @@ from time import time
 import os
 
 verify_role = 911541857807384677
+
+
+def return_emoji(truefalse: bool):
+    if truefalse:
+        return "<:DVB_True:887589686808309791> "
+    else:
+        return "<:DVB_False:887589731515392000>"
+
+
 class verifyView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -47,29 +58,54 @@ class Blacklist(menus.ListPageSource):
         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return embed
 
+
+class UpdateStatusText(discord.ui.Modal):
+    def __init__(self, *args, **kwargs) -> None:
+        self.status_text: str = None
+        self.interaction: discord.Interaction = None
+        super().__init__(*args, **kwargs)
+
+        self.add_item(discord.ui.InputText(label="Status Text", required=True, style=discord.InputTextStyle.short, min_length = 1, max_length=128))
+
+    async def callback(self, interaction: discord.Interaction):
+        status_text = self.children[0].value
+        self.status_text = status_text.strip()
+        self.interaction = interaction
+        self.stop()
+
+
+class UpdateRoleID(discord.ui.Modal):
+    def __init__(self, *args, **kwargs) -> None:
+        self.role_id: int = None
+        self.interaction: discord.Interaction = None
+        super().__init__(*args, **kwargs)
+
+        self.add_item(discord.ui.InputText(label="ID of the role", required=True, placeholder="Only Role IDs are accepted.", style=discord.InputTextStyle.short))
+
+    async def callback(self, interaction: discord.Interaction):
+        role_id = self.children[0].value
+        role_id = role_id.strip()
+        try:
+            self.role_id = int(role_id)
+        except ValueError:
+            await interaction.response.send_message("You did not provide a valid Role ID.", ephemeral=True)
+        self.interaction = interaction
+        self.stop()
+
+
 class ServerConfigView(discord.ui.View):
-    def __init__(self, guild, owodaily, owoweekly, votelb, verification, timeoutlog, client):
-        self.client = client
-        self.guild = guild
+    def __init__(self, serverconfig: ServerConfiguration, client):
+        self.active = True
+        self.serverconfig: ServerConfiguration = serverconfig
+        self.client: dvvt = client
         self.response = None
         super().__init__(timeout=20)
 
-        async def handle_toggle(guild, settings) -> bool:
-            if (result := await self.client.db.fetchrow(
-                    "SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", guild.id,
-                    settings)) is not None:
-                result = result.get('enabled')
-            else:
-                await self.client.db.execute("INSERT INTO serverconfig VALUES ($1, $2, $3)", guild.id,
-                                                  settings, False)
-                result = False
-            if result:
-                result = False
-            else:
-                result = True
-            await self.client.db.execute(
-                "UPDATE serverconfig SET enabled=$1 WHERE guild_id=$2 AND settings=$3", result, guild.id, settings)
-            return result
+        def update_bool(truefalse):
+            if truefalse is None or truefalse is False:
+                return True
+            elif truefalse is True:
+                return False
 
         def get_style(arg):
             if arg is not True:
@@ -77,38 +113,123 @@ class ServerConfigView(discord.ui.View):
             else:
                 return discord.ButtonStyle.green
 
-        async def handle_button_interaction(button: discord.ui.Button, interaction: discord.Interaction):
-            if button.label == "OwO Daily Leaderboard":
-                new_setting = await handle_toggle(self.guild, "owodailylb")
-                button.style = get_style(new_setting)
-            elif button.label == "OwO Weekly Leaderboard":
-                new_setting = await handle_toggle(self.guild, "owoweeklylb")
-                button.style = get_style(new_setting)
-            elif button.label == "Vote Leaderboard":
-                new_setting = await handle_toggle(self.guild, "votelb")
-                button.style = get_style(new_setting)
-            elif button.label == "Verification":
-                new_setting = await handle_toggle(self.guild, "verification")
-                button.style = get_style(new_setting)
-            elif button.label == "Timeout Log":
-                new_setting = await handle_toggle(self.guild, "timeoutlog")
-                button.style = get_style(new_setting)
-            await interaction.response.edit(view=self)
+        class BaseToggleButton(discord.ui.Button):
+            def __init__(self, serverconfig: ServerConfiguration, client, *args, **kwargs):
+                self.serverconfig: ServerConfiguration = serverconfig
+                self.client: dvvt = client
+                super().__init__(*args, **kwargs)
 
-        class Button(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
-                await handle_button_interaction(self, interaction)
+                if self.custom_id == "owodailylb":
+                    self.serverconfig.owodailylb = update_bool(self.serverconfig.owodailylb)
+                    self.style = get_style(self.serverconfig.owodailylb)
+                elif self.custom_id == "verification":
+                    self.serverconfig.verification = update_bool(self.serverconfig.verification)
+                    self.style = get_style(self.serverconfig.verification)
+                elif self.custom_id == "censor":
+                    self.serverconfig.censor = update_bool(self.serverconfig.censor)
+                    self.style = get_style(self.serverconfig.censor)
+                elif self.custom_id == "owoweeklylb":
+                    self.serverconfig.owoweeklylb = update_bool(self.serverconfig.owoweeklylb)
+                    self.style = get_style(self.serverconfig.owoweeklylb)
+                elif self.custom_id == "votelb":
+                    self.serverconfig.votelb = update_bool(self.serverconfig.votelb)
+                    self.style = get_style(self.serverconfig.votelb)
+                elif self.custom_id == "timeoutlog":
+                    self.serverconfig.timeoutlog = update_bool(self.serverconfig.timeoutlog)
+                    self.style = get_style(self.serverconfig.timeoutlog)
+                elif self.custom_id == "statusroleenabled":
+                    self.serverconfig.statusroleenabled = update_bool(self.serverconfig.statusroleenabled)
+                    self.style = get_style(self.serverconfig.statusroleenabled)
+                await self.serverconfig.update(self.client)
+                await interaction.response.edit_message(view=self.view)
 
-        self.add_item(Button(label="OwO Daily Leaderboard", style=get_style(owodaily)))
-        self.add_item(Button(label="OwO Weekly Leaderboard", style=get_style(owoweekly)))
-        self.add_item(Button(label="Vote Leaderboard", style=get_style(votelb)))
-        self.add_item(Button(label="Verification", style=get_style(verification)))
-        self.add_item(Button(label="Timeout Log", style=get_style(timeoutlog)))
+        class ChangeRoleID(discord.ui.Button):
+            async def callback(self, interaction: discord.Interaction):
+                modal = UpdateRoleID(title="Change Status Reward's Role ID")
+                await interaction.response.send_modal(modal)
+                await modal.wait()
+                if modal.role_id is not None:
+                    role = interaction.guild.get_role(modal.role_id)
+                    if role is None:
+                        if modal.interaction.response.is_done():
+                            await modal.interaction.followup.send(f"A role with ID **{modal.role_id}** does not exist.", ephemeral=True)
+                        else:
+                            await modal.interaction.response.send_message(f"A role with ID **{modal.role_id}** does not exist.", ephemeral=True)
+                    else:
+                        self.view.serverconfig.statusroleid = modal.role_id
+                        await self.view.serverconfig.update(self.view.client)
+                        if modal.interaction.response.is_done():
+                            await modal.interaction.followup.send(f"Status role has been changed to **{role.name}**.", ephemeral=True)
+                        else:
+                            await modal.interaction.response.send_message(f"Status role has been changed to **{role.name}**.", ephemeral=True)
+                else:
+                    if modal.interaction.response.is_done():
+                        await modal.interaction.followup.send("You did not provide a valid Role ID.", ephemeral=True)
+                    else:
+                        await modal.interaction.response.send_message("You did not provide a valid Role ID.", ephemeral=True)
+
+        class StatusText(discord.ui.Button):
+            async def callback(self, interaction: discord.Interaction):
+                modal = UpdateStatusText(title="Change the status text")
+                await interaction.response.send_modal(modal)
+                await modal.wait()
+                self.view.serverconfig.statustext = modal.status_text
+                await self.view.serverconfig.update(self.view.client)
+                summary = f"Status text has been changed to `{modal.status_text}`."
+                if self.view.serverconfig.statusmatchtype.lower() == 'strict':
+                    summary += "Users will have to have statuses that exactly match that text."
+                elif self.view.serverconfig.statusmatchtype.lower() == 'contains':
+                    summary += "Users will have to have statuses that **contains** that text. They can add any other text to their status on top of *that text*."
+                if modal.interaction.response.is_done():
+                    await modal.interaction.followup.send(summary, ephemeral=True)
+                else:
+                    await modal.interaction.response.send_message(summary, ephemeral=True)
+
+        class ChangeStatusMatchType(discord.ui.Select):
+            def __init__(self, current):
+
+                options = []
+                for name, desc in [("Strict", "Users MUST have ONLY the text in their status."), ("Contains", "Users can have the text + any other text in their status.")]:
+                    options.append(discord.SelectOption(label=name, description=desc, default=(current == name)))
+                super().__init__(placeholder="Choose a type of match", min_values=1, max_values=1, options=options)
+
+            async def callback(self, interaction: discord.Interaction):
+                chosen = self.values[0]
+                self.view.serverconfig.statusmatchtype = chosen
+                await self.view.serverconfig.update(self.view.client)
+                summary = f"Status match type has been changed to `{chosen}`."
+                if chosen.lower() == 'strict':
+                    summary += "Users will have to have statuses that exactly match that text."
+                elif chosen.lower() == 'contains':
+                    summary += "Users will have to have statuses that **contains** that text. They can add any other text to their status on top of *that text*."
+                for op in self.options:
+                    if op.label == chosen:
+                        op.default = True
+                    else:
+                        op.default = False
+                await interaction.response.edit_message(view=self.view)
+                await interaction.followup.send(summary, ephemeral=True)
+                for op in self.options:
+                    if op.label == chosen:
+                        op.default = True
+
+        self.add_item(BaseToggleButton(self.serverconfig, self.client, label="OwO Daily Leaderboard", custom_id="owodailylb", style=get_style(self.serverconfig.owodailylb)))
+        self.add_item(BaseToggleButton(self.serverconfig, self.client, label="OwO Weekly Leaderboard", custom_id="owoweeklylb", style=get_style(self.serverconfig.owoweeklylb)))
+        self.add_item(BaseToggleButton(self.serverconfig, self.client, label="Vote Leaderboard", custom_id="votelb", style=get_style(self.serverconfig.votelb)))
+        self.add_item(BaseToggleButton(self.serverconfig, self.client, label="Verification", custom_id="verification", style=get_style(self.serverconfig.verification)))
+        self.add_item(BaseToggleButton(self.serverconfig, self.client, label="Censor", custom_id="censor", style=get_style(self.serverconfig.censor)))
+        self.add_item(BaseToggleButton(self.serverconfig, self.client, label="Timeout Log", custom_id="timeoutlog", style=get_style(self.serverconfig.timeoutlog)))
+        self.add_item(BaseToggleButton(self.serverconfig, self.client, label="Status Role", custom_id="statusroleenabled", style=get_style(self.serverconfig.statusroleenabled)))
+        self.add_item(ChangeRoleID(label="Status Reward -> Role ID (Click here to change)"))
+        self.add_item(StatusText(label="Status Text (Click here to change)"))
+        self.add_item(ChangeStatusMatchType(self.serverconfig.statusmatchtype))
 
     async def on_timeout(self) -> None:
         for b in self.children:
             b.disabled = True
         await self.response.edit(view=self)
+        self.active = False
         self.stop()
 
 
@@ -121,7 +242,7 @@ class Admin(Contests, BetterSelfroles, Joining, ServerRule, commands.Cog, name='
     Server Commands
     """
     def __init__(self, client):
-        self.client = client
+        self.client: dvvt = client
         self.queue = []
         self.selfroleviews_added = False
 
@@ -148,17 +269,19 @@ class Admin(Contests, BetterSelfroles, Joining, ServerRule, commands.Cog, name='
         Shows guild's server configuration settings and also allows you to allow/disable them.
         """
         embed = discord.Embed(title=f"Server Configuration Settings For {ctx.guild.name}", color=self.client.embed_color, timestamp=discord.utils.utcnow())
-        if (owodaily := await self.client.db.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "owodailylb")) is not None:
-            owodaily = owodaily.get('enabled')
-        if (owoweekly := await self.client.db.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "owoweeklylb")) is not None:
-            owoweekly = owoweekly.get('enabled')
-        if (votelb := await self.client.db.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "votelb")) is not None:
-            votelb = votelb.get('enabled')
-        if (verification := await self.client.db.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "verification")) is not None:
-            verification = verification.get('enabled')
-        if (timeoutlog := await self.client.db.fetchrow("SELECT enabled FROM serverconfig WHERE guild_id=$1 AND settings=$2", ctx.guild.id, "timeoutlog")) is not None:
-            timeoutlog = timeoutlog.get('enabled')
-        view = ServerConfigView(ctx.guild, owodaily, owoweekly, votelb, verification, timeoutlog, self.client)
+        serverconf = await self.client.fetch_guild_settings(ctx.guild.id)
+        view = ServerConfigView(serverconf, self.client)
+        embed = discord.Embed(title="Dank Vibes Server Configuration", color=self.client.embed_color)
+        embed.add_field(name=f"OwO Daily Leaderboard - {return_emoji(serverconf.owodailylb)}", value=f"Shows the OwO Daily Leaderboard when it resets.")
+        embed.add_field(name=f"OwO Weekly Leaderboard - {return_emoji(serverconf.owoweeklylb)}", value=f"Shows the OwO Weekly Leaderboard when it resets.")
+        embed.add_field(name=f"Verification - {return_emoji(serverconf.verification)}", value=f"Runs member verification related tasks.")
+        embed.add_field(name=f"Censor - {return_emoji(serverconf.votelb)}", value=f"Deletes blacklisted words.")
+        embed.add_field(name=f"Vote Leaderboard - {return_emoji(serverconf.votelb)}", value=f"Shows the Vote Leaderboard every 24 hours.")
+        embed.add_field(name=f"Timeout Log - {return_emoji(serverconf.timeoutlog)}", value=f"Logs timeouts in #mod-log.")
+        embed.add_field(name=f"Status Rewards - {return_emoji(serverconf.statusroleenabled)}", value=f"Whether status role rewards are enabled.")
+        embed.add_field(name=f"Status Text - `{serverconf.statustext}`", value=f"The text in a user's status to be able to obtain the role.", inline=False)
+        embed.add_field(name=f"Status Role - `{ctx.guild.get_role(serverconf.statusroleid) or serverconf.statusroleid}`", value=f"The ID of the role that can be obtained.", inline=False)
+        embed.add_field(name=f"Status Matching - `{serverconf.statusmatchtype}`", value=f"How should the status text be matched.\n`Strict`: Must be exactly the same.\n`Contains`: Must contain the text but any other text can be addded.", inline=False)
         embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon.url)
         view.response = await ctx.send(embed=embed, view=view)
         await view.wait()

@@ -77,7 +77,7 @@ class ServerConfig:
 
 
 class ServerConfiguration:
-    __slots__ = ('guild_id', 'owodailylb', 'verification', 'censor', 'owoweeklylb', 'votelb', 'timeoutlog', 'statusroleenabled', 'statusroleid', 'statustext')
+    __slots__ = ('guild_id', 'owodailylb', 'verification', 'censor', 'owoweeklylb', 'votelb', 'timeoutlog', 'statusroleenabled', 'statusroleid', 'statustext', 'statusmatchtype')
 
     def __init__(self, record):
         self.guild_id: int = record.get('guild_id')
@@ -90,11 +90,12 @@ class ServerConfiguration:
         self.statusroleenabled: bool = record.get('statusrole')
         self.statusroleid: int = record.get('statusroleid')
         self.statustext: int = record.get('statustext')
+        self.statusmatchtype: str = record.get('statusmatchtype')
 
     def __repr__(self) -> str:
-        return f"<ServerConfiguration guild_id={self.guild_id} owodailylb={self.owodailylb} verification={self.verification} censor={self.censor} owoweeklylb={self.owoweeklylb} votelb={self.votelb} timeoutlog={self.timeoutlog} statusroleenabled={self.statusroleenabled} statusroleid={self.statusroleid} statustext={self.statustext}>"
+        return f"<ServerConfiguration guild_id={self.guild_id} owodailylb={self.owodailylb} verification={self.verification} censor={self.censor} owoweeklylb={self.owoweeklylb} votelb={self.votelb} timeoutlog={self.timeoutlog} statusroleenabled={self.statusroleenabled} statusroleid={self.statusroleid} statustext={self.statustext} statusmatchtype={self.statusmatchtype}>"
     async def update(self, client):
-        await client.db.execute("UPDATE serverconfig SET owodailylb=$1, verification=$2, censor=$3, owoweeklylb=$4, votelb=$5, timeoutlog=$6, statusrole=$7, statusroleid=$8, statustext=$9 WHERE guild_id=$10",
-                                self.owodailylb, self.verification, self.censor, self.owoweeklylb, self.votelb, self.timeoutlog, self.statusroleenabled, self.statusroleid, self.statustext, self.guild_id)
+        await client.db.execute("UPDATE serverconfig SET owodailylb=$1, verification=$2, censor=$3, owoweeklylb=$4, votelb=$5, timeoutlog=$6, statusrole=$7, statusroleid=$8, statustext=$9, statusmatchtype=$10 WHERE guild_id=$11",
+                                self.owodailylb, self.verification, self.censor, self.owoweeklylb, self.votelb, self.timeoutlog, self.statusroleenabled, self.statusroleid, self.statustext, self.statusmatchtype, self.guild_id)
 
 MISSING: Any = _MissingSentinel()

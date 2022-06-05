@@ -439,7 +439,7 @@ CREATE SCHEMA IF NOT EXISTS donations""")
     async def fetch_guild_settings(self, guild_id):
         serverconfig = await self.db.fetchrow("SELECT * FROM serverconfig WHERE guild_id=$1", guild_id)
         if serverconfig is None:
-            await self.db.execute("INSERT INTO serverconfig(guild_id) VALUES ($1)")
+            await self.db.execute("INSERT INTO serverconfig(guild_id) VALUES ($1)", guild_id)
             serverconfig = await self.db.fetchrow("SELECT * FROM serverconfig WHERE guild_id=$1", guild_id)
         return ServerConfiguration(serverconfig)
 
