@@ -150,6 +150,8 @@ class snipe(commands.Cog):
         """
         if channel is None:
             channel = ctx.channel
+        if not channel.permissions_for(ctx.author).view_channel:
+            return await ctx.send("You can't view this channel.")
         if channel.id not in self.edited_messages:
             return await ctx.send("There's nothing to snipe here!")
         snipedata = self.edited_messages[channel.id]
