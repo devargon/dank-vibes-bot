@@ -91,7 +91,7 @@ class ServerConfiguration:
         self.mrob_ar: bool = record.get('mrob_ar')
         self.statusroleenabled: bool = record.get('statusrole')
         self.statusroleid: int = record.get('statusroleid')
-        self.statustext: int = record.get('statustext')
+        self.statustext: str = record.get('statustext')
         self.statusmatchtype: str = record.get('statusmatchtype')
 
     def __repr__(self) -> str:

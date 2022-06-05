@@ -68,6 +68,7 @@ allowed_mentions = discord.AllowedMentions(everyone=False, roles=False)
 class dvvt(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix = self.get_prefix, intents=intents, allowed_mentions=allowed_mentions, case_insensitive=True)
+        self.custom_status = False
         self.AmariClient = api.AmariClient(amari_key)
         self.prefixes = {}
         self.uptime = None
