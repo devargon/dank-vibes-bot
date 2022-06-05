@@ -44,13 +44,9 @@ class ChannelOnlyView(discord.ui.View):
         self.add_item(GoToChannel())
 
 
-class on_message(commands.Cog):
+class OnMessage(commands.Cog):
     def __init__(self, client):
         self.client: dvvt = client
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        pass
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):

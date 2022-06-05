@@ -1,5 +1,5 @@
-from .on_message import on_message
+from .events import Events
 
 
 def setup(client):
-    client.add_cog(on_message(client))
+    client.add_cog(Events(client))
