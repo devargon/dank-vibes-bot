@@ -243,7 +243,7 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
                                 f"{losemen} leaned too much on the chair.",
                                 f"{losemen} missed the ender pearl shot because {winmen} distracted them.",
                                 f"{losemen} put their socks in water in front of {winmen}.",
-                                f"{losemen} mined straight into the desert temple as he was distracted by {winmen}.",
+                                f"{losemen} mined straight into the desert temple as they were distracted by {winmen}.",
                                 f"{winmen} told {losemen} to mine straight down in Minecraft.",
                                 f"{losemen} tried to crack 90s in front of {winmen} and died."])
         if extra_info is None:
