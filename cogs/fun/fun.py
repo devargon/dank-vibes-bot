@@ -660,7 +660,7 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
         dumbfight_result, dumbfight_duration, snipe_res_result, snipe_res_duration = results.get('dumbfight_result'), results.get('dumbfight_rig_duration'), results.get('snipe_res_result'), results.get('snipe_res_duration')
         reply_emoji = "<:Reply:871808167011549244>"
         dumbfight_potion_emoji = "<:DVB_DumbfightPotion:944226900988026890>"
-        snipe_pill_emoji = "<:DVB_ComingSoon:974491397015089172>"
+        snipe_pill_emoji = "<:DVB_SnipePill:983244179213783050>"
         summary = []
         if dumbfight_result is not None:
             if dumbfight_duration is None:
