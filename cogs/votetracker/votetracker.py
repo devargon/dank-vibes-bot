@@ -71,6 +71,7 @@ class VoteSettingView(discord.ui.View):
 guildid = 871734809154707467 if os.getenv('state') == '1' else 595457764935991326  # testing server: 871734809154707467
 vdanksterid = 874897331252760586 if os.getenv('state') == '1' else 683884762997587998  # testing server role: 874897331252760586
 channelid = 874897401729671189 if os.getenv('state') == '1' else 754725833540894750  # 874897401729671189
+level_10_role = 905980110954455070 if os.getenv('state') == '1' else 758172014439301150
 
 
 class VoteTracker(commands.Cog, name='votetracker'):
@@ -84,6 +85,20 @@ class VoteTracker(commands.Cog, name='votetracker'):
         self.leaderboardloop.start()
         self.client.topgg_webhook = topgg.WebhookManager(client).dsl_webhook("/webhook", "ABCDE")
         self.client.topgg_webhook.run(5000)
+
+    async def add_item_count(self, item, user, amount):
+        does_inventory_exist = await self.client.db.fetchrow("SELECT * FROM inventories WHERE user_id = $1",
+                                                                  user.id)
+        useritem_query = "SELECT {} FROM inventories WHERE user_id = $1".format(item)
+        useritem = await self.client.db.fetchval(useritem_query, user.id)
+        if does_inventory_exist:
+            if useritem is None:
+                useritem_query = "UPDATE inventories SET {} = $2 WHERE user_id = $1 RETURNING {}".format(item, item)
+            else:
+                useritem_query = "UPDATE inventories SET {} = {} + $2 WHERE user_id = $1 RETURNING {}".format(item, item, item)
+        else:
+            useritem_query = "INSERT INTO inventories (user_id, {}) VALUES ($1, $2) RETURNING {}".format(item, item)
+        return await self.client.db.fetchval(useritem_query, user.id, amount, column=item)
 
     def cog_unload(self):
         self.reminders.stop()
@@ -227,6 +242,9 @@ class VoteTracker(commands.Cog, name='votetracker'):
                             rolesummary += f"\n**You've also gotten the role {role.mention} for voting {milestone[0]} times!** 🥳"
                         except discord.Forbidden:
                             pass
+            if discord.utils.get(member.roles, id=level_10_role) is not None and votecount % 2 == 0:
+                await self.add_item_count('snipepill', member, 1)
+                rolesummary += f"\nYou've gotten **1 <:DVB_SnipePill:983244179213783050> Snipe Pill** for every 2 votes!"
             embed = discord.Embed(title=f"Thank you for voting for {guild.name}, {member.name}!", description=f"You've voted **{plural(votecount):time}** so far.\n[You can vote for Dank Vibes on top.gg here!](https://top.gg/servers/595457764935991326/vote)", timestamp=discord.utils.utcnow(), color=self.client.embed_color)
             embed.set_author(name=f"{member.name}#{member.discriminator} ({member.id})", icon_url=member.display_avatar.url)
             embed.set_footer(text=guild.name, icon_url=guild.icon.url)
