@@ -101,3 +101,11 @@ class ServerConfiguration:
                                 self.owodailylb, self.verification, self.censor, self.owoweeklylb, self.votelb, self.timeoutlog, self.pls_ar, self.mrob_ar, self.statusroleenabled, self.statusroleid, self.statustext, self.statusmatchtype, self.guild_id)
 
 MISSING: Any = _MissingSentinel()
+
+
+class AwaitingAmariData:
+    pass
+
+
+class NoAmariData:
+    pass

@@ -7,6 +7,7 @@ from discord.ext import commands, tasks
 
 from utils.context import DVVTcontext
 from utils.format import human_join
+from .amari_task import AmariTask
 from .freezenick import Freezenick
 from .verification import Verification
 from .timedrole import timedrole
@@ -52,13 +53,14 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
 
 
-class AutoMod(reminders_, polledition, AutoStatus, timer, NameLogging, timedrole, TimedUnlock, Verification, Freezenick, CommandCleanup, WatchList, commands.Cog):
+class AutoMod(AmariTask, reminders_, polledition, AutoStatus, timer, NameLogging, timedrole, TimedUnlock, Verification, Freezenick, CommandCleanup, WatchList, commands.Cog):
     """
     This file is just a placeholder for the various automod functions/modules.
     """
     def __init__(self, client):
         self.client = client
         self.freezenick.start()
+        self.amari_task.start()
         self.check_verification.start()
         self.timedrole.start()
         self.unlock.start()

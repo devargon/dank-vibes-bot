@@ -21,6 +21,7 @@ from utils.buttons import confirm
 from utils.context import DVVTcontext
 from utils.converters import BetterBetterRoles, BetterMessageID
 from utils.menus import CustomMenu
+from utils.specialobjects import AwaitingAmariData, NoAmariData
 from utils.time import humanize_timedelta
 from utils.errors import ArgumentBaseError, AmariDataNotFound, AmariError, AmariDeveloperError
 from utils.format import plural, stringtime_duration, grammarformat, human_join, print_exception
@@ -622,34 +623,30 @@ class GiveawayView(discord.ui.View):
                                     await interaction.response.send_message(embed=discord.Embed(title="Please wait...", description=f"I'm communicating with AmariBot to know what your Level and/or Weekly XP is!").set_thumbnail(url="https://cdn.discordapp.com/avatars/339254240012664832/0cfec781df368dbce990d440d075a2d7.png?size=1024"), ephemeral=True)
                                     edit_final = True
                                     failembed = discord.Embed(title="An error occured when I tried talking to AmariBot.", color=discord.Color.red()).set_thumbnail(url="https://media.discordapp.net/attachments/656173754765934612/671895577986072576/Status.png")
-                                    try:
-                                        user_amari_details, last_updated = await self.client.fetch_amari_data(interaction.user.id, interaction.guild.id)
-                                    except AmariDeveloperError as e:
-                                        failembed.description = "**An error occured when trying to contact AmariBot. This error can only be solved by the developer.**\nThe developer has been notified and will try to solve this issue as soon as possible."
-                                        await interaction.response.edit_original_message(embed=failembed)
-                                        traceback_error = print_exception(e.exception, "Ignoring Exception in AmariDataGetter:")
-                                        traceback_embed = discord.Embed(title="Traceback", description=traceback_error, color=discord.Color.red())
-                                        return await self.client.error_channel().send(embed=traceback_embed)
-                                    except AmariError as e:
-                                        if e.exception == AmariDataNotFound:
-                                            failembed.description = "I could not find your AmariBot data."
-                                            failembed.set_footer(text=f"I will try again in {humanize_timedelta(seconds=e.retry_after)}.")
-                                        elif e.exception == amari.exceptions.NotFound:
-                                            failembed.description = f"I could not find **your** data or **{interaction.guild.name}**'s AmariBot data."
-                                            failembed.set_footer(text=f"I will try again in {humanize_timedelta(seconds=e.retry_after)}.")
-                                        elif e.exception == amari.exceptions.RatelimitException:
-                                            failembed.description = f"**{self.client.user.name} has been ratelimited from contacting AmariBot.**\nI will temporarily be unable to contact AmariBot until the ratelimit is over."
-                                            failembed.set_footer(text=f"I will try again in {humanize_timedelta(seconds=e.retry_after)}.")
-                                        elif e.exception == amari.exceptions.AmariServerError:
-                                            failembed.description = "**AmariBot is having problems.**\nI will temporarily be unable to contact AmariBot until their servers are back online."
-                                            failembed.set_footer(text=f"I will try again in {humanize_timedelta(seconds=e.retry_after)}.")
+                                    user_amari_details, last_updated, error = await self.client.fetch_amari_data(interaction.user.id, interaction.guild.id)
+                                    if error is not None or user_amari_details == AwaitingAmariData or user_amari_details == NoAmariData:
+                                        if not isinstance(user_amari_details, amari.objects.User):
+                                            if user_amari_details == NoAmariData or isinstance(error, amari.exceptions.NotFound):
+                                                failembed.description = f"I could not find your/{interaction.guild.name}'s AmariBot data. Is AmariBot in the server?"
+                                            elif user_amari_details == AwaitingAmariData:
+                                                failembed.description = f"I am still waiting for data from AmariBot. Please try again in a few seconds."
                                         else:
-                                            failembed.description = f"**There was an error while talking to AmariBot.**\n```{e.exception}\n```"
-                                            failembed.set_footer(text=f"I will try again in {humanize_timedelta(seconds=e.retry_after)}.")
-                                        return await interaction.response.edit_original_message(embed=failembed)
-                                    except Exception as e:
-                                        failembed.description = f"**An error occured while talking to AmariBot.**\n```{e}```"
-                                        return await interaction.response.edit_original_message(embed=failembed)
+                                            if user_amari_details is None:
+                                                if isinstance(error, amari.exceptions.InvalidToken):
+                                                    failembed.description = "**An error occured when trying to contact AmariBot. This error can only be solved by the developer.**\nThe developer has been notified and will try to solve this issue as soon as possible."
+                                                    traceback_error = print_exception(error, "Ignoring Exception in AmariDataGetter:")
+                                                    traceback_embed = discord.Embed(title="Traceback",
+                                                                                    description=traceback_error,
+                                                                                    color=discord.Color.red())
+                                                    await interaction.response.edit_original_message(embed=failembed)
+                                                    return await self.client.error_channel().send(embed=traceback_embed)
+                                                elif isinstance(error, amari.exceptions.RatelimitException):
+                                                    failembed.description = f"**{self.client.user.name} has been ratelimited from contacting AmariBot.**\nI will temporarily be unable to contact AmariBot until the ratelimit is over."
+                                                elif isinstance(error, amari.exceptions.AmariServerError):
+                                                    failembed.description = "**AmariBot is having problems.**\nI am unable to contact AmariBot until their servers are back online."
+                                                else:
+                                                    failembed.description = f"**There was an error while talking to AmariBot.**\n```{error}\n```"
+                                        await interaction.response.edit_original_message(embed=failembed)
                                     else:
                                         if user_amari_details is None:
                                             print('obj was none')
@@ -657,20 +654,21 @@ class GiveawayView(discord.ui.View):
                                             weekly_xp = 0
                                         else:
                                             level = user_amari_details.level
-                                            weekly_xp = user_amari_details.weeklyexp
+                                            weekly_xp = user_amari_details.weeklyexp or 0
                                         missing_amari_requirements = []
-                                        if giveaway_has_amarilevelreq and level < giveawayentry.amari_level:
+                                        if giveaway_has_amarilevelreq is True and level < giveawayentry.amari_level:
                                             missing_amari_requirements.append(f"<a:DVB_arrow:975663275306024971> Your current Level is **{level}**. __You need to be **Level {giveawayentry.amari_level}** to enter the giveaway.__")
 
-                                        if giveaway_has_amarilevelreq and weekly_xp < giveawayentry.amari_weekly_xp:
+                                        if giveaway_has_amarilevelreq is True and weekly_xp < giveawayentry.amari_weekly_xp:
                                             missing_amari_requirements.append(f"<a:DVB_arrow:975663275306024971> You currently have **{weekly_xp}** Weekly EXP. __You need another {giveawayentry.amari_weekly_xp - weekly_xp} Weekly EXP to join the giveaway__, which has a requirement of **{giveawayentry.amari_weekly_xp}** Weekly EXP.")
                                         if len(missing_amari_requirements) > 0:
                                             desc = '\n'.join(missing_amari_requirements)
-                                            return await interaction.edit_original_message(
-                                                embed=discord.Embed(title="Unable to join giveaway",
-                                                                    description=desc,
-                                                                    color=discord.Color.yellow())
-                                            )
+                                            em = discord.Embed(title="Unable to join giveaway", description=desc, color=discord.Color.yellow())
+                                            em.set_footer(text=f"Data was last updated {humanize_timedelta(seconds=round(time()) - last_updated)} ago.")
+                                            if error is not None:
+                                                em.add_field(name="Note", value=f"I detected an issue while trying to talk to AmariBot. This may affect your ability to join the giveaway.\n\nDetails: ```\n{error}```")
+
+                                            return await interaction.edit_original_message(embed=em)
                                         else:
                                             qualified = True
                                 for i in range(entry_dict['allowed_entries'] - entry_dict['entered_entries']):
@@ -763,41 +761,32 @@ class GiveawayView(discord.ui.View):
                         failembed = discord.Embed(title="An error occured when I tried talking to AmariBot.",
                                                   color=discord.Color.red()).set_thumbnail(
                             url="https://media.discordapp.net/attachments/656173754765934612/671895577986072576/Status.png")
-                        try:
-                            user_amari_details, last_updated = await self.client.fetch_amari_data(interaction.user.id,
-                                                                                                  interaction.guild.id)
-                        except AmariDeveloperError as e:
-                            failembed.description = "**An error occured when trying to contact AmariBot. This error can only be solved by the developer.**\nThe developer has been notified and will try to solve this issue as soon as possible."
-                            await interaction.edit_original_message(embed=failembed)
-                            traceback_error = print_exception(e.exception, "Ignoring Exception in AmariDataGetter:")
-                            traceback_embed = discord.Embed(title="Traceback", description=traceback_error,
-                                                            color=discord.Color.red())
-                            return await self.client.error_channel().send(embed=traceback_embed)
-                        except AmariError as e:
-                            if e.exception == AmariDataNotFound:
-                                failembed.description = "I could not find your AmariBot data."
-                                failembed.set_footer(
-                                    text=f"I will try again in {humanize_timedelta(seconds=e.retry_after)}.")
-                            elif e.exception == amari.exceptions.NotFound:
-                                failembed.description = f"I could not find **your** data or **{interaction.guild.name}**'s AmariBot data."
-                                failembed.set_footer(
-                                    text=f"I will try again in {humanize_timedelta(seconds=e.retry_after)}.")
-                            elif e.exception == amari.exceptions.RatelimitException:
-                                failembed.description = f"**{self.client.user.name} has been ratelimited from contacting AmariBot.**\nI will temporarily be unable to contact AmariBot until the ratelimit is over."
-                                failembed.set_footer(
-                                    text=f"I will try again in {humanize_timedelta(seconds=e.retry_after)}.")
-                            elif e.exception == amari.exceptions.AmariServerError:
-                                failembed.description = "**AmariBot is having problems.**\nI will temporarily be unable to contact AmariBot until their servers are back online."
-                                failembed.set_footer(
-                                    text=f"I will try again in {humanize_timedelta(seconds=e.retry_after)}.")
+                        user_amari_details, last_updated, error = await self.client.fetch_amari_data(
+                            interaction.user.id, interaction.guild.id)
+                        if error is not None or user_amari_details == AwaitingAmariData or user_amari_details == NoAmariData:
+                            if not isinstance(user_amari_details, amari.objects.User):
+                                if user_amari_details == NoAmariData or isinstance(error, amari.exceptions.NotFound):
+                                    failembed.description = f"I could not find your/{interaction.guild.name}'s AmariBot data. Is AmariBot in the server?"
+                                elif user_amari_details == AwaitingAmariData:
+                                    failembed.description = f"I am still waiting for data from AmariBot. Please try again in a few seconds."
                             else:
-                                failembed.description = f"**There was an error while talking to AmariBot.**\n```{e.exception}\n```"
-                                failembed.set_footer(
-                                    text=f"I will try again in {humanize_timedelta(seconds=e.retry_after)}.")
-                            return await interaction.response.edit_original_message(embed=failembed)
-                        except Exception as e:
-                            failembed.description = f"**An error occured while talking to AmariBot.**\n```{e}```"
-                            return await interaction.response.edit_original_message(embed=failembed)
+                                if user_amari_details is None:
+                                    if isinstance(error, amari.exceptions.InvalidToken):
+                                        failembed.description = "**An error occured when trying to contact AmariBot. This error can only be solved by the developer.**\nThe developer has been notified and will try to solve this issue as soon as possible."
+                                        traceback_error = print_exception(error,
+                                                                          "Ignoring Exception in AmariDataGetter:")
+                                        traceback_embed = discord.Embed(title="Traceback",
+                                                                        description=traceback_error,
+                                                                        color=discord.Color.red())
+                                        await interaction.response.edit_original_message(embed=failembed)
+                                        return await self.client.error_channel().send(embed=traceback_embed)
+                                    elif isinstance(error, amari.exceptions.RatelimitException):
+                                        failembed.description = f"**{self.client.user.name} has been ratelimited from contacting AmariBot.**\nI will temporarily be unable to contact AmariBot until the ratelimit is over."
+                                    elif isinstance(error, amari.exceptions.AmariServerError):
+                                        failembed.description = "**AmariBot is having problems.**\nI am unable to contact AmariBot until their servers are back online."
+                                    else:
+                                        failembed.description = f"**There was an error while talking to AmariBot.**\n```{error}\n```"
+                            await interaction.response.edit_original_message(embed=failembed)
                         else:
                             if user_amari_details is None:
                                 print('obj was none')
@@ -816,11 +805,15 @@ class GiveawayView(discord.ui.View):
                                     f"<a:DVB_arrow:975663275306024971> You currently have **{weekly_xp}** Weekly EXP. __You need another {giveawayentry.amari_weekly_xp - weekly_xp} Weekly EXP to join the giveaway__, which has a requirement of **{giveawayentry.amari_weekly_xp}** Weekly EXP.")
                             if len(missing_amari_requirements) > 0:
                                 desc = '\n'.join(missing_amari_requirements)
-                                return await interaction.edit_original_message(
-                                    embed=discord.Embed(title="Unable to join giveaway",
-                                                        description=desc,
-                                                        color=discord.Color.yellow()),
-                                )
+                                em = discord.Embed(title="Unable to join giveaway", description=desc,
+                                                   color=discord.Color.yellow())
+                                em.set_footer(
+                                    text=f"Data was last updated {humanize_timedelta(seconds=round(time()) - last_updated)} ago.")
+                                if error is not None:
+                                    em.add_field(name="Note",
+                                                 value=f"I detected an issue while trying to talk to AmariBot. This may affect your ability to join the giveaway.\n\nDetails: ```\n{error}```")
+
+                                return await interaction.edit_original_message(embed=em)
                             else:
                                 qualified = True
                     entries_to_insert.append((giveawaymessage.id, interaction.user.id, 0))
