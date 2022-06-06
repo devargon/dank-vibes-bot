@@ -1798,6 +1798,38 @@ class giveaways(commands.Cog):
         else:
             message = f"Congratulations, {grammarformat([winner.mention for winner in winners])}! You snagged away **{giveaway.title}** after a reroll!"
             await channel.send(message, view=GiveawayEndView(url=url))
+            winnerdmmsg = ['Generic',
+                           "Depending on the type of giveaway you won, you will either receive the prize within 24 hours or need to claim from the giveaway host. If you're unsure, feel free to check with a moderator from <#870880772985344010>."]
+            if channel.id in [701771740912549938]:
+                winnerdmmsg = ["Dank Memer",
+                               "As this is a flash giveaway, the prize will be given to you almost immediately. \nYou must accept the trade sent from the giveaway host, or you will be rerolled."]
+            if channel.id in [701771740912549938, 626704430468825089, 741254464303923220, 803039330310029362]:
+                winnerdmmsg = ["Dank Memer",
+                               "Please be patient and wait for a DM from `Atlas#2867` notifying you to claim your prize.\nKindly claim within **3** hours after receiving the Atlas DM, do **not** try to claim before the DM."]
+            elif channel.id in [847375661332299786]:
+                winnerdmmsg = ["Karuta",
+                               "Please claim your prize by DMing/pinging the host within **24** hours after winning."]
+            elif channel.id in [847830388713586738]:
+                winnerdmmsg = ["OwO Bot",
+                               "Please wait **24 hours** before contacting the host if you haven't received your prize."]
+            elif channel.id in [853113922272624650]:
+                winnerdmmsg = ["Pokemon",
+                               "Please wait **24 hours** before contacting the host if you haven't received your prize."]
+            elif channel.id in [650244237744537630]:
+                winnerdmmsg = ["Nitro",
+                               "You might need to claim the nitro from the sponsor/giveaway host within a limited time, depending on the giveaway's requirements."]
+            msg_link = f"https://discord.com/channels/{ctx.guild.id}/{giveaway.channel_id}/{giveaway.message_id}"
+            winembed = discord.Embed(title=f"You've won the __reroll__ for the {giveaway.title} giveaway!",
+                                     description=f"{winnerdmmsg[1]}\n\n[Link to giveaway]({msg_link})",
+                                     color=self.client.embed_color, timestamp=discord.utils.utcnow()).set_footer(
+                text=f"Giveaway type: {winnerdmmsg[0]}")
+            winembed.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url)
+            for winner in winners:
+                try:
+                    await winner.send(embed=winembed)
+                except:
+                    pass
+
 
 
     @checks.has_permissions_or_role(manage_roles=True)
