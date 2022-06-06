@@ -30,6 +30,9 @@ voteid = 874897331252760586 if os.getenv('state') == '1' else 683884762997587998
 elite_gw_channel = 871737332431216661 if os.getenv('state') == '1' else 741254464303923220
 level_100id = 943883531573157889 if os.getenv('state') == '1' else 717120742512394323
 gen_chat_id = 871737314831908974 if os.getenv('state') == '1' else 608498967474601995
+gwstaff_id = 983277305889697823  if os.getenv('state') == '1' else 627284965222121482
+gw_ping = 983284295579893790 if os.getenv('state') == '1' else 758175760909074432
+elitegw_ping = 895815588289581096 if os.getenv('state') == '1' else 758174135276142593
 
 
 DVB_True = "<:DVB_True:887589686808309791>"
@@ -1391,8 +1394,21 @@ class giveaways(commands.Cog):
                              required_role3: discord.Option(discord.Role, "A third required role to participate in the giveaway") = None,
                              amari_level: discord.Option(int, "An optional Amari Level requirement") = 0,
                              amari_weekly_xp: discord.Option(int, "An optional Amari Weekly XP requirement") = 0,
-                             channel: discord.Option(discord.TextChannel, "Specify another channel to start the giveaway there") = None
+                             channel: discord.Option(discord.TextChannel, "Specify another channel to start the giveaway there") = None,
+                             ping: discord.Option(str, "Ping a giveaway ping immediately after giveaway starts.", choices=['gang', 'elite']) = None,
                              ):
+        if ping is not None and discord.utils.get(ctx.author.roles, id=gwstaff_id) is None:
+            await ctx.respond(f"You can only use the `ping` option if you're a **<@&{gwstaff_id}>**.", ephemeral=True)
+            ping = None
+        # gang channel check
+        if os.getenv('state') == '0':
+            if ping == 'gang' and ctx.channel.id not in [701771740912549938, 626704430468825089, 630587061665267713, 616007729718231161]:
+                await ctx.respond(f"You cannot ping **Giveaway Ping** in this channel.", ephemeral=True)
+                ping = None
+                # elite channel check
+            elif ping == 'elite' and ctx.channel.id not in [701771740912549938, 741254464303923220, 630587061665267713, 616007729718231161]:
+                await ctx.respond(f"You cannot ping **Elite Giveaway Ping** in this channel.", ephemeral=True)
+                ping = None
         if channel is None:
             channel = ctx.channel
         channel = ctx.guild.get_channel(channel.id) # properly get the permissions
@@ -1509,7 +1525,10 @@ class giveaways(commands.Cog):
             descriptions.append(f"<:DVB_Amari:975377537658134528> **Amari Weekly XP**: {amari_weekly_xp}")
 
         if channel != ctx.channel:
-            descriptions.append(f"Giveaway will be started in another channel ({channel.mention})")
+            descriptions.append(f"\nGiveaway will be started in another channel ({channel.mention})")
+        role_to_ping_id = gw_ping if ping == "gang" else elitegw_ping
+        if ping is not None:
+            descriptions.append(f"<@&{role_to_ping_id}> will be pinged once the giveaway starts.\n**Make sure you're pinging the right role in the right channel.**")
         embed = discord.Embed(title="Are you ready to start this giveaway?", description="\n".join(descriptions), color=self.client.embed_color)
         confirmview = confirm(ctx, self.client, timeout=30)
         confirmview.response = await ctx.respond(embed=embed, view=confirmview, ephemeral=True)
@@ -1550,6 +1569,10 @@ class giveaways(commands.Cog):
                 else:
                     return
             await giveawaymessage.channel.send(embed=discord.Embed(description=message, color=self.client.embed_color).set_author(name=dis_name, icon_url=donor.display_avatar.url))
+        if ping is not None:
+            msg = "React to the giveaway above ♡" if ping == "gang" else "React to the Elite giveaway above ♡"
+            msg = await ctx.send(f"<@&{role_to_ping_id}>\n{msg}", allowed_mentions=discord.AllowedMentions(roles=True, everyone=False))
+            await msg.add_reaction('<:dv_wCyanHeartOwO:837700662192111617>')
         if channel != ctx.channel:
             await ctx.respond(f"{DVB_True} Giveaway started!", ephemeral=True)
         await asyncio.sleep(60.0)
@@ -1815,6 +1838,7 @@ class giveaways(commands.Cog):
     @giveaway.command(name='gw')
     async def giveaway_gw(self, ctx, *, text = None):
         await ctx.message.delete()
+        #gang channel check
         if os.getenv('state') == '0':
             if ctx.channel.id not in [701771740912549938, 626704430468825089, 630587061665267713, 616007729718231161]:
                 return await ctx.send("You cannot use this command in this channel! �")
@@ -1830,6 +1854,7 @@ class giveaways(commands.Cog):
     @giveaway.command(name='elite')
     async def giveaway_elite(self, ctx, *, text=None):
         await ctx.message.delete()
+        #elite channel check
         if os.getenv('state') == '0':
             if ctx.channel.id not in [701771740912549938, 741254464303923220, 630587061665267713, 616007729718231161]:
                 return await ctx.send("You cannot use this command in this channel! �")
