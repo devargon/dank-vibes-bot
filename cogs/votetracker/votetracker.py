@@ -70,7 +70,7 @@ class VoteSettingView(discord.ui.View):
 
 guildid = 871734809154707467 if os.getenv('state') == '1' else 595457764935991326  # testing server: 871734809154707467
 vdanksterid = 874897331252760586 if os.getenv('state') == '1' else 683884762997587998  # testing server role: 874897331252760586
-channelid = 874897401729671189 if os.getenv('state') == '1' else 754725833540894750  # 874897401729671189
+channelid = 977043022082613320 if os.getenv('state') == '1' else 754725833540894750  # 874897401729671189
 level_10_role = 905980110954455070 if os.getenv('state') == '1' else 758172014439301150
 
 
@@ -204,7 +204,8 @@ class VoteTracker(commands.Cog, name='votetracker'):
             guild = self.client.get_guild(guildid)
             member = guild.get_member(userid)
             if member is None or votingchannel is None or guild is None:
-                return f"Some variables not found:\nMember: {member}\nVoting Channel: {votingchannel}\nGuild: {guild}"
+                print(f"Some variables not found:\nMember: {member}\nVoting Channel: {votingchannel}\nGuild: {guild}")
+                return
             vdankster = guild.get_role(vdanksterid)
             rolesummary = "\u200b"  # If no roles are added, this will be in the section where the roles added are displayed.
             result = await self.client.db.fetchrow("SELECT count FROM votecount WHERE member_id = $1", userid)
@@ -244,7 +245,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
                             pass
             if discord.utils.get(member.roles, id=level_10_role) is not None and votecount % 2 == 0:
                 await self.add_item_count('snipepill', member, 1)
-                rolesummary += f"\nYou've gotten **1 <:DVB_SnipePill:983244179213783050> Snipe Pill** for every 2 votes!"
+                rolesummary += f"\nYou've received **1 <:DVB_SnipePill:983244179213783050> Snipe Pill** for every 2 votes!"
             embed = discord.Embed(title=f"Thank you for voting for {guild.name}, {member.name}!", description=f"You've voted **{plural(votecount):time}** so far.\n[You can vote for Dank Vibes on top.gg here!](https://top.gg/servers/595457764935991326/vote)", timestamp=discord.utils.utcnow(), color=self.client.embed_color)
             embed.set_author(name=f"{member.name}#{member.discriminator} ({member.id})", icon_url=member.display_avatar.url)
             embed.set_footer(text=guild.name, icon_url=guild.icon.url)
