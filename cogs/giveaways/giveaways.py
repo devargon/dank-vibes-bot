@@ -862,6 +862,37 @@ class GiveawayView(discord.ui.View):
             await interaction.response.send_message("Something", ephemeral=True)
             self.thankers.append(interaction.user)
 
+    @discord.ui.button(emoji=discord.PartialEmoji.from_str("<:DVB_users:913426937362391111>"), custom_id='dvb:giveawayusers')
+    async def showgiveawayusers(self, button: discord.ui.Button, interaction: discord.Interaction):
+        giveawaymessage = interaction.message
+        giveawayentry = await self.cog.fetch_giveaway(giveawaymessage.id)
+        if giveawayentry is None:
+            await interaction.response.send_message("This giveaway is invalid.", ephemeral=True)
+            return
+        users = await self.client.db.fetch("SELECT DISTINCT(user_id) FROM giveawayentrants WHERE message_id = $1", giveawaymessage.id)
+        users_formatted = []
+        for user in users:
+            user_id = user.get('user_id')
+            user = self.client.get_user(user_id)
+            if user is not None:
+                users_formatted.append(f"**{user}** {user.mention}")
+            else:
+                users_formatted.append(f"{user_id}")
+        page_embeds = []
+        if len(users_formatted) > 0:
+            chunks = [discord.utils.as_chunks(users_formatted, 25)]
+            for index, group in enumerate(chunks):
+                embed = discord.Embed(title="Giveaway Entrants", description='\n'.join(users_formatted), color=self.client.embed_color)
+                embed.set_footer(text=f"{len(users_formatted)} entrants | Page {index + 1}/{len(chunks)}")
+                page_embeds.append(embed)
+        else:
+            embed = discord.Embed(title="Giveaway Entrants", description="No one has joined this giveaway yet", color=self.client.embed_color)
+            embed.set_footer(text=f"{len(users_formatted)} entrants | Page 1/1")
+            page_embeds.append(embed)
+        paginator = pages.Paginator(pages=page_embeds)
+        await paginator.respond(interaction, ephemeral=True)
+
+
 
 class AddOrRemoveView(discord.ui.View):
     def __init__(self):
@@ -1503,6 +1534,8 @@ class giveaways(commands.Cog):
         giveawayrecord = await self.fetch_giveaway(giveawaymessage.id)
         embed = await self.format_giveaway_embed(giveawayrecord, None)
         g_view = GiveawayView(self.client, self)
+        # make button disabled if is hidecount
+        g_view.children[3].disabled = not show_count
         await giveawaymessage.edit(embed=embed, view=g_view)
         if donor is None:
             donor = ctx.author
