@@ -1567,10 +1567,11 @@ class giveaways(commands.Cog):
                 try:
                     await webh.send(message, username=dis_name, avatar_url=donor.display_avatar.url, allowed_mentions=discord.AllowedMentions(everyone=False, users=False, roles=False))
                 except:
-                    pass
+                    await giveawaymessage.channel.send(embed=discord.Embed(description=message, color=self.client.embed_color).set_author(name=dis_name, icon_url=donor.display_avatar.url))
                 else:
-                    return
-            await giveawaymessage.channel.send(embed=discord.Embed(description=message, color=self.client.embed_color).set_author(name=dis_name, icon_url=donor.display_avatar.url))
+                    pass
+            else:
+                await giveawaymessage.channel.send(embed=discord.Embed(description=message, color=self.client.embed_color).set_author(name=dis_name, icon_url=donor.display_avatar.url))
         if ping is not None:
             msg = "React to the giveaway above ♡" if ping == "gang" else "React to the Elite giveaway above ♡"
             msg = await channel.send(f"<@&{role_to_ping_id}>\n{msg}", allowed_mentions=discord.AllowedMentions(roles=True, everyone=False))
