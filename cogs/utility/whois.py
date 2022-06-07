@@ -170,12 +170,6 @@ class Whois(commands.Cog):
             description.append(f"• Joined server on: **{joined_at}**")
         if ctx.author.guild_permissions.kick_members and isinstance(user, discord.Member):
             description.append(f"• User is verified: {f'<:DVB_False:887589731515392000> They have **{humanize_timedelta(seconds=user.joined_at.timestamp()+86400-round(time()))}** to complete the Membership Screening.' if user.pending else '<:DVB_True:887589686808309791>'}")
-        infection = await self.client.db.fetchrow("SELECT infectioncase, member_id, infector, timeinfected FROM infections WHERE member_id = $1", user.id)
-        if infection:
-            infector = self.client.get_user(infection.get('infector')) or infection.get('infector')
-            description.append(f"• User is infected with Horn Knee Virus: 🤒 (Case **{infection.get('infectioncase')}**)\n<:Reply:871808167011549244> Infected by **{infector}** <t:{infection.get('timeinfected')}:R>")
-        else:
-            description.append("• User is infected with Horn Knee Virus: <:DVB_False:887589731515392000>")
         embed = discord.Embed(color=self.client.embed_color)
         embed.set_author(name="{}'s Information".format(user.name), icon_url=user.display_avatar.url)
         embed.set_thumbnail(url=user.display_avatar.url)
@@ -183,7 +177,14 @@ class Whois(commands.Cog):
             embed.add_field(name="Past nicknames", value="Retrieving their past nicknames...", inline=False)
             embed.add_field(name="Past usernames", value="Retrieving their past usernames...", inline=False)
         embed.description = '\n'.join(description)
-        uimessage = await ctx.send(embed=embed)
+        if isinstance(user, discord.Member):
+            sp_embed = spotify_embed(user)
+            at_embed = activity_embed(user)
+        else:
+            sp_embed = None
+            at_embed = None
+        wiview = ViewUserProfile(embed, sp_embed, at_embed)
+        uimessage = await ctx.send(embed=embed, view=wiview)
         if discord.utils.get(ctx.author.roles, id=608495204399448066) or discord.utils.get(ctx.author.roles, id=684591962094829569) or ctx.author.guild_permissions.manage_roles:
             past_nicknames = await self.client.db.fetch("SELECT * FROM nickname_changes WHERE member_id = $1 ORDER BY time DESC LIMIT 20", user.id)
             if past_nicknames:
@@ -203,10 +204,5 @@ class Whois(commands.Cog):
                     embed.set_field_at(-1, name="Usernames", value=f"{', '.join(names) if len(names) > 0 else 'No records; usernames are only tracked after 9 January 21.'}\n\nRun `names @{user}` to see their after usernames and the time they were changed.", inline=False)
             else:
                 embed.set_field_at(-1, name="Usernames", value=f"No records; usernames are only tracked after 9 January 2022.", inline=False)
-            if isinstance(user, discord.Member):
-                sp_embed = spotify_embed(user)
-                at_embed = activity_embed(user)
-            else:
-                sp_embed = None
-                at_embed = None
-            await uimessage.edit(embed=embed, view=ViewUserProfile(embed, sp_embed, at_embed))
+            wiview.base_embed = embed
+            await uimessage.edit(embed=embed)
