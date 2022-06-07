@@ -60,6 +60,20 @@ class Contest:
     def __repr__(self) -> str:
         return f"<ContestSubmission contest_id={self.contest_id} guild_id={self.guild_id} contest_starter_id={self.contest_starter_id} contest_channel_id={self.contest_channel_id} name={self.name} created={self.created} active={self.active} voting={self.voting}>"
 
+class DankItem:
+    __slots__ = ('name', 'idcode', 'type', 'image_url', 'trade_value', 'last_updated', 'overwrite', 'celeb_donation', 'celeb_overwrite_value')
+
+    def __init__(self, record):
+        self.name: str = record.get('name')
+        self.idcode: str = record.get('idcode')
+        self.type: str = record.get('type')
+        self.image_url: str = record.get('image_url')
+        self.trade_value: int = record.get('trade_value')
+        self.last_updated: int = record.get('last_updated')
+        self.overwrite: bool = record.get('overwrite')
+        self.celeb_donation: bool = record.get('celeb_donation')
+        self.celeb_overwrite_value: int = record.get('celeb_overwrite_value')
+
 class ServerConfig:
     __slots__ = ('guild_id', 'owodailylb', 'verification', 'censor', 'owoweeklylb', 'votelb', 'timeoutlog', 'statusroleenabled', 'statusroleid', 'statustext')
 
