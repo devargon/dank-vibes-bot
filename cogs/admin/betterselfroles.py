@@ -223,7 +223,8 @@ class BetterSelfroles(commands.Cog):
             print(emojis)
             descriptions = split_string_into_list(result.get('descriptions'), str, include_empty_elements=True)
             roles = []
-            guild = self.client.get_guild(result['guild_id'])
+            guild = self.client.get_guild(result.get('guild_id'))
+            print(f"guild obj: `{guild}`, type: {type(guild)}")
             if guild is not None:
                 role_ids = split_string_into_list(result.get('role_ids'), int)
                 print(f"list of role_ids: {role_ids}")
