@@ -447,7 +447,7 @@ class ItemGames(commands.Cog):
                         userconf = await self.client.db.fetchrow("SELECT * FROM userconfig WHERE user_id = $1", ctx.author.id)
                         if userconf is None or userconf.get('snipe_res_result') is None and await self.get_item_count(itemname, ctx.author) > 0:
                             remaining = await self.remove_item_count(itemname, ctx.author, 1)
-                            result = random.choice([True, False])
+                            result = random.choice([True, True, False])
                             if result is True:
                                 duration = random.randint(60, 300)
                             else:
