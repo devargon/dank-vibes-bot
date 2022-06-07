@@ -234,6 +234,7 @@ class BetterSelfroles(commands.Cog):
                 if len(descriptions) == 0:
                     descriptions = [None] * len(roles)
                 if emojis is not None and len(roles) != len(emojis):
+                    print(roles, emojis)
                     raise EmojisDoNotMatchRoles
                 elif descriptions is not None and len(roles) != len(descriptions):
                     raise DescriptionsDoNotMatchRoles
