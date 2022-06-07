@@ -116,7 +116,8 @@ class UpdateCelebItem(discord.ui.View):
             return True
 
     async def on_timeout(self):
-        self.disable_all_items()
+        for b in self.children:
+            b.disabled = True
         await self.response.edit(view=self)
 
 
