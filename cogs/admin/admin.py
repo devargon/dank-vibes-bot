@@ -94,7 +94,8 @@ class UpdateRoleID(discord.ui.Modal):
 
 
 class ServerConfigView(discord.ui.View):
-    def __init__(self, serverconfig: ServerConfiguration, client):
+    def __init__(self, ctx: DVVTcontext, serverconfig: ServerConfiguration, client):
+        self.ctx = ctx
         self.active = True
         self.serverconfig: ServerConfiguration = serverconfig
         self.client: dvvt = client
@@ -239,6 +240,15 @@ class ServerConfigView(discord.ui.View):
         self.add_item(StatusText(label="Status Text (Click here to change)"))
         self.add_item(ChangeStatusMatchType(self.serverconfig.statusmatchtype))
 
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.user.id != self.ctx.author.id:
+            await interaction.response.send_message(embed=discord.Embed(
+                description="Only the author (`{}`) can interact with this message.".format(self.ctx.author),
+                color=discord.Color.red()), ephemeral=True)
+            return False
+        else:
+            return True
+
     async def on_timeout(self) -> None:
         for b in self.children:
             b.disabled = True
@@ -284,7 +294,7 @@ class Admin(Contests, BetterSelfroles, Joining, ServerRule, commands.Cog, name='
         """
         embed = discord.Embed(title=f"Server Configuration Settings For {ctx.guild.name}", color=self.client.embed_color, timestamp=discord.utils.utcnow())
         serverconf = await self.client.fetch_guild_settings(ctx.guild.id)
-        view = ServerConfigView(serverconf, self.client)
+        view = ServerConfigView(ctx, serverconf, self.client)
         embed = discord.Embed(title="Dank Vibes Server Configuration", color=self.client.embed_color)
         embed.add_field(name=f"OwO Daily Leaderboard - {return_emoji(serverconf.owodailylb)}", value=f"Shows the OwO Daily Leaderboard when it resets.")
         embed.add_field(name=f"OwO Weekly Leaderboard - {return_emoji(serverconf.owoweeklylb)}", value=f"Shows the OwO Weekly Leaderboard when it resets.")
