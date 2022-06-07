@@ -225,6 +225,7 @@ class BetterSelfroles(commands.Cog):
             guild = self.client.get_guild(result['guild_id'])
             if guild is not None:
                 role_ids = split_string_into_list(result['role_ids'], int)
+                print(role_ids)
                 for role_id in role_ids:
                     role = guild.get_role(role_id)
                     if role is not None:
