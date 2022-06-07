@@ -657,7 +657,7 @@ class GiveawayView(discord.ui.View):
                                             weekly_xp = 0
                                         else:
                                             level = user_amari_details.level
-                                            weekly_xp = user_amari_details.weeklyexp or 0
+                                            weekly_xp = user_amari_details.weeklyexp if user_amari_details.weeklyexp is not None else 0
                                         missing_amari_requirements = []
                                         if giveaway_has_amarilevelreq is True and level < giveawayentry.amari_level:
                                             missing_amari_requirements.append(f"<a:DVB_arrow:975663275306024971> Your current Level is **{level}**. __You need to be **Level {giveawayentry.amari_level}** to enter the giveaway.__")
@@ -797,7 +797,7 @@ class GiveawayView(discord.ui.View):
                                 weekly_xp = 0
                             else:
                                 level = user_amari_details.level
-                                weekly_xp = user_amari_details.weeklyexp
+                                weekly_xp = user_amari_details.weeklyexp if user_amari_details.weeklyexp is not None else 0
                             missing_amari_requirements = []
                             if giveaway_has_amarilevelreq and level < giveawayentry.amari_level:
                                 missing_amari_requirements.append(
@@ -862,7 +862,7 @@ class GiveawayView(discord.ui.View):
     @discord.ui.button(emoji=discord.PartialEmoji.from_str("<:dv_textThankyouOwO:837712265469231166>"), style=discord.ButtonStyle.grey, custom_id='dvb:giveawaythankyou')
     async def thankyou(self, button: discord.ui.Button, interaction: discord.Interaction):
         if interaction.user not in self.thankers:
-            await interaction.response.send_message("Something", ephemeral=True)
+            await interaction.response.send_message("Thank you!", ephemeral=True)
             self.thankers.append(interaction.user)
 
     @discord.ui.button(emoji=discord.PartialEmoji.from_str("<:DVB_users:913426937362391111>"), custom_id='dvb:giveawayusers')
