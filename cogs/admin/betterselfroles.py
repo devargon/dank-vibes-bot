@@ -225,12 +225,14 @@ class BetterSelfroles(commands.Cog):
             roles = []
             guild = self.client.get_guild(result['guild_id'])
             if guild is not None:
-                role_ids = split_string_into_list(result['role_ids'], int)
-                print(role_ids)
+                role_ids = split_string_into_list(result.get('role_ids'), int)
+                print(f"list of role_ids: {role_ids}")
                 for role_id in role_ids:
                     role = guild.get_role(role_id)
                     if role is not None:
                         roles.append(role)
+                    else:
+                        print(f"`{role_id}` was none")
                 print(roles)
                 options = []
                 if len(emojis) == 0:
