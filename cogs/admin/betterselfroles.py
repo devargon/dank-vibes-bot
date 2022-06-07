@@ -233,6 +233,7 @@ class BetterSelfroles(commands.Cog):
                         roles.append(role)
                     else:
                         print(f"`{role_id}` was none")
+                        print(f"{type(role_id)}, {guild}")
                 print(roles)
                 options = []
                 if len(emojis) == 0:
