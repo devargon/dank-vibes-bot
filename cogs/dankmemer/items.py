@@ -354,7 +354,7 @@ class DankItems(commands.Cog):
                             embed.add_field(name="Details", value=field_details, inline=False)
                             embed.set_footer(text=f"Last updated")
                         embed.set_thumbnail(url=image_url)
-                        await ctx.send(embed=embed)
+                        await ctx.send("**Items shown in this command only applies to celeb donations.**\nFor normal donations, check `dv.items`.", embed=embed)
                         return
             else:
                 return await ctx.send(
@@ -399,7 +399,7 @@ class DankItems(commands.Cog):
                                                 disable_on_timeout=True, description=None))
                 paginator = pages.Paginator(pages=pagegroups, show_menu=True,
                                             menu_placeholder="Dank Memer Item Categories", )
-                await paginator.send(ctx)
+                await paginator.send(ctx, target_message="**Items shown in this command only applies to celeb donations.**\nFor normal donations, check `dv.items`.")
 
     @checks.has_permissions_or_role(manage_roles=True)
     @celebitems.command(name='set', aliases=['setvalue'])
@@ -434,7 +434,7 @@ class DankItems(commands.Cog):
 
     @checks.has_permissions_or_role(manage_roles=True)
     @checks.not_in_gen()
-    @commands.command(name='celebitemcalc', aliases=['celebic'])
+    @commands.command(name='celebitemcalc', aliases=['celebic', 'cic'])
     async def celeb_item_calc(self, ctx: DVVTcontext, *, arg: str = None):
         """
         **The values in this command only applies to donations for celebrations.**
@@ -512,6 +512,6 @@ class DankItems(commands.Cog):
                                         color=self.client.embed_color)
             if hidden_items > 0:
                 final_embed.set_footer(text=f"{hidden_items} items were hidden due to to many embeds sent.")
-            await ctx.send(embed=final_embed)
+            await ctx.send("**Items shown in this command only applies to celeb donations.**\nFor normal donations, check `dv.items`.", embed=final_embed)
         else:
-            await ctx.send(embed=discord.Embed(title="You didn't input any items.", color=discord.Color.red()))
+            await ctx.send("**Items shown in this command only applies to celeb donations.**\nFor normal donations, check `dv.items`.", embed=discord.Embed(title="You didn't input any items.", color=discord.Color.red()))
