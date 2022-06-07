@@ -222,6 +222,7 @@ class BetterSelfroles(commands.Cog):
             roles = []
             print(f"Guild ID: {result.get('guild_id')}")
             guild = self.client.get_guild(result.get('guild_id'))
+            print(len(self.client.guilds))
             print(f"guild obj: `{guild}`, type: {type(guild)}, name: {str(guild)}")
             if guild is not None:
                 role_ids = split_string_into_list(result.get('role_ids'), int)
