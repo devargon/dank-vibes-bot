@@ -212,9 +212,6 @@ class BetterSelfroles(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         await self.client.wait_until_ready()
-        self.client.add_view(DisplayVoteView(self.client))
-        self.client.add_view(VoteView(self.client, False))
-        self.client.add_view(HowToSubmit1())
         sr_results = await self.client.db.fetch("SELECT * FROM selfroles")
         for result in sr_results:
             placeholder_for_select = result.get('placeholder_for_select')
