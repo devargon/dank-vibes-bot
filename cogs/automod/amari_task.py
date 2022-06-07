@@ -12,6 +12,7 @@ def get_current_time():
 sample_data = {
     123456789: {
         'leaderboard': amari.Leaderboard,
+        'weekly_leaderboard': amari.Leaderboard,
         'last_update': 1234567,
         'error': None
     }
@@ -21,7 +22,7 @@ class AmariTask(commands.Cog):
     def __init__(self, client):
         self.client: dvvt = client
 
-    @tasks.loop(seconds=20)
+    @tasks.loop(seconds=30)
     async def amari_task(self):
         await self.client.wait_until_ready()
         for guild in self.client.guilds:
@@ -29,6 +30,7 @@ class AmariTask(commands.Cog):
             if data is None:
                 self.client.amari_data[guild.id] = {
                     'leaderboard': AwaitingAmariData,
+                    'weekly_leaderboard': AwaitingAmariData,
                     'last_update': get_current_time(),
                     'error': None,
                 }
@@ -37,7 +39,8 @@ class AmariTask(commands.Cog):
                     if get_current_time() - data['last_update'] < 300:
                         continue
             try:
-                leaderboard = await self.client.AmariClient.fetch_full_leaderboard(guild.id, weekly=True)
+                leaderboard = await self.client.AmariClient.fetch_full_leaderboard(guild.id, weekly=False)
+                weekly_leaderboard = await self.client.AmariClient.fetch_full_leaderboard(guild.id, weekly=True)
             except amari.exceptions.NotFound as e:
                 self.client.amari_data[guild.id]['leaderboard'] = NoAmariData
                 self.client.amari_data[guild.id]['last_update'] = get_current_time()
@@ -67,6 +70,7 @@ class AmariTask(commands.Cog):
                 continue
             else:
                 self.client.amari_data[guild.id]['leaderboard'] = leaderboard
+                self.client.amari_data[guild.id]['weekly_leaderboard'] = weekly_leaderboard
                 self.client.amari_data[guild.id]['last_update'] = get_current_time()
                 self.client.amari_data[guild.id]['error'] = None
                 continue

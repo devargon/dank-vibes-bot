@@ -91,16 +91,21 @@ class dvvt(commands.Bot):
         if guild_data is None:
             self.amari_data[guild_id] = {
                 'leaderboard': AwaitingAmariData,
+                'weekly_leaderboard': AwaitingAmariData,
                 'last_update': round(time.time()),
                 'error': None
             }
             guild_data = self.amari_data.get(guild_id)
 
         data_last_updated = guild_data.get('last_update', 0)
-        leaderboard = guild_data.get('leaderboard', None)
+        leaderboard: Union[objects.Leaderboard, None] = guild_data.get('leaderboard', None)
+        weekly_leaderboard = guild_data.get('weekly_leaderboard', None)
         error = guild_data.get('error', None)
         if type(leaderboard) == objects.Leaderboard:
-            leaderboard = leaderboard.get_user(user_id)
+            leaderboard: Union[objects.User, None] = leaderboard.get_user(user_id)
+            if type(weekly_leaderboard) == objects.Leaderboard:
+                weekly_leaderboard = weekly_leaderboard.get_user(user_id)
+                leaderboard.weeklyexp = weekly_leaderboard.exp
         return (leaderboard, data_last_updated, error)
 
 
