@@ -37,7 +37,7 @@ class AmariTask(commands.Cog):
                     if get_current_time() - data['last_update'] < 300:
                         continue
             try:
-                leaderboard = await self.client.AmariClient.fetch_full_leaderboard(guild.id)
+                leaderboard = await self.client.AmariClient.fetch_full_leaderboard(guild.id, weekly=True)
             except amari.exceptions.NotFound as e:
                 self.client.amari_data[guild.id]['leaderboard'] = NoAmariData
                 self.client.amari_data[guild.id]['last_update'] = get_current_time()
