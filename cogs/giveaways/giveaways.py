@@ -652,7 +652,7 @@ class GiveawayView(discord.ui.View):
                                         await interaction.response.edit_original_message(embed=failembed)
                                     else:
                                         if user_amari_details is None:
-                                            print('obj was none')
+                                            #print('obj was none')
                                             level = 0
                                             weekly_xp = 0
                                         else:
@@ -792,7 +792,7 @@ class GiveawayView(discord.ui.View):
                             await interaction.response.edit_original_message(embed=failembed)
                         else:
                             if user_amari_details is None:
-                                print('obj was none')
+                                #print('obj was none')
                                 level = 0
                                 weekly_xp = 0
                             else:

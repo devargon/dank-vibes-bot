@@ -68,7 +68,6 @@ class DisplayVoteView(discord.ui.View):
 
         class UpvotesButton(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
-                print("detected interaction")
                 submission = await self.view.client.db.fetchrow("SELECT * FROM contest_submissions WHERE msg_id = $1", interaction.message.id)
                 if submission is None:
                     return await interaction.response.send_message("There doesn't seem to be a valid contest submission associated with this message.", ephemeral=True)
@@ -223,7 +222,6 @@ class VoteView(discord.ui.View):
                 if contest is None:
                     return await interaction.followup.send("There doesn't seem to be a valid contest associated with this post.", ephemeral=True)
                 contest = Contest(contest)
-                print(contest)
                 if contest.voting is not True:
                     if contest.active is not True:
                         return await interaction.followup.send("This contest is over. Thank you for voting for your favorite entries!", ephemeral=True)
@@ -314,11 +312,8 @@ class SubmissionApproval(discord.ui.View):
                 submission = await self.view.client.db.fetchrow("SELECT * FROM contest_submissions WHERE contest_id = $1 AND submitter_id = $2 AND entry_id = $3", derived_contest_id, derived_submitter_id, derived_entry_id)
                 submission = ContestSubmission(submission)
                 get_reason_modal = DenyWithReason()
-                print('sending_modal')
                 await interaction.response.send_modal(get_reason_modal)
-                print('sussi')
                 await get_reason_modal.wait()
-                print('test')
                 if self.view.submission_handled is True:
                     return await interaction.response.send_message("This submission has been handled by another user.", ephemeral=True)
                 if get_reason_modal.reason is not None:
@@ -504,7 +499,6 @@ class Contests(commands.Cog):
                 if (existing_submission := await self.client.db.fetchrow("SELECT * FROM contest_submissions WHERE contest_id = $1 AND submitter_id = $2", contest_id, ctx.author.id)) is not None:
                     user_has_submitted_before = True
                     existing_submission = ContestSubmission(existing_submission)
-                    print(existing_submission)
                     confirmview = confirm(ctx, self.client, 30.0)
                     existing = False
                     if existing_submission.approved is True:

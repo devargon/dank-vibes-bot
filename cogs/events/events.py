@@ -17,7 +17,6 @@ class Events(StatusTasks, PresenceUpdate, OnMessage, commands.Cog):
 
     @tasks.loop(minutes=1)
     async def check_status(self):
-        print('checking status')
         await self.client.wait_until_ready()
         for guild in self.client.guilds:
             settings = await self.client.fetch_guild_settings(guild.id)
@@ -36,7 +35,6 @@ class Events(StatusTasks, PresenceUpdate, OnMessage, commands.Cog):
                     else:
                         status = activity.name
                     if role is None:
-                        print(f"invalid role id: {settings.statusroleid}")
                         return
 
                     if check_status(status, settings) is True:
@@ -70,7 +68,6 @@ class Events(StatusTasks, PresenceUpdate, OnMessage, commands.Cog):
                     else:
                         status = activity.name
                     if role is None:
-                        print(f"invalid role id: {settings.statusroleid}")
                         return
 
                     if check_status(status, settings) is True:

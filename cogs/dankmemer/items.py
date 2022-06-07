@@ -84,7 +84,6 @@ class UpdateValue(discord.ui.Select):
             modal = InputItemValue()
             await interaction.response.send_modal(modal)
             await modal.wait()
-            print("HMM")
             if modal.itemvalue is not None:
                 self.item.celeb_overwrite_value = modal.itemvalue
                 await self.client.db.execute("UPDATE dankitems SET celeb_overwrite_value = $1 WHERE idcode = $2", self.item.celeb_overwrite_value, self.item.idcode)
