@@ -395,7 +395,8 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             21: "postmeme",
             22: "marriage",
             23: "pet",
-            24: "adventure"
+            24: "adventure",
+            1001: "stream"
         }
 
 
