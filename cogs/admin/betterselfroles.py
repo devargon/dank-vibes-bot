@@ -211,54 +211,9 @@ class BetterSelfroles(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        await self.client.wait_until_ready()
-        sr_results = await self.client.db.fetch("SELECT * FROM selfroles")
-        for result in sr_results:
-            placeholder_for_select = result.get('placeholder_for_select')
-            role_ids = result.get('role_ids')
-            emojis = split_string_into_list(result.get('emojis'), str, include_empty_elements=True)
-            print(emojis)
-            descriptions = split_string_into_list(result.get('descriptions'), str, include_empty_elements=True)
-            roles = []
-            print(f"Guild ID: {result.get('guild_id')}")
-            guild = self.client.get_guild(595457764935991326)
-            print(len(self.client.guilds))
-            print(f"guild obj: `{guild}`, type: {type(guild)}, name: {str(guild)}")
-            if guild is not None:
-                role_ids = split_string_into_list(result.get('role_ids'), int)
-                print(f"list of role_ids: {role_ids}")
-                for role_id in role_ids:
-                    role = guild.get_role(role_id)
-                    if role is not None:
-                        roles.append(role)
-                    else:
-                        print(f"`{role_id}` was none")
-                        print(f"{type(role_id)}, {guild}")
-                print(roles)
-                options = []
-                if len(emojis) == 0:
-                    emojis = [None] * len(roles)
-                if len(descriptions) == 0:
-                    descriptions = [None] * len(roles)
-                if emojis is not None and len(roles) != len(emojis):
-                    raise EmojisDoNotMatchRoles
-                elif descriptions is not None and len(roles) != len(descriptions):
-                    raise DescriptionsDoNotMatchRoles
-                for role, emoji, description in zip(roles, emojis, descriptions):
-                    try:
-                        emoji = format_emoji(emoji)
-                    except EmojiNotFound:
-                        emoji = None
-                    op = discord.SelectOption(
-                        label=role.name,
-                        value=str(role.id),
-                        description=description if isinstance(description, str) and len(description) > 0 else None,
-                        emoji=emoji
-                    )
-                    options.append(op)
-                roleview = RoleSelectMenu(self.client)
-                roleview.add_item(RoleMenu(options, placeholder_for_select, roles, str(result.get('message_id')), result.get('max_gettable_role')))
-                self.client.add_view(roleview)
+        self.client.add_view(DisplayVoteView(self.client))
+        self.client.add_view(VoteView(self.client, False))
+        self.client.add_view(HowToSubmit1())
         selfrolemessages = await self.client.db.fetchrow("SELECT random_color,  boostping, vipheist FROM selfrolemessages WHERE guild_id = $1", 595457764935991326)
         categories = ['random_color', 'boostping', 'vipheist']
         if selfrolemessages is not None:
@@ -281,6 +236,48 @@ class BetterSelfroles(commands.Cog):
 
         self.selfroleviews_added = True
 
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name="stupid")
+    async def stupid(self, ctx):
+        sr_results = await self.client.db.fetch("SELECT * FROM selfroles")
+        for result in sr_results:
+            placeholder_for_select = result.get('placeholder_for_select')
+            role_ids = result.get('role_ids')
+            emojis = split_string_into_list(result.get('emojis'), str, include_empty_elements=True)
+            descriptions = split_string_into_list(result.get('descriptions'), str, include_empty_elements=True)
+            roles = []
+            guild = self.client.get_guild(result['guild_id'])
+            if guild is not None:
+                role_ids = split_string_into_list(result['role_ids'], int)
+                for role_id in role_ids:
+                    role = guild.get_role(role_id)
+                    if role is not None:
+                        roles.append(role)
+                options = []
+                if len(emojis) == 0:
+                    emojis = [None] * len(roles)
+                if len(descriptions) == 0:
+                    descriptions = [None] * len(roles)
+                if emojis is not None and len(roles) != len(emojis):
+                    raise EmojisDoNotMatchRoles
+                elif descriptions is not None and len(roles) != len(descriptions):
+                    raise DescriptionsDoNotMatchRoles
+                for role, emoji, description in zip(roles, emojis, descriptions):
+                    try:
+                        emoji = format_emoji(emoji)
+                    except EmojiNotFound:
+                        emoji = None
+                    op = discord.SelectOption(
+                        label=role.name,
+                        value=str(role.id),
+                        description=description if isinstance(description, str) and len(description) > 0 else None,
+                        emoji=emoji
+                    )
+                    options.append(op)
+                roleview = RoleSelectMenu(self.client)
+                roleview.add_item(RoleMenu(options, placeholder_for_select, roles, str(result.get('message_id')),
+                                           result.get('max_gettable_role')))
+                self.client.add_view(roleview)
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='fixselfroles')
