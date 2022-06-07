@@ -142,7 +142,7 @@ class dm(commands.Cog):
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("You need to mention a member to send a message!")
         if member == ctx.me:
-            return await ctx.send("Just DM me already... Do you not know how to DM me??\nhttps://cdn.nogra.me/core/how_to_dm_a_bot.gif")
+            return await ctx.send("Just DM me already... Do you not know how to DM me??\nhttps://cdn.nogra.xyz/core/how_to_dm_a_bot.gif")
         if member.bot:
             return await ctx.send(f"🤖 **{member}**: `Do not speak to me, you inferior human being.`")
         if not message:

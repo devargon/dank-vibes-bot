@@ -29,7 +29,7 @@ class confirm(discord.ui.View):
                 b.style = discord.ButtonStyle.grey
             b.disabled = True
         if isinstance(self.response, discord.Message):
-            await self.response.edit(view=self)
+            await interaction.response.edit_message(view=self)
         elif isinstance(self.response, discord.Interaction):
             await self.response.edit_original_message(view=self)
         self.stop()
@@ -42,7 +42,7 @@ class confirm(discord.ui.View):
                 b.style = discord.ButtonStyle.grey
             b.disabled = True
         if isinstance(self.response, discord.Message):
-            await self.response.edit(view=self)
+            await interaction.response.edit_message(view=self)
         elif isinstance(self.response, discord.Interaction):
             await self.response.edit_original_message(view=self)
         self.stop()

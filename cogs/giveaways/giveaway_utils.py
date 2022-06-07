@@ -29,7 +29,7 @@ class GiveawayConfig:
                 self.multi = None
 
 class GiveawayEntry:
-    __slots__ = ('guild_id', 'channel_id', 'message_id', 'title', 'host_id', 'donor_id', 'winners', 'required_roles', 'blacklisted_roles', 'bypass_roles', 'multi', 'duration', 'end_time', 'showentrantcount', 'active')
+    __slots__ = ('guild_id', 'channel_id', 'message_id', 'title', 'host_id', 'donor_id', 'winners', 'required_roles', 'blacklisted_roles', 'bypass_roles', 'multi', 'amari_level', 'amari_weekly_xp', 'duration', 'end_time', 'showentrantcount', 'active')
 
     def __init__(self, record: asyncpg.Record):
         self.guild_id: int = record.get('guild_id')
@@ -43,6 +43,8 @@ class GiveawayEntry:
         self.blacklisted_roles: list = split_string_into_list(record.get('blacklisted_roles'), return_type=int)
         self.bypass_roles: list = split_string_into_list(record.get('bypass_roles'), return_type=int)
         self.multi: dict = json.loads(record.get('multi'))
+        self.amari_level = record.get('amari_level')
+        self.amari_weekly_xp = record.get('amari_weekly_xp')
         self.duration: int = record.get('duration')
         self.end_time: int = record.get('end_time')
         self.showentrantcount: bool = record.get('showentrantcount')
@@ -50,4 +52,4 @@ class GiveawayEntry:
 
 
     def __repr__(self) -> str:
-        return f"<GiveawayEntry title={self.title} channel_id={self.channel_id} message_id={self.message_id} host_id={self.host_id} winners={self.winners} required_roles={self.required_roles} blacklisted_roles={self.blacklisted_roles} multi={self.multi} duration={self.duration} end_time={self.end_time} active={self.active}>"
+        return f"<GiveawayEntry title={self.title} channel_id={self.channel_id} message_id={self.message_id} host_id={self.host_id} winners={self.winners} required_roles={self.required_roles} blacklisted_roles={self.blacklisted_roles} multi={self.multi} amari_lvl={self.amari_level} amari_weekly_xp={self.amari_weekly_xp} duration={self.duration} end_time={self.end_time} active={self.active}>"

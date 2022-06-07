@@ -1,6 +1,8 @@
 {
+	"tomorrowtides.com": "It's a rickroll link.",
+	"thisworldthesedays.com": "It's a rickroll link.",
 	"gleam.io": "An online platform for hosting giveaways. Often used for self-promotion as it requires to subscribe/follow a user's social media channels to get more entries.",
-	"nitro": "If free nitro is being promoted, make sure Discord **has also written an article about it** on [support.discord.com](https://support.discord.com/). The SSL Certificate of the Discord website promoting nitro, if applicable, should be owned by the domain sni.cloudflaressl.com. \nIf there is a separate partner regarding the free nitro, ensure that their SSL Certificate is linked to their official website. (etc if Epic Games is promoting free Discord Nitro, their SSL Certificate should be linked to epicgames.com.) Often, websites will state what other domains they own, espcially Steam, so be careful when handling supicious links.",
-	"boost": "If free nitro is being promoted, make sure Discord **has also written an article about it** on [support.discord.com](https://support.discord.com/). The SSL Certificate of the Discord website promoting nitro, if applicable, should be owned by the domain discord.com. \nIf there is a separate partner regarding the free nitro, ensure that their SSL Certificate is linked to their official website. (etc if Epic Games is promoting free Discord Nitro, their SSL Certificate should be linked to epicgames.com.) Often, websites will state what other domains they own, espcially Steam, so be careful when handling supicious links.",
-	"steam": "If free items for Steam games are being promoted, the SSL Certificate of the linked website if applicable, should be owned by the domain of the official website. \nOften, websites will state what other domains they own, espcially Steam, so be careful when handling supicious links."
+	"nitro": "Unless endorsed by Discord, all free nitro links are illegitimate.",
+	"boost": "Unless endorsed by Discord, all free nitro links are illegitimate.",
+	"steam": "Unless endorsed by Steam, all free games/codes are illegitimate."
 }

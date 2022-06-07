@@ -8,12 +8,14 @@ import operator
 
 from thefuzz import process
 
+from cogs.dankmemer.lottery import Lottery
 from main import dvvt
 from utils import checks, buttons
 from datetime import datetime, timedelta
 from discord.ext import commands, tasks, pages
 from utils.format import print_exception, short_time, comma_number, stringnum_toint
 from utils.buttons import *
+from .items import DankItems
 import cogs.dankmemer
 
 
@@ -281,7 +283,7 @@ class dankreminders(discord.ui.View):
             elif str(emoji) == "🎮":
                 await self.client.db.execute("UPDATE remindersettings SET stream = $1 WHERE member_id = $2", numberswitcher(self.result.get('stream')), ctx.author.id)
                 if self.result.get('stream') != 1:
-                    await interaction.response.send_message("__**Important!**__\nThis uses the username shown in the Stream Manager embed from Dank Memer to identify who used the command. If there're people with the same name as you, the reminder may not work.\nhttps://cdn.nogra.me/screenshots/Discord_cAJOC18PCV.png", ephemeral=True)
+                    await interaction.response.send_message("__**Important!**__\nThis uses the username shown in the Stream Manager embed from Dank Memer to identify who used the command. If there're people with the same name as you, the reminder may not work.\nhttps://cdn.nogra.xyz/screenshots/Discord_cAJOC18PCV.png", ephemeral=True)
             elif str(emoji) == "<:DVB_Laptop:915524266940854303>":
                 await self.client.db.execute("UPDATE remindersettings SET postmeme = $1 WHERE member_id = $2", numberswitcher(self.result.get('postmeme')), ctx.author.id)
             elif str(emoji) == "<:DVB_Ring:928236453920669786>":
@@ -291,33 +293,36 @@ class dankreminders(discord.ui.View):
             elif str(emoji) == "<:DVB_pet:928236242469011476>":
                 await self.client.db.execute("UPDATE remindersettings SET pet = $1 WHERE member_id = $2", numberswitcher(self.result.get('pet')), ctx.author.id)
                 if self.result.get('pet') != 1:
-                    await interaction.response.send_message("__**Important!**__\nThis uses the username shown in your pet's embed from Dank Memer to identify who used the command. If there're people with the same username as you, the reminder may not work.\nhttps://cdn.nogra.me/screenshots/Discord_YVzJYHhFVa.png", ephemeral=True)
+                    await interaction.response.send_message("__**Important!**__\nThis uses the username shown in your pet's embed from Dank Memer to identify who used the command. If there're people with the same username as you, the reminder may not work.\nhttps://cdn.nogra.xyz/screenshots/Discord_YVzJYHhFVa.png", ephemeral=True)
             elif str(emoji) == "🚀":
                 await self.client.db.execute("UPDATE remindersettings SET adventure = $1 WHERE member_id = $2", numberswitcher(self.result.get('adventure')), ctx.author.id)
             self.result = await self.client.db.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
             self.children[reminderemojis.index(str(emoji))].style = discord.ButtonStyle.red if is_enabled[reminderemojis.index(str(emoji))] is True else discord.ButtonStyle.green
             is_enabled[reminderemojis.index(str(emoji))] = False if is_enabled[reminderemojis.index(str(emoji))] is True else True
-            await self.response.edit(view=self)
+            if interaction.response.is_done():
+                await interaction.followup.edit_message(message_id=interaction.message.id, view=self)
+            else:
+                await interaction.response.edit_message(view=self)
 
-        async def change_view2():
+        async def change_view2(interaction):
             self.clear_items()
             self.add_item(VoteSetting(self.client, self.context, self.response))
             self.add_item(somebutton(label="Toggle reminders", style=discord.ButtonStyle.grey))
-            await self.response.edit(view=self)
+            await interaction.response.edit_message(view=self)
 
-        async def change_view1():
+        async def change_view1(interaction):
             self.clear_items()
             for emoji in reminderemojis:
                 self.add_item(somebutton(emoji=discord.PartialEmoji.from_str(emoji), label=labels[reminderemojis.index(emoji)] + f"{'' if self.rmtimes[reminderemojis.index(emoji)] is None else f' - {short_time(self.rmtimes[reminderemojis.index(emoji)])}'}", style=discord.ButtonStyle.green if is_enabled[ reminderemojis.index(emoji)] else discord.ButtonStyle.red))
             self.add_item(somebutton(label="Change Reminder type", style=discord.ButtonStyle.grey))
-            await self.response.edit(view=self)
+            await interaction.response.edit_message(view=self)
 
         class somebutton(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
                 if self.label == "Change Reminder type":
-                    await change_view2()
+                    await change_view2(interaction)
                 elif self.label == "Toggle reminders":
-                    await change_view1()
+                    await change_view1(interaction)
                 else:
                     await update_message(self.emoji, interaction)
 
@@ -358,7 +363,7 @@ def get_shared_user_name(embed: discord.Embed):
                         return userdetail_field[:-len(ending_type)]
 
 
-class DankMemer(commands.Cog, name='dankmemer'):
+class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
     """
     Dank Memer utilities
     """
@@ -493,12 +498,13 @@ class DankMemer(commands.Cog, name='dankmemer'):
             if len(results) == 0:
                 return
             for result in results:
+                check_reminder_enabled_index = 20 if result.get('remindertype') == 1001 else result.get('remindertype')
                 config = await self.client.db.fetchrow("SELECT member_id, method, daily, weekly, monthly, lottery, work, redeem, hunt, fish, dig, crime, beg, search, snakeeyes, highlow, dailybox, horseshoe, pizza, drop, stream, postmeme, marriage, pet, adventure FROM remindersettings WHERE member_id = $1", result.get('member_id')) # get the user's configuration
                 if config is None: # no config means user doesn't even use this reminder system lol
                     pass
-                elif result.get('remindertype') not in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24]: # if the reminder type is not a valid one
+                elif result.get('remindertype') not in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24, 1001]: # if the reminder type is not a valid one
                     pass
-                elif config[result.get('remindertype')] != 1:  # activity specific reminder check
+                elif config[check_reminder_enabled_index] != 1:  # activity specific reminder check
                     pass
                 elif config.get('method') == 0:  # chose not to be reminded
                     pass
@@ -546,6 +552,8 @@ class DankMemer(commands.Cog, name='dankmemer'):
                             return "**interact with your pet** <:DVB_pet:928236242469011476>"
                         elif reminderaction == 24:
                             return "**continue your adventure** 🚀"
+                        elif reminderaction == 1001:
+                            return "**start a stream again** 🎮"
                     try:
                         member = self.client.get_guild(result.get('guild_id')).get_member(result.get('member_id'))
                         channel = self.client.get_channel(result.get('channel_id'))
@@ -909,7 +917,36 @@ class DankMemer(commands.Cog, name='dankmemer'):
                             if user_name == partner.name:
                                 timetomarriage = round(time.time()) + 54000
                                 await self.handle_reminder_entry(message.mentions[0].id, 22, message.channel.id, message.guild.id, timetomarriage, uses_name=True)
-                                return await message.add_reaction('<:DVB_Ring:928236453920669786>')
+                                await message.add_reaction('<:DVB_Ring:928236453920669786>')
+        """
+        Stream Start Reminder
+        """
+        if message.author.id == 270904126974590976:
+            if len(message.embeds) > 0:
+                embed = message.embeds[0]
+                if type(embed.footer.text) == str:
+                    if "Wait at least half an hour to stream again!" in embed.footer.text:
+                        if embed.author:
+                            if type(embed.author.name) == str:
+                                if embed.author.name.endswith('Stream Manager'):
+                                    def get_member():
+                                        for member in message.guild.members:
+                                            if embed.author.name == f"{member.name}'s Stream Manager":
+                                                return member
+                                        return None
+                                    member = get_member()
+                                    if member:
+                                        if embed.fields is not None:
+                                            field_value = embed.fields[1].value
+                                            try:
+                                                timestamp_of_ended_stream = int(field_value.split(':')[1])
+                                            except:
+                                                pass
+                                            else:
+                                                timestamp_to_restart_stream = timestamp_of_ended_stream + 1800
+                                                if timestamp_to_restart_stream > round(time.time()):
+                                                    await self.handle_reminder_entry(member.id, 1001, message.channel.id, message.guild.id, timestamp_to_restart_stream, uses_name=True)
+                                                    await message.add_reaction("<:DVB_True:887589686808309791>")
 
 
     @commands.Cog.listener()
@@ -1098,173 +1135,6 @@ class DankMemer(commands.Cog, name='dankmemer'):
                 nextpettime = round(time.time()) + 43200
                 await self.handle_reminder_entry(member.id, 23, aftermsg.channel.id, aftermsg.guild.id, nextpettime, uses_name=True)
                 await checkmark(beforemsg)
-
-    @commands.group(name="dankitems", aliases=['items'], invoke_without_command=True)
-    async def dankitems(self, ctx, item: str = None):
-        """
-        Fetches values of Dank Memer Items for donations. These values are based off trade values cached from Dank Memer, or manually set.
-        """
-        items = await self.client.db.fetch("SELECT * FROM dankitems ORDER BY name")
-        if item is not None:
-            item = item.lower()
-            result, ratio = process.extractOne(item, [i.get('idcode') for i in items])
-            if ratio > 65:
-                for checking_item in items:
-                    if checking_item.get('idcode') == result:
-                        name = checking_item.get('name')
-                        type = checking_item.get('type')
-                        image_url = checking_item.get('image_url')
-                        trade_value = checking_item.get('trade_value')
-                        last_updated = checking_item.get('last_updated')
-                        overwrite = checking_item.get('overwrite')
-                        embed = discord.Embed(
-                            title=name,
-                            description=f"```\n⏣ {comma_number(trade_value)}\n```",
-                            color=self.client.embed_color,
-                            timestamp=datetime.fromtimestamp(last_updated))
-                        field_details = f"**Type**: {type}\n**ID**: `{result}`"
-                        if overwrite is True:
-                            field_details += f"\nThis item's value is preset, not cached from Dank Memer."
-                        embed.add_field(name="Details", value=field_details, inline=False)
-                        embed.set_thumbnail(url=image_url)
-                        embed.set_footer(text=f"Last updated")
-                        await ctx.send(embed=embed)
-                        return
-            else:
-                return await ctx.send(f"<:DVB_False:887589731515392000> I could not find an item with the name `{item}`.")
-        else:
-            if len(items) == 0:
-                return await ctx.send("There are no cached Dank Memer items to display.")
-            else:
-                items_sorted = {}
-                for item in items:
-                    name = item.get('name')
-                    idcode = item.get('idcode')
-                    type = item.get('type')
-                    trade_value = item.get('trade_value')
-                    if type in items_sorted.keys():
-                        items_sorted[type].append((name, idcode, trade_value))
-                    else:
-                        items_sorted[type] = [(name, idcode, trade_value)]
-                all_items = []
-                pagegroups = []
-                for type, lst in items_sorted.items():
-                    embeds = []
-                    for chunked_list in discord.utils.as_chunks(lst, 10):
-                        desc = []
-                        for name, idcode, trade_value in chunked_list:
-                            all_items.append(f"**{name}** `{idcode}`: [⏣ {comma_number(trade_value)}](http://a/)")
-                            desc.append(f"**{name}** `{idcode}`: [⏣ {comma_number(trade_value)}](http://a/)")
-                        embed = discord.Embed(title=f"{type} Items", description="\n".join(desc), color=self.client.embed_color)
-                        embeds.append(embed)
-                    pagegroups.append(discord.ext.pages.PageGroup(pages=embeds, label=type, author_check=True, disable_on_timeout=True, description = None))
-                all_items_embeds = []
-                for all_items_chunked in discord.utils.as_chunks(all_items, 10):
-                    embed = discord.Embed(title="All Items", description="\n".join(all_items_chunked), color=self.client.embed_color)
-                    all_items_embeds.append(embed)
-                pagegroups.append(discord.ext.pages.PageGroup(pages=all_items_embeds, label="All Items", author_check=True, disable_on_timeout=True, description = None))
-                paginator = pages.Paginator(pages=pagegroups, show_menu=True, menu_placeholder="Dank Memer Item Categories", )
-                await paginator.send(ctx)
-
-    @checks.has_permissions_or_role(manage_roles=True)
-    @dankitems.command(name='set', aliases=['setvalue'])
-    async def dankitems_set_value(self, ctx, item: str, value: str):
-        """
-        Set the value of a Dank Memer item, overwriting it and preventing it from being updated automatically.
-        """
-        items = await self.client.db.fetch("SELECT * FROM dankitems")
-        if item is not None:
-            item = item.lower()
-            result, ratio = process.extractOne(item, [i.get('idcode') for i in items])
-            if ratio > 65:
-                for checking_item in items:
-                    if checking_item.get('idcode') == result:
-                        item = checking_item
-                    else:
-                        continue
-        if type(item) == str:
-            return await ctx.send(f"<:DVB_False:887589731515392000> I could not find an item with the name `{item}`.")
-        processed_value = stringnum_toint(value)
-        if processed_value is None:
-            if value.lower() == 'none':
-                processed_value = None
-            else:
-                return await ctx.send("<:DVB_False:887589731515392000> The value needs to be a number or `none`.")
-        if processed_value is not None:
-            await self.client.db.execute("UPDATE dankitems SET trade_value = $1, overwrite = True, last_updated = $2 WHERE idcode = $3", processed_value, round(time.time()), item.get('idcode'))
-            await ctx.send(f"<:DVB_True:887589686808309791> Set the value of **{item.get('name')}** to `⏣ {comma_number(processed_value)}`.\nTo reset it to Dank Memer trade values, use set `none` as the value.")
-        else:
-            await self.client.db.execute("UPDATE dankitems SET trade_value = 0, overwrite = False, last_updated = $1 WHERE idcode = $2", round(time.time()), item.get('idcode'))
-            await ctx.send(f"<:DVB_True:887589686808309791> Set the value of **{item.get('name')}** to `⏣ 0`.\nPlease run `pls shop {item.get('idcode')}` to update the {item.get('name')} to the current Dank Memer trade value.")
-
-
-
-
-
-    @checks.has_permissions_or_role(manage_roles=True)
-    @commands.command(name='itemcalc', aliases=['ic'])
-    async def item_calc(self, ctx: DVVTcontext, *, arg: str = None):
-        """
-        Calculates the total donation value of multiple Dank Memer items.
-        The items should be entered in this format: `[item count] <item name> [item count] <item name> ...`
-        Example: `dv.ic 1 pepe 3 tro`
-        """
-        if arg is None:
-            return await ctx.send("You need to provide a list of Dank items to calculate the total worth.")
-        all_dank_items = await self.client.db.fetch("SELECT * FROM dankitems")
-        item_names = []
-        item_codes = []
-        item_worth = []
-        for item in all_dank_items:
-            item_names.append(item.get('name'))
-            item_codes.append(item.get('idcode'))
-            item_worth.append(item.get('trade_value'))
-        items = []
-        errors = []
-        input_count = None
-        input_name = None
-        for item in arg.split(' '):
-            if item.isdigit():
-                input_count = int(item)
-            else:
-                item = item.lower()
-                result, ratio = process.extractOne(item, item_codes)
-                if ratio > 65:
-                    item_index = item_codes.index(result)
-                    if input_count is None:
-                        input_count = 1
-                    items.append((item_names[item_index], item_worth[item_index], input_count))
-                    input_count = None
-                else:
-                    errormsg = f"`{item}`: Unable to find item"
-                    if errormsg not in errors:
-                        errors.append(errormsg)
-        if len(errors) > 0:
-            errorembed = discord.Embed(title="Encountered some errors when parsing:", description="\n".join(errors)[:3999], color=self.client.embed_color)
-            await ctx.send(embed=errorembed)
-        if len(items) > 0:
-            total_worth = 0
-            item_calc_result = []
-            for item in items:
-                total_worth += item[1] * item[2]
-                item_calc_result.append(f"`{item[2]}` **{item[0]}**: `⏣ {comma_number(item[1] * item[2])}`")
-            item_summary_embed = discord.Embed(title=f"Detected items", description="", color=self.client.embed_color)
-            for item in item_calc_result:
-                if len(item_summary_embed.description) + len(item) > 2000:
-                    await ctx.send(embed=item_summary_embed)
-                    item_summary_embed = discord.Embed(title=f"Detected items", description="", color=self.client.embed_color)
-                item_summary_embed.description += f"{item}\n"
-            if len(item_summary_embed.description) > 0:
-                await ctx.send(embed=item_summary_embed)
-            final_embed = discord.Embed(title="Total worth:", description=f"```\n⏣ {comma_number(total_worth)}\n```", color=self.client.embed_color)
-            await ctx.send(embed=final_embed)
-        else:
-            await ctx.send(embed=discord.Embed(title="You didn't input any items.", color=discord.Color.red()))
-
-        
-
-
-
 
     @checks.not_in_gen()
     @commands.command(name="dankreminders", aliases=["dankrm", "drm"])

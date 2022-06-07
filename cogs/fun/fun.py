@@ -112,7 +112,7 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
                 f"**{member.name}** is currently muted in a dumbfight. Wait a few moments before using this command.")
         if member.bot:
             ctx.command.reset_cooldown(ctx)
-            return await ctx.send("Back off my kind. Don't dumbfight bots.")
+            return await ctx.send("This is a **dumb**fight. Use it on dumb people and back off the bots.")
         if member == ctx.me:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("How do you expect me to mute myself?")
@@ -243,7 +243,7 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
                                 f"{losemen} leaned too much on the chair.",
                                 f"{losemen} missed the ender pearl shot because {winmen} distracted them.",
                                 f"{losemen} put their socks in water in front of {winmen}.",
-                                f"{losemen} mined straight into the desert temple as he was distracted by {winmen}.",
+                                f"{losemen} mined straight into the desert temple as they were distracted by {winmen}.",
                                 f"{winmen} told {losemen} to mine straight down in Minecraft.",
                                 f"{losemen} tried to crack 90s in front of {winmen} and died."])
         if extra_info is None:
@@ -265,8 +265,13 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
             embed.set_footer(text=extra_info, icon_url="https://cdn.discordapp.com/emojis/944226900988026890.webp?size=96&quality=lossless")
         await ctx.send(embed=embed)
         await asyncio.sleep(duration)
-        if ctx.author.id == 476803570751242251:
-            await channel.set_permissions(muted, overwrite=None)
+        if muted.id == 781764427287756841:
+            error = f"discord.InvalidData: User {muted} ({muted.id}) received invalid data: \nSWYgeW91IHJlYWQgdGhpcyB5b3UncmUgc21hcnQ="
+            embed = discord.Embed(title="⚠️ Oh no!",
+                                  description="Something terribly went wrong when this command was used.\n\nThe developers have been notified and it'll fixed soon.",
+                                  color=discord.Color.red())
+            embed.add_field(name="Error", value=f"```prolog\n{error}\n```\n<#871737028105109574>")
+            await ctx.send(embed=embed)
         else:
             await channel.set_permissions(muted, overwrite=originaloverwrite)
         if muted.id in self.mutedusers[ctx.channel.id]:
@@ -596,152 +601,6 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
         if ctx.author.id in [650647680837484556, 321892489470410763]:
             ctx.command.reset_cooldown(ctx)
 
-    @commands.command(name="covidvbot", aliases=["covid", "infect"])
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def covidbot(self, ctx):
-        """
-        Fetches information about Horn Knee Virus.
-        """
-        class description(discord.ui.View):
-            def __init__(self, embed1, embed2, author):
-                self.embed1 = embed1
-                self.embed2 = embed2
-                self.response = None
-                self.author = author
-                super().__init__(timeout=None)
-
-            @discord.ui.button(label="Description of Horn Knee Virus", style=discord.ButtonStyle.green)
-            async def yes(self, button: discord.ui.Button, interaction: discord.Interaction):
-                await self.response.edit(embed=self.embed1)
-
-            @discord.ui.button(label="Horn Knee Virus Statistics", style=discord.ButtonStyle.red)
-            async def no(self, button: discord.ui.Button, interaction: discord.Interaction):
-                await self.response.edit(embed=self.embed2)
-
-            async def on_timeout(self) -> None:
-                self.returning_value = None
-                for b in self.children:
-                    b.disabled = True
-                await self.response.edit(view=self)
-
-            async def interaction_check(self, interaction: discord.Interaction) -> bool:
-                if interaction.user.id != self.author.id:
-                    await interaction.response.send_message("These buttons aren't for you!", ephemeral=True)
-                    return False
-                return True
-
-
-        covidinfectors = await self.client.db.fetch("SELECT * FROM infections ORDER BY infectioncase DESC")
-        um = f"The Horn Knee virus is an infectious disease that emerged in February 2022. It has **unprecedented side effects** that only Case 0 will know. The patient Zero is {self.client.get_user(515725341910892555)}.\nThe Horn Knee virus is spread through interacting with other humans, especially via mentioning someone.\nThere is no known cure for Horn Knee (obviously), but vaccines are being researched at the moment. The person leading the vaccine development is {self.client.get_user(542905463541465088)}."
-        embed1 = discord.Embed(title="Horn Knee Virus At a Glance", description=um, color=self.client.embed_color)
-        nooo = {}
-        for covidinfector in covidinfectors:
-            userid = covidinfector.get('infector')
-            if userid not in nooo:
-                nooo[userid] = 1
-            else:
-                nooo[userid] = nooo[userid] + 1
-        top_infectors = dict(sorted(nooo.items(), key=lambda x: x[1], reverse=True))
-        final = dict(islice(top_infectors.items(), 3))
-        superspreaders = []
-        for spreader in final:
-            member = self.client.get_user(spreader)
-            if member is None:
-                superspreaders.append(f"{spreader} - {final[spreader]}")
-            else:
-                name = f"{member} - {final[spreader]}"
-                superspreaders.append(name)
-        most_recent_infections = covidinfectors[:3]
-        user_ids = [covid.get('member_id') for covid in covidinfectors]
-        if ctx.author.id in user_ids:
-            is_infected = True
-        else:
-            is_infected = False
-        if is_infected:
-            govmessage = "😷 **You have been diagnosed with Horn Knee Virus.**\nPlease head to the nearest quarantine facility to facilitate your recovery."
-            users_infected_byauthor = [covid.get('member_id') for covid in covidinfectors if covid.get('infector') == ctx.author.id]
-            if len(users_infected_byauthor) > 0:
-                if len(users_infected_byauthor) <= 3:
-                    if len(users_infected_byauthor) == 1:
-                        infector_list = ["No one"]
-                    else:
-                        infector_list = [str(self.client.get_user(user)) for user in users_infected_byauthor if self.client.get_user(user) is not None]
-                    infector_list = ", ".join(infector_list)
-                else:
-                    infector_list = [str(self.client.get_user(user)) for user in users_infected_byauthor[:3] if self.client.get_user(user) is not None]
-                    infector_list = ", ".join(infector_list) + f"and {len(users_infected_byauthor) - 3} others"
-                embed1.add_field(name=f"People you infected ({len(users_infected_byauthor)})", value=f"{infector_list}", inline=True)
-            else:
-                embed1.add_field(name="People you infected", value="No one (yet)", inline=True)
-            embed1.add_field(name="Your Status", value=govmessage, inline=False)
-        else:
-            govmessage = "<:DVB_True:887589686808309791> **You do not have the Horn Knee Virus.**\nPlease stay safe."
-            embed1.add_field(name="Your Status", value=govmessage, inline=False)
-        embed2 = discord.Embed(title="Horn Knee Virus At a Glance", color=self.client.embed_color)
-        if is_infected:
-            govmessage = "😷 **You have been diagnosed with the Horn Knee Virus.**\nPlease head to the nearest quarantine facility to facilitate your recovery."
-            users_infected_byauthor = [covid.get('member_id') for covid in covidinfectors if covid.get('infector') == ctx.author.id]
-            if len(users_infected_byauthor) > 0:
-                if len(users_infected_byauthor) <= 3:
-                    infector_list = [str(self.client.get_user(user)) for user in users_infected_byauthor if self.client.get_user(user) is not None]
-                    infector_list = "**" + ", ".join(infector_list) + "**"
-                else:
-                    infector_list = [str(self.client.get_user(user)) for user in users_infected_byauthor[:3] if self.client.get_user(user) is not None]
-                    infector_list = "**" + ", ".join(infector_list) + f"** and {len(users_infected_byauthor) - 3} others"
-                embed2.add_field(name=f"People you infected ({len(users_infected_byauthor)})", value=f"{infector_list}", inline=True)
-            else:
-                embed2.add_field(name="People you infected", value="No one (yet)", inline=True)
-            infectiontrack = []
-            def get_infector(infected):
-                for covid in covidinfectors:
-                    if covid.get('infector') == self.client.user.id:
-                        return None
-                    elif covid.get('member_id') == infected:
-                        return covid.get('infector')
-                return None
-            infectiontrack.append(f"**{ctx.author}**")
-            infector = get_infector(ctx.author.id)
-            if infector is not None:
-                user = self.client.get_user(infector)
-                if user is not None:
-                    user = str(user)
-                else:
-                    user = str(infector)
-                infectiontrack.append(user)
-            while infector is not None:
-                infector = get_infector(infector)
-                if infector is not None:
-                    user = self.client.get_user(infector)
-                    if user is not None:
-                        infectiontrack.append(str(user))
-                    else:
-                        infectiontrack.append(f"{infector}")
-            if len(infectiontrack) > 0:
-                infector_list = " <- ".join(infectiontrack)
-                embed2.add_field(name="How you were infected", value=f"{infector_list}", inline=True)
-            embed2.add_field(name="Your Status", value=govmessage, inline=False)
-        else:
-            govmessage = "<:DVB_True:887589686808309791> **You do not have the Horn Knee Virus.**\nPlease stay safe."
-            embed2.add_field(name="Your Status", value=govmessage, inline=False)
-        embed2.add_field(name="Infected", value=f"{len(covidinfectors)}", inline=True)
-        embed2.add_field(name="Superspreaders", value='\n'.join(superspreaders), inline=True)
-        embed2.add_field(name="Deaths", value="0", inline=True)
-        embed2.add_field(name="Recovered", value="0", inline=True)
-        most_recent_infections_lst = []
-        for recent_infection in most_recent_infections:
-            member_id = recent_infection.get('member_id')
-            member = self.client.get_user(member_id)
-            #infector = self.client.get_user(recent_infection.get('infector')) or "Unknown"
-            if member is None:
-                member = f"{member_id} - <t:{recent_infection.get('timeinfected')}:R>"
-            else:
-                member = f"{member} - <t:{recent_infection.get('timeinfected')}:R>"
-            most_recent_infections_lst.append(member)
-        embed2.add_field(name="Most recent infections", value='\n'.join(most_recent_infections_lst), inline=True)
-        view = description(embed1, embed2, ctx.author)
-        view.response = await ctx.send(embed=embed1, view=view)
-        await view.wait()
-
     @checks.in_beta()
     @commands.cooldown(1, 10800, commands.BucketType.user)
     @commands.command(name="sus")
@@ -797,10 +656,11 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
 
     @commands.command(name="active", aliases=['activeitems'])
     async def active_items(self, ctx: DVVTcontext):
-        results = await self.client.db.fetchrow("SELECT dumbfight_rig_duration, dumbfight_result FROM userconfig WHERE user_id = $1", ctx.author.id)
-        dumbfight_result, dumbfight_duration = results.get('dumbfight_result'), results.get('dumbfight_rig_duration')
+        results = await self.client.db.fetchrow("SELECT dumbfight_rig_duration, dumbfight_result, snipe_res_result, snipe_res_duration FROM userconfig WHERE user_id = $1", ctx.author.id)
+        dumbfight_result, dumbfight_duration, snipe_res_result, snipe_res_duration = results.get('dumbfight_result'), results.get('dumbfight_rig_duration'), results.get('snipe_res_result'), results.get('snipe_res_duration')
         reply_emoji = "<:Reply:871808167011549244>"
         dumbfight_potion_emoji = "<:DVB_DumbfightPotion:944226900988026890>"
+        snipe_pill_emoji = "<:DVB_SnipePill:983244179213783050>"
         summary = []
         if dumbfight_result is not None:
             if dumbfight_duration is None:
@@ -808,6 +668,13 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
             result = "lose all dumbfights" if dumbfight_result is not True else "win all dumbfights"
             duration = f"{reply_emoji} Removed <t:{dumbfight_duration}:R>" if dumbfight_duration > 0 else ""
             text = f"{dumbfight_potion_emoji} **Dumbfight Potion**: {result}\n{duration}"
+            summary.append(text)
+        if snipe_res_result is not None:
+            if snipe_res_duration is None:
+                snipe_res_duration = 0
+            result = "get sniped messages OwOified" if snipe_res_result is not True else "hide all sniped messages"
+            duration = f"{reply_emoji} Removed <t:{snipe_res_duration}:R>" if snipe_res_duration > 0 else ""
+            text = f"{snipe_pill_emoji} **Snipe Pill**: {result}\n{duration}"
             summary.append(text)
         embed = discord.Embed(title="Active items", description="\n\n".join(summary), color=self.client.embed_color, timestamp=discord.utils.utcnow())
         await ctx.send(embed=embed)

@@ -1,6 +1,7 @@
 import os
 import time
 
+from main import dvvt
 from utils.time import humanize_timedelta
 
 import discord
@@ -11,13 +12,13 @@ modlog_channelID = 873616122388299837 if os.getenv('state') == '1' else 64002995
 
 class TimeoutTracking(commands.Cog):
     def __init__(self, client):
-        self.client = client
+        self.client: dvvt = client
 
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
         now = round(time.time())
         if before.communication_disabled_until != after.communication_disabled_until:
-            if await self.client.db.fetchval("SELECT enabled FROM serverconfig WHERE guild_id = $1 AND settings = $2", after.guild.id, 'timeoutlog') is True:
+            if (await self.client.fetch_guild_settings(before.guild.id)).timeoutlog is True:
                 guild = before.guild
                 offender, moderator, reason, com_disabled_until = None, None, None, None
                 if guild.get_member(self.client.user.id).guild_permissions.view_audit_log:

@@ -2,6 +2,7 @@ import itertools
 
 from discord.ext import menus, pages
 
+from main import dvvt
 from .lockdown import lockdown
 from .censor import censor
 from .browser_screenshot import BrowserScreenshot
@@ -168,7 +169,7 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
         self.op.add_argument('--disable-dev-shm-usage')
         #self.op.add_argument(' --user-agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36"')
         self.op.add_argument('--proxy-server=%s' % PROXY)
-        self.client = client
+        self.client: dvvt = client
         prefs = {"download_restrictions": 3}
         self.op.add_experimental_option("prefs", prefs)
 
@@ -490,7 +491,7 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
             if reason is not None:
                 msg += f"\nReason: {reason}"
             await ctx.send(msg)
-            if await self.client.db.fetchval("SELECT enabled FROM serverconfig WHERE guild_id = $1 AND settings = $2", ctx.guild.id, 'timeoutlog') is True:
+            if (await self.client.fetch_guild_settings(ctx.guild.id)).timeoutlog is True:
                 offender = member
                 moderator = ctx.author
                 reason = reason or "NA"
@@ -506,7 +507,7 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='ban', aliases=['b'])
-    async def ban(self, ctx, member: Union[discord.Member, discord.User] = None, *, reason: str = None):
+    async def ban(self, ctx: DVVTcontext, member: Union[discord.Member, discord.User] = None, *, reason: str = None):
         if member == ctx.me:
             return await ctx.send("bye im not banning myself")
         if member == ctx.author:
@@ -529,7 +530,7 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
             except Exception as e:
                 await ctx.send(f"I couldn't inform {member.mention} on why they were banned.")
         try:
-            await ctx.guild.ban(member, reason=auditreason)
+            await ctx.guild.ban(member, reason=auditreason, delete_message_days=0)
         except Exception as e:
             await ctx.send(f"An error occured while trying to ban the user.\n{e}")
         else:

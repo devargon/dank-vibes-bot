@@ -25,7 +25,7 @@ class start_or_end(discord.ui.View):
         self.returning_value = 0
         for b in self.children:
             b.disabled = True
-        await self.response.edit(view=self)
+        await interaction.response.edit_message(view=self)
         self.stop()
 
     @discord.ui.button(label="When lockdown ends", style=discord.ButtonStyle.primary, emoji="⏹")
@@ -33,7 +33,7 @@ class start_or_end(discord.ui.View):
         self.returning_value = 1
         for b in self.children:
             b.disabled = True
-        await self.response.edit(view=self)
+        await interaction.response.edit_message(view=self)
         self.stop()
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
@@ -110,7 +110,7 @@ class lockdown(commands.Cog):
         message = """
 This lockdown feature allows you to create separate groups of channels (or lockdown profiles) to be able to lock and unlock many channels at once. It also allows you to set a separate message for each profile. When quoting profile names, add quotations `""` for names with spaces, unless you're using `view`, `delete`, `start` and `end`.
 
-View the guide on https://docs.dvbot.nogra.me/commands/mod/tools/#lockdown-start .
+View the guide on https://docs.dvbot.nogra.xyz/commands/mod/tools/#lockdown-start .
         """
         await ctx.send(embed=discord.Embed(title=f"{self.client.user.name}'s Lockdown Guide", description=message, color=self.client.embed_color, timestamp=discord.utils.utcnow()))
 

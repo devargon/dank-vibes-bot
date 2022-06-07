@@ -1,3 +1,6 @@
+from typing import Any, Union
+
+
 class Reminder:
     __slots__ = ('time', 'name', 'channel', 'guild', 'message', 'id', 'user', 'created_time', 'repeat', 'interval')
 
@@ -12,3 +15,111 @@ class Reminder:
         self.name = record.get('name')
         self.repeat = record.get('repeat')
         self.interval = record.get('interval')
+
+class _MissingSentinel:
+    def __eq__(self, other):
+        return False
+
+    def __bool__(self):
+        return False
+
+    def __repr__(self):
+        return "..."
+
+
+class ContestSubmission:
+    __slots__ = ('contest_id', 'entry_id', 'submitter_id', 'media_link', 'second_media_link', 'approve_id', 'msg_id', 'approved')
+
+    def __init__(self, record):
+        self.contest_id: int = record.get('contest_id')
+        self.entry_id: int = record.get('entry_id')
+        self.submitter_id: int = record.get('submitter_id')
+        self.media_link: str = record.get('media_link')
+        self.second_media_link: str = record.get('second_media_link')
+        self.approve_id: Union[int, None] = record.get('approve_id')
+        self.msg_id: Union[int, None] = record.get('msg_id')
+        self.approved: bool = record.get('approved')
+
+    def __repr__(self):
+        return f"<ContestSubmission contest_id={self.contest_id} entry_id={self.entry_id} submitter_id={self.submitter_id} media_link={self.media_link} second_media_link={self.second_media_link} approve_id={self.approve_id} msg_id={self.msg_id} approved={self.approved}>"
+
+
+class Contest:
+    __slots__ = ('contest_id', 'guild_id', 'contest_starter_id', 'contest_channel_id', 'name', 'created', 'active', 'voting')
+
+    def __init__(self, record):
+        self.contest_id: int = record.get('contest_id')
+        self.guild_id: int = record.get('guild_id')
+        self.contest_starter_id: int = record.get('contest_starter_id')
+        self.contest_channel_id: int = record.get("contest_channel_id")
+        self.name: str = record.get('name')
+        self.created: int = record.get('created')
+        self.active: bool = record.get('active')
+        self.voting: bool = record.get('voting')
+
+    def __repr__(self) -> str:
+        return f"<ContestSubmission contest_id={self.contest_id} guild_id={self.guild_id} contest_starter_id={self.contest_starter_id} contest_channel_id={self.contest_channel_id} name={self.name} created={self.created} active={self.active} voting={self.voting}>"
+
+class DankItem:
+    __slots__ = ('name', 'idcode', 'type', 'image_url', 'trade_value', 'last_updated', 'overwrite', 'celeb_donation', 'celeb_overwrite_value')
+
+    def __init__(self, record):
+        self.name: str = record.get('name')
+        self.idcode: str = record.get('idcode')
+        self.type: str = record.get('type')
+        self.image_url: str = record.get('image_url')
+        self.trade_value: int = record.get('trade_value')
+        self.last_updated: int = record.get('last_updated')
+        self.overwrite: bool = record.get('overwrite')
+        self.celeb_donation: bool = record.get('celeb_donation')
+        self.celeb_overwrite_value: int = record.get('celeb_overwrite_value')
+
+class ServerConfig:
+    __slots__ = ('guild_id', 'owodailylb', 'verification', 'censor', 'owoweeklylb', 'votelb', 'timeoutlog', 'statusroleenabled', 'statusroleid', 'statustext')
+
+    def __init__(self, record):
+        self.guild_id: int = record.get('guild_id')
+        self.owodailylb: bool = record.get('owodailylb')
+        self.verification: bool = record.get('verification')
+        self.censor: bool = record.get('censor')
+        self.owoweeklylb: bool = record.get('owoweeklylb')
+        self.votelb: bool = record.get('votelb')
+        self.timeoutlog: bool = record.get('timeoutlog')
+        self.statusroleenabled: bool = record.get('statusrole')
+        self.statusroleid: int = record.get('statusroleid')
+        self.statustext: int = record.get('statustext')
+
+
+class ServerConfiguration:
+    __slots__ = ('guild_id', 'owodailylb', 'verification', 'censor', 'owoweeklylb', 'votelb', 'timeoutlog', 'pls_ar', 'mrob_ar', 'statusroleenabled', 'statusroleid', 'statustext', 'statusmatchtype')
+
+    def __init__(self, record):
+        self.guild_id: int = record.get('guild_id')
+        self.owodailylb: bool = record.get('owodailylb')
+        self.verification: bool = record.get('verification')
+        self.censor: bool = record.get('censor')
+        self.owoweeklylb: bool = record.get('owoweeklylb')
+        self.votelb: bool = record.get('votelb')
+        self.timeoutlog: bool = record.get('timeoutlog')
+        self.pls_ar: bool = record.get('pls_ar')
+        self.mrob_ar: bool = record.get('mrob_ar')
+        self.statusroleenabled: bool = record.get('statusrole')
+        self.statusroleid: int = record.get('statusroleid')
+        self.statustext: str = record.get('statustext')
+        self.statusmatchtype: str = record.get('statusmatchtype')
+
+    def __repr__(self) -> str:
+        return f"<ServerConfiguration guild_id={self.guild_id} owodailylb={self.owodailylb} verification={self.verification} censor={self.censor} owoweeklylb={self.owoweeklylb} votelb={self.votelb} timeoutlog={self.timeoutlog} pls_ar={self.pls_ar} mrob_ar={self.mrob_ar} statusroleenabled={self.statusroleenabled} statusroleid={self.statusroleid} statustext={self.statustext} statusmatchtype={self.statusmatchtype}>"
+    async def update(self, client):
+        await client.db.execute("UPDATE serverconfig SET owodailylb=$1, verification=$2, censor=$3, owoweeklylb=$4, votelb=$5, timeoutlog=$6, pls_ar=$7, mrob_ar=$8, statusrole=$9, statusroleid=$10, statustext=$11, statusmatchtype=$12 WHERE guild_id=$13",
+                                self.owodailylb, self.verification, self.censor, self.owoweeklylb, self.votelb, self.timeoutlog, self.pls_ar, self.mrob_ar, self.statusroleenabled, self.statusroleid, self.statustext, self.statusmatchtype, self.guild_id)
+
+MISSING: Any = _MissingSentinel()
+
+
+class AwaitingAmariData:
+    pass
+
+
+class NoAmariData:
+    pass

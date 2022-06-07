@@ -65,16 +65,16 @@ class toggledevmode(discord.ui.View):
         super().__init__(timeout=5.0)
         init_enabled = self.enabled
 
-        async def update_message():
+        async def update_message(interaction):
             self.enabled = False if self.enabled else True
             await self.client.db.execute("UPDATE devmode SET enabled = $1 WHERE user_id = $2", self.enabled, ctx.author.id)
             self.children[0].style = discord.ButtonStyle.green if self.enabled else discord.ButtonStyle.red
             self.children[0].label = "Dev Mode is enabled" if self.enabled else "Dev mode is disabled"
-            await self.response.edit(view=self)
+            await interaction.response.edit_message(view=self)
 
         class somebutton(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
-                await update_message()
+                await update_message(interaction)
         self.add_item(somebutton(emoji="🛠️", label = "Dev Mode is enabled" if init_enabled else "Dev mode is disabled", style=discord.ButtonStyle.green if init_enabled else discord.ButtonStyle.red))
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
@@ -1008,15 +1008,32 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
                 await msg.edit(content="All retrieved in `{}`ms".format(round((time.perf_counter() - now) * 1000)),
                                embed=embed)
 
+    @checks.dev()
     @github_cmd.command(name='pull', hidden=True)
     async def github_pull(self, ctx):
         """Runs `git pull`."""
-
-
         async with ctx.typing():
-            content = f"{getpass.getuser()}@{os.getcwd()} $ git pull\n\n"
+            content = f"{getpass.getuser()}@{os.getcwd()}:~$ git pull\n\n"
             msg = await ctx.send("```\n" + content + "\n```")
             now = time.perf_counter()
             stdout, stderr = await self.run_process('git pull')
             content += f"{stdout}\n\nCompleted in {round((time.perf_counter() - now) * 1000, 3)}ms"
             await msg.edit(content="```\n" + content + "\n```")
+
+    @checks.dev()
+    @commands.command(name="bash", hidden=True, aliases=['cmd', 'terminal'])
+    async def bash(self, ctx, *, cmd):
+        cmds = cmd.splitlines()
+        front_of_cmd = f"{getpass.getuser()}@{os.getcwd()}:~$ "
+        if len(cmds) > 0:
+            content = front_of_cmd
+            basemsg = await ctx.send(f"```\n{content}\n```")
+            now = time.perf_counter()
+            for index, cmd in enumerate(cmds):
+                content += f"{cmd}\n\n"
+                await basemsg.edit(content="```\n" + content + "\n```")
+                stdout, stderr = await self.run_process(cmd)
+                content += f"{stdout}\n\n{front_of_cmd}"
+                await basemsg.edit(content="```\n" + content + "\n```")
+            content += f"\n\nCompleted in {round((time.perf_counter() - now) * 1000, 3)}ms"
+            await basemsg.edit(content="```\n" + content + "\n```")

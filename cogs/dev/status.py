@@ -69,6 +69,7 @@ class Status(commands.Cog):
         else:
             game = None
         status = ctx.me.status
+        self.client.custom_status = True
         await self.client.change_presence(status=status, activity=game)
         if game:
             emoji = status_emojis[ctx.me.status]
@@ -95,6 +96,7 @@ class Status(commands.Cog):
         else:
             activity = None
         status = ctx.me.status
+        self.client.custom_status = True
         await self.client.change_presence(status=status, activity=activity)
         if activity:
             emoji = status_emojis[ctx.me.status]
@@ -121,6 +123,7 @@ class Status(commands.Cog):
         else:
             activity = None
         status = ctx.me.status
+        self.client.custom_status = True
         await self.client.change_presence(status=status, activity=activity)
         if activity:
             emoji = status_emojis[ctx.me.status]
@@ -147,6 +150,7 @@ class Status(commands.Cog):
         else:
             activity = None
         status = ctx.me.status
+        self.client.custom_status = True
         await self.client.change_presence(status=status, activity=activity)
         if competing:
             emoji = status_emojis[ctx.me.status]
@@ -174,6 +178,7 @@ class Status(commands.Cog):
         else:
             activity = None
         status = ctx.me.status
+        self.client.custom_status = True
         await self.client.change_presence(status=status, activity=activity)
         if streaming:
             await ctx.checkmark()
@@ -191,6 +196,7 @@ class Status(commands.Cog):
         """
         status = ctx.me.status
         activity = None
+        self.client.custom_status = False
         await self.client.change_presence(status=status, activity=activity)
         await ctx.checkmark()
         await ctx.send('Status cleared.', delete_after=5)

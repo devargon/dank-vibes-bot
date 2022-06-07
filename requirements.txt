@@ -4,7 +4,7 @@ asyncpg==0.24.0
 colorthief==0.2.1
 cycler==0.10.0
 discord-ext-menus @ git+https://github.com/Rapptz/discord-ext-menus@fbb8803779373357e274e1540b368365fd9d8074
-py-cord==2.0.0b7
+py-cord==2.0.0rc1
 alexflipnote.py @ git+https://github.com/argo0n/forked_alexflipnote.py
 expr.py==0.3.0
 thefuzz[speed]
@@ -43,4 +43,7 @@ pytz
 h2==3.2.0
 parsedatetime
 hyperframe==5.2.0
+owoify-py
 bugsnag
+amari.py
+python-Levenshtein

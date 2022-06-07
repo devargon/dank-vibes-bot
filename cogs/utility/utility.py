@@ -1,5 +1,7 @@
+from collections import Counter
+
 import discord
-from discord.ext import commands
+from discord.ext import commands, pages
 
 import re
 import os
@@ -18,6 +20,8 @@ from googletrans import Translator
 import googletrans, googletrans.models
 
 from utils import checks
+from utils.context import DVVTcontext
+from utils.specialobjects import ContestSubmission, Contest
 from utils.time import humanize_timedelta
 from utils.errors import ArgumentBaseError
 from utils.converters import BetterTimeConverter
@@ -33,6 +37,7 @@ from .autoreactor import Autoreaction
 from .highlights import Highlight
 from .reminders import reminders
 from .tracktimeouts import TimeoutTracking
+from .utility_slash import UtilitySlash
 
 
 LANGUAGES = {'af': 'afrikaans', 'sq': 'albanian', 'am': 'amharic', 'ar': 'arabic', 'hy': 'armenian', 'az': 'azerbaijani',
@@ -56,7 +61,7 @@ LANGUAGES = {'af': 'afrikaans', 'sq': 'albanian', 'am': 'amharic', 'ar': 'arabic
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
 
-class Utility(TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name='utility', metaclass=CompositeMetaClass):
+class Utility(UtilitySlash, TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name='utility', metaclass=CompositeMetaClass):
     """
     Utility commands
     """
@@ -147,7 +152,7 @@ class Utility(TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois,
         List all languages available for translation.
         """
         embed = discord.Embed(title="Languages", description="To specify a language when using the `translate` command, type the two letter codes of the language, with the exception of Chinese (Simplified) and Chinese (Traditional), which you must use the full code (`zh-cn`/`zh-tw`).\nAn example is: If I wanted to get the Hindi version of 永远不会放弃你, I will run `dv.translate hi 永远不会放弃你`, as `hi` stands for the Hindi language shown below.", color=self.client.embed_color, timestamp=discord.utils.utcnow())
-        embed.set_image(url="https://cdn.nogra.me/core/dvb_trans_languages.png")
+        embed.set_image(url="https://cdn.nogra.xyz/core/dvb_trans_languages.png")
         await ctx.send(embed=embed)
 
 
@@ -237,6 +242,7 @@ class Utility(TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois,
         embed.add_field(name='Versions', value=f"<:DVB_python:955345550193078272> `{py_version}`\n<:DVB_PyCord:937351289514385428> `{dpy_version}`", inline=True)
         embed.add_field(name='Developers', value=f"{str(self.client.get_user(650647680837484556))}", inline=True)
         embed.add_field(name="Special Thanks To", value=f"{str(await self.client.fetch_user(727498137232736306))}\n{self.client.get_user(321892489470410763)}\n{self.client.get_user(560251854399733760)}\n{self.client.get_user(886598864965103727)} <3", inline=True)
+        embed.add_field(name="Important Links", value="[Documentation](https://docs.dvbot.nogra.xyz)\n[Status Page](http://status.dvbot.nogra.xyz/)\n[Terms of Service](https://docs.dvbot.nogra.xyz/legal/terms/)\n[Privacy Policy](https://docs.dvbot.nogra.xyz/legal/privacy/)", inline=False)
         if ctx.author.id in [650647680837484556, 515725341910892555, 321892489470410763]:
             loop = asyncio.get_event_loop()
             def get_advanced_details():
@@ -427,7 +433,7 @@ class Utility(TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois,
                 self.response = None
                 super().__init__(timeout=None)
 
-                async def update_message(label, button):
+                async def update_message(label, button, interaction):
                     if label == 'Avatar':
                         new_embed = generate_embed(self.user, label, self.avatar_url)
                     elif label == 'Server Avatar':
@@ -441,7 +447,7 @@ class Utility(TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois,
                             b.style = discord.ButtonStyle.grey
                         if b == button:
                             b.style = discord.ButtonStyle.green
-                    await self.response.edit(embed=new_embed, view=self)
+                    await interaction.response.edit_message(embed=new_embed, view=self)
 
 
 
@@ -450,7 +456,7 @@ class Utility(TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois,
                         if self.style == discord.ButtonStyle.green:
                             return
                         else:
-                            await update_message(self.label, self)
+                            await update_message(self.label, self, interaction)
 
                 self.add_item(SelectButton(label='Avatar', style=discord.ButtonStyle.green if init_picked == 'av' else discord.ButtonStyle.grey))
                 self.add_item(SelectButton(label='Server Avatar', style=discord.ButtonStyle.green if init_picked == 'sav' else discord.ButtonStyle.grey, disabled=True if d_avatar_url is None else False))
@@ -507,5 +513,68 @@ class Utility(TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois,
         paginator = discord.ext.pages.Paginator(pages=pages)
         await paginator.send(ctx)
 
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name="contestleaderboard", aliases=['clb', 'contestlb'])
+    async def contest_leaderboard(self, ctx: DVVTcontext, contest_id: int):
+        """
+        See all the leaderboard and check out all the entries of a previous contest.
+        Cannot be used for ongoing contests.
+        """
+        if (contest := await self.client.db.fetchrow("SELECT * FROM contests WHERE contest_id = $1 AND guild_id = $2", contest_id, ctx.guild.id)) is None:
+            return await ctx.send(f"A contest with the ID `{contest_id}` doesn't exist in your server.")
+        contest = Contest(contest)
+        if contest.active is True or contest.voting is True:
+            return await ctx.send(f"**Contest #{contest_id} is still active!**\nWait until the contest is over before checking its leaderboard.")
+        submissions = await self.client.db.fetch("SELECT * FROM contest_submissions WHERE contest_id = $1", contest_id)
+        votes = await self.client.db.fetch("SELECT * FROM contest_votes WHERE contest_id = $1", contest_id)
+        votes = Counter(vote.get('entry_id') for vote in votes)
+        votes = dict(votes)
+        for submission in submissions:
+            if submission.get('entry_id') not in votes:
+                votes[submission.get('entry_id')] = 0
+        emojis = {
+            0: "🏆",
+            1: "🥈",
+            2: "🥉",
+        }
 
+        def get_submission(entryid) -> typing.Union[None, ContestSubmission]:
+            for submission_record in submissions:
+                if submission_record.get('entry_id') == entryid:
+                    return ContestSubmission(submission_record)
+            return None
 
+        index = 0
+        pag_pages = []
+
+        for entry_id, number_of_votes in dict(votes).items():
+
+            submission = get_submission(entry_id)
+            if submission is not None:
+                user = self.client.get_user(submission.submitter_id)
+                if user is None:
+                    user_proper = str(submission.submitter_id)
+                    user_id = str(submission.submitter_id)
+                    user_avatar = discord.Embed.Empty
+                else:
+                    user_proper = f"{user.name}#{user.discriminator}"
+                    user_id = f"{user.id}"
+                    user_avatar = user.display_avatar.with_size(128).url
+                emoji = emojis.get(index, "🏅") if index < 5 else ""
+                place = f"{ordinal(index + 1)} Place"
+                if index < 5:
+                    place_str = f"{emoji} {place} {emoji}"
+                else:
+                    place_str = ""
+                leaderboardembed = discord.Embed(title=place_str, color=self.client.embed_color)
+                leaderboardembed.add_field(name="Votes", value=str(number_of_votes), inline=True)
+                leaderboardembed.add_field(name="Link", value=f"[Link to submission](https://discord.com/channels/{ctx.guild.id}/{contest.contest_channel_id}/{submission.msg_id})", inline=True)
+                leaderboardembed.set_author(name=user_proper, icon_url=user_avatar)
+                leaderboardembed.set_image(url=submission.media_link)
+                leaderboardembed.set_footer(text=f"Submitter ID: {user_id}")
+                pag_pages.append(leaderboardembed)
+                index += 1
+            else:
+                pass
+        paginator = pages.Paginator(pag_pages, author_check=True)
+        await paginator.send(ctx)

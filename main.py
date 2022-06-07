@@ -1,8 +1,9 @@
 import os
 import time
-import typing
-from typing import Optional
+from typing import Optional, Union, Tuple
 
+import amari.exceptions
+from amari import api, objects
 import discord
 import asyncpg
 import datetime
@@ -11,6 +12,9 @@ from discord import client
 from discord.ext import commands, tasks
 from utils.context import DVVTcontext
 from utils.format import print_exception
+from utils.specialobjects import MISSING, ServerConfiguration, AwaitingAmariData, NoAmariData
+from utils.errors import AmariUserNotFound, AmariDataNotFound, AmariError, AmariDeveloperError
+
 
 class EditContent:
     __slots__ = ('content', 'embed', 'embeds')
@@ -23,26 +27,28 @@ class EditContent:
     def __repr__(self) -> str:
         return f"<EditContent content={self.content} embed={self.embed} embeds={self.embeds}>"
 
-AVAILABLE_EXTENSIONS = ['cogs.dev',
-'cogs.errors',
-'cogs.admin',
-'cogs.autoreaction',
-'cogs.banbattle',
-'cogs.fun',
-'cogs.help',
-'cogs.mod',
-'cogs.owo',
-'cogs.utility',
-'cogs.votetracker',
-'cogs.messagetracking',
-'cogs.grinder',
-'cogs.automod',
-'cogs.giveaways',
-'cogs.donations',
-'cogs.dankmemer',
-'cogs.infection',
-'cogs.imgen',
-'cogs.disboard'
+
+AVAILABLE_EXTENSIONS = [
+    'cogs.dev',
+    'cogs.errors',
+    'cogs.admin',
+    'cogs.autoreaction',
+    'cogs.banbattle',
+    'cogs.fun',
+    'cogs.help',
+    'cogs.mod',
+    'cogs.owo',
+    'cogs.utility',
+    'cogs.votetracker',
+    'cogs.messagetracking',
+    'cogs.grinder',
+    'cogs.automod',
+    'cogs.giveaways',
+    'cogs.donations',
+    'cogs.dankmemer',
+    'cogs.events',
+    'cogs.imgen',
+    'cogs.disboard'
 ]
 
 load_dotenv('credentials.env')
@@ -52,15 +58,19 @@ database = os.getenv('DATABASE')
 user = os.getenv('dbUSER')
 port = int(os.getenv('dbPORT'))
 password = os.getenv('dbPASSWORD')
+amari_key = os.getenv('AMARI_KEY')
 
 
-intents = discord.Intents(guilds = True, members = True, presences = True, messages = True, reactions = True, emojis = True, invites = True, voice_states = True, message_content = True)
+intents = discord.Intents(guilds=True, members=True, presences=True, messages=True, reactions=True, emojis=True, invites=True, voice_states=True, message_content=True)
 allowed_mentions = discord.AllowedMentions(everyone=False, roles=False)
 
 
 class dvvt(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix = self.get_prefix, intents=intents, allowed_mentions=allowed_mentions, case_insensitive=True)
+        self.custom_status = False
+        self.AmariClient = api.AmariClient(amari_key)
+        self.AmariLastUpdate = None
         self.prefixes = {}
         self.uptime = None
         self.embed_color: int = 0x57F0F0
@@ -72,9 +82,30 @@ class dvvt(commands.Bot):
         self.editqueue = []
         self.deleted_edit_messages = []
         self.webhooks = {}
-
+        self.amari_data = {}
         for ext in self.available_extensions:
             self.load_extension(ext)
+
+    async def fetch_amari_data(self, user_id: int, guild_id: int) -> Tuple[Union[None, api.User, AwaitingAmariData, NoAmariData], int, Exception]:
+        guild_data = self.amari_data.get(guild_id, None)
+        if guild_data is None:
+            self.amari_data[guild_id] = {
+                'leaderboard': AwaitingAmariData,
+                'last_update': round(time.time()),
+                'error': None
+            }
+            guild_data = self.amari_data.get(guild_id)
+
+        data_last_updated = guild_data.get('last_update', 0)
+        leaderboard = guild_data.get('leaderboard', None)
+        error = guild_data.get('error', None)
+        if type(leaderboard) == objects.Leaderboard:
+            leaderboard = leaderboard.get_user(user_id)
+        return (leaderboard, data_last_updated, error)
+
+
+
+
 
     @tasks.loop(seconds=0.1)
     async def edit_message(self):
@@ -83,7 +114,7 @@ class dvvt(commands.Bot):
         if len(self.editqueue) > 0:
             #print(self.editqueue)
             tup = self.editqueue.pop(0)
-            m: typing.Union[discord.PartialMessage, discord.Message] = tup[0]
+            m: Union[discord.PartialMessage, discord.Message] = tup[0]
             content: str = tup[1]
             embed: discord.Embed = tup[2]
             view: discord.ui.View = tup[3]
@@ -154,7 +185,7 @@ class dvvt(commands.Bot):
                 await self.get_channel(906433823594668052).send(embed=embed)
         await self.get_all_blacklisted_users()
 
-    def add_to_edit_queue(self, message: typing.Union[discord.PartialMessage, discord.Message] = 0, content: str = 0, embed: discord.Embed = 0, view: discord.ui.View = 0, index: Optional[int] = None):
+    def add_to_edit_queue(self, message: Union[discord.PartialMessage, discord.Message] = 0, content: str = 0, embed: discord.Embed = 0, view: discord.ui.View = 0, index: Optional[int] = None):
         tup = (message, content, embed, view)
         if index is None:
             self.editqueue.append(tup)
@@ -227,7 +258,9 @@ class dvvt(commands.Bot):
                       'donation_categories', 'christmaseventconfig', 'commandaccess', 'ignoredchristmascat',
                       'ignoredchristmaschan', 'perkremoval', 'commandlog', 'timedunlock', 'nickname_changes',
                       'name_changes', 'timers', 'infections', 'polls', 'pollvotes', 'highlight', 'highlight_ignores',
-                      'reminders', 'userconfig', 'modlog', 'watchlist', 'usercleanup', 'giveawayconfig']
+                      'reminders', 'userconfig', 'modlog', 'watchlist', 'usercleanup', 'giveawayconfig', 'contests',
+                      'contest_submissions', 'contest_votes']
+        print("Checking for missing databases")
         tables = await self.db.fetch("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';")
         tables = [i.get('table_name') for i in tables]
         if tables is None:
@@ -240,7 +273,7 @@ class dvvt(commands.Bot):
             if len(missing_tables) == 0:
                 pass
             else:
-                print("Some databases do not exist, creating them now...")
+                print(f"Some databases do not exist, creating them now...")
                 await self.db.execute("""CREATE TABLE IF NOT EXISTS autoreactions(guild_id bigint, trigger text, response text);
 CREATE TABLE IF NOT EXISTS autorole(member_id bigint, guild_id bigint, role_id bigint, time bigint);
 CREATE TABLE IF NOT EXISTS blacklist(incident_id serial, user_id bigint, moderator_id bigint, blacklist_active boolean, time_until bigint, reason text);
@@ -283,7 +316,7 @@ CREATE TABLE IF NOT EXISTS rmpreference(member_id bigint PRIMARY KEY, rmtype int
 CREATE TABLE IF NOT EXISTS roleremove(member_id bigint PRIMARY KEY);
 CREATE TABLE IF NOT EXISTS rules(guild_id bigint, command text, role_id bigint, whitelist boolean);
 CREATE TABLE IF NOT EXISTS selfrolemessages(guild_id bigint, age bigint, gender bigint, location bigint, minigames bigint, event_pings bigint, dank_pings bigint, server_pings bigint, bot_roles bigint, random_color bigint, colors bigint, specialcolors bigint, boostping bigint, vipheist bigint);
-CREATE TABLE IF NOT EXISTS serverconfig(guild_id bigint, settings text, enabled boolean);
+CREATE TABLE IF NOT EXISTS serverconfig(guild_id bigint PRIMARY KEY NOT NULL, owodailylb bool NOT NULL DEFAULT FALSE, verification bool NOT NULL DEFAULT TRUE, censor bool NOT NULL DEFAULT FALSE, owoweeklylb bool NOT NULL DEFAULT TRUE, votelb bool NOT NULL DEFAULT TRUE, timeoutlog bool NOT NULL DEFAULT FALSE, statusrole bool NOT NULL DEFAULT FALSE, statusroleid bigint NOT NULL DEFAULT 0, statustext text NOT NULL DEFAULT 'lorem ipsum');
 CREATE TABLE IF NOT EXISTS stats(member_id bigint, remindertype integer, time bigint);
 CREATE TABLE IF NOT EXISTS stickmessages(guild_id bigint PRIMARY KEY, channel_id bigint, message_id bigint, type integer, message text);
 CREATE TABLE IF NOT EXISTS suggestion_response(suggestion_id integer, user_id bigint, response_id bigint, message_id bigint, message text);
@@ -312,8 +345,12 @@ CREATE TABLE IF NOT EXISTS watchlist(guild_id bigint, user_id bigint, target_id 
 CREATE TABLE IF NOT EXISTS usercleanup(guild_id bigint, target_id bigint, channel_id bigint, message text);
 CREATE TABLE IF NOT EXISTS giveawayconfig(guild_id bigint not null, channel_id bigint not null constraint giveawayconfig_pkey primary key, bypass_roles text, blacklisted_roles text, multi jsonb);
 CREATE TABLE IF NOT EXISTS dankitems(name bigint, IDcode text PRIMARY KEY, image_url text, type text, trade_value int, last_updated bigint default 0, overwrite bool default false);
+CREATE TABLE IF NOT EXISTS contests(contest_id serial, guild_id bigint not null, contest_starter_id bigint not null, contest_channel_id bigint not null, name text, created bigint, active bool default true, voting bool default false);
+CREATE TABLE IF NOT EXISTS contest_submissions(contest_id int not null, entry_id int, submitter_id bigint not null, media_link text not null, second_media_link text, approve_id bigint, msg_id bigint, approved bool default false);
+CREATE TABLE IF NOT EXISTS contest_votes(contest_id int not null, entry_id int, user_id bigint not null);
+ 
 CREATE SCHEMA IF NOT EXISTS donations""")
-        print("Bot is ready")
+        print(f"{self.user} ({self.user.id}) is ready")
 
     @property
     def error_channel(self):
@@ -349,6 +386,13 @@ CREATE SCHEMA IF NOT EXISTS donations""")
                 return True
         return False
 
+    async def fetch_guild_settings(self, guild_id):
+        serverconfig = await self.db.fetchrow("SELECT * FROM serverconfig WHERE guild_id=$1", guild_id)
+        if serverconfig is None:
+            await self.db.execute("INSERT INTO serverconfig(guild_id) VALUES ($1)", guild_id)
+            serverconfig = await self.db.fetchrow("SELECT * FROM serverconfig WHERE guild_id=$1", guild_id)
+        return ServerConfiguration(serverconfig)
+
     async def get_all_blacklisted_users(self):
         blacklist_dict = {}
         blacklist = await self.db.fetch("SELECT * FROM blacklist WHERE blacklist_active = $1", True)
@@ -378,8 +422,9 @@ CREATE SCHEMA IF NOT EXISTS donations""")
 
     def starter(self):
         """starts the bot properly."""
+        start = time.time()
+        print(f"{round(time.time() - start, 2)}s | Starting Bot")
         try:
-            start = time.time()
             pool_pg = self.loop.run_until_complete(asyncpg.create_pool(
                 host=host,
                 port=port,
@@ -392,7 +437,7 @@ CREATE SCHEMA IF NOT EXISTS donations""")
         else:
             self.uptime = discord.utils.utcnow()
             self.db = pool_pg
-            print(f"Connected to the database ({round(time.time() - start, 2)})s")
+            print(f"{round(time.time() - start, 2)}s | Connected to the database")
             self.loop.create_task(self.after_ready())
             self.loop.create_task(self.load_maintenance_data())
             self.loop.create_task(self.get_all_blacklisted_users())

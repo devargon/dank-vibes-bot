@@ -11,6 +11,20 @@ import aiohttp
 from utils.errors import ArgumentBaseError
 from typing import Optional, Union
 
+def durationdisplay(seconds):
+    seconds = round(seconds)
+    time = []
+    if seconds < 60:
+        time.append("0")
+        time.append(str(seconds))
+        return ":".join(time)
+    minutes = math.trunc(seconds / 60)
+    if minutes < 60:
+        seconds = seconds - minutes * 60
+        time.append(str(minutes))
+        time.append("0" + str(seconds) if seconds < 10 else str(seconds))
+    return ":".join(time)
+
 class plural:
     """
     Auto corrects text to show plural or singular depending on the size number.
@@ -232,7 +246,7 @@ def split_string_into_list(string, return_type: Literal[str, int], delimiter=','
 
 
 def stringnum_toint(string:str):
-    allowedsymbols=["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "m", "k", 'e', '.', '-', ',']
+    allowedsymbols = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "m", "k", 'e', '.', '-', ',']
     string = string.lower()
     for character in list(string):
         if character not in allowedsymbols:

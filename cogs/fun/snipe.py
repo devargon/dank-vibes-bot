@@ -5,6 +5,12 @@ import asyncio
 from time import time
 from typing import Optional
 from utils.time import humanize_timedelta
+import owoify
+import base64
+
+
+def encrypt(text: str):
+    return base64.b64encode(text.encode()).decode()
 
 blacklisted = ['discordnltro.com', 'discordairdrop.com', 'n1g@', 'http://discordnitro.click/gift/steam', 'nïgga',
                'https://steamdiscordnitro.ru/gift', 'https://dlscorcl.gift', '░', 'discord.qg', 'retard',
@@ -103,13 +109,24 @@ class snipe(commands.Cog):
             if snipedata['content'].lower().startswith('dv.hp') or snipedata['content'].lower().startswith('dv.hideping'):
                 return "Ha, you got hidepinged!"
             else:
+
                 content = snipedata['content']
                 splitlines = content.split('\n')
                 if len(splitlines) <= 1:
                     return content if len(content) < 2000 else content[:2000] + "..."
                 else:
-                    return '\n'.join(splitlines[:len(splitlines)]) if len(splitlines) < 20 else '\n'.join(splitlines[:20]) + "\n" + f"**... and another {len(splitlines) - 20} lines**"
+                    return '\n'.join(splitlines[:len(splitlines)]) if len(splitlines) < 15 else '\n'.join(splitlines[:20]) + "\n" + f"**... and another {len(splitlines) - 20} lines**"
         desc = await desc()
+        if desc == "This message has a blacklisted word and cannot be shown." or desc == "Ha, you got hidepinged!":
+            pass
+        else:
+            snipe_res_result = await self.client.db.fetchval("SELECT snipe_res_result FROM userconfig WHERE user_id = $1", ctx.author.id)
+            if snipe_res_result is True:
+                desc = encrypt(desc)
+            elif snipe_res_result is False:
+                desc = "🥰💖" + owoify.owoify(desc, level='uvu') + "😘😍"
+            else:
+                pass
         embed = discord.Embed(title=f"Sniped message from {snipedata['author'].name} 🔫", description=desc, color=self.client.embed_color)
         if snipedata['content'].lower().startswith('dv.hp') or snipedata['content'].lower().startswith('dv.hideping'):
             embed.title = "Sniped message from someone..."
@@ -133,6 +150,8 @@ class snipe(commands.Cog):
         """
         if channel is None:
             channel = ctx.channel
+        if not channel.permissions_for(ctx.author).view_channel:
+            return await ctx.send("You can't view this channel.")
         if channel.id not in self.edited_messages:
             return await ctx.send("There's nothing to snipe here!")
         snipedata = self.edited_messages[channel.id]
@@ -151,6 +170,16 @@ class snipe(commands.Cog):
                 else:
                     return '\n'.join(splitlines[:len(splitlines)]) if len(splitlines) < 20 else '\n'.join(splitlines[:20]) + "\n" + f"**... and another {len(splitlines) - 20} lines**"
         desc = await desc()
+        if desc == "This message has a blacklisted word and cannot be shown." or desc == "Ha, you got hidepinged!":
+            pass
+        else:
+            snipe_res_result = await self.client.db.fetchval("SELECT snipe_res_result FROM userconfig WHERE user_id = $1", ctx.author.id)
+            if snipe_res_result is True:
+                desc = encrypt(desc)
+            elif snipe_res_result is False:
+                desc = "🥰💖" + owoify.owoify(desc, level='uvu') + "😘😍"
+            else:
+                pass
         embed = discord.Embed(title=f"Message edited by {snipedata['author'].name}", description=desc, color=self.client.embed_color)
         embed.set_author(name=f"{snipedata['author']}", icon_url=snipedata['author'].display_avatar.url)
         embed.set_footer(text=f"Edited {humanize_timedelta(seconds=round(time()) - snipedata['time'])} ago")
@@ -167,15 +196,22 @@ class snipe(commands.Cog):
         if channel.id not in self.removed_reactions:
             return await ctx.send("No one has removed a reaction here.")
         snipedata = self.removed_reactions[channel.id]
-        def emoji():
-            for string in blacklisted:
-                if string in str(snipedata['emoji']):
-                    return "This emoji has a blacklisted name and cannot be shown.", "https://cdn.discordapp.com/attachments/616007729718231161/905702687566336013/DVB_False.png"
-            return f"{snipedata['emoji'].name} (Emoji ID: {snipedata['emoji'].id})", snipedata['url']
+        async def emoji():
+            snipe_res_result = await self.client.db.fetchval("SELECT snipe_res_result FROM userconfig WHERE user_id = $1", ctx.author.id)
+            if snipe_res_result is True:
+                return None
+            else:
+                for string in blacklisted:
+                    if string in str(snipedata['emoji']):
+                        return "This emoji has a blacklisted name and cannot be shown.", "https://cdn.discordapp.com/attachments/616007729718231161/905702687566336013/DVB_False.png"
+                return f"{snipedata['emoji'].name} (Emoji ID: {snipedata['emoji'].id})", snipedata['url']
 
-        emoji = emoji()
-        embed = discord.Embed(title=f"Sniped {snipedata['author'].name}'s reaction:", description=f"Emoji: {emoji[0]}\n\nThe message they reacted to: [Jump to message!]({snipedata['message']})", color=self.client.embed_color)
-        embed.set_author(name=f"{snipedata['author']}", icon_url=snipedata['author'].display_avatar.url)
-        embed.set_thumbnail(url=emoji[1])
-        embed.set_footer(text=f"Reaction removed {humanize_timedelta(seconds=round(time()) - snipedata['time'])} ago")
+        emoji = await emoji()
+        if emoji is not None:
+            embed = discord.Embed(title=f"Sniped {snipedata['author'].name}'s reaction:", description=f"Emoji: {emoji[0]}\n\nThe message they reacted to: [Jump to message!]({snipedata['message']})", color=self.client.embed_color)
+            embed.set_author(name=f"{snipedata['author']}", icon_url=snipedata['author'].display_avatar.url)
+            embed.set_thumbnail(url=emoji[1])
+            embed.set_footer(text=f"Reaction removed {humanize_timedelta(seconds=round(time()) - snipedata['time'])} ago")
+        else:
+            embed = discord.Embed(title="Details hidden as user has an active Snipe Pill effect.")
         await ctx.send(embed=embed)

@@ -18,6 +18,8 @@ from PIL import Image
 import asyncio
 from io import BytesIO
 
+from utils.time import humanize_timedelta
+
 
 class DisplayItems(menus.ListPageSource):
     def __init__(self, entries, title, description):
@@ -345,11 +347,12 @@ class ItemGames(commands.Cog):
         query = " ".join(query)
         num = await self.client.db.fetchrow(query, ctx.author.id)
         quantity = 0 if num is None else num.get(itemname) or 0
+        embed.add_field(name="ID", value=f"`{itemname}`")
         embed.set_footer(text=f"You own {quantity} of this item.")
         await ctx.send(embed=embed)
 
     @commands.command(name="use")
-    async def use(self, ctx, item: str = None):
+    async def use(self, ctx, item: str = None, *, args: str = None):
         """
         Use an item in your inventory.
         """
@@ -393,13 +396,74 @@ class ItemGames(commands.Cog):
                                 await self.client.db.execute("UPDATE userconfig SET dumbfight_result = $1, dumbfight_rig_duration = $2 WHERE user_id = $3", result, round(time.time())+7200, ctx.author.id)
                             await asyncio.sleep(3.0)
                             if result is True:
-                                await msgstatus.edit(content=f"{ctx.author} finished the dumbfight potion in one gulp.\nThey are now immune from losing dumbfights for 2 hours! They now have {remaining} Dumbfight Potions left.")
+                                await msgstatus.edit(content=f"**{ctx.author.name}** finished the dumbfight potion in one gulp.\nThey are now immune from losing dumbfights for 2 hours! They now have {remaining} Dumbfight Potions left.")
                             else:
-                                await msgstatus.edit(content=f"Alas! The dumbfight potion that {ctx.author} drank was a bad one, and {ctx.author.name} was poisoned.\nThey will lose all dumbfights for the next 2 hours. They now have {remaining} Dumbfight Potions left.")
+                                await msgstatus.edit(content=f"Alas! The dumbfight potion that **{ctx.author.name}** drank was a bad one, and **{ctx.author.name}** was poisoned 🤒.\nThey will lose all dumbfights for the next 2 hours. They now have {remaining} Dumbfight Potions left.")
                         else:
                             return await ctx.send("It appears that you already have a active dumbfight potion in effect. (1)")
                 else:
                     return await ctx.send("It appears that you already have a active dumbfight potion in effect. (2)")
+            elif itemname == 'raizelsushi':
+                if args is not None:
+                    try:
+                        number_eaten = int(args)
+                    except ValueError:
+                        number_eaten = 1
+                else:
+                    number_eaten = 1
+                current_amt = await self.get_item_count(itemname, ctx.author)
+                if current_amt >= number_eaten:
+                    remaining = await self.remove_item_count(itemname, ctx.author, number_eaten)
+                    if number_eaten == 1:
+                        how_author_ate = "picks up a pair of chopsticks, and eats a single sushi."
+                    elif number_eaten < 10:
+                        how_author_ate = f"picks up a pair of chopsticks, and slowly eats {number_eaten} sushis."
+                    elif number_eaten < 50:
+                        how_author_ate = f"gets their friend to help feed them {number_eaten} sushis."
+                    elif number_eaten < 75:
+                        how_author_ate = f"gets 5 of their friends to help feed them {number_eaten} sushis."
+                    elif number_eaten < 100:
+                        how_author_ate = f"assembles a whole party to help feed them {number_eaten} sushis."
+                    else:
+                        how_author_ate = f"takes the whole plate of {number_eaten} sushis and STUFFS IT DOWN THEIR THROAT. How are they still alive??"
+                    await ctx.send(f"**{ctx.author}** {how_author_ate}\nThey now have {remaining} Raizel Sushi left.")
+                else:
+                    return await ctx.send("I understand you are craving for sushis, but you don't have that many Raizel's Sushi to eat.")
+            elif itemname == 'snipepill':
+                if await self.client.db.fetchval("SELECT snipe_res_result FROM userconfig WHERE user_id = $1", ctx.author.id) is None:
+                    confirmview = confirm(ctx, self.client, 20.0)
+                    embed = discord.Embed(title=f"Are you sure you want to use a {itemdata.get('fullname')}?", description="Consuming a Snipe Pill might help to hide your sniped messages or make them worse, for a random period of time.")
+                    try:
+                        confirmview.response = await ctx.reply(embed=embed, view=confirmview)
+                    except:
+                        confirmview.response = await ctx.send(embed=embed, view=confirmview)
+                    await confirmview.wait()
+                    if confirmview.returning_value is not True:
+                        embed.color, embed.description = discord.Color.red(), "You decided not to use the Snipe Pill.."
+                        await confirmview.response.edit(embed=embed)
+                    else:
+                        embed.color = discord.Color.green()
+                        await confirmview.response.edit(embed=embed)
+                        userconf = await self.client.db.fetchrow("SELECT * FROM userconfig WHERE user_id = $1", ctx.author.id)
+                        if userconf is None or userconf.get('snipe_res_result') is None and await self.get_item_count(itemname, ctx.author) > 0:
+                            remaining = await self.remove_item_count(itemname, ctx.author, 1)
+                            result = random.choice([True, True, False])
+                            if result is True:
+                                duration = random.randint(60, 300)
+                            else:
+                                duration = 86400
+                            await self.client.db.execute("INSERT INTO userconfig (user_id, snipe_res_result, snipe_res_duration) VALUES($1, $2, $3) ON CONFLICT(user_id) DO UPDATE SET snipe_res_result = $2, snipe_res_duration = $3", ctx.author.id, result, round(time.time()) + duration)
+                            if result is True:
+                                msg = f"**{ctx.author.name}** consumed the pill without any problems. Trying to snipe **{ctx.author.name}**'s messages will show gibberish text instead for **{humanize_timedelta(seconds=duration)}**."
+                            else:
+                                msg = f"**{ctx.author.name}** consumed the pill without **realising it had expired**, but it was too late. All of **{ctx.author.name}**'s sniped messages will be OwOified for **{humanize_timedelta(seconds=duration)}**."
+                            await ctx.send(f"{msg}\nThey now have {remaining} Snipe Pills left.")
+                        else:
+                            return await ctx.send("It appears that you already have an active Snipe Pill in effect. (1)")
+                else:
+                    return await ctx.send("It appears that you already have an active Snipe Pill in effect. (2)")
+
+
             else:
                 return await ctx.send("Invalid")
         else:

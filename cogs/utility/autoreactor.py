@@ -72,7 +72,7 @@ class name_or_mention(discord.ui.View):
             self.returning_value = (ctx.author.name.lower(), ctx.guild.id)  # Ar for mention
         for b in self.children:
             b.disabled = True
-        await self.response.edit(view=self)
+        await interaction.response.edit_message(view=self)
         self.stop()
 
     @discord.ui.button(label="When you are mentioned", style=discord.ButtonStyle.primary)
@@ -81,7 +81,7 @@ class name_or_mention(discord.ui.View):
         self.returning_value = (f"<@!{ctx.author.id}>", ctx.guild.id)  # Ar for mention
         for b in self.children:
             b.disabled = True
-        await self.response.edit(view=self)
+        await interaction.response.edit_message(view=self)
         self.stop()
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:

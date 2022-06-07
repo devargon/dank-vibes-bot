@@ -19,16 +19,16 @@ class Suggestion(commands.Cog):
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("Hey! im not sending a blank message, write something meaningful and try again.")
         confirmview = confirm(ctx, self.client, 15.0)
-        embed = discord.Embed(title="Action awaiting confirmation", description="**NOTE:** __The developer is aware of Carl-bot removing access to certain features__, and is working hard to bring these features over to Dank Vibes Bot as soon as possible.\nDo not suggest any features that are meant to replace Carl-bot's now restricted features.\n\nAre you sure you wanna send this suggestion to the developers?", color=self.client.embed_color)
+        embed = discord.Embed(title="Action awaiting confirmation", description="Are you sure you wanna send this suggestion to the developers?", color=self.client.embed_color)
         msg = await ctx.send(embed=embed, view=confirmview)
         confirmview.response = msg
         await confirmview.wait()
         if confirmview.returning_value == None:
-            embed.description, embed.color = "**NOTE:** __The developer is aware of Carl-bot removing access to certain features__, and is working hard to bring these features over to Dank Vibes Bot as soon as possible.\nDo not suggest any features that are meant to replace Carl-bot's now restricted features.\n\nTimed out! If you want to suggest, press the green button.", discord.Color.red()
+            embed.description, embed.color = "Timed out! If you want to suggest, press the green button.", discord.Color.red()
             ctx.command.reset_cooldown(ctx)
             return await msg.edit(embed=embed)
         elif confirmview.returning_value == False:
-            embed.description, embed.color = "**NOTE:** __The developer is aware of Carl-bot removing access to certain features__, and is working hard to bring these features over to Dank Vibes Bot as soon as possible.\nDo not suggest any features that are meant to replace Carl-bot's now restricted features.\n\nOkay, we're not sending that message to the developers.", discord.Color.red()
+            embed.description, embed.color = "Okay, we're not sending that message to the developers.", discord.Color.red()
             ctx.command.reset_cooldown(ctx)
             return await msg.edit(embed=embed)
         elif confirmview.returning_value == True:
@@ -38,7 +38,7 @@ class Suggestion(commands.Cog):
             try:
                 embed = discord.Embed(color=0xffcccb,
                                         title="Suggestion sent to the developers",
-                                        description=f"**NOTE:** __The developer is aware of Carl-bot removing access to certain features__, and is working hard to bring these features over to Dank Vibes Bot as soon as possible.\nDo not suggest any features that are meant to replace Carl-bot's now restricted features.\n\n**You sent:** {message}",
+                                        description=f"**You sent:** {message}",
                                         timestamp=discord.utils.utcnow())
                 embed.set_footer(text=f"Any response from the developers will be through DM.")
                 response = await ctx.author.send(embed=embed)

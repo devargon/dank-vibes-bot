@@ -238,7 +238,7 @@ class games(commands.Cog):
                 self.returning_value = True
                 for b in self.children:
                     b.disabled = True
-                await self.response.edit(view=self)
+                await interaction.response.edit_message(view=self)
                 self.stop()
 
             @discord.ui.button(label="No", style=discord.ButtonStyle.red)
@@ -246,7 +246,7 @@ class games(commands.Cog):
                 self.returning_value = False
                 for b in self.children:
                     b.disabled = True
-                await self.response.edit(view=self)
+                await interaction.response.edit_message(view=self)
                 self.stop()
 
             async def interaction_check(self, interaction: discord.Interaction) -> bool:
@@ -371,7 +371,7 @@ class games(commands.Cog):
                     if self.agree == 2:
                         for b in self.children:
                             b.disabled = True
-                    await self.response.edit(view=self)
+                    await interaction.response.edit_message(view=self)
                     if self.agree == 2:
                         self.stop()
 
@@ -417,7 +417,7 @@ class games(commands.Cog):
                 self.returning_value = True
                 for b in self.children:
                     b.disabled = True
-                await self.response.edit(view=self)
+                await interaction.response.edit_message(view=self)
                 self.stop()
 
             @discord.ui.button(label="Tails", emoji=discord.PartialEmoji.from_str("<:DVB_CoinTail:905400213676638279>"))
@@ -426,7 +426,7 @@ class games(commands.Cog):
                 self.returning_value = False
                 for b in self.children:
                     b.disabled = True
-                await self.response.edit(view=self)
+                await interaction.response.edit_message(view=self)
                 self.stop()
 
             async def interaction_check(self, interaction: discord.Interaction) -> bool:
@@ -456,7 +456,7 @@ class games(commands.Cog):
         embed.title = f"{member.name} chose {'Heads! <:DVB_CoinHead:905400213785690172>' if coinpickview.returning_value == True else 'Tails! <:DVB_CoinTail:905400213676638279>'}"
         olddesc = f"{embed.description.splitlines()[0]}\n{embed.description.splitlines()[1]}\n"
         embed.description = f"{olddesc}\nI'm flipping the coin..."
-        embed.set_thumbnail(url="https://cdn.nogra.me/core/coin_spin.gif")
+        embed.set_thumbnail(url="https://cdn.nogra.xyz/core/coin_spin.gif")
         try:
             await coinpickmsg.edit(embed=embed)
         except:
