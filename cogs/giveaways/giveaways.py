@@ -1401,16 +1401,18 @@ class giveaways(commands.Cog):
             await ctx.respond(f"You can only use the `ping` option if you're a **<@&{gwstaff_id}>**.", ephemeral=True)
             ping = None
         # gang channel check
+        if channel is None:
+            channel = ctx.channel
         if os.getenv('state') == '0':
-            if ping == 'gang' and ctx.channel.id not in [701771740912549938, 626704430468825089, 630587061665267713, 616007729718231161]:
+            if ping == 'gang' and channel.id not in [701771740912549938, 626704430468825089, 630587061665267713,
+                                                     616007729718231161]:
                 await ctx.respond(f"You cannot ping **Giveaway Ping** in this channel.", ephemeral=True)
                 ping = None
                 # elite channel check
-            elif ping == 'elite' and ctx.channel.id not in [701771740912549938, 741254464303923220, 630587061665267713, 616007729718231161]:
+            elif ping == 'elite' and ctx.channel.id not in [701771740912549938, 741254464303923220,
+                                                            630587061665267713, 616007729718231161]:
                 await ctx.respond(f"You cannot ping **Elite Giveaway Ping** in this channel.", ephemeral=True)
                 ping = None
-        if channel is None:
-            channel = ctx.channel
         channel = ctx.guild.get_channel(channel.id) # properly get the permissions
         if not (channel.permissions_for(ctx.author).send_messages and channel.permissions_for(ctx.author).view_channel):
             return await ctx.respond(f"You are not allowed to start a giveaway in {channel.mention}, as you are not allowed to view that channel or send messages in it.", ephemeral=True)
