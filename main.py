@@ -105,7 +105,11 @@ class dvvt(commands.Bot):
             leaderboard: Union[objects.User, None] = leaderboard.get_user(user_id)
             if type(weekly_leaderboard) == objects.Leaderboard:
                 weekly_leaderboard = weekly_leaderboard.get_user(user_id)
-                leaderboard.weeklyexp = weekly_leaderboard.exp
+                if weekly_leaderboard is None:
+                    weeklyexp = 0
+                else:
+                    weeklyexp = weekly_leaderboard.exp
+                leaderboard.weeklyexp = weeklyexp
         return (leaderboard, data_last_updated, error)
 
 
