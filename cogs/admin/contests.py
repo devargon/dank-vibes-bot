@@ -423,8 +423,8 @@ class Contests(commands.Cog):
             return await ctx.send(f"There is an active contest running already (Contest {contest_obj.get('contest_id')}). \nEnd the submission and voting process before starting a new contest.")
         contest_id = await self.client.db.fetchval("INSERT INTO contests(guild_id, contest_starter_id, contest_channel_id, created, name) VALUES($1, $2, $3, $4, $5) RETURNING contest_id", ctx.guild.id, ctx.author.id, channel.id, round(time.time()), name, column='contest_id')
         embed_success = discord.Embed(title="Contest Started", description=f"This contest's ID is `{contest_id}`.\n\nThe contest is now in the **SUBMISSION** stage.\nUsers can submit entries using `/submit <attachment>`.\n\n`dv.contest vote {contest_id}` will change the contest to **VOTING** stage.\n`dv.contest end {contest_id}` will end the contest and let the leaderboard be public.", color=self.client.embed_color)
-        embed = discord.Embed(title="A contest has just started.", description="Use `/submit <attachment>` to submit your entry!", color=self.client.embed_color).set_author(name=f"Contest #{contest_id}: {name}")
-        await channel.send(embed=embed)
+        embed = discord.Embed(title="A contest has just started.", description="Use `/submit <attachment>` to submit your entry!", color=self.client.embed_color).set_author(name=f"Contest #{contest_id}: {name}", )
+        await channel.send(embed=embed, view=HowToSubmit1())
         with contextlib.suppress(discord.Forbidden):
             await ctx.author.send(embed=embed_success)
         await ctx.send(embed=embed_success.set_footer(text="A copy of this has been sent to your DMs."))
