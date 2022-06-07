@@ -219,6 +219,7 @@ class BetterSelfroles(commands.Cog):
             placeholder_for_select = result.get('placeholder_for_select')
             role_ids = result.get('role_ids')
             emojis = split_string_into_list(result.get('emojis'), str, include_empty_elements=True)
+            print(emojis)
             descriptions = split_string_into_list(result.get('descriptions'), str, include_empty_elements=True)
             roles = []
             guild = self.client.get_guild(result['guild_id'])
@@ -228,13 +229,13 @@ class BetterSelfroles(commands.Cog):
                     role = guild.get_role(role_id)
                     if role is not None:
                         roles.append(role)
+                print(roles)
                 options = []
                 if len(emojis) == 0:
                     emojis = [None] * len(roles)
                 if len(descriptions) == 0:
                     descriptions = [None] * len(roles)
                 if emojis is not None and len(roles) != len(emojis):
-                    print(roles, emojis)
                     raise EmojisDoNotMatchRoles
                 elif descriptions is not None and len(roles) != len(descriptions):
                     raise DescriptionsDoNotMatchRoles
