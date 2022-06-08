@@ -189,7 +189,7 @@ class Lottery(commands.Cog):
         summary = []
         for user in users:
             next_lottery_number = last_lottery_number + 1
-            while (reserved_entry := await self.client.db.fetchrow("SELECT * FROM reserved_entries WHERE lottery_number = $1 AND lottery_id = $2", next_lottery_number, lottery_id)) is not None:
+            while (reserved_entry := await self.client.db.fetchrow("SELECT * FROM lottery_reserved_entries WHERE lottery_number = $1 AND lottery_id = $2", next_lottery_number, lottery_id)) is not None:
                 to_commit.append((lottery_id, next_lottery_number, reserved_entry.get('lottery_user')))
                 us = self.client.get_user(reserved_entry.get('lottery_user'))
                 us = str(us) if us is not None else reserved_entry.get('lottery_user')
@@ -312,7 +312,7 @@ class Lottery(commands.Cog):
         if user is None:
             embed = discord.Embed(title=f"Reserved entries for {lottery_db.get('lottery_type')} lottery #{lottery_id}", color=self.client.embed_color)
             entries_str = []
-            for entry in await self.client.db.fetch("SELECT * FROM reserved_entries WHERE lottery_id=$1", lottery_id):
+            for entry in await self.client.db.fetch("SELECT * FROM lottery_reserved_entries WHERE lottery_id=$1", lottery_id):
                 if (us := self.client.get_user(entry.get('lottery_user'))) is not None:
                     us_placement = f"{us.name}#{us.discriminator}"
                 else:
@@ -325,15 +325,15 @@ class Lottery(commands.Cog):
         if await self.check_non_hoster_consent(ctx, lottery_db.get('starter_id')) is True:
             if lottery_number is None:
                 return await ctx.send(f"You must specify a lottery entry number to reserve (or remove).")
-            if (num_reserved_entry := await self.client.db.fetchrow("SELECT * FROM reserved_entries WHERE lottery_id=$1 AND lottery_number = $2", lottery_id, lottery_number)) is not None:
+            if (num_reserved_entry := await self.client.db.fetchrow("SELECT * FROM lottery_reserved_entries WHERE lottery_id=$1 AND lottery_number = $2", lottery_id, lottery_number)) is not None:
                 if num_reserved_entry.get('lottery_user') != user.id:
                     us = self.client.get_user(num_reserved_entry.get('lottery_user'))
                     us = f"{us} ({us.id})" if us is not None else num_reserved_entry.get('lottery_user')
                     return await ctx.send(f"The lottery number `{lottery_number}` is already reserved for **{us}**.")
-                await self.client.db.execute("DELETE FROM reserved_entries WHERE lottery_id=$1 AND lottery_user=$2 AND lottery_number = $3", lottery_id, user.id, lottery_number)
+                await self.client.db.execute("DELETE FROM lottery_reserved_entries WHERE lottery_id=$1 AND lottery_user=$2 AND lottery_number = $3", lottery_id, user.id, lottery_number)
                 return await ctx.send(f"Removed **{user}**'s `{lottery_number}` entry from the lottery's reserved entries.")
             else:
-                await self.client.db.execute("INSERT INTO reserved_entries(lottery_id, lottery_user, lottery_number) VALUES($1, $2, $3)", lottery_id, user.id, lottery_number)
+                await self.client.db.execute("INSERT INTO lottery_reserved_entries(lottery_id, lottery_user, lottery_number) VALUES($1, $2, $3)", lottery_id, user.id, lottery_number)
                 return await ctx.send(f"Added **{user}**'s `{lottery_number}` entry to the lottery's reserved entries.")
 
 
@@ -385,7 +385,7 @@ class Lottery(commands.Cog):
             else:
                 confirmembed.color = discord.Color.green()
                 await confirmview.response.edit(embed=confirmembed)
-                remaining_reserved_entries = await self.client.db.fetch("SELECT * FROM reserved_entries WHERE lottery_id = $1 AND lottery_number > $2 ORDER BY lottery_number", lottery_id, max_lotto_no)
+                remaining_reserved_entries = await self.client.db.fetch("SELECT * FROM lottery_reserved_entries WHERE lottery_id = $1 AND lottery_number > $2 ORDER BY lottery_number", lottery_id, max_lotto_no)
 
                 type_of_lottery = lotto_object.get('lottery_type')
                 if len(remaining_reserved_entries) > 0:
