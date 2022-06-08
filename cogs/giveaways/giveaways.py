@@ -649,7 +649,7 @@ class GiveawayView(discord.ui.View):
                                                     failembed.description = "**AmariBot is having problems.**\nI am unable to contact AmariBot until their servers are back online."
                                                 else:
                                                     failembed.description = f"**There was an error while talking to AmariBot.**\n```{error}\n```"
-                                        await interaction.response.edit_original_message(embed=failembed)
+                                        return await interaction.edit_original_message(embed=failembed)
                                     else:
                                         if user_amari_details is None:
                                             #print('obj was none')
@@ -662,7 +662,7 @@ class GiveawayView(discord.ui.View):
                                         if giveaway_has_amarilevelreq is True and level < giveawayentry.amari_level:
                                             missing_amari_requirements.append(f"<a:DVB_arrow:975663275306024971> Your current Level is **{level}**. __You need to be **Level {giveawayentry.amari_level}** to enter the giveaway.__")
 
-                                        if giveaway_has_amarilevelreq is True and weekly_xp < giveawayentry.amari_weekly_xp:
+                                        if giveaway_has_weeklyxp is True and weekly_xp < giveawayentry.amari_weekly_xp:
                                             missing_amari_requirements.append(f"<a:DVB_arrow:975663275306024971> You currently have **{weekly_xp}** Weekly EXP. __You need another {giveawayentry.amari_weekly_xp - weekly_xp} Weekly EXP to join the giveaway__, which has a requirement of **{giveawayentry.amari_weekly_xp}** Weekly EXP.")
                                         if len(missing_amari_requirements) > 0:
                                             desc = '\n'.join(missing_amari_requirements)
