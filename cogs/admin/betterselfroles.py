@@ -214,6 +214,21 @@ class BetterSelfroles(commands.Cog):
         self.client.add_view(DisplayVoteView(self.client))
         self.client.add_view(VoteView(self.client, False))
         self.client.add_view(HowToSubmit1())
+        sr_results = await self.client.db.fetch("SELECT * FROM selfroles")
+        for result in sr_results:
+            placeholder_for_select = result.get('placeholder_for_select')
+            role_ids = result.get('role_ids')
+            role_ids = split_string_into_list(result['role_ids'], int)
+            options = []
+            for role_id in role_ids:
+                op = discord.SelectOption(
+                    label="placeholder label",
+                    value=str(role_id)
+                )
+                options.append(op)
+                roleview = RoleSelectMenu(self.client)
+                roleview.add_item(RoleMenu(options, placeholder_for_select, role_ids, str(result.get('message_id')), result.get('max_gettable_role')))
+                self.client.add_view(roleview)
         selfrolemessages = await self.client.db.fetchrow("SELECT random_color,  boostping, vipheist FROM selfrolemessages WHERE guild_id = $1", 595457764935991326)
         categories = ['random_color', 'boostping', 'vipheist']
         if selfrolemessages is not None:
