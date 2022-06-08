@@ -110,13 +110,14 @@ class OnMessage(commands.Cog):
                         if split_cmd[1] == 'rob':
                             return await message.channel.send(f"**Robbing is disabled** in {message.guild.name}. This is for the safety of everyone's wallets in this server.")
                         else:
-                            if message.channel.id in [698462922682138654, 608498967474601995, 871737314831908974]:
+                            whitelisted_user_ids = [758173667682287616, 758175713983201300]
+                            if message.channel.id in [698462922682138654, 608498967474601995, 871737314831908974] and not any(discord.utils.get(message.author.roles, id=roleid) for roleid in whitelisted_user_ids):
                                 if not message.channel.permissions_for(message.author).manage_messages:
                                     if discord.utils.get(message.author.roles, id=dankmemerplayerrole_id):
-                                        msg = f"{message.author.mention}\n**Dank Memer does __not__ work in this channel.**\n<:dv_peepoblush2OwO:837653921949548605> Dank Memer can be used in our channels meant for Dank Memer. You can also trade items with other users!<:dv_peepoBlushOwO:837653418017161236>\n\nClick the button below to head to one such channel!"
+                                        msg = f"{message.author.mention}\n**Dank Memer does __not__ work in this channel.**\nClick below to head to a Bot channel to use Dank Memer."
                                         await message.channel.send(msg, view=ChannelOnlyView())
                                     else:
-                                        msg = f"{message.author.mention}\n**Dank Memer does __not__ work in this channel.**\n<:dv_peepoblush2OwO:837653921949548605> Dank Memer can be used in our channels meant for Dank Memer. You can also trade items with other users!<:dv_peepoBlushOwO:837653418017161236>\n\nClick the button below to get the **Dank Memer Player** role and access these channels!"
+                                        msg = f"{message.author.mention}\n**Dank Memer does __not__ work in this channel.**\n<:dv_peepoblush2OwO:837653921949548605> The Dank Memer bot can be used in channels just for Dank Memer. <:dv_peepoBlushOwO:837653418017161236>\n\nClick the button below to get the **Dank Memer Player** role and access these channels!"
                                         await message.channel.send(msg, view=RoleOnlyView())
                                 else:
                                     pass
