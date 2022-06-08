@@ -385,7 +385,8 @@ class DankItems(commands.Cog):
                             desc.append(f"**{name}** `{idcode}`: [⏣ {comma_number(trade_value)}](http://a/)")
                         embed = discord.Embed(title=f"{type} Items", description="\n".join(desc),
                                               color=self.client.embed_color)
-                        embeds.append(embed)
+                        page_obj = discord.ext.pages.Page(content="**Items shown in this command only applies to celeb donations.**\nFor normal donations, check `dv.items`.", embeds=[embed])
+                        embeds.append(page_obj)
                     pagegroups.append(discord.ext.pages.PageGroup(pages=embeds, label=type, author_check=True,
                                                                   disable_on_timeout=True, description=None))
                 all_items_embeds = []
