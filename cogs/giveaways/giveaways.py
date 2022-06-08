@@ -1149,7 +1149,7 @@ class giveaways(commands.Cog):
                     req_str = "\n".join(amari_reqs)
                 else:
                     req_str = req_str + "\n" + "\n".join(amari_reqs)
-                embed.add_field(name="Requirements", value=req_str, inline=True)
+            embed.add_field(name="Requirements", value=req_str, inline=True)
         if winners is not None and len(winners) > 0:
             embed.add_field(name="Winners", value=str(human_join([w.mention for w in winners], ", ", "and")), inline=False)
         embed.set_footer(text=f"{plural(entry.winners):winner} will be picked for this giveaway, which ends")
