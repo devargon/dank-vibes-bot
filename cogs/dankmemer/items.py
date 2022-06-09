@@ -448,7 +448,7 @@ class DankItems(commands.Cog):
         """
         total_output_embeds = []
         if arg is None:
-            return await ctx.send("⚠️ **Items shown in this command only applies to __celeb__ donations.**\nIf you're donating for a __normal giveaway or event__, use `dv.items`.\n\nYou need to provide a list of Dank items to calculate the total worth.")
+            return await ctx.send("⚠ All values shown here already have a 1.25x Multiplier applied. **These values apply only to __celeb__ donations!**\nIf you're donating for a __normal giveaway or event__, use `dv.items`.")
         all_dank_items = await self.client.db.fetch("SELECT * FROM dankitems")
         item_names = []
         item_codes = []
