@@ -159,7 +159,7 @@ class DankItems(commands.Cog):
                         embed.add_field(name="Details", value=field_details, inline=False)
                         embed.set_thumbnail(url=image_url)
                         embed.set_footer(text=f"Last updated")
-                        await ctx.send(embed=embed)
+                        await ctx.send("⚠️ **Items shown in this command only applies to normal giveaway/event donations.**\nIf you're donating for **__the celebrations__**, use `dv.celebitems`.", embed=embed)
                         return
             else:
                 return await ctx.send(
@@ -189,7 +189,8 @@ class DankItems(commands.Cog):
                             desc.append(f"**{name}** `{idcode}`: [⏣ {comma_number(trade_value)}](http://a/)")
                         embed = discord.Embed(title=f"{type} Items", description="\n".join(desc),
                                               color=self.client.embed_color)
-                        embeds.append(embed)
+                        page_obj = discord.ext.pages.Page(content="⚠️ **Items shown in this command only applies to normal giveaway/event donations.**\nIf you're donating for **__the celebrations__**, use `dv.celebitems`.", embeds=[embed])
+                        embeds.append(page_obj)
                     pagegroups.append(discord.ext.pages.PageGroup(pages=embeds, label=type, author_check=True,
                                                                   disable_on_timeout=True, description=None))
                 all_items_embeds = []
@@ -251,8 +252,9 @@ class DankItems(commands.Cog):
         The items should be entered in this format: `[item count] <item name> [item count] <item name> ...`
         Example: `dv.ic 1 pepe 3 tro`
         """
+        total_output_embeds = []
         if arg is None:
-            return await ctx.send("You need to provide a list of Dank items to calculate the total worth.")
+            return await ctx.send("⚠️ **Items shown in this command only applies to normal giveaway/event donations.**\nIf you're donating for **__the celebrations__**, use `dv.celebitems`.\n\nYou need to provide a list of Dank items to calculate the total worth.")
         all_dank_items = await self.client.db.fetch("SELECT * FROM dankitems")
         item_names = []
         item_codes = []
@@ -284,7 +286,7 @@ class DankItems(commands.Cog):
         if len(errors) > 0:
             errorembed = discord.Embed(title="Encountered some errors when parsing:",
                                        description="\n".join(errors)[:3999], color=self.client.embed_color)
-            await ctx.send(embed=errorembed)
+            total_output_embeds.append(errorembed)
         if len(items) > 0:
             total_worth = 0
             item_calc_result = []
@@ -299,7 +301,7 @@ class DankItems(commands.Cog):
                     hidden_items += 1
                 else:
                     if len(item_summary_embed.description) + len(item) > 4000:
-                        await ctx.send(embed=item_summary_embed)
+                        total_output_embeds.append(item_summary_embed)
                         embed_count += 1
                         item_summary_embed = discord.Embed(title=f"Detected items", description="",
                                                            color=self.client.embed_color)
@@ -308,14 +310,16 @@ class DankItems(commands.Cog):
                     else:
                         item_summary_embed.description += f"{item}\n"
             if len(item_summary_embed.description) > 0:
-                await ctx.send(embed=item_summary_embed)
+                total_output_embeds.append(item_summary_embed)
             final_embed = discord.Embed(title="Total worth:", description=f"```\n⏣ {comma_number(total_worth)}\n```",
                                         color=self.client.embed_color)
+
             if hidden_items > 0:
                 final_embed.set_footer(text=f"{hidden_items} items were hidden due to to many embeds sent.")
-            await ctx.send(embed=final_embed)
+            total_output_embeds.append(final_embed)
         else:
-            await ctx.send(embed=discord.Embed(title="You didn't input any items.", color=discord.Color.red()))
+            total_output_embeds.append(discord.Embed(title="You didn't input any items.", color=discord.Color.red()))
+        await ctx.send("⚠️ **Items shown in this command only applies to normal giveaway/event donations.**\nIf you're donating for **__the celebrations__**, use `dv.celebitems`.", embeds=total_output_embeds)
 
     @commands.group(name="celebitems", aliases=['citems'], invoke_without_command=True)
     async def celebitems(self, ctx, item: str = None):
@@ -344,7 +348,7 @@ class DankItems(commands.Cog):
                             color=self.client.embed_color,
                             timestamp=datetime.fromtimestamp(last_updated))
                         if celeb_donation is not True:
-                            embed.description = f"**This item __can't__ be donated for the celeb.**"
+                            embed.description = f"**This item __cannot__ be donated for the celeb.**"
                             embed.color = discord.Color.red()
                         else:
                             field_details = f"**Type**: {type}\n**ID**: `{result}`"
@@ -353,7 +357,7 @@ class DankItems(commands.Cog):
                             embed.add_field(name="Details", value=field_details, inline=False)
                             embed.set_footer(text=f"Last updated")
                         embed.set_thumbnail(url=image_url)
-                        await ctx.send("**Items shown in this command only applies to celeb donations.**\nFor normal donations, check `dv.items`.", embed=embed)
+                        await ctx.send("⚠️ **Items shown in this command only applies to __celeb__ donations.**\nIf you're donating for a __normal giveaway or event__, use `dv.items`.", embed=embed)
                         return
             else:
                 return await ctx.send(
@@ -385,7 +389,7 @@ class DankItems(commands.Cog):
                             desc.append(f"**{name}** `{idcode}`: [⏣ {comma_number(trade_value)}](http://a/)")
                         embed = discord.Embed(title=f"{type} Items", description="\n".join(desc),
                                               color=self.client.embed_color)
-                        page_obj = discord.ext.pages.Page(content="**Items shown in this command only applies to celeb donations.**\nFor normal donations, check `dv.items`.", embeds=[embed])
+                        page_obj = discord.ext.pages.Page(content="⚠️ **Items shown in this command only applies to __celeb__ donations.**\nIf you're donating for a __normal giveaway or event__, use `dv.items`.", embeds=[embed])
                         embeds.append(page_obj)
                     pagegroups.append(discord.ext.pages.PageGroup(pages=embeds, label=type, author_check=True,
                                                                   disable_on_timeout=True, description=None))
@@ -399,7 +403,7 @@ class DankItems(commands.Cog):
                                                 disable_on_timeout=True, description=None))
                 paginator = pages.Paginator(pages=pagegroups, show_menu=True,
                                             menu_placeholder="Dank Memer Item Categories", )
-                await paginator.send(ctx, target_message="**Items shown in this command only applies to celeb donations.**\nFor normal donations, check `dv.items`.")
+                await paginator.send(ctx)
 
     @checks.has_permissions_or_role(manage_roles=True)
     @celebitems.command(name='set', aliases=['setvalue'])
@@ -442,8 +446,9 @@ class DankItems(commands.Cog):
         The items should be entered in this format: `[item count] <item name> [item count] <item name> ...`
         Example: `dv.ic 1 pepe 3 tro`
         """
+        total_output_embeds = []
         if arg is None:
-            return await ctx.send("You need to provide a list of Dank items to calculate the total worth.")
+            return await ctx.send("⚠️ **Items shown in this command only applies to __celeb__ donations.**\nIf you're donating for a __normal giveaway or event__, use `dv.items`.\n\nYou need to provide a list of Dank items to calculate the total worth.")
         all_dank_items = await self.client.db.fetch("SELECT * FROM dankitems")
         item_names = []
         item_codes = []
@@ -483,7 +488,7 @@ class DankItems(commands.Cog):
         if len(errors) > 0:
             errorembed = discord.Embed(title="Encountered some errors when parsing:",
                                        description="\n".join(errors)[:3999], color=self.client.embed_color)
-            await ctx.send(embed=errorembed)
+            total_output_embeds.append(errorembed)
         if len(items) > 0:
             total_worth = 0
             item_calc_result = []
@@ -498,7 +503,7 @@ class DankItems(commands.Cog):
                     hidden_items += 1
                 else:
                     if len(item_summary_embed.description) + len(item) > 4000:
-                        await ctx.send(embed=item_summary_embed)
+                        total_output_embeds.append(item_summary_embed)
                         embed_count += 1
                         item_summary_embed = discord.Embed(title=f"Detected items", description="",
                                                            color=self.client.embed_color)
@@ -507,11 +512,13 @@ class DankItems(commands.Cog):
                     else:
                         item_summary_embed.description += f"{item}\n"
             if len(item_summary_embed.description) > 0:
-                await ctx.send(embed=item_summary_embed)
+                total_output_embeds.append(item_summary_embed)
             final_embed = discord.Embed(title="Total worth:", description=f"```\n⏣ {comma_number(total_worth)}\n```",
                                         color=self.client.embed_color)
             if hidden_items > 0:
                 final_embed.set_footer(text=f"{hidden_items} items were hidden due to to many embeds sent.")
-            await ctx.send("**Items shown in this command only applies to celeb donations.**\nFor normal donations, check `dv.items`.", embed=final_embed)
+            total_output_embeds.append(final_embed)
         else:
-            await ctx.send("**Items shown in this command only applies to celeb donations.**\nFor normal donations, check `dv.items`.", embed=discord.Embed(title="You didn't input any items.", color=discord.Color.red()))
+            em = discord.Embed(title="You didn't input any items.", color=discord.Color.red())
+            total_output_embeds.append(em)
+        await ctx.send("⚠️ **Items shown in this command only applies to __celeb__ donations.**\nIf you're donating for a __normal giveaway or event__, use `dv.items`.", embeds=total_output_embeds)
