@@ -292,7 +292,7 @@ class donations(commands.Cog):
             return await ctx.send("You must specify a category to add the donations to.")
         if amount <= 0:
             return await ctx.send("You must specify an amount greater than 0 to be added to {}'s donations.".format(member.name))
-        if category_name == 'dank' and ctx.channel.id == 980507183538110554:
+        if category_name.lower() == 'dank' and ctx.channel.id == 983918084870004776:
             return await ctx.send(f"⚠️ Did you mean `celebdank`?")
         real_name = await self.client.db.fetchval("SELECT category_name FROM donation_categories WHERE guild_id = $1 AND lower(category_name) = $2", ctx.guild.id, category_name.lower())
         if not real_name:
