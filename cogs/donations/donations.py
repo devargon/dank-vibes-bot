@@ -292,6 +292,8 @@ class donations(commands.Cog):
             return await ctx.send("You must specify a category to add the donations to.")
         if amount <= 0:
             return await ctx.send("You must specify an amount greater than 0 to be added to {}'s donations.".format(member.name))
+        if category_name == 'dank' and ctx.channel.id == 980507183538110554:
+            return await ctx.send(f"⚠️ Did you mean `celebdank`?")
         real_name = await self.client.db.fetchval("SELECT category_name FROM donation_categories WHERE guild_id = $1 AND lower(category_name) = $2", ctx.guild.id, category_name.lower())
         if not real_name:
             return await ctx.send(f"A category with the name `{category_name}` does not exist.")
@@ -302,7 +304,15 @@ class donations(commands.Cog):
         embed.set_thumbnail(url=member.display_avatar.url)
         embed.set_author(name="Success!", icon_url="https://cdn.discordapp.com/emojis/575412409737543694.gif?size=96")
         embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
-        await ctx.send(embed=embed)
+        if category_name.lower() == 'celebdank' and currentcount < 60000000 and newamount >= 60000000:
+            con = "Looks like they've reached at least ⏣ 60,000,000 donated, please give them the **Celeb Donator** role if necessary."
+        elif category_name.lower() == 'celebowo' and currentcount < 1000000 and newamount >= 1000000:
+            con = "Looks like they've reached at least <:dv_owoCowoncy:889983770285969408> 1,000,000 donated, please give them the **Celeb Donator** role if necessary."
+        elif category_name.lower() == 'celebkaruta' and currentcount < 20 and newamount >= 20:
+            con = "Looks like they've reached at least 🎟️ 30 tickets donated, please give them the **Celeb Donator** role if necessary."
+        else:
+            con = ""
+        await ctx.send(con, embed=embed)
         notify_about_logging = await self.client.db.fetchval("SELECT notify_about_logging FROM userconfig WHERE user_id = $1", ctx.author.id)
         if notify_about_logging is not True:
             if ctx.channel.id == 652729093649072168:
@@ -322,10 +332,6 @@ class donations(commands.Cog):
             msg = f"**{ctx.author.display_name}**, remember to start logging your donations!\n\nSlash command: `{structure}`\nExample: `{commandname}`"
             await ctx.message.reply(msg)
             await self.client.db.execute("INSERT INTO userconfig (user_id, notify_about_logging) VALUES($1, $2) ON CONFLICT (user_id) DO UPDATE SET notify_about_logging = $2", ctx.author.id, True)
-
-
-
-
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="removedonations", aliases=["rd"])
