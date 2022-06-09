@@ -357,7 +357,7 @@ class DankItems(commands.Cog):
                             embed.add_field(name="Details", value=field_details, inline=False)
                             embed.set_footer(text=f"Last updated")
                         embed.set_thumbnail(url=image_url)
-                        await ctx.send("⚠️ **Items shown in this command only applies to __celeb__ donations.**\nIf you're donating for a __normal giveaway or event__, use `dv.items`.", embed=embed)
+                        await ctx.send("⚠ All values shown here already have a 1.25x Multiplier applied. **These values apply only to __celeb__ donations!**\nIf you're donating for a __normal giveaway or event__, use `dv.items`.", embed=embed)
                         return
             else:
                 return await ctx.send(
@@ -389,7 +389,7 @@ class DankItems(commands.Cog):
                             desc.append(f"**{name}** `{idcode}`: [⏣ {comma_number(trade_value)}](http://a/)")
                         embed = discord.Embed(title=f"{type} Items", description="\n".join(desc),
                                               color=self.client.embed_color)
-                        page_obj = discord.ext.pages.Page(content="⚠️ **Items shown in this command only applies to __celeb__ donations.**\nIf you're donating for a __normal giveaway or event__, use `dv.items`.", embeds=[embed])
+                        page_obj = discord.ext.pages.Page(content="⚠ All values shown here already have a 1.25x Multiplier applied. **These values apply only to __celeb__ donations!**\nIf you're donating for a __normal giveaway or event__, use `dv.items`.", embeds=[embed])
                         embeds.append(page_obj)
                     pagegroups.append(discord.ext.pages.PageGroup(pages=embeds, label=type, author_check=True,
                                                                   disable_on_timeout=True, description=None))
@@ -521,4 +521,4 @@ class DankItems(commands.Cog):
         else:
             em = discord.Embed(title="You didn't input any items.", color=discord.Color.red())
             total_output_embeds.append(em)
-        await ctx.send("⚠️ **Items shown in this command only applies to __celeb__ donations.**\nIf you're donating for a __normal giveaway or event__, use `dv.items`.", embeds=total_output_embeds)
+        await ctx.send("⚠ All values shown here already have a 1.25x Multiplier applied. **These values apply only to __celeb__ donations!**\nIf you're donating for a __normal giveaway or event__, use `dv.items`.", embeds=total_output_embeds)
