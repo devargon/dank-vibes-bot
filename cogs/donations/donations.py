@@ -306,7 +306,7 @@ class donations(commands.Cog):
         embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
         if category_name.lower() == 'celebdank' and currentcount < 60000000 and newamount >= 60000000:
             con = "Looks like they've reached at least ⏣ 60,000,000 donated, please give them the **Celeb Donator** role if necessary."
-        elif category_name.lower() == 'celebowo' and currentcount < 1000000 and newamount >= 1000000:
+        elif category_name.lower() == 'celebowo' and currentcount < 2000000 and newamount >= 2000000:
             con = "Looks like they've reached at least <:dv_owoCowoncy:889983770285969408> 1,000,000 donated, please give them the **Celeb Donator** role if necessary."
         elif category_name.lower() == 'celebkaruta' and currentcount < 20 and newamount >= 20:
             con = "Looks like they've reached at least 🎟️ 30 tickets donated, please give them the **Celeb Donator** role if necessary."
