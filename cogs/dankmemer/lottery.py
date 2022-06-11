@@ -198,7 +198,10 @@ class Lottery(commands.Cog):
                 next_lottery_number += 1
             else:
                 to_commit.append((lottery_id, next_lottery_number, user.id))
-                summary.append(f"<:DVB_True:887589686808309791> **{user.name}** has entered as `{next_lottery_number}`")
+                if user.display_name != user.name:
+                    summary.append(f"<:DVB_True:887589686808309791> **{user.name} AKA {user.display_name}** entered as `{next_lottery_number}`")
+                else:
+                    summary.append(f"<:DVB_True:887589686808309791> **{user.name}** has entered as `{next_lottery_number}`")
                 last_lottery_number = next_lottery_number
         await self.client.db.executemany("INSERT INTO lottery_entries(lottery_id, lottery_number, lottery_user) VALUES ($1, $2, $3)", to_commit)
         summary = '\n'.join(summary)
