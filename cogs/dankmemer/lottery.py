@@ -167,7 +167,7 @@ class Lottery(commands.Cog):
         """
         if lottery_id is None:
             return await ctx.help()
-        if not (lottery_obj := await self.client.db.fetchrow("SELECT * FROM lotteries WHERE lottery_id = $1 AND active = $2", lottery_id, True)):
+        if lottery_id > 2147483647 or (lottery_obj := await self.client.db.fetchrow("SELECT * FROM lotteries WHERE lottery_id = $1 AND active = $2", lottery_id, True)) is None:
             await ctx.send(f"<:DVB_False:887589731515392000> An active lottery with the ID {lottery_id} doesn't exist.")
             return
         type_of_lottery = lottery_obj.get('lottery_type')
@@ -307,8 +307,9 @@ class Lottery(commands.Cog):
         """
         if lottery_id is None:
             return await ctx.help()
-        if (lottery_db := await self.client.db.fetchrow("SELECT * FROM lotteries WHERE lottery_id=$1 AND active = $2", lottery_id, True)) is None:
-            return await ctx.send(f"<:DVB_False:887589731515392000> An active lottery with the ID {lottery_id} does not exist.")
+        if lottery_id > 2147483647 or (lottery_db := await self.client.db.fetchrow("SELECT * FROM lotteries WHERE lottery_id = $1 AND active = $2", lottery_id, True)) is None:
+            await ctx.send(f"<:DVB_False:887589731515392000> An active lottery with the ID {lottery_id} doesn't exist.")
+            return
         if user is None:
             embed = discord.Embed(title=f"Reserved entries for {lottery_db.get('lottery_type')} lottery #{lottery_id}", color=self.client.embed_color)
             entries_str = []
@@ -344,8 +345,10 @@ class Lottery(commands.Cog):
         If you messed up, use this command to change the lottery's current entry number.
         This number should be the last number entered correctly.
         """
-        if (lotto_object := await self.client.db.fetchrow("SELECT * FROM lotteries WHERE lottery_id = $1 AND active = $2", lottery_id, True)) is None:
-            return await ctx.send(f"<:DVB_False:887589731515392000> An active lottery with the ID {lottery_id} does not exist.")
+        if lottery_id > 2147483647 or (
+        lotto_object := await self.client.db.fetchrow("SELECT * FROM lotteries WHERE lottery_id = $1 AND active = $2", lottery_id, True)) is None:
+            await ctx.send(f"<:DVB_False:887589731515392000> An active lottery with the ID {lottery_id} doesn't exist.")
+            return
 
         if await self.check_non_hoster_consent(ctx, lotto_object.get('starter_id')) is True:
             confirmview = confirm(ctx, self.client, 30.0)
@@ -370,8 +373,11 @@ class Lottery(commands.Cog):
         """
         Ends a lottery.
         """
-        if (lotto_object := await self.client.db.fetchrow("SELECT * FROM lotteries WHERE lottery_id = $1 AND active = $2", lottery_id, True)) is None:
-            return await ctx.send(f"<:DVB_False:887589731515392000> An active lottery with the ID {lottery_id} does not exist.")
+        if lottery_id > 2147483647 or (
+        lotto_object := await self.client.db.fetchrow("SELECT * FROM lotteries WHERE lottery_id = $1 AND active = $2",
+                                                     lottery_id, True)) is None:
+            await ctx.send(f"<:DVB_False:887589731515392000> An active lottery with the ID {lottery_id} doesn't exist.")
+            return
 
         if await self.check_non_hoster_consent(ctx, lotto_object.get('starter_id')) is True:
             max_lotto_no = await self.client.db.fetchval("SELECT MAX(lottery_number) FROM lottery_entries WHERE lottery_id = $1", lottery_id)
