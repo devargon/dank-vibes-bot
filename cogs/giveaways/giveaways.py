@@ -542,6 +542,7 @@ class GiveawayView(discord.ui.View):
 
     @discord.ui.button(emoji=discord.PartialEmoji.from_str("<a:dv_iconOwO:837943874973466664>"), label="Join giveaway", style=discord.ButtonStyle.green, custom_id="dvb:giveawayjoin")
     async def JoinGiveaway(self, button: discord.ui.Button, interaction: discord.Interaction):
+        can_bypass = None
         edit_final = False
         giveawaymessage = interaction.message
         giveawayentry = await self.cog.fetch_giveaway(giveawaymessage.id)
@@ -562,6 +563,113 @@ class GiveawayView(discord.ui.View):
             entered = False
             user_entries = await self.cog.fetch_user_entries(interaction.user.id, giveawaymessage.id)
             summary_embed = discord.Embed(color=self.client.embed_color)
+            descriptions = []
+            if len(giveawayentry.blacklisted_roles) > 0:
+                for role in interaction.user.roles:
+                    if role.id in giveawayentry.blacklisted_roles:
+                        return await interaction.response.send_message(
+                            embed=discord.Embed(title="Failed to join giveaway",
+                                                description=f"You have the role {role.mention} which is blacklisted from entering this giveaway.",
+                                                color=discord.Color.red()), ephemeral=True)
+            if len(giveawayentry.bypass_roles) > 0:
+                # print('giveaway has bypass roles')
+                for r_id in giveawayentry.bypass_roles:
+                    if discord.utils.get(interaction.user.roles, id=r_id):
+                        can_bypass = True
+                        break
+                    else:
+                        continue
+            if can_bypass is not True and (len(giveawayentry.required_roles) > 0 or giveaway_has_weeklyxp or giveaway_has_amarilevelreq):
+                if len(giveawayentry.required_roles) > 0:
+                    # print('giveaway has required roles')
+                    missing_roles = []
+                    for r_id in giveawayentry.required_roles:
+                        if (r := interaction.guild.get_role(r_id)) is not None:
+                            if r not in interaction.user.roles:
+                                missing_roles.append(f"<@&{r_id}>")
+                            else:
+                                pass
+                    if len(missing_roles) > 0:
+                        desc = f"<:DVB_False:887589731515392000> You do not have the following roles to join this giveaway: {', '.join(missing_roles)}"
+
+                        def gway_only_requires_voting() -> bool:
+                            if str(voteid) in desc and len(missing_roles) == 1:
+                                return True
+                            else:
+                                return False
+
+                        if gway_only_requires_voting():
+                            desc += f"\n\n You can get <@&{voteid}> by voting for Dank Vibes!"
+                        return await interaction.response.send_message(
+                            embed=discord.Embed(title="Unable to join giveaway",
+                                                description=desc,
+                                                color=discord.Color.yellow()),
+                            view=VoteLink() if gway_only_requires_voting() else None,
+                            ephemeral=True
+                        )
+
+                if giveaway_has_weeklyxp or giveaway_has_amarilevelreq:
+                    qualified = False
+                    await interaction.response.send_message(embed=discord.Embed(title="Please wait...",
+                                                                                description=f"I'm communicating with AmariBot to know what your Level and/or Weekly XP is!").set_thumbnail(
+                        url="https://cdn.discordapp.com/avatars/339254240012664832/0cfec781df368dbce990d440d075a2d7.png?size=1024"),
+                        ephemeral=True)
+                    edit_final = True
+                    failembed = discord.Embed(title="An error occured when I tried talking to AmariBot.",
+                                              color=discord.Color.red()).set_thumbnail(
+                        url="https://media.discordapp.net/attachments/656173754765934612/671895577986072576/Status.png")
+                    user_amari_details, last_updated, error = await self.client.fetch_amari_data(interaction.user.id,
+                                                                                                 interaction.guild.id)
+                    if error is not None or user_amari_details == AwaitingAmariData or user_amari_details == NoAmariData:
+                        if not isinstance(user_amari_details, amari.objects.User):
+                            if user_amari_details == NoAmariData or isinstance(error, amari.exceptions.NotFound):
+                                failembed.description = f"I could not find your/{interaction.guild.name}'s AmariBot data. Is AmariBot in the server?"
+                            elif user_amari_details == AwaitingAmariData:
+                                failembed.description = f"I am still waiting for data from AmariBot. Please try again in a few seconds."
+                        else:
+                            if user_amari_details is None:
+                                if isinstance(error, amari.exceptions.InvalidToken):
+                                    failembed.description = "**An error occured when trying to contact AmariBot. This error can only be solved by the developer.**\nThe developer has been notified and will try to solve this issue as soon as possible."
+                                    traceback_error = print_exception(error, "Ignoring Exception in AmariDataGetter:")
+                                    traceback_embed = discord.Embed(title="Traceback",
+                                                                    description=traceback_error,
+                                                                    color=discord.Color.red())
+                                    await interaction.response.edit_original_message(embed=failembed)
+                                    return await self.client.error_channel().send(embed=traceback_embed)
+                                elif isinstance(error, amari.exceptions.RatelimitException):
+                                    failembed.description = f"**{self.client.user.name} has been ratelimited from contacting AmariBot.**\nI will temporarily be unable to contact AmariBot until the ratelimit is over."
+                                elif isinstance(error, amari.exceptions.AmariServerError):
+                                    failembed.description = "**AmariBot is having problems.**\nI am unable to contact AmariBot until their servers are back online."
+                                else:
+                                    failembed.description = f"**There was an error while talking to AmariBot.**\n```{error}\n```"
+                        return await interaction.edit_original_message(embed=failembed)
+                    else:
+                        if user_amari_details is None:
+                            # print('obj was none')
+                            level = 0
+                            weekly_xp = 0
+                        else:
+                            level = user_amari_details.level
+                            weekly_xp = user_amari_details.weeklyexp if user_amari_details.weeklyexp is not None else 0
+                        missing_amari_requirements = []
+                        if giveaway_has_amarilevelreq is True and level < giveawayentry.amari_level:
+                            missing_amari_requirements.append(
+                                f"<a:DVB_arrow:975663275306024971> Your current Level is **{level}**. __You need to be **Level {giveawayentry.amari_level}** to enter the giveaway.__")
+
+                        if giveaway_has_weeklyxp is True and weekly_xp < giveawayentry.amari_weekly_xp:
+                            missing_amari_requirements.append(
+                                f"<a:DVB_arrow:975663275306024971> You currently have **{weekly_xp}** Weekly EXP. __You need another {giveawayentry.amari_weekly_xp - weekly_xp} Weekly EXP to join the giveaway__, which has a requirement of **{giveawayentry.amari_weekly_xp}** Weekly EXP.")
+                        if len(missing_amari_requirements) > 0:
+                            desc = '\n'.join(missing_amari_requirements)
+                            em = discord.Embed(title="Unable to join giveaway", description=desc,
+                                               color=discord.Color.yellow())
+                            em.set_footer(
+                                text=f"Data was last updated {humanize_timedelta(seconds=round(time()) - last_updated)} ago.")
+                            if error is not None:
+                                em.add_field(name="Note",
+                                             value=f"I detected an issue while trying to talk to AmariBot. This may affect your ability to join the giveaway.\n\nDetails: ```\n{error}```")
+
+                            return await interaction.edit_original_message(embed=em)
             if giveaway_uses_multiple_entries:
                 entries = Counter(entry.get('entrytype') for entry in user_entries)
                 entry_list = [
@@ -573,107 +681,11 @@ class GiveawayView(discord.ui.View):
                         entry_list.append({'role_id': role_id, 'allowed_entries': 0, 'valid_role': False, 'entered_entries': entries.get(role_id, 0)})
                     else:
                         entry_list.append({'role_id': role_id, 'allowed_entries': multi_count, 'valid_role': True, 'entered_entries': entries.get(role_id, 0)})
-                descriptions = []
                 for entry_dict in entry_list:
                     newly_entered_entries = 0
                     if entry_dict['valid_role'] is True:
                         if entry_dict['entered_entries'] < entry_dict['allowed_entries']:
                             if entry_dict['role_id'] == 0:
-                                qualified = False
-                                if len(giveawayentry.blacklisted_roles) > 0:
-                                    for role in interaction.user.roles:
-                                        if role.id in giveawayentry.blacklisted_roles:
-                                            return await interaction.response.send_message(embed=discord.Embed(title="Failed to join giveaway", description=f"You have the role {role.mention} which is blacklisted from entering this giveaway.", color=discord.Color.red()), ephemeral=True)
-                                if len(giveawayentry.required_roles) > 0:
-                                    # print('giveaway has required roles')
-                                    missing_roles = []
-                                    for r_id in giveawayentry.required_roles:
-                                        if (r := interaction.guild.get_role(r_id)) is not None:
-                                            if r not in interaction.user.roles:
-                                                missing_roles.append(f"<@&{r_id}>")
-                                            else:
-                                                pass
-                                    # print(missing_roles)
-                                    if len(missing_roles) > 0:
-                                        if len(giveawayentry.bypass_roles) > 0:
-                                            # print('giveaway has bypass roles')
-                                            for r_id in giveawayentry.bypass_roles:
-                                                if discord.utils.get(interaction.user.roles, id=r_id):
-                                                    qualified = True
-                                                    break
-                                                else:
-                                                    continue
-                                    else:
-                                        qualified = True
-                                    if not qualified:
-                                        desc = f"<:DVB_False:887589731515392000> You do not have the following roles to join this giveaway: {', '.join(missing_roles)}"
-
-                                        def gway_only_requires_voting() -> bool:
-                                            if str(voteid) in desc and len(missing_roles) == 1:
-                                                return True
-                                            else:
-                                                return False
-                                        if gway_only_requires_voting():
-                                            desc += f"\n\n You can get <@&{voteid}> by voting for Dank Vibes!"
-                                        return await interaction.response.send_message(
-                                            embed=discord.Embed(title="Unable to join giveaway",
-                                                                description=desc,
-                                                                color=discord.Color.yellow()), view =VoteLink() if gway_only_requires_voting() else None,
-                                                                ephemeral=True
-                                        )
-                                if giveaway_has_weeklyxp or giveaway_has_amarilevelreq:
-                                    qualified = False
-                                    await interaction.response.send_message(embed=discord.Embed(title="Please wait...", description=f"I'm communicating with AmariBot to know what your Level and/or Weekly XP is!").set_thumbnail(url="https://cdn.discordapp.com/avatars/339254240012664832/0cfec781df368dbce990d440d075a2d7.png?size=1024"), ephemeral=True)
-                                    edit_final = True
-                                    failembed = discord.Embed(title="An error occured when I tried talking to AmariBot.", color=discord.Color.red()).set_thumbnail(url="https://media.discordapp.net/attachments/656173754765934612/671895577986072576/Status.png")
-                                    user_amari_details, last_updated, error = await self.client.fetch_amari_data(interaction.user.id, interaction.guild.id)
-                                    if error is not None or user_amari_details == AwaitingAmariData or user_amari_details == NoAmariData:
-                                        if not isinstance(user_amari_details, amari.objects.User):
-                                            if user_amari_details == NoAmariData or isinstance(error, amari.exceptions.NotFound):
-                                                failembed.description = f"I could not find your/{interaction.guild.name}'s AmariBot data. Is AmariBot in the server?"
-                                            elif user_amari_details == AwaitingAmariData:
-                                                failembed.description = f"I am still waiting for data from AmariBot. Please try again in a few seconds."
-                                        else:
-                                            if user_amari_details is None:
-                                                if isinstance(error, amari.exceptions.InvalidToken):
-                                                    failembed.description = "**An error occured when trying to contact AmariBot. This error can only be solved by the developer.**\nThe developer has been notified and will try to solve this issue as soon as possible."
-                                                    traceback_error = print_exception(error, "Ignoring Exception in AmariDataGetter:")
-                                                    traceback_embed = discord.Embed(title="Traceback",
-                                                                                    description=traceback_error,
-                                                                                    color=discord.Color.red())
-                                                    await interaction.response.edit_original_message(embed=failembed)
-                                                    return await self.client.error_channel().send(embed=traceback_embed)
-                                                elif isinstance(error, amari.exceptions.RatelimitException):
-                                                    failembed.description = f"**{self.client.user.name} has been ratelimited from contacting AmariBot.**\nI will temporarily be unable to contact AmariBot until the ratelimit is over."
-                                                elif isinstance(error, amari.exceptions.AmariServerError):
-                                                    failembed.description = "**AmariBot is having problems.**\nI am unable to contact AmariBot until their servers are back online."
-                                                else:
-                                                    failembed.description = f"**There was an error while talking to AmariBot.**\n```{error}\n```"
-                                        return await interaction.edit_original_message(embed=failembed)
-                                    else:
-                                        if user_amari_details is None:
-                                            #print('obj was none')
-                                            level = 0
-                                            weekly_xp = 0
-                                        else:
-                                            level = user_amari_details.level
-                                            weekly_xp = user_amari_details.weeklyexp if user_amari_details.weeklyexp is not None else 0
-                                        missing_amari_requirements = []
-                                        if giveaway_has_amarilevelreq is True and level < giveawayentry.amari_level:
-                                            missing_amari_requirements.append(f"<a:DVB_arrow:975663275306024971> Your current Level is **{level}**. __You need to be **Level {giveawayentry.amari_level}** to enter the giveaway.__")
-
-                                        if giveaway_has_weeklyxp is True and weekly_xp < giveawayentry.amari_weekly_xp:
-                                            missing_amari_requirements.append(f"<a:DVB_arrow:975663275306024971> You currently have **{weekly_xp}** Weekly EXP. __You need another {giveawayentry.amari_weekly_xp - weekly_xp} Weekly EXP to join the giveaway__, which has a requirement of **{giveawayentry.amari_weekly_xp}** Weekly EXP.")
-                                        if len(missing_amari_requirements) > 0:
-                                            desc = '\n'.join(missing_amari_requirements)
-                                            em = discord.Embed(title="Unable to join giveaway", description=desc, color=discord.Color.yellow())
-                                            em.set_footer(text=f"Data was last updated {humanize_timedelta(seconds=round(time()) - last_updated)} ago.")
-                                            if error is not None:
-                                                em.add_field(name="Note", value=f"I detected an issue while trying to talk to AmariBot. This may affect your ability to join the giveaway.\n\nDetails: ```\n{error}```")
-
-                                            return await interaction.edit_original_message(embed=em)
-                                        else:
-                                            qualified = True
                                 for i in range(entry_dict['allowed_entries'] - entry_dict['entered_entries']):
                                     entries_to_insert.append((giveawaymessage.id, interaction.user.id, entry_dict['role_id']))
                                     newly_entered_entries += 1
@@ -713,112 +725,6 @@ class GiveawayView(discord.ui.View):
                     # print('user already entered')
                     summary_embed.description = f"Your total entries: {len(user_entries)}"
                 else:
-                    qualified = False
-                    if len(giveawayentry.blacklisted_roles) > 0:
-                        for role in interaction.user.roles:
-                            if role.id in giveawayentry.blacklisted_roles:
-                                return await interaction.response.send_message(embed=discord.Embed(title="Failed to join giveaway", description=f"You have the role {role.mention} which is blacklisted from entering this giveaway.", color=discord.Color.red()), ephemeral=True)
-                    if len(giveawayentry.required_roles) > 0:
-                        # print('giveaway has required roles')
-                        missing_roles = []
-                        for r_id in giveawayentry.required_roles:
-                            if (r := interaction.guild.get_role(r_id)) is not None:
-                                if r not in interaction.user.roles:
-                                    missing_roles.append(f"<@&{r_id}>")
-                                else:
-                                    qualified = True
-                                    break
-                        # print(missing_roles)
-                        if len(missing_roles) > 0:
-                            if len(giveawayentry.bypass_roles) > 0:
-                                for r_id in giveawayentry.bypass_roles:
-                                    if discord.utils.get(interaction.user.roles, id=r_id):
-                                        qualified = True
-                                        break
-                                    else:
-                                        continue
-                        if not qualified:
-                            desc = f"<:DVB_False:887589731515392000> You do not have the following roles to join this giveaway: {', '.join(missing_roles)}"
-
-                            def gway_only_requires_voting() -> bool:
-                                if str(voteid) in desc and len(missing_roles) == 1:
-                                    return True
-                                else:
-                                    return False
-                            if gway_only_requires_voting():
-                                desc += f"\n\n You can get <@&{voteid}> by voting for Dank Vibes!"
-                            return await interaction.response.send_message(
-                                embed=discord.Embed(title="Unable to join giveaway",
-                                                    description=desc,
-                                                    color=discord.Color.yellow()),
-                                view=VoteLink() if gway_only_requires_voting() else None,
-                                ephemeral=True
-                            )
-                    if giveaway_has_weeklyxp or giveaway_has_amarilevelreq:
-                        qualified = False
-                        await interaction.response.send_message(embed=discord.Embed(title="Please wait...",
-                                                                                    description=f"I'm communicating with AmariBot to know what your Level and/or Weekly XP is!").set_thumbnail(
-                            url="https://cdn.discordapp.com/avatars/339254240012664832/0cfec781df368dbce990d440d075a2d7.png?size=1024"),
-                                                                ephemeral=True)
-                        edit_final = True
-                        failembed = discord.Embed(title="An error occured when I tried talking to AmariBot.",
-                                                  color=discord.Color.red()).set_thumbnail(
-                            url="https://media.discordapp.net/attachments/656173754765934612/671895577986072576/Status.png")
-                        user_amari_details, last_updated, error = await self.client.fetch_amari_data(
-                            interaction.user.id, interaction.guild.id)
-                        if error is not None or user_amari_details == AwaitingAmariData or user_amari_details == NoAmariData:
-                            if not isinstance(user_amari_details, amari.objects.User):
-                                if user_amari_details == NoAmariData or isinstance(error, amari.exceptions.NotFound):
-                                    failembed.description = f"I could not find your/{interaction.guild.name}'s AmariBot data. Is AmariBot in the server?"
-                                elif user_amari_details == AwaitingAmariData:
-                                    failembed.description = f"I am still waiting for data from AmariBot. Please try again in a few seconds."
-                            else:
-                                if user_amari_details is None:
-                                    if isinstance(error, amari.exceptions.InvalidToken):
-                                        failembed.description = "**An error occured when trying to contact AmariBot. This error can only be solved by the developer.**\nThe developer has been notified and will try to solve this issue as soon as possible."
-                                        traceback_error = print_exception(error,
-                                                                          "Ignoring Exception in AmariDataGetter:")
-                                        traceback_embed = discord.Embed(title="Traceback",
-                                                                        description=traceback_error,
-                                                                        color=discord.Color.red())
-                                        await interaction.response.edit_original_message(embed=failembed)
-                                        return await self.client.error_channel().send(embed=traceback_embed)
-                                    elif isinstance(error, amari.exceptions.RatelimitException):
-                                        failembed.description = f"**{self.client.user.name} has been ratelimited from contacting AmariBot.**\nI will temporarily be unable to contact AmariBot until the ratelimit is over."
-                                    elif isinstance(error, amari.exceptions.AmariServerError):
-                                        failembed.description = "**AmariBot is having problems.**\nI am unable to contact AmariBot until their servers are back online."
-                                    else:
-                                        failembed.description = f"**There was an error while talking to AmariBot.**\n```{error}\n```"
-                            await interaction.response.edit_original_message(embed=failembed)
-                        else:
-                            if user_amari_details is None:
-                                #print('obj was none')
-                                level = 0
-                                weekly_xp = 0
-                            else:
-                                level = user_amari_details.level
-                                weekly_xp = user_amari_details.weeklyexp if user_amari_details.weeklyexp is not None else 0
-                            missing_amari_requirements = []
-                            if giveaway_has_amarilevelreq and level < giveawayentry.amari_level:
-                                missing_amari_requirements.append(
-                                    f"<a:DVB_arrow:975663275306024971> Your current Level is **{level}**. __You need to be **Level {giveawayentry.amari_level}** to enter the giveaway.__")
-
-                            if giveaway_has_amarilevelreq and weekly_xp < giveawayentry.amari_weekly_xp:
-                                missing_amari_requirements.append(
-                                    f"<a:DVB_arrow:975663275306024971> You currently have **{weekly_xp}** Weekly EXP. __You need another {giveawayentry.amari_weekly_xp - weekly_xp} Weekly EXP to join the giveaway__, which has a requirement of **{giveawayentry.amari_weekly_xp}** Weekly EXP.")
-                            if len(missing_amari_requirements) > 0:
-                                desc = '\n'.join(missing_amari_requirements)
-                                em = discord.Embed(title="Unable to join giveaway", description=desc,
-                                                   color=discord.Color.yellow())
-                                em.set_footer(
-                                    text=f"Data was last updated {humanize_timedelta(seconds=round(time()) - last_updated)} ago.")
-                                if error is not None:
-                                    em.add_field(name="Note",
-                                                 value=f"I detected an issue while trying to talk to AmariBot. This may affect your ability to join the giveaway.\n\nDetails: ```\n{error}```")
-
-                                return await interaction.edit_original_message(embed=em)
-                            else:
-                                qualified = True
                     entries_to_insert.append((giveawaymessage.id, interaction.user.id, 0))
                     entered = True
                 summary_embed.description = f"Your total entries: 1"
