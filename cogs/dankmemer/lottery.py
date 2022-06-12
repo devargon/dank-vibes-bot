@@ -199,7 +199,7 @@ class Lottery(commands.Cog):
             else:
                 to_commit.append((lottery_id, next_lottery_number, user.id))
                 if user.display_name != user.name:
-                    summary.append(f"<:DVB_True:887589686808309791> **{user.name} AKA {user.display_name}** entered as `{next_lottery_number}`")
+                    summary.append(f"<:DVB_True:887589686808309791> **{user.name}** a.k.a. **{user.display_name}** entered as `{next_lottery_number}`")
                 else:
                     summary.append(f"<:DVB_True:887589686808309791> **{user.name}** has entered as `{next_lottery_number}`")
                 last_lottery_number = next_lottery_number
