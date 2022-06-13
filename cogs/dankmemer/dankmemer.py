@@ -960,7 +960,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             if len(beforemsg.mentions) > 0:
                 if len(beforemsg.embeds) > 0:
                     embed = beforemsg.embeds[0]
-                    if isinstance(embed.author.name, str) or isinstance(embed.title, str) or embed.fields is not None:
+                    if isinstance(embed.author.name, str) or isinstance(embed.title, str) or (embed.fields is not None and len(embed.fields) > 0):
                         return
                     if len(beforemsg.components) > 0:
                         def find_one_enabled_component(mtarget):
@@ -981,9 +981,10 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                             return False
                         if not find_all_disabled_component(aftermsg):
                             return False
-                        target = beforemsg.mentions[0]
-                        await self.handle_reminder_entry(target.id, 24, beforemsg.channel.id, beforemsg.guild.id, round(time.time()) + 120)
-                        await beforemsg.add_reaction('🚀')
+                        if len(beforemsg.mentions) > 0:
+                            target = beforemsg.mentions[0]
+                            await self.handle_reminder_entry(target.id, 24, beforemsg.channel.id, beforemsg.guild.id, round(time.time()) + 120)
+                            await beforemsg.add_reaction('🚀')
                     else:
                         return False
         await check_for_adventure()
