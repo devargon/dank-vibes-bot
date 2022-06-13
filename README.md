@@ -41,7 +41,8 @@ Uncheck the "Public Bot" checkbox if you only want to allow yourself to invite t
    GITHUBPAT = The GitHub personal access token you generated in step 5
    state = 1 (anything other than above 1 means the bot is the development version)
    tenorAPI= your tenor API key
-   path_to_tesseract=the path to where you insstalled tesseract-ocr (example "D:\Program Files\Tesseract-OCR")
+   bugsnap_key = Your bugsnap key
+   AMARI_KEY = Your Amari Developer Key
    ```
 9. Start the bot.
    - On the first run, the bot should create all the databases needed. Some errors might pop up here and there, after a few restarts it should work. 
