@@ -18,7 +18,7 @@ cogs/donations/__pycache__
 cogs/giveaways/__pycache__
 cogs/grinder/__pycache__
 cogs/imgen/__pycache__
-cogs/infection/__pycache__
+cogs/events/__pycache__
 __pycache__
 utils/__pycache__
 databases/autoreactor.db 
