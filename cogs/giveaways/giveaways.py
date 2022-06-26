@@ -1315,7 +1315,7 @@ class giveaways(commands.Cog):
                 await ctx.respond(f"You cannot ping **Giveaway Ping** in this channel.", ephemeral=True)
                 ping = None
                 # elite channel check
-            elif ping == 'elite' and ctx.channel.id not in [701771740912549938, 741254464303923220,
+            elif ping == 'elite' and channel.id not in [701771740912549938, 741254464303923220,
                                                             630587061665267713, 616007729718231161]:
                 await ctx.respond(f"You cannot ping **Elite Giveaway Ping** in this channel.", ephemeral=True)
                 ping = None
