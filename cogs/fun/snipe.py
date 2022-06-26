@@ -120,7 +120,7 @@ class snipe(commands.Cog):
         if desc == "This message has a blacklisted word and cannot be shown." or desc == "Ha, you got hidepinged!":
             pass
         else:
-            snipe_res_result = await self.client.db.fetchval("SELECT snipe_res_result FROM userconfig WHERE user_id = $1", ctx.author.id)
+            snipe_res_result = await self.client.db.fetchval("SELECT snipe_res_result FROM userconfig WHERE user_id = $1", snipedata['author'].id)
             if snipe_res_result is True:
                 desc = encrypt(desc)
             elif snipe_res_result is False:
@@ -173,7 +173,7 @@ class snipe(commands.Cog):
         if desc == "This message has a blacklisted word and cannot be shown." or desc == "Ha, you got hidepinged!":
             pass
         else:
-            snipe_res_result = await self.client.db.fetchval("SELECT snipe_res_result FROM userconfig WHERE user_id = $1", ctx.author.id)
+            snipe_res_result = await self.client.db.fetchval("SELECT snipe_res_result FROM userconfig WHERE user_id = $1", snipedata['author'].id)
             if snipe_res_result is True:
                 desc = encrypt(desc)
             elif snipe_res_result is False:
@@ -197,7 +197,7 @@ class snipe(commands.Cog):
             return await ctx.send("No one has removed a reaction here.")
         snipedata = self.removed_reactions[channel.id]
         async def emoji():
-            snipe_res_result = await self.client.db.fetchval("SELECT snipe_res_result FROM userconfig WHERE user_id = $1", ctx.author.id)
+            snipe_res_result = await self.client.db.fetchval("SELECT snipe_res_result FROM userconfig WHERE user_id = $1", snipedata['author'].id)
             if snipe_res_result is True:
                 return None
             else:
