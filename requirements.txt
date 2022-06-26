@@ -1,14 +1,14 @@
 aiohttp==3.7.4.post0
 async-timeout==3.0.1
-asyncpg==0.24.0
-colorthief==0.2.1
+asyncpg
+colorthief
 cycler==0.10.0
 discord-ext-menus @ git+https://github.com/Rapptz/discord-ext-menus@fbb8803779373357e274e1540b368365fd9d8074
 py-cord==2.0.0rc1
 alexflipnote.py @ git+https://github.com/argo0n/forked_alexflipnote.py
-expr.py==0.3.0
+expr.py
 thefuzz[speed]
-humanize==3.11.0
+humanize
 inflect==5.3.0
 kiwisolver==1.3.2
 matplotlib==3.4.3
@@ -21,7 +21,7 @@ pyOpenSSL
 pyparsing
 PySocks
 python-dateutil
-python-dotenv==0.19.0
+python-dotenv
 requests
 rply==0.7.8
 selenium
