@@ -1,4 +1,5 @@
 import itertools
+import json
 
 from discord.ext import menus, pages
 
@@ -23,6 +24,16 @@ from thefuzz import process
 from collections import Counter
 from datetime import timedelta, datetime
 import time
+
+class ViewEmbedJSONs(discord.ui.View):
+    def __init__(self, embeds):
+        self.embeds = embeds
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="View raw JSON embeds", style=discord.ButtonStyle.primary, emoji=discord.PartialEmoji.from_str("<:DVB_Embed:976499722070151258>"))
+    async def view_raw_json(self, button: discord.ui.Button, interaction: discord.Interaction):
+        button.disabled = True
+        await interaction.response.edit_message(embeds=self.embeds, view=self)
 
 modlog_channelID = 873616122388299837 if os.getenv('state') == '1' else 640029959213285387
 
@@ -269,6 +280,37 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
         message = await channel.send("Press the button to claim your role.", view=view)
         view.response = message
 
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name='selfharm')
+    async def selfharm(self, ctx, member: discord.Member = None):
+        embed = discord.Embed(title="Suicide and Self-Harm Hotlines \u2764", color=11461317)
+        embed.description = "We understand you need someone to talk to and that's alright. You aren't alone. " \
+                            "Ever.\nHowever, we aren't an emotional support server. We aren't paid professionals that " \
+                            "are trained to handle these types of situations.\n\nThat being said, if you need to open " \
+                            "up about serious issues going on in your lives, please don't do that here.\n\nWe know " \
+                            "this can be hard to hear, but not only do you impact yourself more, but now, " \
+                            "you've brought others into the situation.\n\nPlease seek professional help immediately " \
+                            "if you feel you're at risk of inflicting harm upon yourself. Below is a list of " \
+                            "resources designed to assist you:\n\nNational Suicide Prevention (United States)\n> " \
+                            "Phone Number (24/7): 1-800-273-8255\n\nInternational Suicide Hotlines\n> Look up your " \
+                            "country's hotline and call it if you aren't in the US.\n> This list may be out-dated: [" \
+                            "International Suicicide Hotline](https://suicidepreventionlifeline.org/)\n\nIf you need " \
+                            "a resource within Discord, [click here](" \
+                            "https://disboard.org/servers/tag/mental-health?sort=-member_count) for a list of mental " \
+                            "health support Discord servers. "
+        embed.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url)
+        embed.set_thumbnail(url="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRqRdSgVuLPG3oLBRlGJay6kKtRjitOxl_ZQTR9T0H8l195daMz&s%22%7D")
+        if member is None:
+            await ctx.send(embed=embed)
+        else:
+            try:
+                await member.send(embed=embed)
+            except Exception as e:
+                await ctx.send(f"Could not send Suicide and Self-Harm advice: {e}")
+            else:
+                with contextlib.suppress(discord.HTTPException):
+                    await ctx.message.add_reaction("📩")
+
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="getraw", aliases = ['raw', 'rawmessage'])
@@ -285,13 +327,29 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
         except discord.NotFound:
             return await ctx.send(f"I did not find a message with the ID {message_id} in {channel}. {'DId you forget to include `channel`?' if channel == ctx.channel else ''}")
         else:
-            content = message.content
-            if "‍" in content or "​" in content:
-                return await ctx.send("Nice try, but you won't be able to get the raw text for hiding pings.")
-            if len(content) > 4096:
-                await ctx.send(f"Raw content of message with ID {message_id} in {channel}", file=text_to_file(content, "file.txt", "utf8"))
-            else:
-                await ctx.send(embed=discord.Embed(title=f"Raw content of message with ID {message_id} in {channel}", description=f"```\n{content}\n```", color = self.client.embed_color))
+            m_content = message.content
+            if len(m_content) > 0:
+                content_embed_raw = discord.Embed(title="Raw Message Content",
+                                                  description=f"```\n{message.content}\n```",
+                                                  color=self.client.embed_color)
+                if len(message.embeds) > 0:
+                    embeds = []
+                    for embed in message.embeds:
+                        embed_json = json.dumps(embed.to_dict())
+                        content_embed = discord.Embed(title="Raw Embed (JSON)", description=f"```\n{embed_json}\n```",
+                                                      color=self.client.embed_color)
+                        embeds.append(content_embed)
+                    await ctx.send(embed=content_embed_raw, view=ViewEmbedJSONs(embeds))
+                else:
+                    await ctx.send(embed=content_embed_raw)
+            elif len(message.embeds) > 0:
+                embeds = []
+                for embed in message.embeds:
+                    embed_json = json.dumps(embed.to_dict())
+                    content_embed_raw = discord.Embed(title="Raw Embed (JSON)", description=f"```\n{embed_json}\n```",
+                                                      color=self.client.embed_color)
+                    embeds.append(content_embed_raw)
+                await ctx.send(embeds=embeds)
 
     @commands.command(name="memberpvc", brief = "Checks the private channels that a member has access to", description = "Checks the private channels that a member has access to", aliases = ["pvcmember"])
     @commands.has_guild_permissions(manage_roles=True)
