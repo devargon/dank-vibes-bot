@@ -1345,6 +1345,7 @@ class giveaways(commands.Cog):
             ping_config = pings.get(ping, None)
         else:
             ping_config = None
+        print(ping, ping_config)
         if os.getenv('state') == '0':
             if ping_config is not None:
                 required_roles_for_ping = ping_config.get('required_role', [])
