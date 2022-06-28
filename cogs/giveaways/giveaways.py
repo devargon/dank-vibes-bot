@@ -1343,6 +1343,7 @@ class giveaways(commands.Cog):
         else:
             ping_config = None
         if os.getenv('state') == '0':
+            print(f"Ping parameter: {ping}\nPing Config: {ping_config}")
             if ping is not None and ping_config is not None:
                 required_roles_for_ping = ping_config.get('required_role', [])
                 if len(required_roles_for_ping) > 0 and not ctx.author.guild_permissions.manage_roles:
@@ -1492,6 +1493,7 @@ class giveaways(commands.Cog):
                 embed.description += "\n\n__Timeout__\nYou didn't respond in time. The giveaway has been cancelled."
             elif confirmview.returning_value is False:
                 embed.description += "\n\n__Cancelled__\nYou cancelled the giveaway."
+            print("editing message")
             return await confirmview.response.edit_original_message(embed=embed)
         required_role_list_str = ",".join([str(role.id) for role in required_roles]) if len(required_roles) > 0 else None
         blacklisted_role_list_str = ",".join([str(role.id) for role in blacklisted_roles]) if type(blacklisted_roles) == list and len(blacklisted_roles) > 0 else None
