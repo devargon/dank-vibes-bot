@@ -1349,7 +1349,7 @@ class giveaways(commands.Cog):
                     if any([discord.utils.get(ctx.author.roles, id=required_roleid) for required_roleid in required_roles_for_ping]):
                         required_channels_for_ping = ping_config.get('required_channel', [])
                         if len(required_channels_for_ping) > 0:
-                            if channel.id in (required_channels_for_ping):
+                            if channel.id in required_channels_for_ping:
                                 pass
                             else:
                                 display_required_channels_ping = ", ".join((f"<@#{c_id}>" for c_id in required_channels_for_ping))
