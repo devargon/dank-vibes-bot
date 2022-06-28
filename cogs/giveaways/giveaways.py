@@ -4,7 +4,7 @@ import random
 import typing
 import asyncio
 from collections import Counter
-from time import time, perf_counter
+from time import time
 from datetime import datetime
 
 import amari
@@ -23,7 +23,6 @@ from utils.converters import BetterBetterRoles, BetterMessageID
 from utils.menus import CustomMenu
 from utils.specialobjects import AwaitingAmariData, NoAmariData
 from utils.time import humanize_timedelta
-from utils.errors import ArgumentBaseError, AmariDataNotFound, AmariError, AmariDeveloperError
 from utils.format import plural, stringtime_duration, grammarformat, human_join, print_exception
 
 voteid = 874897331252760586 if os.getenv('state') == '1' else 683884762997587998
@@ -1301,7 +1300,7 @@ class giveaways(commands.Cog):
                              amari_level: discord.Option(int, "An optional Amari Level requirement") = 0,
                              amari_weekly_xp: discord.Option(int, "An optional Amari Weekly XP requirement") = 0,
                              channel: discord.Option(discord.TextChannel, "Specify another channel to start the giveaway there") = None,
-                             ping: discord.Option(str, "Ping a giveaway ping immediately after giveaway starts.", choices=['gang', 'elite']) = None,
+                             ping: discord.Option(str, "Ping a giveaway ping immediately after giveaway starts.", choices=['gang', 'elite', 'nitro', 'owo', 'karuta']) = None,
                              ):
         if ping is not None and discord.utils.get(ctx.author.roles, id=gwstaff_id) is None:
             await ctx.respond(f"You can only use the `ping` option if you're a **<@&{gwstaff_id}>**.", ephemeral=True)
@@ -1309,16 +1308,63 @@ class giveaways(commands.Cog):
         # gang channel check
         if channel is None:
             channel = ctx.channel
+        pings = {
+            'gang': {
+                'role_id': 758175760909074432,
+                'required_role': [627284965222121482],
+                'required_channel': [701771740912549938, 626704430468825089, 630587061665267713, 616007729718231161],
+                'text': "Join the giveaway above ♡"
+            },
+            'elite': {
+                'role_id': 758174135276142593,
+                'required_role': [627284965222121482],
+                'required_channel': [701771740912549938, 741254464303923220, 630587061665267713, 616007729718231161],
+                'text': "Join the Elite giveaway above ♡"
+            },
+            'karuta': {
+                'role_id': 847846998429139014,
+                'required_role': [843756047964831765],
+                'required_channel': [847375661332299786],
+                'text': "Join the Karuta giveaway above and thank the sponsor! ♡"
+            },
+            'owo': {
+                'role_id': 847538763412668456,
+                'required_role': [837595910661603330],
+                'required_channel': [847830388713586738],
+                'text': "Join the OwO giveaway above and thank the sponsor! ♡",
+            'nitro': {
+                'role_id': 685233344136609812,
+                'required_role': [627284965222121482],
+                'required_channel': [650244237744537630],
+                'text': "Join the **Nitro** giveaway above ♡"
+            }
+
+            }
+        }
+        if ping is not None:
+            ping_config = pings.get(ping, None)
+        else:
+            ping_config = None
         if os.getenv('state') == '0':
-            if ping == 'gang' and channel.id not in [701771740912549938, 626704430468825089, 630587061665267713,
-                                                     616007729718231161]:
-                await ctx.respond(f"You cannot ping **Giveaway Ping** in this channel.", ephemeral=True)
-                ping = None
-                # elite channel check
-            elif ping == 'elite' and channel.id not in [701771740912549938, 741254464303923220,
-                                                            630587061665267713, 616007729718231161]:
-                await ctx.respond(f"You cannot ping **Elite Giveaway Ping** in this channel.", ephemeral=True)
-                ping = None
+            if ping_config is not None:
+                required_roles_for_ping = ping_config.get('required_role', [])
+                if len(required_roles_for_ping) > 0 and not ctx.author.guild_permissions.manage_roles:
+                    if any([discord.utils.get(ctx.author.roles, id=required_roleid) for required_roleid in required_roles_for_ping]):
+                        required_channels_for_ping = ping_config.get('required_channel', [])
+                        if len(required_channels_for_ping) > 0:
+                            if channel.id in (required_channels_for_ping):
+                                pass
+                            else:
+                                display_required_channels_ping = ", ".join((f"<@#{c_id}>" for c_id in required_channels_for_ping))
+                                await ctx.respond(f"The `{ping}` ping can only be used in these channels: {display_required_channels_ping}", ephemeral=True)
+                                ping = None
+
+                    else:
+                        display_required_roles_ping = ", ".join((f"<@&{rrid}>" for rrid in required_roles_for_ping))
+                        await ctx.respond(f"You need one of the following roles to use the `{ping}` ping: {display_required_roles_ping}", ephemeral=True)
+                        ping = None
+            else:
+                await ctx.respond("Invalid `ping` parameter.", ephemeral=True)
         channel = ctx.guild.get_channel(channel.id) # properly get the permissions
         if not (channel.permissions_for(ctx.author).send_messages and channel.permissions_for(ctx.author).view_channel):
             return await ctx.respond(f"You are not allowed to start a giveaway in {channel.mention}, as you are not allowed to view that channel or send messages in it.", ephemeral=True)
@@ -1434,8 +1480,8 @@ class giveaways(commands.Cog):
 
         if channel != ctx.channel:
             descriptions.append(f"\nGiveaway will be started in another channel ({channel.mention})")
-        role_to_ping_id = gw_ping if ping == "gang" else elitegw_ping
-        if ping is not None:
+        role_to_ping_id = ping_config.get(ping, None)
+        if ping is not None and role_to_ping_id is not None:
             descriptions.append(f"<@&{role_to_ping_id}> will be pinged once the giveaway starts.\n**Make sure you're pinging the right role in the right channel.**")
         embed = discord.Embed(title="Are you ready to start this giveaway?", description="\n".join(descriptions), color=self.client.embed_color)
         confirmview = confirm(ctx, self.client, timeout=30)
@@ -1478,8 +1524,8 @@ class giveaways(commands.Cog):
                     pass
             else:
                 await giveawaymessage.channel.send(embed=discord.Embed(description=message, color=self.client.embed_color).set_author(name=dis_name, icon_url=donor.display_avatar.url))
-        if ping is not None:
-            msg = "Join the giveaway above ♡" if ping == "gang" else "Join the Elite giveaway above ♡"
+        if ping is not None and role_to_ping_id is not None:
+            msg = ping_config.get('text', "Join the giveaway above ♡")
             msg = await channel.send(f"<@&{role_to_ping_id}>\n{msg}", allowed_mentions=discord.AllowedMentions(roles=True, everyone=False))
             await msg.add_reaction('<:dv_wCyanHeartOwO:837700662192111617>')
         if channel != ctx.channel:
