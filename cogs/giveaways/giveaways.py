@@ -1383,7 +1383,6 @@ class giveaways(commands.Cog):
                     required_roles_set_by_server = True
         result = await self.client.db.fetchrow("SELECT * FROM giveawayconfig WHERE guild_id = $1 AND channel_id = $2", ctx.guild.id, channel.id)
         g_config = GiveawayConfig(result)
-
         if g_config.blacklisted_roles is None:
             g_config.blacklisted_roles = []
         blacklisted_roles = []
@@ -1480,7 +1479,7 @@ class giveaways(commands.Cog):
 
         if channel != ctx.channel:
             descriptions.append(f"\nGiveaway will be started in another channel ({channel.mention})")
-        role_to_ping_id = ping_config.get('role_id', None)
+        role_to_ping_id = ping_config.get('role_id', None) if ping_config is not None else None
         if ping is not None and role_to_ping_id is not None:
             descriptions.append(f"<@&{role_to_ping_id}> will be pinged once the giveaway starts.\n**Make sure you're pinging the right role in the right channel.**")
         embed = discord.Embed(title="Are you ready to start this giveaway?", description="\n".join(descriptions), color=self.client.embed_color)
