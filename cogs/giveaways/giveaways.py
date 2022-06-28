@@ -1358,7 +1358,7 @@ class giveaways(commands.Cog):
                         pass
                     else:
                         display_required_channels_ping = ", ".join(
-                            (f"<@#{c_id}>" for c_id in required_channels_for_ping))
+                            (f"<#{c_id}>" for c_id in required_channels_for_ping))
                         await ctx.respond(
                             f"The `{ping}` ping can only be used in these channels: {display_required_channels_ping}",
                             ephemeral=True)
