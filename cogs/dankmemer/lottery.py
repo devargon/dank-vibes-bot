@@ -10,10 +10,10 @@ from utils import checks
 from utils.buttons import confirm
 from utils.context import DVVTcontext
 
-accepted_lottery_types = ['dank', 'karuta', 'owo']
+accepted_lottery_types = ['dank', 'karuta', 'owo', 'ckaruta']
 
 class GoldPotTemplateModal(discord.ui.Modal):
-    def __init__(self, client, lottery_type: Literal['dank', 'karuta', 'owo'], lotto_entries, winner:Optional[discord.User] = None, default_winner_option: Optional[str] = None, default_prize: Optional[str] = None):
+    def __init__(self, client, lottery_type: Literal['dank', 'karuta', 'owo', 'ckaruta'], lotto_entries, winner:Optional[discord.User] = None, default_winner_option: Optional[str] = None, default_prize: Optional[str] = None):
         self.client = client
         self.winner = winner
         self.default_winner_option = default_winner_option
@@ -50,7 +50,7 @@ class GoldPotTemplateModal(discord.ui.Modal):
         prize = self.children[1].value
         if lottery_type == 'owo':
             emoji = ('<a:dv_fabledGemOwO:859773160357232651>', '<:dv_newOwO:859772980875886602>')
-        elif lottery_type == 'karuta':
+        elif lottery_type == 'karuta' or lottery_type == 'ckaruta':
             emoji = ('<a:dv_bunbunDanceOwO:837749889496514570>', '<a:dv_aFishieOwO:837741744253829190>')
         else:
             emoji = ('<a:dv_pepeHypeOwO:837712517261688832>', '<:dv_panMoneyOwO:837713209796460564>')
@@ -90,6 +90,8 @@ def get_lotto_channel(guild_id: int, type_of_lottery: Literal['dank', 'karuta', 
             lottery_chan_id = 731398659664511057
         elif type_of_lottery == 'karuta':
             lottery_chan_id = 887006001566462062
+        elif type_of_lottery == 'ckaruta':
+            lottery_chan_id = 991007074626461776
         elif type_of_lottery == 'owo':
             lottery_chan_id = 859761455242149919
         else:
@@ -112,7 +114,7 @@ def get_ping(guild_id: int, type_of_lottery: Literal['dank', 'karuta', 'owo']) -
             ping = "<@&680131933778346011>"
         elif type_of_lottery == 'owo':
             ping = "<@&847538763412668456>"
-        elif type_of_lottery == 'karuta':
+        elif type_of_lottery == 'karuta' or type_of_lottery == 'ckaruta':
             ping = "<@&886983702402457641>"
         else:
             ping = None
@@ -121,7 +123,7 @@ def get_ping(guild_id: int, type_of_lottery: Literal['dank', 'karuta', 'owo']) -
             ping = "<@&895815799812521994>"
         elif type_of_lottery == 'owo':
             ping = "<@&955387105373204490>"
-        elif type_of_lottery == 'karuta':
+        elif type_of_lottery == 'karuta' or type_of_lottery == 'ckaruta':
             ping = "<@&976662248787415060>"
         else:
             ping = None
@@ -171,7 +173,7 @@ class Lottery(commands.Cog):
             await ctx.send(f"<:DVB_False:887589731515392000> An active lottery with the ID {lottery_id} doesn't exist.")
             return
         type_of_lottery = lottery_obj.get('lottery_type')
-        if type_of_lottery not in ['dank', 'karuta', 'owo']:
+        if type_of_lottery not in accepted_lottery_types:
             return await ctx.send("Invalid lottery type.")
 
         await self.check_non_hoster_consent(ctx, lottery_obj.get('starter_id'))
@@ -224,7 +226,7 @@ class Lottery(commands.Cog):
 
     @checks.has_permissions_or_role(manage_roles=True)
     @lottery.command(name="start")
-    async def lottery_start(self, ctx: DVVTcontext, lottery_type: str = None, max_tickets: int = None, *, entry_fee: str = None):
+    async def lottery_start(self, ctx: DVVTcontext, lottery_type: str = None, max_tickets: str = None, *, entry_fee: str = None):
         """
         Starts a lottery.
         `lottery_type` needs to be one of `dank`, `karuta` or `owo`.
@@ -232,7 +234,7 @@ class Lottery(commands.Cog):
         if lottery_type is None or max_tickets is None or entry_fee is None:
             return await ctx.help()
         lottery_type = lottery_type.lower()
-        if lottery_type not in ['dank', 'karuta', 'owo']:
+        if lottery_type not in ['dank', 'karuta', 'owo', 'ckaruta']:
             return await ctx.send("<:DVB_False:887589731515392000> **Invalid lottery type**.\n`type` must be one of `dank`, `karuta`, or `owo`.")
         embed = discord.Embed(title=entry_fee, description=f"Holder: {ctx.author.mention}\nChannel: <#680002065950703646>\nMaximum Entries: `{max_tickets}`", color=self.client.embed_color)
         if lottery_type == 'owo':
@@ -241,6 +243,8 @@ class Lottery(commands.Cog):
             embed.add_field(name="Entry:", value=f"<a:dv_pointArrowOwO:837656328482062336> Read the sticky message in <#680002065950703646> for information on how to enter!")
         elif lottery_type == 'karuta':
             embed.add_field(name="Entry:", value=f"<a:dv_pointArrowOwO:837656328482062336> Follow the format given in <#887006001566462062> and kindly wait for a <@&843756047964831765> to assist you!")
+        elif lottery_type == 'ckaruta':
+            embed.add_field(name="Entry:", value=f"<a:dv_pointArrowOwO:837656328482062336> Follow the instructions stated by the host!")
         ping = get_ping(ctx.guild.id, lottery_type)
         dank_required_roles = [663502776952815626, 684591962094829569, 608500355973644299]
         karuta_required_roles = [843756047964831765, 663502776952815626, 684591962094829569, 608500355973644299]
@@ -251,7 +255,7 @@ class Lottery(commands.Cog):
                     confirm_host_view = confirm(ctx,self.client, 30.0)
                 else:
                     confirm_host_view = None
-            elif lottery_type == 'karuta':
+            elif lottery_type == 'karuta' or lottery_type == 'ckaruta':
                 if not any([ctx.guild.get_role(r_id) in ctx.author.roles for r_id in karuta_required_roles]):
                     confirm_host_view = confirm(ctx, self.client, 30.0)
                 else:
@@ -277,7 +281,7 @@ class Lottery(commands.Cog):
                     await confirm_host_view.response.edit(embed=confirm_host_embed, delete_after=5.0)
                     return
         confirm_start_view = confirm(ctx, self.client, 30.0)
-        confirm_start_embed = discord.Embed(title=f"Ready to start a {lottery_type} lottery?", description=f"Holder: {ctx.author.mention}\nChannel: <#680002065950703646>\nMaximum Entries: `{max_tickets}`", color=self.client.embed_color)
+        confirm_start_embed = discord.Embed(title=f"Ready to start a {lottery_type} lottery?", description=f"Holder: {ctx.author.mention}\nChannel: {ctx.channel}\nMaximum Entries: `{max_tickets}`", color=self.client.embed_color)
         confirm_start_view.response = await ctx.send(embed=confirm_start_embed, view=confirm_start_view)
         await confirm_start_view.wait()
         if confirm_start_view.returning_value is True:
