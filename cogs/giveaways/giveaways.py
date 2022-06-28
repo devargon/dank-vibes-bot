@@ -1479,7 +1479,7 @@ class giveaways(commands.Cog):
             else:
                 await giveawaymessage.channel.send(embed=discord.Embed(description=message, color=self.client.embed_color).set_author(name=dis_name, icon_url=donor.display_avatar.url))
         if ping is not None:
-            msg = "React to the giveaway above ♡" if ping == "gang" else "React to the Elite giveaway above ♡"
+            msg = "Join the giveaway above ♡" if ping == "gang" else "Join the Elite giveaway above ♡"
             msg = await channel.send(f"<@&{role_to_ping_id}>\n{msg}", allowed_mentions=discord.AllowedMentions(roles=True, everyone=False))
             await msg.add_reaction('<:dv_wCyanHeartOwO:837700662192111617>')
         if channel != ctx.channel:
@@ -1579,7 +1579,7 @@ class giveaways(commands.Cog):
                     if prize == "<a:dv_iconOwO:837943874973466664> 1 Pepe Trophy":
                         additional_message = "Enter the daily trophy giveaway above! <:DVB_Trophy:911244980599804015>"
                     else:
-                        additional_message = f"React to the giveaway above ♡"
+                        additional_message = f"Join the giveaway above ♡"
                 else:
                     additional_message = flags.msg
                 await ctx.send(f"<@&{pingrole}> {additional_message}", allowed_mentions=discord.AllowedMentions(everyone=False, roles=True, users=True))
@@ -1784,7 +1784,7 @@ class giveaways(commands.Cog):
             if ctx.channel.id not in [701771740912549938, 626704430468825089, 630587061665267713, 616007729718231161]:
                 return await ctx.send("You cannot use this command in this channel! �")
         if text is None:
-            text = "React to the giveaway above ♡"
+            text = "Join the giveaway above ♡"
         emojis = ['<a:dv_aBCNodOwO:837756826564952096>', '<a:dv_bunbunDanceOwO:837749889496514570>', '<a:dv_aHeartsWaveOwO:837741729321844847>', '<a:dv_aPinkOwO:837756828866707497>', '<a:dv_aWiggleOwO:837756830053695560>', '<a:dv_bunbunDanceOwO:837764938734108693>', '<a:dv_pandaMadOwO:837772023110303834>', '<a:dv_foxCuddlesOwO:837744615499104266>', '<a:dv_nekoWaveOwO:837756827255963718>', '<a:dv_pandaHeartsOwO:837769010691047485>', '<a:dv_pandaLoveOwO:837769036333973555>', '<a:dv_pandaExcitedOwO:837772105822502912>', '<a:dv_panHeartsOwO:837712562434342952>', '<a:dv_pikaWaveOwO:837712214935732265>', '<a:dv_qbFlowerOwO:837773808269525052>', '<a:dv_qbThumbsupOwO:837666232811257907>', '<a:dv_squirrelBodyRollOwO:837726627160129558>', '<a:dv_squirrelHappyOwO:837711561338519572>', '<a:dv_wButterflyOwO:837787067912159233>', '<a:dv_wScribbleHeartOwO:837782023631798302>', '<a:dv_wYellowMoonOwO:837787073066303551>', '<a:dv_wpinkHeartOwO:837781949337960467>', '<a:dv_wRainbowHeartOwO:837787078171033660>']
         emoji = random.choice(emojis)
         msg = await ctx.send(f"{emoji} **<@&758175760909074432>** {emoji}\n{text}", allowed_mentions=discord.AllowedMentions(everyone=False, users=False, roles=True))
@@ -1800,7 +1800,7 @@ class giveaways(commands.Cog):
             if ctx.channel.id not in [701771740912549938, 741254464303923220, 630587061665267713, 616007729718231161]:
                 return await ctx.send("You cannot use this command in this channel! �")
         if text is None:
-            text = "React to the Elite giveaway above ♡"
+            text = "Join the Elite giveaway above ♡"
         emojis = ['<a:dv_aBCNodOwO:837756826564952096>', '<a:dv_bunbunDanceOwO:837749889496514570>', '<a:dv_aHeartsWaveOwO:837741729321844847>', '<a:dv_aPinkOwO:837756828866707497>', '<a:dv_aWiggleOwO:837756830053695560>', '<a:dv_bunbunDanceOwO:837764938734108693>', '<a:dv_pandaMadOwO:837772023110303834>', '<a:dv_foxCuddlesOwO:837744615499104266>', '<a:dv_nekoWaveOwO:837756827255963718>', '<a:dv_pandaHeartsOwO:837769010691047485>', '<a:dv_pandaLoveOwO:837769036333973555>', '<a:dv_pandaExcitedOwO:837772105822502912>', '<a:dv_panHeartsOwO:837712562434342952>', '<a:dv_pikaWaveOwO:837712214935732265>', '<a:dv_qbFlowerOwO:837773808269525052>', '<a:dv_qbThumbsupOwO:837666232811257907>', '<a:dv_squirrelBodyRollOwO:837726627160129558>', '<a:dv_squirrelHappyOwO:837711561338519572>', '<a:dv_wButterflyOwO:837787067912159233>', '<a:dv_wScribbleHeartOwO:837782023631798302>', '<a:dv_wYellowMoonOwO:837787073066303551>', '<a:dv_wpinkHeartOwO:837781949337960467>', '<a:dv_wRainbowHeartOwO:837787078171033660>']
         emoji = random.choice(emojis)
         msg = await ctx.send(f"{emoji} **<@&758174135276142593>** {emoji}\n{text}", allowed_mentions=discord.AllowedMentions(everyone=False, users=False, roles=True))
@@ -1815,7 +1815,7 @@ class giveaways(commands.Cog):
             if ctx.channel.id not in [701771740912549938, 626704430468825089, 741254464303923220]:
                 return await ctx.send("You cannot use this command in this channel! �")
         if text is None:
-            text = "React to the Booster giveaway above ♡"
+            text = "Join the Booster giveaway above ♡"
         emojis = ['<a:dv_aBCNodOwO:837756826564952096>', '<a:dv_bunbunDanceOwO:837749889496514570>', '<a:dv_aHeartsWaveOwO:837741729321844847>', '<a:dv_aPinkOwO:837756828866707497>', '<a:dv_aWiggleOwO:837756830053695560>', '<a:dv_bunbunDanceOwO:837764938734108693>', '<a:dv_pandaMadOwO:837772023110303834>', '<a:dv_foxCuddlesOwO:837744615499104266>', '<a:dv_nekoWaveOwO:837756827255963718>', '<a:dv_pandaHeartsOwO:837769010691047485>', '<a:dv_pandaLoveOwO:837769036333973555>', '<a:dv_pandaExcitedOwO:837772105822502912>', '<a:dv_panHeartsOwO:837712562434342952>', '<a:dv_pikaWaveOwO:837712214935732265>', '<a:dv_qbFlowerOwO:837773808269525052>', '<a:dv_qbThumbsupOwO:837666232811257907>', '<a:dv_squirrelBodyRollOwO:837726627160129558>', '<a:dv_squirrelHappyOwO:837711561338519572>', '<a:dv_wButterflyOwO:837787067912159233>', '<a:dv_wScribbleHeartOwO:837782023631798302>', '<a:dv_wYellowMoonOwO:837787073066303551>', '<a:dv_wpinkHeartOwO:837781949337960467>', '<a:dv_wRainbowHeartOwO:837787078171033660>']
         emoji = random.choice(emojis)
         msg = await ctx.send(f"{emoji} **<@&662876587687018507>** {emoji}\n{text}", allowed_mentions=discord.AllowedMentions(everyone=False, users=False, roles=True))
@@ -1830,7 +1830,7 @@ class giveaways(commands.Cog):
             if ctx.channel.id not in [650244237744537630, 630587061665267713, 616007729718231161]:
                 return await ctx.send("You cannot use this command in this channel! �")
         if text is None:
-            text = "React to the Nitro giveaway above ♡"
+            text = "Join the Nitro giveaway above ♡"
         emojis = ['<a:dv_aBCNodOwO:837756826564952096>', '<a:dv_bunbunDanceOwO:837749889496514570>', '<a:dv_aHeartsWaveOwO:837741729321844847>', '<a:dv_aPinkOwO:837756828866707497>', '<a:dv_aWiggleOwO:837756830053695560>', '<a:dv_bunbunDanceOwO:837764938734108693>', '<a:dv_pandaMadOwO:837772023110303834>', '<a:dv_foxCuddlesOwO:837744615499104266>', '<a:dv_nekoWaveOwO:837756827255963718>', '<a:dv_pandaHeartsOwO:837769010691047485>', '<a:dv_pandaLoveOwO:837769036333973555>', '<a:dv_pandaExcitedOwO:837772105822502912>', '<a:dv_panHeartsOwO:837712562434342952>', '<a:dv_pikaWaveOwO:837712214935732265>', '<a:dv_qbFlowerOwO:837773808269525052>', '<a:dv_qbThumbsupOwO:837666232811257907>', '<a:dv_squirrelBodyRollOwO:837726627160129558>', '<a:dv_squirrelHappyOwO:837711561338519572>', '<a:dv_wButterflyOwO:837787067912159233>', '<a:dv_wScribbleHeartOwO:837782023631798302>', '<a:dv_wYellowMoonOwO:837787073066303551>', '<a:dv_wpinkHeartOwO:837781949337960467>', '<a:dv_wRainbowHeartOwO:837787078171033660>']
         emoji = random.choice(emojis)
         msg = await ctx.send(f"{emoji} **<@&685233344136609812>** {emoji}\n{text}", allowed_mentions=discord.AllowedMentions(everyone=False, users=False, roles=True))
