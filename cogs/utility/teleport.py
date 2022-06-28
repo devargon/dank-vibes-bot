@@ -32,7 +32,12 @@ class Teleport(commands.Cog):
         if not (channel_id := await self.client.db.fetchval("SELECT channel_id FROM teleport WHERE member_id=$1 AND checkpoint=$2", ctx.author.id, checkpoint.lower())):
             return await ctx.send("I don't have any channel saved for that checkpoint.")
         channel = f"<#{channel_id}>"
-        await ctx.send(channel, delete_after=5)
+        class TeleportButton(discord.ui.View):
+            def __init__(self):
+                super().__init__(timeout=None)
+                button = discord.ui.Button(label="Teleport (will not work if channel is in another server)", url=f"https://discord.com/channels/595457764935991326/{channel_id}")
+                self.add_item(button)
+        await ctx.send(channel, view=TeleportButton(), delete_after=5)
         await asyncio.sleep(5.0)
         await ctx.message.delete()
 
