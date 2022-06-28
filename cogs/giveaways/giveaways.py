@@ -1344,6 +1344,7 @@ class giveaways(commands.Cog):
             ping_config = None
         if os.getenv('state') == '0':
             if ping is not None and ping_config is not None:
+                print("Ping and ping config is valid")
                 required_roles_for_ping = ping_config.get('required_role', [])
                 if len(required_roles_for_ping) > 0 and not ctx.author.guild_permissions.manage_roles:
                     if any([discord.utils.get(ctx.author.roles, id=required_roleid) for required_roleid in required_roles_for_ping]):
