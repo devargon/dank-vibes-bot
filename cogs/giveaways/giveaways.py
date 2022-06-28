@@ -1302,9 +1302,6 @@ class giveaways(commands.Cog):
                              channel: discord.Option(discord.TextChannel, "Specify another channel to start the giveaway there") = None,
                              ping: discord.Option(str, "Ping a giveaway ping immediately after giveaway starts.", choices=['gang', 'elite', 'nitro', 'owo', 'karuta']) = None,
                              ):
-        if ping is not None and discord.utils.get(ctx.author.roles, id=gwstaff_id) is None:
-            await ctx.respond(f"You can only use the `ping` option if you're a **<@&{gwstaff_id}>**.", ephemeral=True)
-            ping = None
         # gang channel check
         if channel is None:
             channel = ctx.channel
@@ -1345,9 +1342,8 @@ class giveaways(commands.Cog):
             ping_config = pings.get(ping, None)
         else:
             ping_config = None
-        print(ping, ping_config)
         if os.getenv('state') == '0':
-            if ping_config is not None:
+            if ping is not None and ping_config is not None:
                 required_roles_for_ping = ping_config.get('required_role', [])
                 if len(required_roles_for_ping) > 0 and not ctx.author.guild_permissions.manage_roles:
                     if any([discord.utils.get(ctx.author.roles, id=required_roleid) for required_roleid in required_roles_for_ping]):
