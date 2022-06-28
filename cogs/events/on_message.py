@@ -122,7 +122,7 @@ class OnMessage(commands.Cog):
                                 else:
                                     pass
             if settings.mrob_ar is True:
-                if con.startswith('m.rob'):
+                if con.startswith('m.rob') or con.startswith('m.steal'):
                     split_cmd = con.split(' ')
                     if len(split_cmd) > 1:
                         embed = discord.Embed(title="A MafiaBot rob attempt was made by this user.", description=f"```\n{message.content}\n```\n[Jump to message]({message.jump_url}) in {message.channel.mention}", color=discord.Color.red())
