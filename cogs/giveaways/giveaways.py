@@ -1344,28 +1344,29 @@ class giveaways(commands.Cog):
             ping_config = None
         if os.getenv('state') == '0':
             print(f"ping is not None: {ping is not None}\nping_config is not None: {ping_config is not None}")
-            if ping is not None and ping_config is not None:
-                required_roles_for_ping = ping_config.get('required_role', [])
-                if len(required_roles_for_ping) > 0 and not ctx.author.guild_permissions.manage_roles:
-                    if any([discord.utils.get(ctx.author.roles, id=required_roleid) for required_roleid in required_roles_for_ping]):
-                        pass
-                    else:
-                        display_required_roles_ping = ", ".join((f"<@&{rrid}>" for rrid in required_roles_for_ping))
-                        await ctx.respond(f"You need one of the following roles to use the `{ping}` ping: {display_required_roles_ping}", ephemeral=True)
-                        ping = None
-                required_channels_for_ping = ping_config.get('required_channel', [])
-                if len(required_channels_for_ping) > 0:
-                    if channel.id in required_channels_for_ping:
-                        pass
-                    else:
-                        display_required_channels_ping = ", ".join(
-                            (f"<#{c_id}>" for c_id in required_channels_for_ping))
-                        await ctx.respond(
-                            f"The `{ping}` ping can only be used in these channels: {display_required_channels_ping}",
-                            ephemeral=True)
-                        ping = None
-            else:
-                await ctx.respond("Invalid `ping` parameter.", ephemeral=True)
+            if ping is not None:
+                if ping_config is not None:
+                    required_roles_for_ping = ping_config.get('required_role', [])
+                    if len(required_roles_for_ping) > 0 and not ctx.author.guild_permissions.manage_roles:
+                        if any([discord.utils.get(ctx.author.roles, id=required_roleid) for required_roleid in required_roles_for_ping]):
+                            pass
+                        else:
+                            display_required_roles_ping = ", ".join((f"<@&{rrid}>" for rrid in required_roles_for_ping))
+                            await ctx.respond(f"You need one of the following roles to use the `{ping}` ping: {display_required_roles_ping}", ephemeral=True)
+                            ping = None
+                    required_channels_for_ping = ping_config.get('required_channel', [])
+                    if len(required_channels_for_ping) > 0:
+                        if channel.id in required_channels_for_ping:
+                            pass
+                        else:
+                            display_required_channels_ping = ", ".join(
+                                (f"<#{c_id}>" for c_id in required_channels_for_ping))
+                            await ctx.respond(
+                                f"The `{ping}` ping can only be used in these channels: {display_required_channels_ping}",
+                                ephemeral=True)
+                            ping = None
+                else:
+                    await ctx.respond("Invalid `ping` parameter.", ephemeral=True)
         channel = ctx.guild.get_channel(channel.id) # properly get the permissions
         if not (channel.permissions_for(ctx.author).send_messages and channel.permissions_for(ctx.author).view_channel):
             return await ctx.respond(f"You are not allowed to start a giveaway in {channel.mention}, as you are not allowed to view that channel or send messages in it.", ephemeral=True)
