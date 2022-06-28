@@ -1344,23 +1344,24 @@ class giveaways(commands.Cog):
             ping_config = None
         if os.getenv('state') == '0':
             if ping is not None and ping_config is not None:
-                print("Ping and ping config is valid")
                 required_roles_for_ping = ping_config.get('required_role', [])
                 if len(required_roles_for_ping) > 0 and not ctx.author.guild_permissions.manage_roles:
                     if any([discord.utils.get(ctx.author.roles, id=required_roleid) for required_roleid in required_roles_for_ping]):
-                        required_channels_for_ping = ping_config.get('required_channel', [])
-                        print(required_channels_for_ping)
-                        if len(required_channels_for_ping) > 0:
-                            if channel.id in required_channels_for_ping:
-                                pass
-                            else:
-                                display_required_channels_ping = ", ".join((f"<@#{c_id}>" for c_id in required_channels_for_ping))
-                                await ctx.respond(f"The `{ping}` ping can only be used in these channels: {display_required_channels_ping}", ephemeral=True)
-                                ping = None
-
+                        pass
                     else:
                         display_required_roles_ping = ", ".join((f"<@&{rrid}>" for rrid in required_roles_for_ping))
                         await ctx.respond(f"You need one of the following roles to use the `{ping}` ping: {display_required_roles_ping}", ephemeral=True)
+                        ping = None
+                required_channels_for_ping = ping_config.get('required_channel', [])
+                if len(required_channels_for_ping) > 0:
+                    if channel.id in required_channels_for_ping:
+                        pass
+                    else:
+                        display_required_channels_ping = ", ".join(
+                            (f"<@#{c_id}>" for c_id in required_channels_for_ping))
+                        await ctx.respond(
+                            f"The `{ping}` ping can only be used in these channels: {display_required_channels_ping}",
+                            ephemeral=True)
                         ping = None
             else:
                 await ctx.respond("Invalid `ping` parameter.", ephemeral=True)
