@@ -72,10 +72,13 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
             self.gen_is_muted = False
         elif ctx.command.name == "nickbet":
             self.nickbets = []
+
     def lowered_cooldown(message: discord.Message):
         if discord.utils.get(message.author.roles, id=874833402052878396): # Contributor 24T
             return commands.Cooldown(1, 900)
         elif discord.utils.get(message.author.roles, id=931174008970444800): # weekly top grinder
+            return commands.Cooldown(1, 900)
+        elif discord.utils.get(message.author.roles, id=915094236582518834):
             return commands.Cooldown(1, 900)
         elif discord.utils.get(message.author.roles, name="Vibing Investor"):
             return commands.Cooldown(1, 1800)
