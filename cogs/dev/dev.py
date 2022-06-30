@@ -36,7 +36,7 @@ from .cog_manager import CogManager
 from utils.buttons import confirm
 from utils.format import pagify, TabularData, plural, text_to_file, get_command_name, comma_number
 from .maintenance import Maintenance
-from.logging import Logging
+from.logging import Logging, ReplyToMessage
 from utils.converters import MemberUserConverter, TrueFalse
 from typing import Optional, Union
 from utils.menus import CustomMenu
@@ -104,6 +104,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
     def __init__(self, client):
         self.client: dvvt = client
         self.sessions = set()
+        self.view_added = False
 
     async def run_process(self, command):
         try:
@@ -143,6 +144,12 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
     @staticmethod
     def get_sql(msg: str):
         return pagify(msg, delims=["\n", " "], priority=True, shorten_by=10, box_lang='py')
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        if not self.view_added:
+            self.view_added = True
+            self.client.add_view(ReplyToMessage())
 
     @checks.dev()
     @commands.command(hidden=True, usage='[silently]')
