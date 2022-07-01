@@ -1055,6 +1055,15 @@ class giveaways(commands.Cog):
                 else:
                     req_str = req_str + "\n" + "\n".join(amari_reqs)
             embed.add_field(name="Requirements", value=req_str, inline=True)
+        if entry.channel_id in [992065949320630363, 992366430857203833] and (winners is None or len(winners) == 0):
+            if entry.multi and guild is not None:
+                req_list = []
+                for role_id, number_of_entries in entry.multi.items():
+                    role = guild.get_role(int(role_id))
+                    if role is not None:
+                        req_list.append(f"{role.mention}: **{number_of_entries}** extra entries")
+                if len(req_list) > 0:
+                    embed.add_field(name="Extra Entries", value="\n ".join(req_list), inline=False)
         if winners is not None and len(winners) > 0:
             embed.add_field(name="Winners", value=str(human_join([w.mention for w in winners], ", ", "and")), inline=False)
         embed.set_footer(text=f"{plural(entry.winners):winner} will be picked for this giveaway, which ends")
@@ -1082,7 +1091,6 @@ class giveaways(commands.Cog):
         if not self.giveawayview_added:
             self.client.add_view(GiveawayView(self.client, self))
             self.giveawayview_added = True
-
 
     @tasks.loop(seconds=30.0)
     async def change_entrantcount(self):
