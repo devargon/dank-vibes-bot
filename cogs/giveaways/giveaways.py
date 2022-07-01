@@ -834,6 +834,7 @@ class giveaways(commands.Cog):
         self.giveawayview_added = False
         self.change_entrantcount.start()
         self.check_giveaways.start()
+        self.cached_embeds = {}
         self.dm_queue = []
         self.process_dms.start()
 
@@ -1105,6 +1106,12 @@ class giveaways(commands.Cog):
                     if channel is None:
                         continue
                     p_message = channel.get_partial_message(entry.message_id)
+                    cached_embed = self.cached_embeds.get(entry.message_id, None)
+                    self.cached_embeds[entry.message_id] = embed
+                    if cached_embed is not None:
+                        if cached_embed.to_dict() == embed.to_dict():
+                            continue
+
                     if discord.utils.get([m[0] for m in self.client.editqueue], id=p_message.id) is not None:
                         # print('item already in queue')
                         continue
