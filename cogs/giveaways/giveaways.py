@@ -1301,6 +1301,10 @@ class giveaways(commands.Cog):
                              amari_weekly_xp: discord.Option(int, "An optional Amari Weekly XP requirement") = 0,
                              channel: discord.Option(discord.TextChannel, "Specify another channel to start the giveaway there") = None,
                              ping: discord.Option(str, "Ping a giveaway ping immediately after giveaway starts.", choices=['gang', 'elite', 'nitro', 'owo', 'karuta']) = None,
+                             rolemulti1: discord.Option(discord.Role, "Role for the first multi") = None,
+                             multi1: discord.Option(int, "Number of the first multi") = None,
+                             rolemulti2: discord.Option(discord.Role, "Role for the second multi") = None,
+                             multi2: discord.Option(int, "Number of the second multi") = None,
                              ):
         # gang channel check
         if channel is None:
@@ -1409,10 +1413,16 @@ class giveaways(commands.Cog):
 
         if g_config.multi is None:
             g_config.multi = {}
+
         multi = {}
         for r_id, m_count in g_config.multi.items():
             if (r := ctx.guild.get_role(int(r_id))) is not None:
                 multi[r] = m_count
+        if rolemulti1 is not None and multi1 is not None:
+            multi[rolemulti1] = multi1
+        if rolemulti2 is not None and multi2 is not None:
+            multi[rolemulti2] = multi2
+
         multi_set_by_server = False
         if len(multi.keys()) > 0:
             multi_set_by_server = True
