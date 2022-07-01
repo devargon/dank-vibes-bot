@@ -10,9 +10,11 @@ import imghdr
 import aiohttp
 from typing import Union
 from emoji import UNICODE_EMOJI
+from utils.context import DVVTcontext
 import re
 
 from utils.buttons import confirm
+from utils.converters import BetterColor
 from utils.format import generate_loadbar
 from utils.time import humanize_timedelta
 
@@ -40,6 +42,27 @@ regex = re.compile(
         r'localhost|)' #localhoar
         r'(?::\d+)?' # optional port
         r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+
+
+def get_info(role: discord.Role) -> discord.Embed:
+    description = [
+        f"{role.mention}",
+        f"Members: {len(role.members)} | Position: {role.position}",
+        f"Color: {role.color}",
+        f"Hoisted: {role.hoist}",
+        f"Mentionable: {role.mentionable}",
+    ]
+    if role.managed:
+        description.append(f"Managed: {role.managed}")
+    e = discord.Embed(
+        color=role.color,
+        title=role.name,
+        description="\n".join(description),
+        timestamp=role.created_at,
+    )
+    e.set_footer(text=role.id)
+    return e
+
 
 class Role(commands.Cog):
     def __init__(self, client):
@@ -164,6 +187,65 @@ class Role(commands.Cog):
                 raise e
             elif e == discord.InvalidArgument:
                 return await ctx.send("The role you provided is not valid.")
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @role_cmd.command(name="name", aliases=["setname", "n"])
+    async def role_name(self, ctx: DVVTcontext, role: BetterRoles, *, new_name: str):
+        role: discord.Role = role
+        failembed = discord.Embed(title="Role Edit Failed", color=discord.Color.red())
+        if not ctx.me.guild_permissions.manage_roles:
+            failembed.description = "I don't have permission to edit any roles. Please allow me the `Manage Roles` permission in your server's Role settings."
+            return await ctx.send(embed=failembed)
+        if ctx.me.top_role is not None and role > ctx.me.top_role:
+            failembed.description = "I don't have permission to edit this role as it is above my highest role."
+            return await ctx.send(embed=failembed)
+        if len(new_name) > 100:
+            failembed.description = "The new name of the role cannot be longer than **100 characters**.\nYour provided name is **{}** characters long.".format(len(new_name))
+            return await ctx.send(embed=failembed)
+        else:
+            old_name = role.name
+            try:
+                newrole = await role.edit(reason=f"Requested by {ctx.author} ({ctx.author.id})", name=new_name)
+            except discord.Forbidden as e:
+                failembed.description = str(e)
+                return await ctx.send(embed=failembed)
+            except Exception as e:
+                failembed.description = f"An unexpected error occured: {e}"
+                return await ctx.send(embed=failembed)
+            else:
+                content = f"<:DVB_True:887589686808309791> The name of **{old_name}** has been set to **{newrole.name}**."
+
+                await ctx.send(content, embed=get_info(newrole))
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @role_cmd.command(name="color")
+    async def role_color(self, ctx: DVVTcontext, role: BetterRoles, color: BetterColor):
+        role: discord.Role = role
+        failembed = discord.Embed(title="Role Edit Failed", color=discord.Color.red())
+        if not ctx.me.guild_permissions.manage_roles:
+            failembed.description = "I don't have permission to edit any roles. Please allow me the `Manage Roles` permission in your server's Role settings."
+            return await ctx.send(embed=failembed)
+        if ctx.me.top_role is not None and role > ctx.me.top_role:
+            failembed.description = "I don't have permission to edit this role as it is above my highest role."
+            return await ctx.send(embed=failembed)
+        else:
+            old_color = ((hex(role.color.value))[2:]).zfill(6)
+            try:
+                newrole = await role.edit(reason=f"Requested by {ctx.author} ({ctx.author.id})", color=color)
+            except discord.Forbidden as e:
+                failembed.description = str(e)
+                return await ctx.send(embed=failembed)
+            except Exception as e:
+                failembed.description = f"An unexpected error occured: {e}"
+                return await ctx.send(embed=failembed)
+            else:
+                content = f"<:DVB_True:887589686808309791> **{role.name}**'s color has been changed from **#{old_color}** to **#{((hex(color.value))[2:]).zfill(6)}**."
+                await ctx.send(content, embed=get_info(newrole))
+
+
+
+
+
 
     @checks.has_permissions_or_role(manage_roles=True)
     @role_cmd.command(name="removeall", aliases=['rall'])

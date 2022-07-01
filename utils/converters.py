@@ -171,3 +171,12 @@ class BetterBetterRoles(commands.Converter):
             if ratio >= 75:
                 role_to_return = discord.utils.get(ctx.guild.roles, id=roles_and_aliases[name])
                 return role_to_return
+
+class BetterColor(commands.Converter):
+    async def convert(self, ctx, argument):
+        try:
+            return await commands.ColourConverter().convert(ctx, argument)
+        except commands.BadArgument:
+            if len(argument) == 6:
+                argument = f"#{argument}"
+                return await commands.ColourConverter().convert(ctx, argument)
