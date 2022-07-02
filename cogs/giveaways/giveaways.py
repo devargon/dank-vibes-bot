@@ -615,6 +615,16 @@ class GiveawayView(discord.ui.View):
                             else:
                                 return False
 
+                        def level_50():
+                            if str(944519459580821524) in desc and len(missing_roles) == 1:
+                                return True
+                            else:
+                                return False
+
+                        def elite_giveaway_ping():
+                            if str(758174135276142593) in desc and len(missing_roles) == 1:
+                                return True
+
                         def donator100m():
                             if str(769491608189927434) in desc and len(missing_roles) == 1:
                                 return True
@@ -643,10 +653,14 @@ class GiveawayView(discord.ui.View):
                             remarks.append(f"You can get <@&678318476913541150> by chatting in Dank Vibes and levelling up to **Level 20** in **AmariBot**, our message XP bot.**.")
                         elif level_30():
                             remarks.append(f"You can get <@&944519382577586196> by chatting in Dank Vibes and levelling up to **Level 30** in **AmariBot**, our message XP bot.**.")
+                        elif level_50():
+                            remarks.append(f"You can get <@&944519459580821524> by chatting in Dank Vibes and levelling up to **Level 50** in **AmariBot**, our message XP bot.**.")
                         elif donator100m():
                             remarks.append(f"You can get <@&769491608189927434> by donating **⏣ 100,000,000** worth of Dank Memer items/coins in <#652729093649072168>, <#786944439360290826>, or <#722874833540481054>.")
                         elif gen_chat_active():
-                            remarks.append(f"You can get <@&899185283881381889> by chatting in <#608498967474601995> and reaching **30 messages sent** in `dv.mymessages`.")
+                            remarks.append(f"You can get <@&899185283881381889> by chatting in <#608498967474601995> and reaching **150 messages sent** in `dv.mymessages`.")
+                        elif elite_giveaway_ping():
+                            remarks.append(f"You can get <@&758174135276142593> by running `-rank elite giveaway ping` in <#698462922682138654>, or selecting the **Elite Giveaway Ping** role under **Dank Pings** in <#782586550486695936>.")
 
                         final_desc = desc + "\n\n" + "\n".join(remarks)
 
@@ -1134,6 +1148,17 @@ class giveaways(commands.Cog):
             embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/837629198415691786.webp?size=96&quality=lossless")
         elif "coin" in title_lower or "pec" in title_lower:
             embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/942212715454271518.gif?quality=lossless")
+        elif "crown" in title_lower:
+            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/834862725120917544.webp?quality=lossless")
+        elif "karen" in title_lower:
+            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/860196324762452028.webp?quality=lossless")
+        elif "credit" in title_lower:
+            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/892546328406663168.webp?quality=lossless")
+        elif "enchanted" in title_lower and "badosz" in title_lower:
+            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/931295850292989973.gif?quality=lossless")
+        elif "lottery" in title_lower:
+            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/828630267983298580.webp?quality=lossless")
+
         else:
             guild = self.client.get_guild(entry.guild_id)
             if guild is not None and guild.icon is not None:
