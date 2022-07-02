@@ -590,6 +590,42 @@ class GiveawayView(discord.ui.View):
                                 pass
                     if len(missing_roles) > 0:
                         desc = f"<:DVB_False:887589731515392000> You do not have the following roles to join this giveaway: {', '.join(missing_roles)}"
+                        remarks = []
+                        def level_5():
+                            if str(678318524933996557) in desc and len(missing_roles) == 1:
+                                return True
+                            else:
+                                return False
+
+                        def level_10():
+                            if str(758172014439301150) in desc and len(missing_roles) == 1:
+                                return True
+                            else:
+                                return False
+
+                        def level_20():
+                            if str(678318476913541150) in desc and len(missing_roles) == 1:
+                                return True
+                            else:
+                                return False
+
+                        def level_30():
+                            if str(944519382577586196) in desc and len(missing_roles) == 1:
+                                return True
+                            else:
+                                return False
+
+                        def donator100m():
+                            if str(769491608189927434) in desc and len(missing_roles) == 1:
+                                return True
+                            else:
+                                return False
+
+                        def gen_chat_active():
+                            if str(899185283881381889) in desc and len(missing_roles) == 1:
+                                return True
+                            else:
+                                return False
 
                         def gway_only_requires_voting() -> bool:
                             if str(voteid) in desc and len(missing_roles) == 1:
@@ -598,10 +634,25 @@ class GiveawayView(discord.ui.View):
                                 return False
 
                         if gway_only_requires_voting():
-                            desc += f"\n\n You can get <@&{voteid}> by voting for Dank Vibes!"
+                            remarks.append(f"You can get <@&{voteid}> by voting for Dank Vibes!")
+                        elif level_5():
+                            remarks.append(f"You can get <@&678318524933996557> by chatting in Dank Vibes and levelling up to **Level 5** in **AmariBot**, our message XP bot.**.")
+                        elif level_10():
+                            remarks.append(f"You can get <@&758172014439301150> by chatting in Dank Vibes and levelling up to **Level 10** in **AmariBot**, our message XP bot.**.")
+                        elif level_20():
+                            remarks.append(f"You can get <@&678318476913541150> by chatting in Dank Vibes and levelling up to **Level 20** in **AmariBot**, our message XP bot.**.")
+                        elif level_30():
+                            remarks.append(f"You can get <@&944519382577586196> by chatting in Dank Vibes and levelling up to **Level 30** in **AmariBot**, our message XP bot.**.")
+                        elif donator100m():
+                            remarks.append(f"You can get <@&769491608189927434> by donating **⏣ 100,000,000** worth of Dank Memer items/coins in <#652729093649072168>, <#786944439360290826>, or <#722874833540481054>.")
+                        elif gen_chat_active():
+                            remarks.append(f"You can get <@&899185283881381889> by chatting in <#608498967474601995> and reaching **30 messages sent** in `dv.mymessages`.")
+
+                        final_desc = desc + "\n" + "\n".join(remarks)
+
                         return await interaction.response.send_message(
                             embed=discord.Embed(title="Unable to join giveaway",
-                                                description=desc,
+                                                description=final_desc,
                                                 color=discord.Color.yellow()),
                             view=VoteLink() if gway_only_requires_voting() else None,
                             ephemeral=True
