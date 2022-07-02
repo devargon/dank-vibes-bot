@@ -14,12 +14,12 @@ from utils.helper import BaseEmbed
 
 class confirm(discord.ui.View):
     def __init__(self, ctx: Union[DVVTcontext, discord.ApplicationContext], client, timeout):
-        self.timeout = timeout
+        self.timeout = timeout or 30
         self.context = ctx
         self.response = None
         self.client = client
         self.returning_value = None
-        super().__init__(timeout=30.0)
+        super().__init__(timeout=timeout)
 
     @discord.ui.button(label="Yes", style=discord.ButtonStyle.green)
     async def yes(self, button: discord.ui.Button, interaction: discord.Interaction):
