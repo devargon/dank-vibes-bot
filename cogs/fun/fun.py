@@ -274,7 +274,7 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
                                   description="Something terribly went wrong when this command was used.\n\nThe developers have been notified and it'll fixed soon.",
                                   color=discord.Color.red())
             embed.add_field(name="Error", value=f"```prolog\n{error}\n```\n<#871737028105109574>")
-            await ctx.send(embed=embed)
+            return await ctx.send(embed=embed)
         else:
             await channel.set_permissions(muted, overwrite=originaloverwrite)
         if muted.id in self.mutedusers[ctx.channel.id]:
