@@ -226,16 +226,14 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
         Sends a message showing the 5 self roles which can be obtained via buttons.
         To highlight a role in green, use `--roles the **full names** of the roles` separated in commas. They are not case sensitive.
         """
-        roleids = [895815546292035625, 895815588289581096, 895815773208051763, 895815799812521994, 895815832465190933, 923885874662502451] if os.getenv('state') == '1' else [846254068434206740, 758174643814793276, 758174224208363560, 680131933778346011]#[895815546292035625, 895815588289581096, 895815773208051763, 895815799812521994, 895815832465190933]
+        roleids = [846254068434206740, 758174643814793276, 758174224208363560, 680131933778346011]#[895815546292035625, 895815588289581096, 895815773208051763, 895815799812521994, 895815832465190933]
         role1 = ctx.guild.get_role(roleids[0])
         role2 = ctx.guild.get_role(roleids[1])
         role3 = ctx.guild.get_role(roleids[2])
         role4 = ctx.guild.get_role(roleids[3])
-        role5 = ctx.guild.get_role(roleids[4])
-        role6 = ctx.guild.get_role(roleids[5])
-        if role1 == None or role2 == None or role3 == None or role4 == None or role5 == None or role6 == None:
+        if role1 == None or role2 == None or role3 == None or role4 == None:
             return await ctx.send("1 or more roles in this command is/are declared as invalid, hence the command cannot proceed.")
-        roles = [role1, role2, role3, role4, role5, role6]
+        roles = [role1, role2, role3, role4]
         hlroles = None
         if channel is None:
             channel = ctx.channel
@@ -250,7 +248,7 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
                 self.result = None
                 self.client = client
                 super().__init__(timeout=timeout)
-                emojis = ["<a:dv_wStarOwO:837787067303198750>", "<a:dv_wHeartsOwO:837787079320666138>", "<a:dv_wSparklesOwO:837782054782632006>", "<a:dv_wpinkHeartOwO:837781949337960467>", "<:dv_wFlowerOwO:837700860511256627>", "<:dv_wRainbowOwO:837700739836674078>"]
+                emojis = ["<a:dv_wStarOwO:837787067303198750>", "<a:dv_wHeartsOwO:837787079320666138>", "<a:dv_wSparklesOwO:837782054782632006>", "<a:dv_wpinkHeartOwO:837781949337960467>"]
                 rolenames = []
                 for role in roles:
                     rolenames.append(role.name)
