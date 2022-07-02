@@ -26,7 +26,7 @@ class Verification(commands.Cog):
                                 has_not_verified.append(member)
                         elif member.pending == False:
                             if len(member.roles) == 0:
-                                roleids = [837591810389442600, 671426678807068683, 671426686100963359, 671426692077584384, 649499248320184320]
+                                roleids = [837591810389442600, 671426678807068683, 671426686100963359, 671426692077584384, 649499248320184320, 758174643814793276, 837594909917708298]
                                 roles = [guild.get_role(roleid) for roleid in roleids]
                                 await member.add_roles(*roles, reason="Member finished Membership Screening")
                     embed = discord.Embed(title="Verify in Dank Vibes", description="Remember to click on the **Verify** Button in <#910425487103365160> to gain access to the server!", color=5763312)
@@ -58,7 +58,7 @@ class Verification(commands.Cog):
             roles = [guild.get_role(roleid) for roleid in roleids]
         elif member_before.guild.id == 595457764935991326:
             guild = member_before.guild
-            roleids = [837591810389442600, 671426678807068683, 671426686100963359, 671426692077584384, 649499248320184320]
+            roleids = [837591810389442600, 671426678807068683, 671426686100963359, 671426692077584384, 649499248320184320, 758174643814793276, 837594909917708298]
             roles = [guild.get_role(roleid) for roleid in roleids]
         else:
             return
