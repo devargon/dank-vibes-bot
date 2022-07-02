@@ -648,7 +648,7 @@ class GiveawayView(discord.ui.View):
                         elif gen_chat_active():
                             remarks.append(f"You can get <@&899185283881381889> by chatting in <#608498967474601995> and reaching **30 messages sent** in `dv.mymessages`.")
 
-                        final_desc = desc + "\n" + "\n".join(remarks)
+                        final_desc = desc + "\n\n" + "\n".join(remarks)
 
                         return await interaction.response.send_message(
                             embed=discord.Embed(title="Unable to join giveaway",
