@@ -651,7 +651,7 @@ class GiveawayView(discord.ui.View):
                         final_desc = desc + "\n\n" + "\n".join(remarks)
 
                         return await interaction.response.send_message(
-                            embed=discord.Embed(title="Unable to join giveaway",
+                            embed=discord.Embed(title=f"Unable to join the \"{giveawayentry.title}\" giveaway",
                                                 description=final_desc,
                                                 color=discord.Color.yellow()),
                             view=VoteLink() if gway_only_requires_voting() else None,
@@ -711,7 +711,7 @@ class GiveawayView(discord.ui.View):
                                 f"<a:DVB_arrow:975663275306024971> You currently have **{weekly_xp}** Weekly EXP. __You need another {giveawayentry.amari_weekly_xp - weekly_xp} Weekly EXP to join the giveaway__, which has a requirement of **{giveawayentry.amari_weekly_xp}** Weekly EXP.")
                         if len(missing_amari_requirements) > 0:
                             desc = '\n'.join(missing_amari_requirements)
-                            em = discord.Embed(title="Unable to join giveaway", description=desc,
+                            em = discord.Embed(title=f"Unable to join the \"{giveawayentry.title}\" giveaway", description=desc,
                                                color=discord.Color.yellow())
                             em.set_footer(
                                 text=f"Data was last updated {humanize_timedelta(seconds=round(time()) - last_updated)} ago.")
