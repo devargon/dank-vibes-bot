@@ -1510,7 +1510,7 @@ class giveaways(commands.Cog):
         if ping is not None and role_to_ping_id is not None:
             descriptions.append(f"<@&{role_to_ping_id}> will be pinged once the giveaway starts.\n**Make sure you're pinging the right role in the right channel.**")
         embed = discord.Embed(title="Are you ready to start this giveaway?", description="\n".join(descriptions), color=self.client.embed_color)
-        confirmview = confirm(ctx, self.client, timeout=30)
+        confirmview = confirm(ctx, self.client, timeout=180)
         confirmview.response = await ctx.respond(embed=embed, view=confirmview, ephemeral=True)
         await confirmview.wait()
         if confirmview.returning_value is not True:
