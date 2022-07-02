@@ -1008,7 +1008,7 @@ class giveaways(commands.Cog):
 
     async def format_giveaway_embed(self, entry: GiveawayEntry, winners: typing.Optional[list] = None) -> discord.Embed:
         guild = self.client.get_guild(entry.guild_id)
-        embed = discord.Embed(title=entry.title, color=self.client.embed_color, timestamp = datetime.fromtimestamp(entry.end_time))
+        embed = discord.Embed(title=entry.title, color=self.client.embed_color)
         if entry.active is True and winners is not None:
             descriptions = ["Press the button to enter!"]
         else:
@@ -1067,7 +1067,7 @@ class giveaways(commands.Cog):
                     embed.add_field(name="Extra Entries", value="\n ".join(req_list), inline=False)
         if winners is not None and len(winners) > 0:
             embed.add_field(name="Winners", value=str(human_join([w.mention for w in winners], ", ", "and")), inline=False)
-        embed.set_footer(text=f"{plural(entry.winners):winner} will be picked for this giveaway, which ends")
+        embed.set_footer(text=f"{plural(entry.winners):winner} will be picked.")
         title_lower = entry.title.lower()
         if "nitro" in title_lower:
             embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/810398162702958662.gif?size=128&quality=lossless")
