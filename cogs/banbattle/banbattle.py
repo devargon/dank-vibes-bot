@@ -89,7 +89,6 @@ class BanBattle(commands.Cog, name='banbattle'):
 
     @checks.is_dvbm()
     @commands.command(name="banshield")
-    @participant_or_permissions(kick_members=True)
     async def banshield(self, ctx, member: typing.Optional[discord.Member] = None):
         if ctx.guild.id != 813865065593176145:
             return
