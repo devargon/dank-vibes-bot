@@ -117,7 +117,7 @@ class BanBattle(commands.Cog, name='banbattle'):
                 descriptions.append(f"Duration: **{humanize_timedelta(seconds=duration)}**")
                 embed = discord.Embed(title="Banshield activated!", description="\n".join(descriptions), color=self.client.embed_color)
                 await ctx.guild.get_channel(BANSHIELD_LOGS).send(embed=embed)
-                await member.remove_roles(available_shield_role)
+                await ctx.author.remove_roles(available_shield_role)
                 await member.add_roles(active_shield_role)
                 descriptions = f"User: `{member}` {member.mention}\nID: `{member.id}`\nDuration: **{humanize_timedelta(seconds=duration)}**"
                 dm_embed = discord.Embed(title="Banshield Activated!", description=descriptions, color=self.client.embed_color)
