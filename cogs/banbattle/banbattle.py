@@ -95,10 +95,14 @@ class BanBattle(commands.Cog, name='banbattle'):
             return
         if member is None:
             member = ctx.author
-        if discord.utils.get(member.roles, id=ACTIVE_SHIELD):
+
+        active_shield_role = ctx.guild.get_role(ACTIVE_SHIELD)
+        available_shield_role = ctx.guild.get_role(AVAILABLE_SHIELD)
+        spectator_role = ctx.guild.get_role(SPECTATOR)
+        if active_shield_role in member.roles:
             return await ctx.send(f"{'You already have' if ctx.author == member else f'**{member}** already has'} an active shield.")
-        if discord.utils.get(ctx.author.roles, id=AVAILABLE_SHIELD):
-            if discord.utils.get(member.roles, id=SPECTATOR):
+        if available_shield_role in ctx.author.roles:
+            if spectator_role in member.roles:
                 if member == ctx.author:
                     return await ctx.send("You can't use your banshield on yourself as you're already eliminated.")
                 else:
@@ -113,8 +117,8 @@ class BanBattle(commands.Cog, name='banbattle'):
                 descriptions.append(f"Duration: **{humanize_timedelta(seconds=duration)}**")
                 embed = discord.Embed(title="Banshield activated!", description="\n".join(descriptions), color=self.client.embed_color)
                 await ctx.guild.get_channel(BANSHIELD_LOGS).send(embed=embed)
-                await member.remove_roles(discord.utils.get(ctx.author.roles, id=AVAILABLE_SHIELD))
-                await member.add_roles(discord.utils.get(ctx.author.roles, id=ACTIVE_SHIELD))
+                await member.remove_roles(available_shield_role)
+                await member.add_roles(active_shield_role)
                 descriptions = f"User: `{member}` {member.mention}\nID: `{member.id}`\nDuration: **{humanize_timedelta(seconds=duration)}**"
                 dm_embed = discord.Embed(title="Banshield Activated!", description=descriptions, color=self.client.embed_color)
                 with contextlib.suppress(discord.Forbidden):
@@ -123,7 +127,7 @@ class BanBattle(commands.Cog, name='banbattle'):
                     with contextlib.suppress(discord.Forbidden):
                         await member.send(f"{ctx.author} has activated a **{humanize_timedelta(seconds=duration)}** banshield on you.", embed=dm_embed)
                 await asyncio.sleep(duration)
-                await member.remove_roles(discord.utils.get(ctx.author.roles, id=ACTIVE_SHIELD))
+                await member.remove_roles(active_shield_role)
 
         else:
             return await ctx.send("Looks like you've already used your shield!")
