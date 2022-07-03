@@ -1,6 +1,12 @@
+import random
+
 import discord
 import asyncio
 import contextlib
+
+import typing
+from utils.time import humanize_timedelta
+
 from utils import checks
 from utils.buttons import *
 from discord.ext import commands
@@ -10,6 +16,7 @@ SPECTATOR = 830008994658648066
 PARTICIPANT = 813886794151493632
 ACTIVE_SHIELD = 828838727903346688
 AVAILABLE_SHIELD = 830214581989015572
+BANSHIELD_LOGS = 827799467393679361
 
 def participant_or_permissions(**perms):
     original = commands.has_permissions(**perms).predicate
@@ -79,6 +86,48 @@ class BanBattle(commands.Cog, name='banbattle'):
             await ctx.send("Bonned **{}**".format(member))
         except Exception:
             await ctx.send("An unexpected error occurred.", delete_after=5)
+
+    @checks.is_dvbm()
+    @commands.command(name="banshield")
+    @participant_or_permissions(kick_members=True)
+    async def banshield(self, ctx, member: typing.Optional[discord.Member] = None):
+        if ctx.guild.id != 813865065593176145:
+            return
+        if member is None:
+            member = ctx.author
+        if discord.utils.get(member.roles, id=ACTIVE_SHIELD):
+            return await ctx.send(f"{'You already have' if ctx.author == member else f'**{member}** already has'} an active shield.")
+        if discord.utils.get(ctx.author.roles, id=AVAILABLE_SHIELD):
+            if discord.utils.get(member.roles, id=SPECTATOR):
+                if member == ctx.author:
+                    return await ctx.send("You can't use your banshield on yourself as you're already eliminated.")
+                else:
+                    return await ctx.send(f"You can't use your banshield on **{member}** as they're already eliminated.")
+            else:
+                duration = random.randint(5, 20)
+                await ctx.send(f"Banshield activated for {humanize_timedelta(seconds=duration)}!", delete_after=3.0)
+                descriptions = []
+                descriptions.append(f"Activated by: `{ctx.author}` {ctx.author.mention} ({ctx.author.id})")
+                if ctx.author != member:
+                    descriptions.append(f"Used on: `{member}` {member.mention} ({member.id})")
+                descriptions.append(f"Duration: **{humanize_timedelta(seconds=duration)}**")
+                embed = discord.Embed(title="Banshield activated!", description="\n".join(descriptions), color=self.client.embed_color)
+                await ctx.guild.get_channel(BANSHIELD_LOGS).send(embed=embed)
+                await member.remove_roles(discord.utils.get(ctx.author.roles, id=AVAILABLE_SHIELD))
+                await member.add_roles(discord.utils.get(ctx.author.roles, id=ACTIVE_SHIELD))
+                descriptions = f"User: `{member}` {member.mention}\nID: `{member.id}`\nDuration: **{humanize_timedelta(seconds=duration)}**"
+                dm_embed = discord.Embed(title="Banshield Activated!", description=descriptions, color=self.client.embed_color)
+                with contextlib.suppress(discord.Forbidden):
+                    await ctx.author.send("Your banshield has been activated!", embed=dm_embed)
+                if ctx.author != member:
+                    with contextlib.suppress(discord.Forbidden):
+                        await member.send(f"{ctx.author} has activated a **{humanize_timedelta(seconds=duration)}** banshield on you.", embed=dm_embed)
+                await asyncio.sleep(duration)
+                await member.remove_roles(discord.utils.get(ctx.author.roles, id=ACTIVE_SHIELD))
+
+        else:
+            return await ctx.send("Looks like you've already used your shield!")
+
 
     @checks.is_dvbm()
     @commands.group(name='banbattle')
