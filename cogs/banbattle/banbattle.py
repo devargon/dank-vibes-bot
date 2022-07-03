@@ -111,9 +111,9 @@ class BanBattle(commands.Cog, name='banbattle'):
                 duration = random.randint(5, 20)
                 await ctx.send(f"Banshield activated for {humanize_timedelta(seconds=duration)}!", delete_after=3.0)
                 descriptions = []
-                descriptions.append(f"Activated by: `{ctx.author}` {ctx.author.mention} ({ctx.author.id})")
+                descriptions.append(f"Activated by: `{ctx.author}` {ctx.author.mention} (`{ctx.author.id}`)")
                 if ctx.author != member:
-                    descriptions.append(f"Used on: `{member}` {member.mention} ({member.id})")
+                    descriptions.append(f"Used on: `{member}` {member.mention} (`{member.id}`)")
                 descriptions.append(f"Duration: **{humanize_timedelta(seconds=duration)}**")
                 embed = discord.Embed(title="Banshield activated!", description="\n".join(descriptions), color=self.client.embed_color)
                 await ctx.guild.get_channel(BANSHIELD_LOGS).send(embed=embed)
