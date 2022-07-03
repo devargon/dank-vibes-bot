@@ -206,13 +206,20 @@ class Lottery(commands.Cog):
                     summary.append(f"<:DVB_True:887589686808309791> **{user.name}** has entered as `{next_lottery_number}`")
                 last_lottery_number = next_lottery_number
         await self.client.db.executemany("INSERT INTO lottery_entries(lottery_id, lottery_number, lottery_user) VALUES ($1, $2, $3)", to_commit)
-        summary = '\n'.join(summary)
-        embed = discord.Embed(title="Successfully added entries", description=summary, color=discord.Color.green())
-        if len(summary) > 0:
-            try:
-                await ctx.reply(summary)
-            except:
-                await ctx.send(summary)
+        joined_summary = '\n'.join(summary)
+
+        if len(joined_summary) > 0:
+            if len(joined_summary) <= 2000:
+                try:
+                    await ctx.reply(joined_summary)
+                except:
+                    await ctx.send(joined_summary)
+            else:
+                for chunk in discord.utils.as_chunks(summary, 15):
+                    try:
+                        await ctx.reply('\n'.join(chunk))
+                    except:
+                        await ctx.send('\n'.join(chunk))
         lottery_chan_id = get_lotto_channel(ctx.guild.id, type_of_lottery)
         if (chan := ctx.guild.get_channel(lottery_chan_id)) is not None:
             for lottery_id, lottery_number, lottery_user_id in to_commit:
