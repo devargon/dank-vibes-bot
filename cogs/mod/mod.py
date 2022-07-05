@@ -4,6 +4,7 @@ import json
 from discord.ext import menus, pages
 
 from main import dvvt
+from utils.paginator import SingleMenuPaginator
 from .lockdown import lockdown
 from .censor import censor
 from .browser_screenshot import BrowserScreenshot
@@ -632,7 +633,7 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
             embed = discord.Embed(title="Mod Log", description="Nothing to see here, move along 👋").set_author(icon_url=user.display_avatar.url, name=f"{user} ({user.id}")
             return await ctx.send(embed=embed)
         else:
-            pag = pages.Paginator(pages=ModlogPagination(modlog, user, 10, self.client).get_pages(), disable_on_timeout=True, use_default_buttons=True)
+            pag = SingleMenuPaginator(pages=ModlogPagination(modlog, user, 10, self.client).get_pages())
             await pag.send(ctx)
 
 
@@ -918,7 +919,7 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
                 embed.add_field(name='\u200b', value=to_send, inline=False)
         if embed not in page:
             page.append(embed)
-        paginator = pages.Paginator(pages=page, author_check=True)
+        paginator = SingleMenuPaginator(pages=page)
         await paginator.send(ctx)
 
     @checks.has_permissions_or_role(manage_roles=True)

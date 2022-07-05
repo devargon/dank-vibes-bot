@@ -21,6 +21,7 @@ from utils.buttons import confirm
 from utils.context import DVVTcontext
 from utils.converters import BetterBetterRoles, BetterMessageID
 from utils.menus import CustomMenu
+from utils.paginator import SingleMenuPaginator
 from utils.specialobjects import AwaitingAmariData, NoAmariData
 from utils.time import humanize_timedelta
 from utils.format import plural, stringtime_duration, grammarformat, human_join, print_exception
@@ -862,7 +863,7 @@ class GiveawayView(discord.ui.View):
             embed = discord.Embed(title="Giveaway Entrants", description="No one has joined this giveaway yet", color=self.client.embed_color)
             embed.set_footer(text=f"{len(users_formatted)} entrants | Page 1/1")
             page_embeds.append(embed)
-        paginator = pages.Paginator(pages=page_embeds)
+        paginator = SingleMenuPaginator(pages=page_embeds)
         await paginator.respond(interaction, ephemeral=True)
 
 
@@ -1283,7 +1284,7 @@ class giveaways(commands.Cog):
                 embeds.append(embed)
         else:
             embeds = [discord.Embed(title="Giveaway Configurations", color=self.client.embed_color, description="You have no configuration set for any channels in this server. Use `dv.giveawayconfig add [channel]` to do so.")]
-        paginator = pages.Paginator(pages=embeds)
+        paginator = SingleMenuPaginator(pages=embeds)
         await paginator.send(ctx)
 
     @giveawayconfig.command(name="add", aliases=["create", "new"])

@@ -13,6 +13,7 @@ from utils import checks
 from utils.buttons import confirm
 from utils.context import DVVTcontext
 from utils.format import plural, box, ordinal
+from utils.paginator import SingleMenuPaginator
 from utils.specialobjects import Contest, ContestSubmission
 
 media_events_id = 978493758427512853 if os.getenv('state') == '1' else 685237146415792128
@@ -94,7 +95,7 @@ class DisplayVoteView(discord.ui.View):
                             users.append(user)
                         embed.description = "\n".join(users)
                         votepages.append(embed)
-                paginator = pages.Paginator(pages=votepages, author_check=True)
+                paginator = SingleMenuPaginator(pages=votepages)
                 await paginator.respond(interaction, ephemeral=True)
 
         if self.votecount is not None:

@@ -9,6 +9,8 @@ from discord.ext import commands, pages
 from utils.menus import CustomMenu
 import json
 from utils.buttons import *
+from utils.paginator import SingleMenuPaginator
+
 emojis = ["<:DVB_checkmark:955345523139805214>", "<:DVB_crossmark:955345521151737896>"]
 
 class start_or_end(discord.ui.View):
@@ -201,7 +203,7 @@ View the guide on https://docs.dvbot.nogra.xyz/commands/mod/tools/#lockdown-star
                 channel_list.append(
                     f"\n{deleted_channels} channels have been removed from this profile as {self.client.user.name} was unable to find those channels.")
             title = f"Channels in the lockdown profile {profile_name}"
-            paginator = pages.Paginator(pages=LockdownPagination(channel_list, title, 20, self.client).get_pages(), disable_on_timeout=True, use_default_buttons=True)
+            paginator = SingleMenuPaginator(pages=LockdownPagination(channel_list, title, 20, self.client).get_pages())
             await paginator.send(ctx)
         else:
             results = await self.client.db.fetch("SELECT * FROM lockdownprofiles WHERE guild_id = $1", ctx.guild.id)

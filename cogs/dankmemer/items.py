@@ -11,6 +11,7 @@ from utils.format import comma_number, stringnum_toint
 import discord
 from discord.ext import commands, pages
 from main import dvvt
+from utils.paginator import MultiMenuPaginator
 from utils.specialobjects import DankItem
 
 
@@ -201,8 +202,7 @@ class DankItems(commands.Cog):
                 pagegroups.append(
                     discord.ext.pages.PageGroup(pages=all_items_embeds, label="All Items", author_check=True,
                                                 disable_on_timeout=True, description=None))
-                paginator = pages.Paginator(pages=pagegroups, show_menu=True,
-                                            menu_placeholder="Dank Memer Item Categories", )
+                paginator = MultiMenuPaginator(pages=pagegroups, menu_placeholder="Dank Memer Item Categories")
                 await paginator.send(ctx)
 
     @checks.has_permissions_or_role(manage_roles=True)
@@ -401,8 +401,7 @@ class DankItems(commands.Cog):
                 pagegroups.append(
                     discord.ext.pages.PageGroup(pages=all_items_embeds, label="All Items", author_check=True,
                                                 disable_on_timeout=True, description=None))
-                paginator = pages.Paginator(pages=pagegroups, show_menu=True,
-                                            menu_placeholder="Dank Memer Item Categories", )
+                paginator = MultiMenuPaginator(pages=pagegroups, menu_placeholder="Dank Memer Item Categories")
                 await paginator.send(ctx)
 
     @checks.has_permissions_or_role(manage_roles=True)
