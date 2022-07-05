@@ -21,6 +21,7 @@ import googletrans, googletrans.models
 
 from utils import checks
 from utils.context import DVVTcontext
+from utils.paginator import SingleMenuPaginator
 from utils.specialobjects import ContestSubmission, Contest
 from utils.time import humanize_timedelta
 from utils.errors import ArgumentBaseError
@@ -38,6 +39,7 @@ from .highlights import Highlight
 from .reminders import reminders
 from .tracktimeouts import TimeoutTracking
 from .utility_slash import UtilitySlash
+from .customrole import CustomRoleManagement
 
 
 LANGUAGES = {'af': 'afrikaans', 'sq': 'albanian', 'am': 'amharic', 'ar': 'arabic', 'hy': 'armenian', 'az': 'azerbaijani',
@@ -61,7 +63,7 @@ LANGUAGES = {'af': 'afrikaans', 'sq': 'albanian', 'am': 'amharic', 'ar': 'arabic
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
 
-class Utility(UtilitySlash, TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name='utility', metaclass=CompositeMetaClass):
+class Utility(CustomRoleManagement, UtilitySlash, TimeoutTracking, reminders, Highlight, Autoreaction, polls, Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name='utility', metaclass=CompositeMetaClass):
     """
     Utility commands
     """
@@ -510,7 +512,7 @@ class Utility(UtilitySlash, TimeoutTracking, reminders, Highlight, Autoreaction,
             else:
                 embed.description = changelog_text
                 pages.append(embed)
-        paginator = discord.ext.pages.Paginator(pages=pages)
+        paginator = SingleMenuPaginator(pages=pages)
         await paginator.send(ctx)
 
     @checks.has_permissions_or_role(manage_roles=True)
@@ -576,5 +578,5 @@ class Utility(UtilitySlash, TimeoutTracking, reminders, Highlight, Autoreaction,
                 index += 1
             else:
                 pass
-        paginator = pages.Paginator(pag_pages, author_check=True)
+        paginator = SingleMenuPaginator(pag_pages, author_check=True)
         await paginator.send(ctx)

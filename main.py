@@ -268,7 +268,7 @@ class dvvt(commands.Bot):
                       'ignoredchristmaschan', 'perkremoval', 'commandlog', 'timedunlock', 'nickname_changes',
                       'name_changes', 'timers', 'infections', 'polls', 'pollvotes', 'highlight', 'highlight_ignores',
                       'reminders', 'userconfig', 'modlog', 'watchlist', 'usercleanup', 'giveawayconfig', 'contests',
-                      'contest_submissions', 'contest_votes']
+                      'contest_submissions', 'contest_votes', 'customroles']
         print("Checking for missing databases")
         tables = await self.db.fetch("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';")
         tables = [i.get('table_name') for i in tables]
@@ -357,7 +357,7 @@ CREATE TABLE IF NOT EXISTS dankitems(name bigint, IDcode text PRIMARY KEY, image
 CREATE TABLE IF NOT EXISTS contests(contest_id serial, guild_id bigint not null, contest_starter_id bigint not null, contest_channel_id bigint not null, name text, created bigint, active bool default true, voting bool default false);
 CREATE TABLE IF NOT EXISTS contest_submissions(contest_id int not null, entry_id int, submitter_id bigint not null, media_link text not null, second_media_link text, approve_id bigint, msg_id bigint, approved bool default false);
 CREATE TABLE IF NOT EXISTS contest_votes(contest_id int not null, entry_id int, user_id bigint not null);
- 
+CREATE TABLE IF NOT EXISTS customroles(guild_id bigint NOT NULL, user_id bigint NOT NULL, role_id bigint NOT NULL);
 CREATE SCHEMA IF NOT EXISTS donations""")
         print(f"{self.user} ({self.user.id}) is ready")
 
@@ -427,6 +427,7 @@ CREATE SCHEMA IF NOT EXISTS donations""")
 
     async def shutdown(self):
         """Cancels tasks and shuts down the bot."""
+        await self.topgg_webhook.close()
         await self.close()
 
     def starter(self):
