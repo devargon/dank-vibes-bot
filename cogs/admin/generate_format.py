@@ -82,7 +82,7 @@ class GenerateFormat(commands.Cog):
         current_time = round(time.time())
         after_event_timings = [x for x in event_timings.get(event, []) if x > current_time]
         closest_time = min(after_event_timings, key=lambda x: abs(x - current_time))
-        text = f"<a:YMe_IA_PlanetS_NOSTEAL:833789373539418113> **{event}** <t:{closest_time}:R>. Stay tuned!\n<:dashgreen_donotsteal:834087005826580490><:aa_purpleheart:915510313972023306>Read the embed above for details.\n<:dash_donotsteal:834086914767323136><:aa_limeheart:915532105189056524>Run `-3yschedule` for the full schedule!\n<:dashgreen_donotsteal:834087005826580490><:aa_purpleheart:915510313972023306>Grab some roles to get notified for our events and more!"
+        text = f"<a:YMe_IA_PlanetS_NOSTEAL:833789373539418113> **{event}** starts <t:{closest_time}:R>. Stay tuned!\n<:dashgreen_donotsteal:834087005826580490><:aa_purpleheart:915510313972023306>Read the embed above for details.\n<:dash_donotsteal:834086914767323136><:aa_limeheart:915532105189056524>Run `-3yschedule` for the full schedule!\n<:dashgreen_donotsteal:834087005826580490><:aa_purpleheart:915510313972023306>Grab some roles to get notified for our events and more!"
         embed = discord.Embed(title="Template", description=box(text), color=self.client.embed_color)
         await ctx.respond("Also send: ```\ndv.self --roles Special Events Ping\n```", embed=embed)
 
