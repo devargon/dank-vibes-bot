@@ -103,6 +103,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
     def cog_unload(self):
         self.reminders.stop()
         self.leaderboardloop.stop()
+        self.client.topgg_webhook.close()
 
     @tasks.loop(seconds=5.0)  # this is the looping task that will remind people to vote in 12 hours.
     async def reminders(self):
