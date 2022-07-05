@@ -208,6 +208,7 @@ class CustomRoleManagement(commands.Cog):
                 description=f"Your custom role, **{role.name}**'s color has been changed from **#{old_color}** to **#{((hex(color.value))[2:]).zfill(6)}**.",
                 color=discord.Color.green()
             )
+            embed.set_footer(text="What? You think I'm going to call you wonderful like Yui! In your dreams!")
             await ctx.send(embed=embed)
 
 
