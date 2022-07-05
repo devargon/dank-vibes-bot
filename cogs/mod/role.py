@@ -218,7 +218,7 @@ class Role(commands.Cog):
                 await ctx.send(content, embed=get_info(newrole))
 
     @checks.has_permissions_or_role(manage_roles=True)
-    @role_cmd.command(name="color")
+    @role_cmd.command(name="color", aliases=["colour"])
     async def role_color(self, ctx: DVVTcontext, role: BetterRoles, color: BetterColor):
         role: discord.Role = role
         failembed = discord.Embed(title="Role Edit Failed", color=discord.Color.red())
