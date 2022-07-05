@@ -63,9 +63,6 @@ class ErrorHandler(commands.Cog):
             ctx.command.reset_cooldown(ctx)
             if error.converters == (discord.TextChannel, discord.VoiceChannel):
                 await send_error("I couldn't find that channel.")
-        elif isinstance(error, commands.MissingRequiredArgument):
-            ctx.command.reset_cooldown(ctx)
-            await send_error("{} is a required argument.".format(error.param))
         elif isinstance(error, ArgumentBaseError):
             ctx.command.reset_cooldown(ctx)
             await send_error(error)
