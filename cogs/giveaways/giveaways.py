@@ -968,9 +968,9 @@ class giveaways(commands.Cog):
                         await channel.send(message, view=GiveawayEndView(msg_link, host))
                         winnerdmmsg = ['Generic', "Depending on the type of giveaway you won, you will either receive the prize within 24 hours or need to claim from the giveaway host. If you're unsure, feel free to check with a moderator from <#870880772985344010>."]
                         if channel.id in [701771740912549938]:
-                            winnerdmmsg = ["Dank Memer", "As this is a flash giveaway, the prize will be given to you almost immediately. \nYou must accept the trade sent from the giveaway host, or you will be rerolled."]
+                            winnerdmmsg = ["Dank Memer Flash Giveaway", "As this is a flash giveaway, the prize will be given to you almost immediately. \nYou must accept the trade sent from the giveaway host, or you will be rerolled."]
                         if channel.id in [701771740912549938, 626704430468825089, 741254464303923220, 803039330310029362]:
-                            winnerdmmsg = ["Dank Memer", "Please be patient and wait for a DM from `Atlas#2867` notifying you to claim your prize.\nKindly claim within **3** hours after receiving the Atlas DM, do **not** try to claim before the DM."]
+                            winnerdmmsg = ["Dank Memer Normal Giveaway", "Please be patient and wait for a DM from `Atlas#2867` notifying you to claim your prize.\nKindly claim within **3** hours after receiving the Atlas DM, do **not** try to claim before the DM."]
                         elif channel.id in [847375661332299786]:
                             winnerdmmsg = ["Karuta", "Please claim your prize by DMing/pinging the host within **24** hours after winning."]
                         elif channel.id in [847830388713586738]:
@@ -979,14 +979,21 @@ class giveaways(commands.Cog):
                             winnerdmmsg = ["Pokemon", "Please wait **24 hours** before contacting the host if you haven't received your prize."]
                         elif channel.id in [650244237744537630]:
                             winnerdmmsg = ["Nitro", "You might need to claim the nitro from the sponsor/giveaway host within a limited time, depending on the giveaway's requirements."]
+                        elif channel.id in [992065949320630363]:
+                            winnerdmmsg = ["Celeb - Dank Memer", "Open a ticket in <#992065949320630363> and follow the instructions to claim your prize."]
+                        elif channel.id in [992366430857203833]:
+                            winnerdmmsg = ["Celeb - Nitro", "Open a ticket in <#992065949320630363> and follow the instructions to claim your prize."]
+                        elif channel.id in [991019248467976202]:
+                            winnerdmmsg = ["Celeb - Karuta", "Please DM `Ari#0005` to claim your prize!\n\n**If you won a Free Dye Job**, please await further instructions. You'll be pinged soon to claim it."]
 
 
                         winembed = discord.Embed(title=f"You've won the {g_entry.title} giveaway!",
                                                  description=f"{winnerdmmsg[1]}\n\n[Link to giveaway]({msg_link})",
                                                  color=self.client.embed_color, timestamp=discord.utils.utcnow()).set_footer(text=f"Giveaway type: {winnerdmmsg[0]}")
                         winembed.set_author(name=guild.name, icon_url=guild.icon.url)
+                        content = "🎉 **Congratulations on winning one of our celeb giveaways!** 🎉 \nThank you for being a part of our 3 year celebrations 🥳" if channel.id in [992065949320630363, 992366430857203833, 991019248467976202] else None
                         for winner in winners:
-                            self.dm_queue.append((winner, None, winembed, None))
+                            self.dm_queue.append((winner, content, winembed, None))
 
                         if host is not None:
                             hostembed = discord.Embed(
