@@ -71,6 +71,7 @@ class GenerateFormat(commands.Cog):
                 dash_emoji = dash_emojis[i % 2]
                 heart_emoji = heart_emojis[i % 2]
                 msg.append(f"{dash_emoji} {heart_emoji}꒰**{i+1}**꒱ **{winner}** ({winner.mention})")
+            msg.append(f"** **")
             embed = discord.Embed(title="Result", description=box("\n".join(msg)), color=self.client.embed_color)
             await ctx.respond(embed=embed)
 
