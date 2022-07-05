@@ -8,6 +8,7 @@ from .contests import Contests
 from .serverrule import ServerRule
 from .joining import Joining
 from .betterselfroles import BetterSelfroles
+from .generate_format import GenerateFormat
 from utils import checks
 from utils.buttons import *
 from utils.format import grammarformat, stringtime_duration
@@ -261,7 +262,7 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
 
 
-class Admin(Contests, BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass):
+class Admin(GenerateFormat, Contests, BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass):
     """
     Server Commands
     """
