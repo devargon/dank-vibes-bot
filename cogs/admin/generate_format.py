@@ -62,8 +62,8 @@ class GenerateFormat(commands.Cog):
             closest_time = min(before_event_timings, key=lambda x: abs(x - current_time))
 
 
-            msg = [f"<a:YMe_IA_PlanetS_NOSTEAL:833789373539418113> __**{event}**__ - <t:{closest_time}:f>"]
-            mobilemsg = [f":YMe_IA_PlanetS_NOSTEAL: __**{event}**__ - <t:{closest_time}:f>"]
+            msg = [f"<a:YMe_IA_PlanetS_NOSTEAL:833789373539418113> __**{event}**__ - <t:{closest_time}:f>", "** **"]
+            mobilemsg = [f":YMe_IA_PlanetS_NOSTEAL: __**{event}**__ - <t:{closest_time}:f>", "** **"]
             winners = [winner1, winner2, winner3, winner4, winner5, winner6, winner7, winner8, winner9, winner10, winner11, winner12]
             winners = [x for x in winners if x is not None]
             dash_emojis = ["<:d_thinpurpledash:933643545909280788>", "<:d_thinlimedash:933643434848313365>"]
