@@ -42,23 +42,7 @@ from .utility_slash import UtilitySlash
 from .customrole import CustomRoleManagement
 
 
-LANGUAGES = {'af': 'afrikaans', 'sq': 'albanian', 'am': 'amharic', 'ar': 'arabic', 'hy': 'armenian', 'az': 'azerbaijani',
-             'eu': 'basque', 'be': 'belarusian', 'bn': 'bengali', 'bs': 'bosnian', 'bg': 'bulgarian', 'ca': 'catalan',
-             'ceb': 'cebuano', 'ny': 'chichewa','zh-cn': 'chinese (simplified)','zh-tw': 'chinese (traditional)', 'co': 'corsican',
-             'hr': 'croatian', 'cs': 'czech', 'da': 'danish', 'nl': 'dutch', 'en': 'english', 'eo': 'esperanto', 'et': 'estonian',
-             'tl': 'filipino', 'fi': 'finnish', 'fr': 'french', 'fy': 'frisian', 'gl': 'galician', 'ka': 'georgian', 'de': 'german',
-             'el': 'greek', 'gu': 'gujarati', 'ht': 'haitian creole', 'ha': 'hausa', 'haw': 'hawaiian', 'iw': 'hebrew',
-             'he': 'hebrew', 'hi': 'hindi', 'hmn': 'hmong','hu': 'hungarian', 'is': 'icelandic', 'ig': 'igbo', 'id': 'indonesian',
-             'ga': 'irish', 'it': 'italian', 'ja': 'japanese', 'jw': 'javanese', 'kn': 'kannada', 'kk': 'kazakh', 'km': 'khmer',
-             'ko': 'korean', 'ku': 'kurdish (kurmanji)', 'ky': 'kyrgyz', 'lo': 'lao', 'la': 'latin', 'lv': 'latvian',
-             'lt': 'lithuanian', 'lb': 'luxembourgish', 'mk': 'macedonian', 'mg': 'malagasy', 'ms': 'malay', 'ml': 'malayalam',
-             'mt': 'maltese', 'mi': 'maori', 'mr': 'marathi', 'mn': 'mongolian', 'my': 'myanmar (burmese)', 'ne': 'nepali', 'no': 'norwegian',
-             'or': 'odia', 'ps': 'pashto', 'fa': 'persian', 'pl': 'polish', 'pt': 'portuguese', 'pa': 'punjabi', 'ro': 'romanian',
-             'ru': 'russian', 'sm': 'samoan', 'gd': 'scots gaelic', 'sr': 'serbian', 'st': 'sesotho', 'sn': 'shona', 'sd': 'sindhi',
-             'si': 'sinhala', 'sk': 'slovak', 'sl': 'slovenian', 'so': 'somali', 'es': 'spanish', 'su': 'sundanese', 'sw': 'swahili',
-             'sv': 'swedish', 'tg': 'tajik', 'ta': 'tamil', 'te': 'telugu', 'th': 'thai', 'tr': 'turkish', 'uk': 'ukrainian',
-             'ur': 'urdu', 'ug': 'uyghur', 'uz': 'uzbek', 'vi': 'vietnamese', 'cy': 'welsh', 'xh': 'xhosa', 'yi': 'yiddish',
-             'yo': 'yoruba', 'zu': 'zulu',}
+LANGUAGE_CODES = [l for l in googletrans.LANGUAGES.keys()]
 
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
@@ -96,7 +80,7 @@ class Utility(CustomRoleManagement, UtilitySlash, TimeoutTracking, reminders, Hi
     @commands.cooldown(10, 1, commands.BucketType.user)
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.group(name="translate", aliases=['trans', 'tl'], invoke_without_command=True)
-    async def translate_command(self, ctx, dest_language: str = None, *, text: str = None):
+    async def translate_command(self, ctx, dest_language: typing.Optional[typing.Literal['af', 'sq', 'am', 'ar', 'hy', 'az', 'eu', 'be', 'bn', 'bs', 'bg', 'ca', 'ceb', 'ny', 'zh-cn', 'zh-tw', 'co', 'hr', 'cs', 'da', 'nl', 'en', 'eo', 'et', 'tl', 'fi', 'fr', 'fy', 'gl', 'ka', 'de', 'el', 'gu', 'ht', 'ha', 'haw', 'iw', 'he', 'hi', 'hmn', 'hu', 'is', 'ig', 'id', 'ga', 'it', 'ja', 'jw', 'kn', 'kk', 'km', 'ko', 'ku', 'ky', 'lo', 'la', 'lv', 'lt', 'lb', 'mk', 'mg', 'ms', 'ml', 'mt', 'mi', 'mr', 'mn', 'my', 'ne', 'no', 'or', 'ps', 'fa', 'pl', 'pt', 'pa', 'ro', 'ru', 'sm', 'gd', 'sr', 'st', 'sn', 'sd', 'si', 'sk', 'sl', 'so', 'es', 'su', 'sw', 'sv', 'tg', 'ta', 'te', 'th', 'tr', 'uk', 'ur', 'ug', 'uz', 'vi', 'cy', 'xh', 'yi', 'yo', 'zu']] = 'en', *, text: str = None):
         """
         Translate text up to 1000 characters into a language of your choice, or English.
         By default, the text's language is auto-detected then translated into English.
@@ -112,17 +96,15 @@ class Utility(CustomRoleManagement, UtilitySlash, TimeoutTracking, reminders, Hi
             text = await self.get_text_to_translate(ctx, text)
             if text is not None:
                 if dest_language:
-                    if dest_language.lower() not in LANGUAGES:
+                    if dest_language.lower() not in LANGUAGE_CODES:
                         dest_language = "en"
                     else:
                         dest_language = dest_language.lower()
                 else:
                     dest_language = "en"
             else:
-                if dest_language is not None:
-                    text = await self.get_text_to_translate(ctx, dest_language)
-                    dest_language = "en"
-            if text is None or len(text) > 1000:
+                return await ctx.send("Please specify text to translate.")
+            if len(text) > 1000:
                     return await ctx.send("Please specify text to translate.")
             if len(text) > 1000:
                 return await ctx.send("The text to translate can only be 1000 characters long.")
@@ -142,8 +124,8 @@ class Utility(CustomRoleManagement, UtilitySlash, TimeoutTracking, reminders, Hi
                     return
                 else:
                     raise e
-        embed.set_field_at(index=-2, name=f"Original Text - {LANGUAGES[translated.src.lower()].title()}", value=f"```\n{text}\n```", inline=False)
-        embed.set_field_at(index=-1, name=f"Translated Text - {LANGUAGES[translated.dest.lower()].title()}", value=f"```\n{translated.text}\n```", inline=False)
+        embed.set_field_at(index=-2, name=f"Original Text - {googletrans.LANGUAGES.get(translated.src.lower(), 'Unknown Language').title()}", value=f"```\n{text}\n```", inline=False)
+        embed.set_field_at(index=-1, name=f"Translated Text - {googletrans.LANGUAGES.get(translated.dest.lower(), 'Unknown Language').title()}", value=f"```\n{translated.text}\n```", inline=False)
         embed.set_footer(icon_url="https://upload.wikimedia.org/wikipedia/commons/d/db/Google_Translate_Icon.png", text="Powered by Google Translate")
         await transmsg.edit(embed=embed)
 
