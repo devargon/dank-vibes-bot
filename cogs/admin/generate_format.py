@@ -63,17 +63,25 @@ class GenerateFormat(commands.Cog):
 
 
             msg = [f"<a:YMe_IA_PlanetS_NOSTEAL:833789373539418113> __**{event}**__ - <t:{closest_time}:f>"]
+            mobilemsg = [f":YMe_IA_PlanetS_NOSTEAL: __**{event}**__ - <t:{closest_time}:f>"]
             winners = [winner1, winner2, winner3, winner4, winner5, winner6, winner7, winner8, winner9, winner10, winner11, winner12]
             winners = [x for x in winners if x is not None]
-            dash_emojis = ["<:aa_limeheart:915532105189056524>", "<:aa_purpleheart:915510313972023306>"]
-            heart_emojis = ["<:d_thinpurpledash:933643545909280788>", "<:d_thinlimedash:933643434848313365>"]
+            dash_emojis = ["<:d_thinpurpledash:933643545909280788>", "<:d_thinlimedash:933643434848313365>"]
+            dash_mobile_emojis = [":d_thinpurpledash:", ":d_thinlimedash:"]
+            heart_emojis = ["<:aa_limeheart:915532105189056524>", "<:aa_purpleheart:915510313972023306>"]
+            heart_mobile_emojis = [":aa_limeheart:", ":aa_purpleheart:"]
             for i, winner in enumerate(winners):
                 dash_emoji = dash_emojis[i % 2]
                 heart_emoji = heart_emojis[i % 2]
+                dash_mobile_emoji = dash_mobile_emojis[i % 2]
+                heart_mobile_emoji = heart_mobile_emojis[i % 2]
                 msg.append(f"{dash_emoji} {heart_emoji}꒰**{i+1}**꒱ **{winner}** ({winner.mention})")
+                mobilemsg.append(f"{dash_mobile_emoji} {heart_mobile_emoji}꒰**{i+1}**꒱ **{winner}** ({winner.mention})")
             msg.append(f"** **")
+            mobilemsg.append(f"** **")
             embed = discord.Embed(title="Result", description=box("\n".join(msg)), color=self.client.embed_color)
-            await ctx.respond(embed=embed)
+            mobileembed = discord.Embed(title="Mobile Friendly", description=box("\n".join(mobilemsg)), color=self.client.embed_color)
+            await ctx.respond(embeds=[embed, mobileembed])
 
     @generate.command(name="event", description="Generate message for the next event.")
     @default_permissions(manage_roles=True)
@@ -84,8 +92,10 @@ class GenerateFormat(commands.Cog):
         after_event_timings = [x for x in event_timings.get(event, []) if x > current_time]
         closest_time = min(after_event_timings, key=lambda x: abs(x - current_time))
         text = f"<a:YMe_IA_PlanetS_NOSTEAL:833789373539418113> **{event}** starts <t:{closest_time}:R>. Stay tuned!\n<:dashgreen_donotsteal:834087005826580490><:aa_purpleheart:915510313972023306>Read the embed above for details.\n<:dash_donotsteal:834086914767323136><:aa_limeheart:915532105189056524>Run `-3yschedule` for the full schedule!\n<:dashgreen_donotsteal:834087005826580490><:aa_purpleheart:915510313972023306>Grab some roles to get notified for our events and more!"
+        mobiletext = f":YMe_IA_PlanetS_NOSTEAL: **{event}** starts <t:{closest_time}:R>. Stay tuned!\n:dashgreen_donotsteal::aa_purpleheart:Read the embed above for details.\n:dash_donotsteal::aa_limeheart:Run `-3yschedule` for the full schedule!\n:dashgreen_donotsteal::aa_purpleheart:Grab some roles to get notified for our events and more!"
         embed = discord.Embed(title="Template", description=box(text), color=self.client.embed_color)
-        await ctx.respond("Also send: ```\ndv.self --roles Special Events Ping\n```", embed=embed)
+        mobileembed = discord.Embed(title="Mobile Friendly", description=box(mobiletext), color=self.client.embed_color)
+        await ctx.respond("Also send: ```\ndv.self --roles Special Events Ping\n```", embeds=[embed, mobileembed])
 
 
 
