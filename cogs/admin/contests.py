@@ -507,7 +507,7 @@ class Contests(commands.Cog):
                 return stepsembed
             step = 0
             emojis = ["<a:DVB_CLoad3:994913503771111515>", "<a:DVB_CLoad2:994913353388527668>", "<a:DVB_CLoad1:994913315442663475>"]
-            steps = ["Making sure your submission follows the rules...", "Uploading your submission...", "The final steps..."]
+            steps = ["Making sure your submission follows the rules...", "Uploading your submission...", "Almost there... <:dv_bunbunWaitOwO:837691330800648262>"]
             stepsembed.description = f"`[{step+1}/3]` {emojis[step]} {steps[step]}"
             contest_obj = Contest(contest_obj)
             contest_id = contest_obj.contest_id
