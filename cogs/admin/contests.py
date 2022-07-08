@@ -5,6 +5,10 @@ from collections import Counter
 from datetime import datetime
 from typing import Union, Optional
 
+import aiohttp
+import filetype
+from utils.helper import upload_file_to_bunnycdn, generate_random_hash
+
 import discord
 from discord.ext import commands, pages
 
@@ -19,6 +23,11 @@ from utils.specialobjects import Contest, ContestSubmission
 media_events_id = 978493758427512853 if os.getenv('state') == '1' else 685237146415792128
 
 approving_channel_id = 978563862896967681 if os.getenv('state') == '1' else 690455600068427836
+
+def get_filetype(bytes) -> filetype.Type:
+    a = filetype.guess(bytes)
+    return a
+
 
 class DenyWithReason(discord.ui.Modal):
     def __init__(self):
@@ -486,43 +495,112 @@ class Contests(commands.Cog):
         if (contest_obj := await self.client.db.fetchrow("SELECT * FROM contests WHERE guild_id = $1 AND (active = TRUE or voting = TRUE)", ctx.guild.id)) is None:
             return await ctx.respond("There are no contests taking place now.\n\nGet **Media Events Ping** to be notified when a contest starts!", view=GetMediaEventsPing(), ephemeral=True)
         else:
-            contest_obj = Contest(contest_obj)
             await ctx.defer(ephemeral=True)
+            stepsembed = discord.Embed(title="I'm taking care of your submission!", color=self.client.embed_color)
+            stepsembed.set_footer(text="Do not close this yet! Make sure this message says your submission is successful.")
+
+            def fatal_error_format_embed(title = None, description = None):
+                stepsembed.title = title
+                stepsembed.description = description
+                stepsembed.color = discord.Color.red()
+                stepsembed.set_footer(text="An error occurred. Your submission was not uploaded, please try again later.")
+                return stepsembed
+            step = 0
+            emojis = ["<a:DVB_CLoad3:994913503771111515>", "<a:DVB_CLoad2:994913353388527668>", "<a:DVB_CLoad1:994913315442663475>"]
+            steps = ["Making sure your submission follows the rules...", "Uploading your submission...", "The final steps..."]
+            stepsembed.description = f"`[{step+1}/3]` {emojis[step]} {steps[step]}"
+            contest_obj = Contest(contest_obj)
             contest_id = contest_obj.contest_id
+            stepsmsg = await ctx.respond(embed=stepsembed, ephemeral=True)
+            submission_content = await submission.read()
             if contest_obj.active is True:
-                if submission.content_type not in ['image/jpeg', 'image/png']:
+                print("checking file format")
+                # Check file format
+                if get_filetype(submission_content) is None or get_filetype(submission_content).extension not in ['png', 'jpg', 'jpeg', 'apng', 'gif', 'webp']:
                     filename = submission.filename.split('.')
                     if len(filename) > 1:
                         extension = filename[-1]
-                        return await ctx.respond(f"You can only submit JPEG or PNG images for the contest.\n\nConvert your submission to a JPEG or PNG image and try to submit again.\nhttps://www.google.com/search?q={extension}+to+jpeg+png+converter", view=GetMediaEventsPing(), ephemeral=True)
+                        stepsembed.description = f"<:DVB_False:887589731515392000> You can only submit a JPEG, PNG, APNG, GIF or WEBP image for the contest.\n\nConvert your submission to a suitable format (such as JPEG or PNG) and try to submit again.\nhttps://www.google.com/search?q={extension}+to+jpeg+png+converter"
                     else:
-                        return await ctx.respond("You can only submit JPEG or PNG images for the contest.\n\nConvert your submission to a JPEG or PNG image and try to submit again.", view=GetMediaEventsPing(), ephemeral=True)
+                        stepsembed.description = "<:DVB_False:887589731515392000> You can only submit a JPEG, PNG, APNG, GIF or WEBP image for the contest.\n\nConvert your submission to a suitable format (such as JPEG or PNG) and try to submit again."
+                    stepsembed = fatal_error_format_embed("Failed to submit: Wrong file format")
+                    return await stepsmsg.edit(embed=stepsembed)
+                print("File check passed")
+                #Check if previously submitted
+                print("finding existing submissions")
                 if (existing_submission := await self.client.db.fetchrow("SELECT * FROM contest_submissions WHERE contest_id = $1 AND submitter_id = $2", contest_id, ctx.author.id)) is not None:
                     user_has_submitted_before = True
                     existing_submission = ContestSubmission(existing_submission)
                     confirmview = confirm(ctx, self.client, 30.0)
                     existing = False
+                    stepsembed.color = discord.Color.yellow()
+                    stepsembed.title = "Warning: You already submitted before"
                     if existing_submission.approved is True:
                         existing = True
-                        confirmview.response = await ctx.respond(f"You already have a [submission that's approved](https://discord.com/channels/{ctx.guild.id}/{contest_obj.contest_channel_id}/{existing_submission.msg_id}). Are you sure you want to resubmit again?", view=confirmview)
+                        stepsembed.description = f"You already have a [submission that's approved](https://discord.com/channels/{ctx.guild.id}/{contest_obj.contest_channel_id}/{existing_submission.msg_id}). Are you sure you want to resubmit again?"
                     elif existing_submission.approve_id is not None:
                         existing = True
-                        confirmview.response = await ctx.respond("You already have a submission that's waiting to be approved. Are you sure you want to resubmit again?", view=confirmview)
+                        stepsembed.description = "You already have a submission that's waiting to be approved. Are you sure you want to resubmit again?"
                     else:
                         pass
                     if existing is True:
+                        confirmview.response = await stepsmsg.edit(embed=stepsembed, view=confirmview)
                         await confirmview.wait()
                         if confirmview.returning_value is not True:
                             return
 
+                #Upload to the cdn network
+                step += 1
+                filename = f"contestfile_{ctx.guild.id}_{contest_obj.contest_channel_id}_{generate_random_hash()}.{get_filetype(submission_content).extension}"
+                stepsembed.color = self.client.embed_color
+                stepsembed.title = "I'm taking care of your submission!"
+                stepsembed.description = f"`[{step+1}/3]` {emojis[step]} {steps[step]}"
+                await stepsmsg.edit(embed=stepsembed)
+                try:
+                    final_url, status = await upload_file_to_bunnycdn(submission_content, filename, 'contest_files')
+                except aiohttp.ClientResponseError as e:
+                    stepsembed = fatal_error_format_embed("Failed to submit: Upload Error", f"<:DVB_False:887589731515392000> I failed to upload your file to our image host. Please try again later.\nSorry for the inconvenience!")
+                    error_channel = self.client.get_channel(871737028105109574)
+                    if error_channel is not None:
+                        descriptions = [
+                            f"User: `{ctx.author} {ctx.author.id}` {ctx.author.mention}",
+                            f"File: [`{submission.filename}`]({submission.url}) {round(submission.size/1000000, 4)}MB",
+                            f"Status Code: `{e.status}` {e.message}",
+                        ]
+                        error_embed = discord.Embed(title="Error uploading submission file to BunnyCDN", description="\n".join(descriptions), color=discord.Color.red())
+                        error_embed.add_field(name="Error", value=box(str(e)))
+                        await error_channel.send(f"Error uploading file to BunnyCDN", embed=error_embed)
+                        stepsembed.description = f"<:DVB_False:887589731515392000> I failed to upload your file to our image host. The developer has been notified, please try again later.\nSorry for the inconvenience!"
+                    return await stepsmsg.edit(embed=stepsembed)
+                except Exception as e:
+                    stepsembed = fatal_error_format_embed("Failed to submit: Unknown Error", f"<:DVB_False:887589731515392000> I failed to upload your file to our image host. Please try again later.\nSorry for the inconvenience!")
+                    error_channel = self.client.get_channel(871737028105109574)
+                    if error_channel is not None:
+                        descriptions = [
+                            f"User: `{ctx.author} {ctx.author.id}` {ctx.author.mention}",
+                            f"File: [`{submission.filename}`]({submission.url}) {round(submission.size / 1000000, 4)}MB",
+                        ]
+                        error_embed = discord.Embed(title="Error uploading submission file to BunnyCDN",
+                                                    description="\n".join(descriptions), color=discord.Color.red())
+                        error_embed.add_field(name="Error", value=box(str(e)))
+                        await error_channel.send(f"Error uploading file to BunnyCDN", embed=error_embed)
+                        stepsembed.description = f"<:DVB_False:887589731515392000> I failed to upload your file to our image host. The developer has been notified, please try again later.\nSorry for the inconvenience!"
+                    return await stepsmsg.edit(embed=stepsembed)
+
+                #Send to admin chat
+                step += 1
+                stepsembed.color = self.client.embed_color
+                stepsembed.title = "I'm taking care of your submission!"
+                stepsembed.description = f"`[{step+1}/3]` {emojis[step]} {steps[step]}"
+                await stepsmsg.edit(embed=stepsembed)
                 last_entry_no = await self.client.db.fetchval("SELECT entry_id FROM contest_submissions WHERE contest_id = $1 ORDER BY entry_id DESC limit 1", contest_id) or 0
                 next_entry_no = last_entry_no + 1
                 if (approve_channel := ctx.guild.get_channel(approving_channel_id)) is not None:
 
                     if user_has_submitted_before is True:
-                        await_approval_embed = discord.Embed(title=f"Submission #{existing_submission.entry_id}", color=discord.Color.yellow()).set_image(url=submission.url)
+                        await_approval_embed = discord.Embed(title=f"Submission #{existing_submission.entry_id}", color=discord.Color.yellow()).set_image(url=final_url)
                     else:
-                        await_approval_embed = discord.Embed(title=f"Submission #{next_entry_no}", color=discord.Color.yellow()).set_image(url=submission.url)
+                        await_approval_embed = discord.Embed(title=f"Submission #{next_entry_no}", color=discord.Color.yellow()).set_image(url=final_url)
                     if user_has_submitted_before is True:
                         next_entry_no = existing_submission.entry_id
                         if existing_submission.approve_id is not None:
@@ -531,34 +609,32 @@ class Contests(commands.Cog):
                                 await p_message.edit(embed=await_approval_embed, view=SubmissionApproval(self.client, contest_id, next_entry_no, ctx.author.id))
                             except discord.NotFound:
                                 approve_message = await approve_channel.send(embed=await_approval_embed, view=SubmissionApproval(self.client, contest_id, next_entry_no, ctx.author.id))
-                                await self.client.db.execute("UPDATE contest_submissions SET second_media_link = $1, approve_id = $2 WHERE contest_id = $3 AND entry_id = $4 AND submitter_id = $5", submission.url, approve_message.id, contest_id, existing_submission.entry_id, ctx.author.id)
-                                await ctx.respond(f"<:DVB_True:887589686808309791> **Your submission has been sent to the admins for approval!**\nYou will be DMed about whether your submission is approved or not. Please keep your DMs with {self.client.user.name} open.", ephemeral=True)
+                                await self.client.db.execute("UPDATE contest_submissions SET second_media_link = $1, approve_id = $2 WHERE contest_id = $3 AND entry_id = $4 AND submitter_id = $5", final_url, approve_message.id, contest_id, existing_submission.entry_id, ctx.author.id)
                                 with contextlib.suppress(discord.Forbidden):
-                                    dm_embed = discord.Embed(title="Submission Awaiting Approval", description="Your submission has been sent to the admins for approval. You will be DMed regarding the status of your submsission.", color=self.client.embed_color).set_image(url=submission.url)
+                                    dm_embed = discord.Embed(title="Submission Awaiting Approval", description="Your submission has been sent to the admins for approval. You will be DMed regarding the status of your submsission.", color=self.client.embed_color).set_image(url=final_url)
                                     await ctx.author.send(embed=dm_embed)
-                                    return
                             else:
-                                await self.client.db.execute("UPDATE contest_submissions SET approve_id = $1, approved = FALSE, second_media_link = $2 WHERE contest_id = $3 AND entry_id = $4 AND submitter_id = $5", p_message.id, submission.url, contest_id, existing_submission.entry_id, ctx.author.id)
-                                await ctx.respond(f"<:DVB_True:887589686808309791> **Your submission has been sent to the admins for approval!**\nYou will be DMed about whether your submission is approved or not. Please keep your DMs with {self.client.user.name} open.", ephemeral=True)
+                                await self.client.db.execute("UPDATE contest_submissions SET approve_id = $1, approved = FALSE, second_media_link = $2 WHERE contest_id = $3 AND entry_id = $4 AND submitter_id = $5", p_message.id, final_url, contest_id, existing_submission.entry_id, ctx.author.id)
                                 with contextlib.suppress(discord.Forbidden):
-                                    dm_embed = discord.Embed(title="Submission Awaiting Approval", description="Your submission has been sent to the admins for approval. You will be DMed regarding the status of your submsission.", color=self.client.embed_color).set_image(url=submission.url)
+                                    dm_embed = discord.Embed(title="Submission Awaiting Approval", description="Your submission has been sent to the admins for approval. You will be DMed regarding the status of your submsission.", color=self.client.embed_color).set_image(url=final_url)
                                     await ctx.author.send(embed=dm_embed)
-                                    return
                         else:
                             approve_message = await approve_channel.send(embed=await_approval_embed, view=SubmissionApproval(self.client, contest_id, next_entry_no, ctx.author.id))
-                            await self.client.db.execute("UPDATE contest_submissions SET second_media_link = $1, approve_id = $2, approved = FALSE WHERE contest_id = $3 AND entry_id = $4 AND submitter_id = $5", submission.url, approve_message.id, contest_id, existing_submission.entry_id, ctx.author.id)
-                            await ctx.respond(f"<:DVB_True:887589686808309791> **Your submission has been sent to the admins for approval!**\nYou will be DMed about whether your submission is approved or not. Please keep your DMs with {self.client.user.name} open.", ephemeral=True)
+                            await self.client.db.execute("UPDATE contest_submissions SET second_media_link = $1, approve_id = $2, approved = FALSE WHERE contest_id = $3 AND entry_id = $4 AND submitter_id = $5", final_url, approve_message.id, contest_id, existing_submission.entry_id, ctx.author.id)
                             with contextlib.suppress(discord.Forbidden):
-                                dm_embed = discord.Embed(title="Submission Awaiting Approval", description="Your submission has been sent to the admins for approval. You will be DMed regarding the status of your submsission.", color=self.client.embed_color).set_image(url=submission.url)
+                                dm_embed = discord.Embed(title="Submission Awaiting Approval", description="Your submission has been sent to the admins for approval. You will be DMed regarding the status of your submsission.", color=self.client.embed_color).set_image(url=final_url)
                                 await ctx.author.send(embed=dm_embed)
-                                return
-
-                    approve_message = await approve_channel.send(embed=await_approval_embed, view=SubmissionApproval(self.client, contest_id, next_entry_no, ctx.author.id))
-                    await self.client.db.execute("INSERT INTO contest_submissions(contest_id, entry_id, submitter_id, media_link, approve_id) VALUES($1, $2, $3, $4, $5)", contest_id, next_entry_no, ctx.author.id, submission.url, approve_message.id)
-                    await ctx.respond(f"<:DVB_True:887589686808309791> **Your submission has been sent to the admins for approval!**\nYou will be DMed about whether your submission is approved or not. Please keep your DMs with {self.client.user.name} open.", ephemeral=True)
-                    with contextlib.suppress(discord.Forbidden):
-                        dm_embed = discord.Embed(title="Submission Awaiting Approval", description="Your submission has been sent to the admins for approval. You will be DMed regarding the status of your submsission.", color=self.client.embed_color).set_image(url=submission.url)
-                        await ctx.author.send(embed=dm_embed)
+                    else:
+                        approve_message = await approve_channel.send(embed=await_approval_embed, view=SubmissionApproval(self.client, contest_id, next_entry_no, ctx.author.id))
+                        await self.client.db.execute("INSERT INTO contest_submissions(contest_id, entry_id, submitter_id, media_link, approve_id) VALUES($1, $2, $3, $4, $5)", contest_id, next_entry_no, ctx.author.id, final_url, approve_message.id)
+                        with contextlib.suppress(discord.Forbidden):
+                            dm_embed = discord.Embed(title="Submission Awaiting Approval", description="Your submission has been sent to the admins for approval. You will be DMed regarding the status of your submsission.", color=self.client.embed_color).set_image(url=final_url)
+                            await ctx.author.send(embed=dm_embed)
+                    stepsembed.color = discord.Color.green()
+                    stepsembed.title = "Successfully submitted!"
+                    stepsembed.set_footer(text="Your submission has been processed! You may now close this message and wait for it to be approved. :)")
+                    stepsembed.description = f"<:DVB_True:887589686808309791> **Your submission has been sent to the admins for approval!**\nYou will be DMed about whether your submission is approved or not. Please keep your DMs with {self.client.user.name} open.\n\nAfter it is approved, your submission will appear on <#{contest_obj.contest_channel_id}>."
+                    await stepsmsg.edit(embed=stepsembed)
                 else:
                     await ctx.respond("I could not find a channel to send your entry to await approval.", ephemeral=True)
             elif contest_obj.voting is True:

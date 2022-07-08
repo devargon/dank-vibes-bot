@@ -1,7 +1,21 @@
+import io
+import os
+import random
+from io import BytesIO
+from urllib import parse
+
+import aiohttp
+import filetype
+
 import discord
 import datetime
 from typing import Union, Tuple, Optional
+
+import typing
 from discord.ext import menus
+from dotenv import load_dotenv
+
+load_dotenv('credentials.env')
 
 class BaseEmbed(discord.Embed):
     def __init__(self, color: Union[discord.Color, int] = 0xffcccb, timestamp: datetime.datetime = None,
@@ -48,3 +62,54 @@ def unpack(li):
             yield from unpack(item)
         else:
             yield item
+
+def generate_random_hash():
+    hash = random.getrandbits(128)
+
+    return("%032x" % hash)
+
+async def upload_file_to_bunnycdn(file: typing.Union[str, bytes, os.PathLike, io.BufferedIOBase], filename: str = None, directory: str = None, storage_zone_name="nogra"):
+    """Uploads a file to a BunnyCDN Storage Zone."""
+    if isinstance(file, io.IOBase):
+        if not (file.seekable() and file.readable()):
+            raise ValueError(f"File buffer {file!r} must be seekable and readable")
+        file_data = file
+    elif isinstance(file, (str, os.PathLike)):
+        with open(file, "rb") as fp:
+            file_data = fp.read()
+    else:
+        file_data = file
+    if filename is None:
+        if isinstance(fp, str):
+            _, filename = os.path.split(fp)
+        else:
+            filename = getattr(fp, "name", None)
+    else:
+        filename = filename
+    mime_type = filetype.guess_mime(file_data)
+    if mime_type is None:
+        mime_type = "application/octet-stream"
+    headers = {
+        "Content-Type": mime_type,
+        "AccessKey": os.getenv('bunnystoragecredentials')
+    }
+    base_url = f"https://storage.bunnycdn.com/{storage_zone_name}/"
+    commercial_base_url = f"https://cdn.nogra.xyz/"
+    if directory is not None and directory != "":
+        if directory[0] == "/":
+            directory = directory[1:]
+        if directory[-1] == "/":
+            directory = directory[:-1]
+        directory += f"/{filename}"
+        url = base_url + parse.quote(directory)
+        commercial_url = commercial_base_url + parse.quote(directory)
+    else:
+        url = base_url + parse.quote(filename)
+        commercial_url = commercial_base_url + parse.quote(filename)
+
+
+    async with aiohttp.ClientSession() as session:
+        async with session.put(url, data=file_data, headers=headers) as resp:
+            resp.raise_for_status()
+        return commercial_url, resp.status
+

@@ -47,3 +47,4 @@ owoify-py
 bugsnag
 amari.py
 python-Levenshtein
+filetype
