@@ -514,7 +514,6 @@ class Contests(commands.Cog):
             stepsmsg = await ctx.respond(embed=stepsembed, ephemeral=True)
             submission_content = await submission.read()
             if contest_obj.active is True:
-                print("checking file format")
                 # Check file format
                 if get_filetype(submission_content) is None or get_filetype(submission_content).extension not in ['png', 'jpg', 'jpeg', 'apng', 'gif', 'webp']:
                     filename = submission.filename.split('.')
@@ -525,9 +524,7 @@ class Contests(commands.Cog):
                         stepsembed.description = "<:DVB_False:887589731515392000> You can only submit a JPEG, PNG, APNG, GIF or WEBP image for the contest.\n\nConvert your submission to a suitable format (such as JPEG or PNG) and try to submit again."
                     stepsembed = fatal_error_format_embed("Failed to submit: Wrong file format")
                     return await stepsmsg.edit(embed=stepsembed)
-                print("File check passed")
                 #Check if previously submitted
-                print("finding existing submissions")
                 if (existing_submission := await self.client.db.fetchrow("SELECT * FROM contest_submissions WHERE contest_id = $1 AND submitter_id = $2", contest_id, ctx.author.id)) is not None:
                     user_has_submitted_before = True
                     existing_submission = ContestSubmission(existing_submission)
