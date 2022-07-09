@@ -1005,6 +1005,7 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
         Refer to a message by pasting its message ID, message link, or reply to a message containing the message link.
         The third method should only be used if there's ONE message link.
         """
+        channel_id = None
         if message_id is None and not ctx.message.reference:
             return await ctx.help()
         if type(message_id) == str and message_id.isdigit():
@@ -1020,12 +1021,22 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
                 message_link = message_url
             try:
                 message_id = message_link.split("/")[-1]
+                channel_id = int(message_link.split("/")[-2])
             except Exception as e:
                 return await ctx.send("I couldn't find a PROPER message link in your message or in the replied message.")
             if not message_id.isdigit():
                 return await ctx.send("I couldn't find a PROPER message link in your message or in the replied message.")
             else:
                 message_id = int(message_id)
+        if channel_id is not None:
+            if channel_id in [992366430857203833, 992065949320630363]:
+                alternate_id = await self.client.db.fetchval("SELECT ended_message_id FROM giveaways WHERE message_id = $1", message_id)
+                if alternate_id is None:
+                    alternate_id = await self.client.db.fetchval("SELECT message_id FROM giveaways WHERE ended_message_id = $1", message_id)
+                if alternate_id is not None:
+                    await self.client.db.execute("INSERT INTO claimed_messageids(message_id, claimer_id, user_id, time) VALUES ($1, $2, $3, $4)", alternate_id, user.id, ctx.author.id, round(time.time()))
+                    await ctx.message.add_reaction("2️⃣")
+
         await self.client.db.execute("INSERT INTO claimed_messageids(message_id, claimer_id, user_id, time) VALUES ($1, $2, $3, $4)", message_id, user.id, ctx.author.id, round(time.time()))
         await ctx.checkmark()
 
