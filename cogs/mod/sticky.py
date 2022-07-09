@@ -52,7 +52,7 @@ class Sticky(commands.Cog):
             result = await self.client.db.fetch("SELECT * FROM claimed_messageids")
             if len(result) > 0:
                 for entry in result:
-                    if str(entry.get('message_id')) in message.content:
+                    if str(entry.get('message_id')) in message.content and message.author.id == entry.get('claimer_id'):
                         await message.channel.send(f"The property with message ID {entry.get('message_id')} has already been claimed by <@{entry.get('user_id')}> `{entry.get('user_id')}` at <t:{entry.get('time')}:F>.")
 
         try:
