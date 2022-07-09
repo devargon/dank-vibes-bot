@@ -980,9 +980,9 @@ class giveaways(commands.Cog):
                         elif channel.id in [650244237744537630]:
                             winnerdmmsg = ["Nitro", "You might need to claim the nitro from the sponsor/giveaway host within a limited time, depending on the giveaway's requirements."]
                         elif channel.id in [992065949320630363]:
-                            winnerdmmsg = ["Celeb - Dank Memer", "Open a ticket in <#992065949320630363> and follow the instructions to claim your prize."]
+                            winnerdmmsg = ["Celeb - Dank Memer", "Please check the giveaway channel (<#992065949320630363>) for instructions on claiming your prize.\nIn the meantime, please **do NOT ping or DM staff** about your payouts. We are working hard to make sure it's ready for you."]
                         elif channel.id in [992366430857203833]:
-                            winnerdmmsg = ["Celeb - Nitro", "Open a ticket in <#992065949320630363> and follow the instructions to claim your prize."]
+                            winnerdmmsg = ["Celeb - Nitro", "Please check the giveaway channel (<#992366430857203833>) for instructions on claiming your prize.\nIn the meantime, please **do NOT ping or DM staff** about your payouts. We are working hard to make sure it's ready for you."]
                         elif channel.id in [991019248467976202]:
                             winnerdmmsg = ["Celeb - Karuta", "Please DM `Ari#0005` to claim your prize!\n\n**If you won a Free Dye Job**, please await further instructions. You'll be pinged soon to claim it."]
 
@@ -1166,7 +1166,29 @@ class giveaways(commands.Cog):
             embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/931295850292989973.gif?quality=lossless")
         elif "lottery" in title_lower:
             embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/828630267983298580.webp?quality=lossless")
-
+        elif "cupid" in title_lower or "toes" in title_lower:
+            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/718136880163586169.webp?quality=lossless")
+        elif "bank" in title_lower or "note" in title_lower:
+            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/830509316888985621.webp?quality=lossless")
+        elif "ribbon" in title_lower:
+            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/890646381482614824.webp?quality=lossless")
+        elif "phallic" in title_lower:
+            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/841123648911966219.gif?quality=lossless")
+        elif "laptop" in title_lower:
+            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/830509316674813974.webp?quality=lossless")
+        elif "fool" in title_lower:
+            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/826974895295692840.webp?quality=lossless")
+        elif "santa" in title_lower:
+            if "hat" in title_lower:
+                embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/921546940032880660.webp?quality=lossless")
+            elif "bag" in title_lower:
+                embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/862415055622635560.webp?quality=lossless")
+        elif "pepe" in title_lower and "sus" in title_lower:
+            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/890646381189009438.webp?quality=lossless")
+        elif "stocking" in title_lower:
+            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/920812196567597067.webp?quality=lossless")
+        elif "cursed" in title_lower:
+            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/933194488241864704.webp?quality=lossless")
         else:
             guild = self.client.get_guild(entry.guild_id)
             if guild is not None and guild.icon is not None:
