@@ -948,7 +948,8 @@ class giveaways(commands.Cog):
                     msg_link = f"https://discord.com/channels/{guild.id}/{channel.id}/{g_entry.message_id}"
                     host = guild.get_member(g_entry.host_id)
                     if len(winners) == 0:
-                        await channel.send(f"I could not find a winner from the **{g_entry.title}** giveaway.", view=GiveawayEndView(msg_link, host))
+                        ended_msg = await channel.send(f"I could not find a winner from the **{g_entry.title}** giveaway.", view=GiveawayEndView(msg_link, host))
+                        await self.client.db.execute("UPDATE giveaways SET ended_message_id = $1 WHERE message_id = $2", ended_msg.id, g_entry.message_id)
                         if host is not None:
                             hostembed = discord.Embed(
                                 title=f"Your {g_entry.title} giveaway has ended!",
