@@ -1,5 +1,6 @@
 import itertools
 import json
+import re
 
 from discord.ext import menus, pages
 
@@ -997,8 +998,36 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
             await self.client.db.execute("UPDATE usercleanup SET message = $1 WHERE guild_id = $2 AND target_id = $3", message, ctx.guild.id, target.id)
             await ctx.send(f"{target}'s message has been set to: {message}")
 
-
-
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name="claimed", aliases=['c'])
+    async def claimed(self, ctx: DVVTcontext, user: discord.Member, *, message_id: str = None):
+        """
+        Refer to a message by pasting its message ID, message link, or reply to a message containing the message link.
+        The third method should only be used if there's ONE message link.
+        """
+        if message_id is None and not ctx.message.reference:
+            return await ctx.help()
+        if type(message_id) == str and message_id.isdigit():
+            message_id = int(message_id)
+        else:
+            if message_id is None:
+                if ctx.message.reference and isinstance(ctx.message.reference.resolved, discord.Message):
+                    message_link = re.search("(?P<url>https?://[^\s]+)", ctx.message.reference.resolved.content).group("url")
+                else:
+                    return await ctx.send("I couldn't find a message link in your message or in the replied message.")
+            else:
+                message_url = re.search("(?P<url>https?://[^\s]+)", message_id).group("url")
+                message_link = message_url
+            try:
+                message_id = message_link.split("/")[-1]
+            except Exception as e:
+                return await ctx.send("I couldn't find a PROPER message link in your message or in the replied message.")
+            if not message_id.isdigit():
+                return await ctx.send("I couldn't find a PROPER message link in your message or in the replied message.")
+            else:
+                message_id = int(message_id)
+        await self.client.db.execute("INSERT INTO claimed_messageids(message_id, claimer_id, user_id, time) VALUES ($1, $2, $3, $4)", message_id, user.id, ctx.author.id, round(time.time()))
+        await ctx.checkmark()
 
 
 
