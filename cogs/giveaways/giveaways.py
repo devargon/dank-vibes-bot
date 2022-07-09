@@ -965,7 +965,8 @@ class giveaways(commands.Cog):
                         self.client.remove_queued_edit(gawmessage.id)
                         self.client.add_to_edit_queue(message=gawmessage.channel.get_partial_message(gawmessage.id), embed=embed, view=view, index=0)
                         message = f"{random.choice(guild.emojis)} **{entrant_no}** user(s) entered, {human_join([winner.mention for winner in winners], final='and')} snagged away **{g_entry.title}**!"
-                        await channel.send(message, view=GiveawayEndView(msg_link, host))
+                        ended_msg = await channel.send(message, view=GiveawayEndView(msg_link, host))
+                        await self.client.db.execute("UPDATE giveaways SET ended_message_id = $1 WHERE message_id = $2", ended_msg.id, g_entry.message_id)
                         winnerdmmsg = ['Generic', "Depending on the type of giveaway you won, you will either receive the prize within 24 hours or need to claim from the giveaway host. If you're unsure, feel free to check with a moderator from <#870880772985344010>."]
                         if channel.id in [701771740912549938]:
                             winnerdmmsg = ["Dank Memer Flash Giveaway", "As this is a flash giveaway, the prize will be given to you almost immediately. \nYou must accept the trade sent from the giveaway host, or you will be rerolled."]
