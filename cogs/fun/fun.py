@@ -119,6 +119,10 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
         if member == ctx.me:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("How do you expect me to mute myself?")
+        if ctx.channel.id in [748758938836795653, 735477033949462578] or "mafia" in ctx.channel.name: # events or mafia
+            ctx.command.reset_cooldown(ctx)
+            return await ctx.send("You cannot use dumbfights in events or mafia channels.")
+
         duration = random.randint(30, 120)
         won_dumbfights = await self.client.db.fetch(
             "SELECT * FROM dumbfightlog where did_win = $1 and invoker_id = $2", 1, ctx.author.id)
