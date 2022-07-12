@@ -117,6 +117,7 @@ class PayoutManagement(commands.Cog):
                 await ctx.send("No payout channels found.")
                 return
             channels = []
+            uncategorised_channels = []
             dankgw_channels = []
             dankevent_channels = []
             nitro_channels = []
@@ -126,6 +127,8 @@ class PayoutManagement(commands.Cog):
                 channel = self.client.get_channel(row.get("channel_id"))
                 if channel is not None:
                     channels.append(channel)
+                if "ticket" in channel.name:
+                    uncategorised_channels.append(channel)
                 if "dankgw" in channel.name:
                     dankgw_channels.append(channel)
                 if "dankevent" in channel.name:
@@ -142,9 +145,10 @@ class PayoutManagement(commands.Cog):
                     unclaimed_channels.append(channel)
 
             descriptions = []
+            descriptions.append(f"Unclaimed Channels: **[{len(unclaimed_channels)}]**")
             descriptions.append(f"DankGw Channels: **{len(dankgw_channels)}**")
             descriptions.append(f"Dankevent Channels: **{len(dankevent_channels)}**")
-            descriptions.append(f"Nitro Channels: **{len(nitro_channels)}**")
+            descriptions.append(f"Nitro Channels: **{len(nitro_channels)}**")g
             descriptions.append(f"Claimed Channels: `[{len(claimed_channels.items())}/{len(channels)}]`")
             oldest_channel, oldest_time = channels[0], channels[0].created_at.timestamp()
             for channel in channels:
