@@ -145,7 +145,7 @@ class PayoutManagement(commands.Cog):
                     unclaimed_channels.append(channel)
 
             descriptions = []
-            descriptions.append(f"Unclaimed Channels: **[{len(unclaimed_channels)}]**")
+            descriptions.append(f"Unclaimed Channels: **{len(unclaimed_channels)}**")
             descriptions.append(f"DankGw Channels: **{len(dankgw_channels)}**")
             descriptions.append(f"Dankevent Channels: **{len(dankevent_channels)}**")
             descriptions.append(f"Nitro Channels: **{len(nitro_channels)}**")
