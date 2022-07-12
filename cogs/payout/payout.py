@@ -145,7 +145,7 @@ class PayoutManagement(commands.Cog):
             descriptions.append(f"DankGw Channels: **{len(dankgw_channels)}**")
             descriptions.append(f"Dankevent Channels: **{len(dankevent_channels)}**")
             descriptions.append(f"Nitro Channels: **{len(nitro_channels)}**")
-            descriptions.append(f"Claimed Channels: [{len(claimed_channels.items())}/{len(channels)}]")
+            descriptions.append(f"Claimed Channels: `[{len(claimed_channels.items())}/{len(channels)}]`")
             oldest_channel, oldest_time = channels[0], channels[0].created_at.timestamp()
             for channel in channels:
                 if channel.created_at.timestamp() < oldest_time:
