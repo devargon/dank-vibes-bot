@@ -1,4 +1,5 @@
 import imghdr
+import math
 import random
 import re
 from typing import Optional, Union
@@ -319,5 +320,133 @@ class Imgen(ImgenSlash, commands.Cog, name='imgen'):
                 file = discord.File(b, filename="spoiler.png")
                 return file
         loop = asyncio.get_event_loop()
+        file = await loop.run_in_executor(None, generate)
+        await ctx.send(file=file)
+
+    @checks.perm_insensitive_roles()
+    @commands.cooldown(10, 1, commands.BucketType.user)
+    @commands.command(name="ebay")
+    async def ebay(self, ctx, member: discord.Member = None):
+        """
+        Sell someone - a random stranger, or a friend - on eBay.
+        """
+        if member is None:
+            return await ctx.send("mention someone lol")
+        loop = asyncio.get_event_loop()
+        member_avatar = await member.display_avatar.with_format('png').read()
+
+        def generate():
+            def comma_number(number: int):
+                return "{:,}".format(number)
+
+            def short_time(duration: int):
+                if duration is None or duration < 1:
+                    return ''
+                duration_in_mins = duration / 60
+                if duration_in_mins < 1:
+                    return '< 1m'
+                if duration_in_mins < 60:
+                    return f'{math.ceil(duration_in_mins)}m'
+                duration_in_hours = duration_in_mins / 60
+                if duration_in_hours < 1.017:
+                    return '1h'
+                if duration_in_hours < 24:
+                    return f'{math.ceil(duration_in_hours)}h'
+                duration_in_days = duration_in_hours / 24
+                if duration_in_days < 1.05:
+                    return '1d'
+                else:
+                    return f'{math.ceil(duration_in_days)}d'
+
+            template = 'assets/ebay_app.png'
+
+            username = member.display_name
+            name = f"{member} (LIMITED)"
+            proper_name = name if len(name) < 30 else name[:27] + '...'
+            description = 'Pre-Owned · Sussy · Amogus · Baka'
+            number_of_bids = random.choice([0, 0, 0, random.randint(1, 1000000)])
+            duration = random.randint(1, 31536000)
+            bid_and_duration = f"{comma_number(number_of_bids)} bids · {short_time(duration)}"
+            shipping_random = random.uniform(0, 100)
+            shipping = random.choice(["Free shipping", "+${:,.2f} shipping estimate".format(shipping_random)])
+            all_countries = ['United States', 'Afghanistan', 'Albania', 'Algeria', 'American Samoa', 'Andorra',
+                             'Angola',
+                             'Anguilla', 'Antarctica', 'Antigua And Barbuda', 'Argentina', 'Armenia', 'Aruba',
+                             'Australia',
+                             'Austria', 'Azerbaijan', 'Bahamas', 'Bahrain', 'Bangladesh', 'Barbados', 'Belarus',
+                             'Belgium',
+                             'Belize', 'Benin', 'Bermuda', 'Bhutan', 'Bolivia', 'Bosnia And Herzegowina', 'Botswana',
+                             'Bouvet Island', 'Brazil', 'Brunei Darussalam', 'Bulgaria', 'Burkina Faso', 'Burundi',
+                             'Cambodia', 'Cameroon', 'Canada', 'Cape Verde', 'Cayman Islands', 'Central African Rep',
+                             'Chad', 'Chile', 'China', 'Christmas Island', 'Cocos Islands', 'Colombia', 'Comoros',
+                             'Congo',
+                             'Cook Islands', 'Costa Rica', 'Cote D`ivoire', 'Croatia', 'Cuba', 'Cyprus',
+                             'Czech Republic',
+                             'Denmark', 'Djibouti', 'Dominica', 'Dominican Republic', 'East Timor', 'Ecuador', 'Egypt',
+                             'El Salvador', 'Equatorial Guinea', 'Eritrea', 'Estonia', 'Ethiopia',
+                             'Falkland Islands (Malvinas)', 'Faroe Islands', 'Fiji', 'Finland', 'France',
+                             'French Guiana',
+                             'French Polynesia', 'French S. Territories', 'Gabon', 'Gambia', 'Georgia', 'Germany',
+                             'Ghana',
+                             'Gibraltar', 'Greece', 'Greenland', 'Grenada', 'Guadeloupe', 'Guam', 'Guatemala', 'Guinea',
+                             'Guinea-bissau', 'Guyana', 'Haiti', 'Honduras', 'Hong Kong', 'Hungary', 'Iceland', 'India',
+                             'Indonesia', 'Iran', 'Iraq', 'Ireland', 'Israel', 'Italy', 'Jamaica', 'Japan', 'Jordan',
+                             'Kazakhstan', 'Kenya', 'Kiribati', 'Korea (North)', 'Korea (South)', 'Kuwait',
+                             'Kyrgyzstan',
+                             'Laos', 'Latvia', 'Lebanon', 'Lesotho', 'Liberia', 'Libya', 'Liechtenstein', 'Lithuania',
+                             'Luxembourg', 'Macau', 'Macedonia', 'Madagascar', 'Malawi', 'Malaysia', 'Maldives', 'Mali',
+                             'Malta', 'Marshall Islands', 'Martinique', 'Mauritania', 'Mauritius', 'Mayotte', 'Mexico',
+                             'Micronesia', 'Moldova', 'Monaco', 'Mongolia', 'Montserrat', 'Morocco', 'Mozambique',
+                             'Myanmar', 'Namibia', 'Nauru', 'Nepal', 'Netherlands', 'Netherlands Antilles',
+                             'New Caledonia',
+                             'New Zealand', 'Nicaragua', 'Niger', 'Nigeria', 'Niue', 'Norfolk Island',
+                             'Northern Mariana Islands', 'Norway', 'Oman', 'Pakistan', 'Palau', 'Panama',
+                             'Papua New Guinea', 'Paraguay', 'Peru', 'Philippines', 'Pitcairn', 'Poland', 'Portugal',
+                             'Puerto Rico', 'Qatar', 'Reunion', 'Romania', 'Russian Federation', 'Rwanda',
+                             'Saint Kitts And Nevis', 'Saint Lucia', 'St Vincent/Grenadines', 'Samoa', 'San Marino',
+                             'Sao Tome', 'Saudi Arabia', 'Senegal', 'Seychelles', 'Sierra Leone', 'Singapore',
+                             'Slovakia',
+                             'Slovenia', 'Solomon Islands', 'Somalia', 'South Africa', 'Spain', 'Sri Lanka',
+                             'St. Helena',
+                             'St.Pierre', 'Sudan', 'Suriname', 'Swaziland', 'Sweden', 'Switzerland',
+                             'Syrian Arab Republic',
+                             'Taiwan', 'Tajikistan', 'Tanzania', 'Thailand', 'Togo', 'Tokelau', 'Tonga',
+                             'Trinidad And Tobago', 'Tunisia', 'Turkey', 'Turkmenistan', 'Tuvalu', 'Uganda', 'Ukraine',
+                             'United Arab Emirates', 'United Kingdom', 'Uruguay', 'Uzbekistan', 'Vanuatu',
+                             'Vatican City State', 'Venezuela', 'Viet Nam', 'Virgin Islands (British)',
+                             'Virgin Islands (U.S.)', 'Western Sahara', 'Yemen', 'Yugoslavia', 'Zaire', 'Zambia',
+                             'Zimbabwe']
+
+            location = f"from {random.choice(all_countries)}"
+            price_random = random.uniform(0, 500)
+            price = random.choice(["$0.00", "$0.00", "$0.99", "${:,.2f}".format(price_random)])
+
+            template = Image.open(template).convert('RGBA')
+            profile_picture = Image.open(BytesIO(member_avatar)).convert('RGBA')
+
+            background = template.copy()
+            profile_picture_resized = profile_picture.resize((287, 287))
+            background.paste(profile_picture_resized, (50, 1134), profile_picture_resized)
+
+            image_editable = ImageDraw.Draw(background)
+            helvetica_search = ImageFont.truetype("assets/Helvetica.ttf", size=44)
+            helvetica_description = ImageFont.truetype("assets/Helvetica.ttf", size=36)
+            marketsans_name = ImageFont.truetype("assets/MarketSans.ttf", size=39)
+            marketsans_price = ImageFont.truetype("assets/MarketSans.ttf", size=43)
+            helvetica_details = ImageFont.truetype("assets/Helvetica.ttf", size=32)
+
+            image_editable.point((95, 498), fill="#ff0000")
+            image_editable.text((95, 498), username, fill="black", anchor="ls", font=helvetica_search)
+            image_editable.text((425, 1122), proper_name, fill="black", anchor="ls", font=marketsans_name)
+            image_editable.text((425, 1179), description, fill="#707070", anchor="ls", font=helvetica_description)
+            image_editable.text((425, 1282), price, fill="black", anchor="ls", font=marketsans_price)
+            image_editable.text((425, 1343), bid_and_duration, fill="#707070", anchor="ls", font=helvetica_details)
+            image_editable.text((425, 1391), shipping, fill="#707070", anchor="ls", font=helvetica_details)
+            image_editable.text((425, 1439), location, fill="#707070", anchor="ls", font=helvetica_details)
+            b = BytesIO()
+            background.save(b, format="png", optimize=True, quality=25)
+            b.seek(0)
+            file = discord.File(fp=b, filename="stank.png")
+            return file
         file = await loop.run_in_executor(None, generate)
         await ctx.send(file=file)
