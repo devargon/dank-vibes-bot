@@ -47,8 +47,9 @@ class PayoutManagement(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if is_payout_channel(message.channel):
-            if not message.author.bot:
+
+        if not message.author.bot and message.guild is not None and is_payout_channel(message.channel):
+
                 row = await self.client.db.fetchrow("SELECT * FROM payoutchannels WHERE channel_id = $1", message.channel.id)
                 if row is not None:
                     if discord.utils.get(message.author.roles, id=608495204399448066) is not None or discord.utils.get(message.author.roles, id=608500355973644299):
