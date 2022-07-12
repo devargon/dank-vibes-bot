@@ -408,7 +408,8 @@ class Utility(CustomRoleManagement, UtilitySlash, TimeoutTracking, reminders, Hi
             embed.set_image(url=url)
             return embed
         class AvatarView(discord.ui.View):
-            def __init__(self, user, avatar_url, d_avatar_url, banner_url, init_picked):
+            def __init__(self, ctx, user, avatar_url, d_avatar_url, banner_url, init_picked):
+                self.ctx: DVVTcontext = ctx
                 self.user = user
                 self.avatar_url = avatar_url
                 self.d_avatar_url = d_avatar_url
@@ -450,6 +451,14 @@ class Utility(CustomRoleManagement, UtilitySlash, TimeoutTracking, reminders, Hi
                 for b in self.children:
                     b.disabled = True
                 await self.response.edit(view=self)
+
+            async def interaction_check(self, interaction: discord.Interaction) -> bool:
+                if interaction.user.id != ctx.author.id:
+                    await interaction.response.send_message("stop touching this you twat")
+                    return False
+                else:
+                    return True
+
         if init_picked == 'av':
             embed = generate_embed(user, 'Avatar', avatar_url)
         elif init_picked == 'bn':
@@ -458,7 +467,7 @@ class Utility(CustomRoleManagement, UtilitySlash, TimeoutTracking, reminders, Hi
             embed = generate_embed(user, 'Server Avatar', d_avatar_url)
         else:
             return
-        avatarview = AvatarView(user, avatar_url, d_avatar_url, banner_url, init_picked)
+        avatarview = AvatarView(ctx, user, avatar_url, d_avatar_url, banner_url, init_picked)
         avatarview.response = await ctx.send(embed=embed, view=avatarview)
         await avatarview.wait()
 
