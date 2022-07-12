@@ -18,6 +18,9 @@ def is_payout_channel(channel: discord.TextChannel):
 SQL_CREATION = "CREATE TABLE IF NOT EXISTS payoutchannels(channel_id BIGINT PRIMARY KEY, ticket_user_id BIGINT, staff BIGINT)"
 
 class PayoutManagement(commands.Cog):
+    """
+    Payout Management
+    """
     def __init__(self, client: dvvt):
         self.client = client
 
