@@ -63,7 +63,7 @@ class PayoutManagement(commands.Cog):
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command()
-    async def dankgw(ctx):
+    async def dankgw(self, ctx):
         await ctx.message.delete()
         if "dankgw" in ctx.channel.name:
             pass
@@ -73,7 +73,7 @@ class PayoutManagement(commands.Cog):
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command()
-    async def dankevent(ctx):
+    async def dankevent(self, ctx):
         await ctx.message.delete()
         if "dankevent" in ctx.channel.name:
             pass
@@ -83,7 +83,7 @@ class PayoutManagement(commands.Cog):
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command()
-    async def nitro(ctx):
+    async def nitro(self, ctx):
         await ctx.message.delete()
         old_name = ctx.channel.name.replace('ticket-', '')
         await ctx.channel.edit(name=f"nitro-{old_name}")
