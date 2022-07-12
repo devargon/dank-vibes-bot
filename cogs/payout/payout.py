@@ -55,7 +55,7 @@ class PayoutManagement(commands.Cog):
 
                 row = await self.client.db.fetchrow("SELECT * FROM payoutchannels WHERE channel_id = $1", message.channel.id)
                 if row is not None:
-                    if discord.utils.get(message.author.roles, id=608495204399448066) is not None or discord.utils.get(message.author.roles, id=608500355973644299):
+                    if (discord.utils.get(message.author.roles, id=608495204399448066) is not None or discord.utils.get(message.author.roles, id=608500355973644299)) and message.author.id != row.get('user_id'):
                         await self.client.db.execute("UPDATE payoutchannels SET staff = $1 WHERE channel_id = $2", message.author.id, message.channel.id)
                 else:
                     await self.client.db.execute("INSERT INTO payoutchannels(channel_id, staff) VALUES($1, $2)", message.channel.id, message.author.id)
@@ -146,9 +146,9 @@ class PayoutManagement(commands.Cog):
                     oldest_channel, oldest_time = channel, channel.created_at.timestamp()
             descriptions.append(f"Oldest Channel: {oldest_channel.name} (Created **{humanize_timedelta(seconds=round(discord.utils.utcnow().timestamp() - oldest_time))}** ago)")
 
-            embed = discord.Embed(title="Payout Channels Summary", color=self.client.embed_color)
+            embed = discord.Embed(title="Payout Channels Summary", description="\n".join(descriptions), color=self.client.embed_color)
             capacity = 500 - (len(ctx.guild.channels) - len(channels))
-            loadbar = generate_loadbar(len(channels)/capacity, 20)
+            loadbar = generate_loadbar(len(channels)/capacity, 10)
             embed.add_field(name="Ticket Capacity", value=f"`[{len(channels)}/{capacity}]`{loadbar}", inline=False)
             #dankgw_channels_mention = " ".join([c.mention for c in dankgw_channels])
             #dankevent_channels_mention = " ".join([c.mention for c in dankevent_channels])
