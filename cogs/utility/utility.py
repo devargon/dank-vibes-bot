@@ -454,7 +454,7 @@ class Utility(CustomRoleManagement, UtilitySlash, TimeoutTracking, reminders, Hi
 
             async def interaction_check(self, interaction: discord.Interaction) -> bool:
                 if interaction.user.id != ctx.author.id:
-                    await interaction.response.send_message("stop touching this you twat")
+                    await interaction.response.send_message("stop touching this you twat", ephemeral=True)
                     return False
                 else:
                     return True
