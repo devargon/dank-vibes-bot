@@ -51,11 +51,12 @@ class PayoutManagement(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
 
-        if not message.author.bot and message.guild is not None and is_payout_channel(message.channel):
+        if not message.author.bot and message.guild is not None and is_payout_channel(message.channel) and message.content.lower not in ['dv.nitro', 'dv.dankgw', 'dv.dankevent']:
 
                 row = await self.client.db.fetchrow("SELECT * FROM payoutchannels WHERE channel_id = $1", message.channel.id)
-                if row is not None:
-                    if (discord.utils.get(message.author.roles, id=608495204399448066) is not None or discord.utils.get(message.author.roles, id=608500355973644299)) and message.author.id != row.get('user_id') and message.content.lower not in ['dv.nitro', 'dv.dankgw', 'dv.dankevent', ]:
+                if row is not None and message.author.id != row.get('user_id'):
+
+                    if (discord.utils.get(message.author.roles, id=608495204399448066) is not None or discord.utils.get(message.author.roles, id=608500355973644299)):
                         await self.client.db.execute("UPDATE payoutchannels SET staff = $1 WHERE channel_id = $2", message.author.id, message.channel.id)
                 else:
                     await self.client.db.execute("INSERT INTO payoutchannels(channel_id, staff) VALUES($1, $2)", message.channel.id, message.author.id)
