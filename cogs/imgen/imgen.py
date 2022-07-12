@@ -361,8 +361,9 @@ class Imgen(ImgenSlash, commands.Cog, name='imgen'):
             template = 'assets/ebay_app.png'
 
             username = member.display_name
-            name = f"{member} (LIMITED)"
-            proper_name = name if len(name) < 30 else name[:27] + '...'
+            brackets = random.choice(["(LIMITED)", "(SUSSY)", "(SUPER SUSSY)"])
+            name = f"{member} {brackets}"
+            proper_name = name if len(name) < 28 else name[:25] + '...'
             description = 'Pre-Owned · Sussy · Amogus · Baka'
             number_of_bids = random.choice([0, 0, 0, random.randint(1, 1000000)])
             duration = random.randint(1, 31536000)
