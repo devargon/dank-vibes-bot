@@ -176,7 +176,8 @@ class PayoutManagement(commands.Cog):
             #nitro_channels_mention = " ".join([c.mention for c in nitro_channels])
             if len(channels) - len(claimed_channels) > 0:
                 unclaimed_channels = [c.mention for c in unclaimed_channels if c.permissions_for(ctx.author).view_channel]
-                embed.add_field(name="Unclaimed Channels", value="\n".join(unclaimed_channels), inline=False)
+                if len(unclaimed_channels) > 0:
+                    embed.add_field(name="Unclaimed Channels", value="\n".join(unclaimed_channels), inline=False)
             if len(user_claimed_channels) > 0 and not (ctx.author.guild_permissions.manage_roles is True or ctx.author.guild_permissions.administrator is True):
                 user_claimed_channels = [c.mention for c in user_claimed_channels if c.permissions_for(ctx.author).view_channel]
                 if len(user_claimed_channels) > 0:
