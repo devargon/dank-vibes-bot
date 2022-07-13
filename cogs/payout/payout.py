@@ -179,7 +179,8 @@ class PayoutManagement(commands.Cog):
                 embed.add_field(name="Unclaimed Channels", value="\n".join(unclaimed_channels), inline=False)
             if len(user_claimed_channels) > 0 and not (ctx.author.guild_permissions.manage_roles is True or ctx.author.guild_permissions.administrator is True):
                 user_claimed_channels = [c.mention for c in user_claimed_channels if c.permissions_for(ctx.author).view_channel]
-                embed.add_field(name="Your Claimed Channels", value="\n".join(user_claimed_channels), inline=False)
+                if len(user_claimed_channels) > 0:
+                    embed.add_field(name="Your Claimed Channels", value="\n".join(user_claimed_channels), inline=False)
             if ctx.author.guild_permissions.manage_roles is True or ctx.author.guild_permissions.administrator is True:
                 claimed_channels = []
                 for staff, channels in channels_sorted_by_staff.items():
