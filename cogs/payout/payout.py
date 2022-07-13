@@ -51,11 +51,12 @@ class PayoutManagement(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
 
-        if not message.author.bot and message.guild is not None and is_payout_channel(message.channel) and message.content.lower().strip().startswith('dv.'):
-
+        if not message.author.bot and message.guild is not None and is_payout_channel(message.channel):
+            if message.content.lower().strip().startswith('dv.'):
+                pass
+            else:
                 row = await self.client.db.fetchrow("SELECT * FROM payoutchannels WHERE channel_id = $1", message.channel.id)
                 if row is not None and message.author.id != row.get('user_id'):
-
                     if (discord.utils.get(message.author.roles, id=608495204399448066) is not None or discord.utils.get(message.author.roles, id=608500355973644299)):
                         await self.client.db.execute("UPDATE payoutchannels SET staff = $1 WHERE channel_id = $2", message.author.id, message.channel.id)
                 else:
@@ -144,13 +145,22 @@ class PayoutManagement(commands.Cog):
                         unclaimed_channels.append(channel)
                 else:
                     unclaimed_channels.append(channel)
+            channels_sorted_by_staff = {}
+            for channel in channels:
+                if channel in claimed_channels:
+                    staff = claimed_channels[channel]
+                    if staff not in channels_sorted_by_staff:
+                        channels_sorted_by_staff[staff] = []
+                    channels_sorted_by_staff[staff].append(channel)
+
+            user_claimed_channels = channels_sorted_by_staff.get(ctx.author, [])
 
             descriptions = []
             descriptions.append(f"Unclaimed Channels: **{len(unclaimed_channels)}**")
             descriptions.append(f"DankGw Channels: **{len(dankgw_channels)}**")
             descriptions.append(f"Dankevent Channels: **{len(dankevent_channels)}**")
             descriptions.append(f"Nitro Channels: **{len(nitro_channels)}**")
-            descriptions.append(f"Claimed Channels: `[{len(claimed_channels.items())}/{len(channels)}]`")
+            descriptions.append(f"Claimed Channels: `[{len(claimed_channels.keys())}/{len(channels)}]`")
             oldest_channel, oldest_time = channels[0], channels[0].created_at.timestamp()
             for channel in channels:
                 if channel.created_at.timestamp() < oldest_time:
@@ -165,6 +175,16 @@ class PayoutManagement(commands.Cog):
             #dankevent_channels_mention = " ".join([c.mention for c in dankevent_channels])
             #nitro_channels_mention = " ".join([c.mention for c in nitro_channels])
             if len(channels) - len(claimed_channels) > 0:
-                unclaimed_channels = [c.mention for c in unclaimed_channels]
+                unclaimed_channels = [c.mention for c in unclaimed_channels if c.permissions_for(ctx.author).view_channel]
                 embed.add_field(name="Unclaimed Channels", value="\n".join(unclaimed_channels), inline=False)
+            if len(user_claimed_channels) > 0 and not (ctx.author.guild_permissions.manage_roles is True or ctx.author.guild_permissions.administrator is True):
+                user_claimed_channels = [c.mention for c in user_claimed_channels if c.permissions_for(ctx.author).view_channel]
+                embed.add_field(name="Your Claimed Channels", value="\n".join(user_claimed_channels), inline=False)
+            if ctx.author.guild_permissions.manage_roles is True or ctx.author.guild_permissions.administrator is True:
+                claimed_channels = []
+                for staff, channels in channels_sorted_by_staff.items():
+                    channels = [c.mention for c in channels]
+                    claimed_channels.append(f"{staff}: {' '.join(channels)}")
+                embed.add_field(name="Claimed Channels", value="\n".join(claimed_channels), inline=False)
+
         await ctx.send(embed=embed)
