@@ -1,9 +1,52 @@
 import discord
 from discord.ext import commands
+from discord import default_permissions
+from utils.format import stringtime_duration
+from utils import checks
+
 
 class ModSlash(commands.Cog):
     def __init__(self, client):
         self.client = client
+
+    @default_permissions(manage_roles=True)
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.slash_command(name="massban")
+    async def massban(self, ctx: discord.ApplicationContext,
+                      joined_after_duration: discord.Option(str, "Bans users that join after a time specified by DURATION.") = None,
+                      joined_before_duration: discord.Option(str, "Bans users that join before a time specified by DURATION.") = None,
+                      joined_after_timestamp: discord.Option(str, "Bans users that join after a TIMESTAMP.") = None,
+                      joined_before_timestamp: discord.Option(str, "Bans users that join before a TIMESTAMP.") = None,
+                      user_id_startswith: discord.Option(str, "Bans users that have a user ID starting with ___.") = None,
+                      text_in_name: discord.Option(str, "Bans users that have a specified text in their username") = None
+                      ):
+        return await ctx.respond("🏗️🚧 Command under construction.")
+        if joined_after_duration is not None and joined_after_timestamp is not None:
+            await ctx.respond("You can't specify both `joined_after_duration` and `joined_after_timestamp`.")
+            return
+        if joined_before_duration is not None and joined_before_timestamp is not None:
+            await ctx.respond("You can't specify both `joined_before_duration` and `joined_before_timestamp`.")
+            return
+        if joined_after_duration is not None:
+            try:
+                joined_after_duration: int = stringtime_duration(joined_after_duration)
+            except ValueError:
+                await ctx.respond("You didn't provide a proper joined_after_duration.", ephemeral=True)
+                return
+            if joined_after_duration is None:
+                await ctx.respond("You didn't provide a proper joined_after_duration.", ephemeral=True)
+                return
+        if joined_before_duration is not None:
+            try:
+                joined_before_duration: int = stringtime_duration(joined_before_duration)
+            except ValueError:
+                await ctx.respond("You didn't provide a proper joined_before_duration.", ephemeral=True)
+                return
+            if joined_before_duration is None:
+                await ctx.respond("You didn't provide a proper joined_before_duration.", ephemeral=True)
+                return
+
+
 
     @commands.slash_command(name='find', description="Use this command to find a user, channel or role (through autocomplete).")
     async def find_slash(self, ctx: discord.ApplicationContext,
