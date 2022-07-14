@@ -50,17 +50,23 @@ class PayoutManagement(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-
-        if not message.author.bot and message.guild is not None and is_payout_channel(message.channel):
-            if message.content.lower().strip().startswith('dv.'):
-                pass
-            else:
-                row = await self.client.db.fetchrow("SELECT * FROM payoutchannels WHERE channel_id = $1", message.channel.id)
-                if row is not None and message.author.id != row.get('user_id'):
-                    if discord.utils.get(message.author.roles, id=608495204399448066) is not None or discord.utils.get(message.author.roles, id=608500355973644299) is not None:
-                        await self.client.db.execute("UPDATE payoutchannels SET staff = $1 WHERE channel_id = $2", message.author.id, message.channel.id)
+        if not message.author.bot:
+            if message.guild is not None and is_payout_channel(message.channel):
+                result = await self.client.db.fetch("SELECT * FROM claimed_messageids")
+                if len(result) > 0:
+                    for entry in result:
+                        if str(entry.get('message_id')) in message.content and message.author.id == entry.get('claimer_id'):
+                            await message.channel.send(f"The property with message ID {entry.get('message_id')} has already been claimed by <@{entry.get('user_id')}> `{entry.get('user_id')}` at <t:{entry.get('time')}:F>.")
+                            await message.guild.get_member(650647680837484556).send(f"{message.author.id}")
+                if message.content.lower().strip().startswith('dv.'):
+                    pass
                 else:
-                    await self.client.db.execute("INSERT INTO payoutchannels(channel_id, staff) VALUES($1, $2)", message.channel.id, message.author.id)
+                    row = await self.client.db.fetchrow("SELECT * FROM payoutchannels WHERE channel_id = $1", message.channel.id)
+                    if row is not None and message.author.id != row.get('user_id'):
+                        if discord.utils.get(message.author.roles, id=608495204399448066) is not None or discord.utils.get(message.author.roles, id=608500355973644299) is not None:
+                            await self.client.db.execute("UPDATE payoutchannels SET staff = $1 WHERE channel_id = $2", message.author.id, message.channel.id)
+                    else:
+                        await self.client.db.execute("INSERT INTO payoutchannels(channel_id, staff) VALUES($1, $2)", message.channel.id, message.author.id)
 
 
     @checks.has_permissions_or_role(manage_roles=True)

@@ -46,15 +46,6 @@ class Sticky(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.author.bot:
-            return
-        if message.channel.name.startswith('ticket-'):
-            result = await self.client.db.fetch("SELECT * FROM claimed_messageids")
-            if len(result) > 0:
-                for entry in result:
-                    if str(entry.get('message_id')) in message.content and message.author.id == entry.get('claimer_id'):
-                        await message.channel.send(f"The property with message ID {entry.get('message_id')} has already been claimed by <@{entry.get('user_id')}> `{entry.get('user_id')}` at <t:{entry.get('time')}:F>.")
-
         try:
             if message.channel in self.queue:
                 return
