@@ -1106,25 +1106,21 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
         """
         Stops tracking a Mafia game channel.
         """
-        mafia_channel, log_channel = None, None
         if len(self.client.mafia_channels) == 0:
             return await ctx.send("There's no Mafia game being tracked.")
-        for channel_id, log_channel_id in self.client.mafia_channels.items():
-            if log_channel_id == ctx.channel.id or channel_id == ctx.channel.id:
-                mafia_channel = ctx.guild.get_channel(channel_id)
-                log_channel = ctx.guild.get_channel(log_channel_id)
-                break
+        channel_id, log_channel_id = self.client.mafia_channels.items()[0]
+        log_channel = ctx.guild.get_channel(log_channel_id)
         if log_channel is None:
-            return await ctx.send("This channel is not being tracked.")
+            return await ctx.send("There's no Mafia game being tracked.")
         else:
-            await ctx.send("Stopped tracking Mafia game, Log channel will be deleted in 10 seconds.\nSay `n` to cancel.")
+            await ctx.send(f"Stopped tracking Mafia game in {log_channel.mention}, Log channel will be deleted in 10 seconds.\nSay `n` to cancel.")
         try:
             def check(m):
                 return m.author.id == ctx.author.id and m.channel.id == ctx.channel.id and m.content.lower() == "n"
             await self.client.wait_for('message', check=check, timeout=10)
         except asyncio.TimeoutError:
             await log_channel.delete()
-            del self.client.mafia_channels[mafia_channel.id]
+            del self.client.mafia_channels[channel_id]
         else:
             await ctx.send("Log stop aborted.")
 
