@@ -1108,7 +1108,7 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
         """
         if len(self.client.mafia_channels) == 0:
             return await ctx.send("There's no Mafia game being tracked.")
-        channel_id, log_channel_id = self.client.mafia_channels.items()[0]
+        channel_id, log_channel_id = list(self.client.mafia_channels.items())[0]
         log_channel = ctx.guild.get_channel(log_channel_id)
         if log_channel is None:
             return await ctx.send("There's no Mafia game being tracked.")
