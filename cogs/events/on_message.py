@@ -138,6 +138,32 @@ class OnMessage(commands.Cog):
                         await message.reply(offender_msg)
                     except Exception as e:
                         await message.channel.send(offender_msg)
+        if message.channel.id in self.client.mafia_channels.keys():
+            #mafia logging
+            log_channel_id = self.client.mafia_channels[message.channel.id]
+            log_channel = message.guild.get_channel(log_channel_id)
+            if log_channel is not None:
+                webh = await self.client.get_webhook(log_channel)
+                original_content = message.content
+                add_author_label = f"`{message.author} - {message.author.id}`"
+                if len(add_author_label+"\n"+original_content) > 2000:
+                    embed = discord.Embed(description=add_author_label, color=self.client.embed_color)
+                    content_formatted = original_content
+                else:
+                    embed = None
+                    content_formatted = add_author_label+"\n"+original_content
+                embeds = message.embeds
+                if embed is not None:
+                    embeds.append(embed)
+                await webh.send(
+                    content=content_formatted,
+                    username=message.author.display_name,
+                    avatar_url=message.author.display_avatar.with_size(128).url,
+                    embeds=embeds,
+                    allowed_mentions=discord.AllowedMentions.none()
+                )
+
+
 
 
 

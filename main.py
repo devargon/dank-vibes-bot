@@ -84,6 +84,7 @@ class dvvt(commands.Bot):
         self.deleted_edit_messages = []
         self.webhooks = {}
         self.amari_data = {}
+        self.mafia_channels = {}
         for ext in self.available_extensions:
             self.load_extension(ext)
 
