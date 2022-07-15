@@ -1070,6 +1070,13 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
                 if ctx.guild.id == 595457764935991326:
                     event_hoster_role = ctx.guild.get_role(735417263968223234)
                     event_manager_role = ctx.guild.get_role(756667326623121568)
+                    planet_role = ctx.guild.get_role(649499248320184320)
+                    if planet_role is not None:
+                        planet_overwrite = log_channel.overwrites_for(planet_role)
+                        planet_overwrite.view_channel = False
+                        await log_channel.set_permissions(planet_role, overwrite=planet_overwrite)
+                    else:
+                        await ctx.send(f"{return_emoji(False)} Could not find the `Planet` role.")
                     overwrite = discord.PermissionOverwrite()
                     overwrite.view_channel = True
                     overwrite.send_messages = True
