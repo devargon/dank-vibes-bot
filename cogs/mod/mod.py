@@ -1107,7 +1107,7 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
                 mafia_channel = ctx.guild.get_channel(channel_id)
                 log_channel = ctx.guild.get_channel(log_channel_id)
                 break
-        if mafia_channel is None or log_channel is None:
+        if log_channel is None:
             return await ctx.send("This channel is not being tracked.")
         else:
             await ctx.send("Stopped tracking Mafia game, Log channel will be deleted in 10 seconds.\nSay `n` to cancel.")
