@@ -4,7 +4,7 @@ asyncpg
 colorthief
 cycler==0.10.0
 discord-ext-menus @ git+https://github.com/Rapptz/discord-ext-menus@fbb8803779373357e274e1540b368365fd9d8074
-py-cord==2.0.0rc1
+py-cord==2.0.0
 alexflipnote.py @ git+https://github.com/argo0n/forked_alexflipnote.py
 expr.py
 thefuzz[speed]
