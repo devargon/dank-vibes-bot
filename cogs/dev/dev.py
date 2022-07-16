@@ -34,13 +34,33 @@ from contextlib import redirect_stdout
 from discord.ext import commands, menus
 from .cog_manager import CogManager
 from utils.buttons import confirm
-from utils.format import pagify, TabularData, plural, text_to_file, get_command_name, comma_number
+from utils.format import pagify, TabularData, plural, text_to_file, get_command_name, comma_number, box
 from .maintenance import Maintenance
 from.logging import Logging, ReplyToMessage
 from utils.converters import MemberUserConverter, TrueFalse
 from typing import Optional, Union
 from utils.menus import CustomMenu
 from utils.context import DVVTcontext
+
+class ConfirmContinue(discord.ui.View):
+    def __init__(self, ctx):
+        super().__init__(timeout=180)
+        self.result = None
+        self.ctx = ctx
+
+    @discord.ui.button(label="Click to continue", style=discord.ButtonStyle.red)
+    async def continue_eval(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.result = True
+        self.stop()
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        return interaction.user.id == self.ctx.author.id
+
+    async def on_timeout(self):
+        self.result = False
+        self.stop()
+
+
 
 
 class Suggestion(menus.ListPageSource):
@@ -211,10 +231,26 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
 
         body = self.cleanup_code(body)
         stdout = io.StringIO()
-
         to_compile = f'async def func():\n{textwrap.indent(body, "  ")}'
+        dangerous_keywords = ['delete', 'getenv']
+        dangerous_line, dangerous_word = None, None
+        for line in to_compile.split('\n'):
+            for keyword in dangerous_keywords:
+                if keyword in line:
+                    dangerous_line, dangerous_word = line, keyword
+                    view = ConfirmContinue(ctx)
+                    embed = discord.Embed(title=f"Dangerous keyword detected - `{dangerous_word}`",
+                                          description=f"{box(dangerous_line, lang='py')}",
+                                          color=self.client.embed_color)
+                    embed.set_footer(text="Click the button 'Click to continue' to evaluate this expression.")
+                    warning = await ctx.send(embed=embed, view=view)
+                    await view.wait()
+                    await warning.delete()
+                    if not view.result is True:
+                        return
         if silent is not None:
-            await ctx.message.delete()
+            with contextlib.suppress(discord.HTTPException):
+                await ctx.message.delete()
         try:
             exec(to_compile, env)
         except SyntaxError as e:
