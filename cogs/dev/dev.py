@@ -182,7 +182,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
 
     @checks.dev()
     @commands.command(pass_context=True, hidden=True, name='eval', usage="<content>")
-    async def _eval(self, ctx, *, body: str=None):
+    async def _eval(self, ctx, silent: Optional[typing.Literal['silent', 'Silent']] = None, *, body: str=None):
         """
         Evaluate a code directly from your discord.
 
@@ -213,6 +213,8 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
         stdout = io.StringIO()
 
         to_compile = f'async def func():\n{textwrap.indent(body, "  ")}'
+        if silent is not None:
+            await ctx.message.delete()
         try:
             exec(to_compile, env)
         except SyntaxError as e:
