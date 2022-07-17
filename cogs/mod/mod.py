@@ -292,7 +292,7 @@ class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.
                             "you've brought others into the situation.\n\nPlease seek professional help immediately " \
                             "if you feel you're at risk of inflicting harm upon yourself. Below is a list of " \
                             "resources designed to assist you:\n\nNational Suicide Prevention (United States)\n> " \
-                            "Phone Number (24/7): 1-800-273-8255\n\nInternational Suicide Hotlines\n> Look up your " \
+                            "Phone Number (24/7): 988\n\nInternational Suicide Hotlines\n> Look up your " \
                             "country's hotline and call it if you aren't in the US.\n> This list may be out-dated: [" \
                             "International Suicicide Hotline](https://suicidepreventionlifeline.org/)\n\nIf you need " \
                             "a resource within Discord, [click here](" \
