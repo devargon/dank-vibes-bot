@@ -12,6 +12,7 @@ from .browser_screenshot import BrowserScreenshot
 from .sticky import Sticky
 from .mod_slash import ModSlash
 from .role import Role
+from .channel import ChannelUtils
 
 from utils import checks
 from utils.buttons import *
@@ -165,7 +166,7 @@ class ModlogPagination:
                 embed.add_field(name=f"#{entry.get('case_id')}: {entry.get('action').capitalize()} (<t:{entry.get('start_time')}:d>)", value=value, inline=False)
         return embed
 
-class Mod(ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
+class Mod(ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
     """
     Mod commands
     """
