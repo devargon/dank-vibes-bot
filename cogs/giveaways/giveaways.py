@@ -1668,7 +1668,7 @@ class giveaways(commands.Cog):
             await msg.add_reaction('<:dv_wCyanHeartOwO:837700662192111617>')
         if channel != ctx.channel:
             await ctx.respond(f"{DVB_True} Giveaway started!", ephemeral=True)
-        await asyncio.sleep(60.0)
+        await asyncio.sleep(180.0)
         g_view.children[2].disabled = True
         await giveawaymessage.edit(view=g_view)
         if len(g_view.thankers) > 3:
