@@ -382,6 +382,7 @@ class ChannelUtils(commands.Cog):
         """
         return await ctx.help()
 
+    @checks.has_permissions_or_role(manage_roles=True)
     @channel_base.command(name="move")
     async def channel_move(self, ctx, channel: discord.TextChannel = None):
         """
