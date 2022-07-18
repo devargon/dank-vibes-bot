@@ -664,7 +664,10 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
     @commands.command(name="active", aliases=['activeitems'])
     async def active_items(self, ctx: DVVTcontext):
         results = await self.client.db.fetchrow("SELECT dumbfight_rig_duration, dumbfight_result, snipe_res_result, snipe_res_duration FROM userconfig WHERE user_id = $1", ctx.author.id)
-        dumbfight_result, dumbfight_duration, snipe_res_result, snipe_res_duration = results.get('dumbfight_result'), results.get('dumbfight_rig_duration'), results.get('snipe_res_result'), results.get('snipe_res_duration')
+        if results is not None:
+            dumbfight_result, dumbfight_duration, snipe_res_result, snipe_res_duration = results.get('dumbfight_result'), results.get('dumbfight_rig_duration'), results.get('snipe_res_result'), results.get('snipe_res_duration')
+        else:
+            dumbfight_result, dumbfight_duration, snipe_res_result, snipe_res_duration = None, 0, None, 0
         reply_emoji = "<:Reply:871808167011549244>"
         dumbfight_potion_emoji = "<:DVB_DumbfightPotion:944226900988026890>"
         snipe_pill_emoji = "<:DVB_SnipePill:983244179213783050>"
