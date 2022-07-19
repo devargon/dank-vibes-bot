@@ -104,7 +104,7 @@ class RoleMenu(discord.ui.Select):
         if len(invalid_roles) > 0 or len(remarks) > 0:
             embed.add_field(name="\u200b", value="\n".join([f"- {rolestr}" for rolestr in invalid_roles]) if len(
                 invalid_roles) > 0 else remarks, inline=False)
-        await interaction.followup.send(embed=embed)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
 
 
