@@ -27,6 +27,8 @@ class EditContent:
     def __repr__(self) -> str:
         return f"<EditContent content={self.content} embed={self.embed} embeds={self.embeds}>"
 
+strfformat = "%d-%m-%y %H:%M:%S"
+
 
 AVAILABLE_EXTENSIONS = [
     'cogs.dev',
@@ -49,7 +51,6 @@ AVAILABLE_EXTENSIONS = [
     'cogs.events',
     'cogs.imgen',
     'cogs.disboard',
-    'cogs.payout'
 ]
 
 load_dotenv('credentials.env')
@@ -85,8 +86,10 @@ class dvvt(commands.Bot):
         self.webhooks = {}
         self.amari_data = {}
         self.mafia_channels = {}
+        self.logstrf = strfformat
         for ext in self.available_extensions:
             self.load_extension(ext)
+            print(f"{datetime.datetime.utcnow().strftime(strfformat)} | Loaded {ext}")
 
     async def fetch_amari_data(self, user_id: int, guild_id: int) -> Tuple[Union[None, api.User, AwaitingAmariData, NoAmariData], int, Exception]:
         guild_data = self.amari_data.get(guild_id, None)
@@ -271,7 +274,7 @@ class dvvt(commands.Bot):
                       'name_changes', 'timers', 'infections', 'polls', 'pollvotes', 'highlight', 'highlight_ignores',
                       'reminders', 'userconfig', 'modlog', 'watchlist', 'usercleanup', 'giveawayconfig', 'contests',
                       'contest_submissions', 'contest_votes', 'customroles', 'payoutchannels']
-        print("Checking for missing databases")
+        print(f"{datetime.datetime.utcnow().strftime(strfformat)} | Checking for missing databases")
         tables = await self.db.fetch("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';")
         tables = [i.get('table_name') for i in tables]
         if tables is None:
@@ -362,7 +365,7 @@ CREATE TABLE IF NOT EXISTS contest_votes(contest_id int not null, entry_id int, 
 CREATE TABLE IF NOT EXISTS customroles(guild_id bigint NOT NULL, user_id bigint NOT NULL, role_id bigint NOT NULL);
 CREATE TABLE IF NOT EXISTS payoutchannels(channel_id BIGINT PRIMARY KEY, ticket_user_id BIGINT, staff BIGINT);
 CREATE SCHEMA IF NOT EXISTS donations""")
-        print(f"{self.user} ({self.user.id}) is ready")
+        print(f"{datetime.datetime.utcnow().strftime(strfformat)} | {self.user} ({self.user.id}) is ready")
 
     @property
     def error_channel(self):
@@ -436,7 +439,7 @@ CREATE SCHEMA IF NOT EXISTS donations""")
     def starter(self):
         """starts the bot properly."""
         start = time.time()
-        print(f"{round(time.time() - start, 2)}s | Starting Bot")
+        print(f"{datetime.datetime.utcnow().strftime(strfformat)} | Starting Bot")
         try:
             pool_pg = self.loop.run_until_complete(asyncpg.create_pool(
                 host=host,
@@ -446,11 +449,11 @@ CREATE SCHEMA IF NOT EXISTS donations""")
                 password=password
             ))
         except Exception as e:
-            print_exception("Could not connect to databases:", e)
+            print_exception(f"{datetime.datetime.utcnow().strftime(strfformat)} | Could not connect to databases:", e)
         else:
             self.uptime = discord.utils.utcnow()
             self.db = pool_pg
-            print(f"{round(time.time() - start, 2)}s | Connected to the database")
+            print(f"{datetime.datetime.utcnow().strftime(strfformat)} | Connected to the database")
             self.loop.create_task(self.after_ready())
             self.loop.create_task(self.load_maintenance_data())
             self.loop.create_task(self.get_all_blacklisted_users())

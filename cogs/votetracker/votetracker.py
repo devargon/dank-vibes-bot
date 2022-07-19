@@ -1,3 +1,4 @@
+import datetime
 import os
 import time
 import topgg
@@ -85,6 +86,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         self.leaderboardloop.start()
         self.client.topgg_webhook = topgg.WebhookManager(client).dsl_webhook("/webhook", "ABCDE")
         self.client.topgg_webhook.run(5000)
+        print(f"{datetime.datetime.utcnow().strftime(self.client.logstrf)} | Topgg Webhook loaded")
 
     async def add_item_count(self, item, user, amount):
         does_inventory_exist = await self.client.db.fetchrow("SELECT * FROM inventories WHERE user_id = $1",
