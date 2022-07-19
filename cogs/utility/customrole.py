@@ -20,6 +20,10 @@ class CustomRoleManagement(commands.Cog):
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.group(name="customrole", aliases=["crole", "cr"], invoke_without_command=True)
     async def customrole(self, ctx: DVVTcontext, *, member_or_role: Optional[Union[discord.Member, BetterBetterRoles]] = None):
+        """
+        View all custom roles in the server. You can also see the users who own a single role, or the role that a user owns.
+        One user can only have one custom role, but one custom role can be assigned to many users.
+        """
         if member_or_role is None:
             roles_db = await self.client.db.fetch("SELECT * FROM customroles WHERE guild_id = $1", ctx.guild.id)
             if len(roles_db) == 0:
@@ -81,11 +85,20 @@ class CustomRoleManagement(commands.Cog):
     @checks.has_permissions_or_role(manage_roles=True)
     @customrole.command(name="list", aliases=['view'])
     async def customrole_list(self, ctx: DVVTcontext, *, member_or_role: Optional[Union[discord.Member, BetterBetterRoles]] = None):
+        """
+        View all custom roles in the server. You can also see the users who own a single role, or the role that a user owns.
+        One user can only have one custom role, but one custom role can be assigned to many users.
+        """
         await ctx.invoke(ctx.command.parent, member_or_role=member_or_role)
 
     @checks.has_permissions_or_role(manage_roles=True)
     @customrole.command(name="set", aliases=['give'])
     async def customrole_set(self, ctx: DVVTcontext, member: discord.Member, *, role: BetterBetterRoles):
+        """
+        Set a role to be owned by a user, making it their custom role.
+        The role will automatically be added to the user.
+        One user can only have one custom role, but one custom role can be assigned to many users.
+        """
         existing = await self.client.db.fetchrow("SELECT * FROM customroles WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, member.id)
         if existing is not None:
             confirmview = confirm(ctx, self.client, 30)
@@ -102,12 +115,12 @@ class CustomRoleManagement(commands.Cog):
         await self.client.db.execute("INSERT INTO customroles (guild_id, user_id, role_id) VALUES ($1, $2, $3)", ctx.guild.id, member.id, role.id)
         added_role = False
         if role >= ctx.me.top_role:
+            can_handle = False
+        else:
             can_handle = True
             if role not in member.roles:
                 await member.add_roles(role, reason=f"Custom Role Added by {ctx.author} ({ctx.author.id})")
                 added_role = True
-        else:
-            can_handle = False
 
 
         formatted_existing_owners = []
@@ -136,6 +149,10 @@ class CustomRoleManagement(commands.Cog):
     @checks.has_permissions_or_role(manage_roles=True)
     @customrole.command(name="remove", aliases=['delete', 'clear'])
     async def customrole_remove(self, ctx: DVVTcontext, *, member_or_role: Optional[Union[discord.Member, BetterBetterRoles]]):
+        """
+        Remove a custom role from a user.
+        You can also reset a custom role's users by inputting a role instead.
+        """
         if isinstance(member_or_role, discord.Member):
             member = member_or_role
             existing = await self.client.db.fetchrow("SELECT * FROM customroles WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, member.id)
@@ -177,6 +194,9 @@ class CustomRoleManagement(commands.Cog):
 
     @customrole.command(name="color", aliases=['colour'])
     async def customrole_color(self, ctx: DVVTcontext, color: BetterColor):
+        """
+        If you have a custom role, use this command to change the color of it.
+        """
         if color is None:
             return await ctx.send("Please provide a valid color in the format of:\n`#FFFFFF`\n`FFFFFF`\n`0xFFFFFF`\n`0x#FFFFFF`\n`rgb(255, 255, 255)`\nA colour name")
         failembed = discord.Embed(title="Role Edit Failed", color=discord.Color.red())
