@@ -19,6 +19,7 @@ class ChannelList(discord.ui.Select):
     def __init__(self, channels: list, is_category_channels: bool, target_channel: Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel]):
         self.is_category_channels = is_category_channels
         self.target_channel = target_channel
+        self.index = 0
         if is_category_channels:
             placeholder = "Select a category"
         else:
@@ -27,45 +28,95 @@ class ChannelList(discord.ui.Select):
         if is_category_channels:
             options.append(discord.SelectOption(label="No category", value="nil"))
         if len(channels) > 0:
-            for channel in channels:
-                channel: Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel]
-                if channel.type == ChannelType.text:
-                    label = channel.name
-                    value = str(channel.id)
-                    emoji_str = "<:DVB_TextChannel:997786423820288061>" if channel.permissions_for(channel.guild.default_role).view_channel else "<:DVB_TextChannelLock:997786422260023366>"
-                    emoji = discord.PartialEmoji.from_str(emoji_str)
-                elif channel.type == ChannelType.voice:
-                    label = channel.name
-                    value = str(channel.id)
-                    emoji_str = "<:DVB_GreyVoiceChannel:997786435853758546>" if channel.permissions_for(channel.guild.default_role).view_channel else "<:DVB_GreyVoiceChannelLock:997786434104729641>"
-                    emoji = discord.PartialEmoji.from_str(emoji_str)
-                elif channel.type == ChannelType.category:
-                    label = channel.name
-                    value = str(channel.id)
-                    emoji = discord.PartialEmoji.from_str("<:DVB_ChannelCategory:997787503744516126>")
-                elif channel.type == ChannelType.news:
-                    label = channel.name
-                    value = str(channel.id)
-                    emoji_str = "<:DVB_AnnouncementChannel:997786427775529010>" if channel.permissions_for(channel.guild.default_role).view_channel else "<:DVB_AnnouncementChannelLock:997786425875517450>"
-                    emoji = discord.PartialEmoji.from_str(emoji_str)
-                elif channel.type == ChannelType.stage_voice and type(channel) == discord.StageChannel:
-                    label = channel.name
-                    value = str(channel.id)
-                    emoji_str = "<:DVB_GreyStageChannel:997786431982415874>" if channel.permissions_for(channel.guild.default_role).view_channel else "<:DVB_StageChannelLock:997786430195630100>"
-                    emoji = discord.PartialEmoji.from_str(emoji_str)
-                else:
-                    print(f"Unidentified channel with ID {channel.id} in guild {channel.guild.id}: {type(channel)}")
-                    continue
-                if channel.id == target_channel.id:
-                    description = "This is the channel you selected, do not choose this."
-                else:
-                    description = None
-                if channel.type == ChannelType.category and channel.id == self.target_channel.id:
-                    default = True
-                else:
-                    default = False
+            if len(channels) < 20:
+                for channel in channels:
+                    channel: Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel]
+                    if channel.type == ChannelType.text:
+                        label = channel.name
+                        value = str(channel.id)
+                        emoji_str = "<:DVB_TextChannel:997786423820288061>" if channel.permissions_for(channel.guild.default_role).view_channel else "<:DVB_TextChannelLock:997786422260023366>"
+                        emoji = discord.PartialEmoji.from_str(emoji_str)
+                    elif channel.type == ChannelType.voice:
+                        label = channel.name
+                        value = str(channel.id)
+                        emoji_str = "<:DVB_GreyVoiceChannel:997786435853758546>" if channel.permissions_for(channel.guild.default_role).view_channel else "<:DVB_GreyVoiceChannelLock:997786434104729641>"
+                        emoji = discord.PartialEmoji.from_str(emoji_str)
+                    elif channel.type == ChannelType.category:
+                        label = channel.name
+                        value = str(channel.id)
+                        emoji = discord.PartialEmoji.from_str("<:DVB_ChannelCategory:997787503744516126>")
+                    elif channel.type == ChannelType.news:
+                        label = channel.name
+                        value = str(channel.id)
+                        emoji_str = "<:DVB_AnnouncementChannel:997786427775529010>" if channel.permissions_for(channel.guild.default_role).view_channel else "<:DVB_AnnouncementChannelLock:997786425875517450>"
+                        emoji = discord.PartialEmoji.from_str(emoji_str)
+                    elif channel.type == ChannelType.stage_voice and type(channel) == discord.StageChannel:
+                        label = channel.name
+                        value = str(channel.id)
+                        emoji_str = "<:DVB_GreyStageChannel:997786431982415874>" if channel.permissions_for(channel.guild.default_role).view_channel else "<:DVB_StageChannelLock:997786430195630100>"
+                        emoji = discord.PartialEmoji.from_str(emoji_str)
+                    else:
+                        print(f"Unidentified channel with ID {channel.id} in guild {channel.guild.id}: {type(channel)}")
+                        continue
+                    if channel.id == target_channel.id:
+                        description = "This is the channel you selected, do not choose this."
+                    else:
+                        description = None
+                    if channel.type == ChannelType.category and channel.id == self.target_channel.id:
+                        default = True
+                    else:
+                        default = False
 
-                options.append(discord.SelectOption(label=label, value=value, emoji=emoji, default=default, description=description))
+                    options.append(discord.SelectOption(label=label, value=value, emoji=emoji, default=default, description=description))
+            else:
+                min_index, max_index = self.index*20, (self.index+1)*20-1
+                for channel in channels[min_index:max_index+1]:
+                    channel: Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel]
+                    if channel.type == ChannelType.text:
+                        label = channel.name
+                        value = str(channel.id)
+                        emoji_str = "<:DVB_TextChannel:997786423820288061>" if channel.permissions_for(
+                            channel.guild.default_role).view_channel else "<:DVB_TextChannelLock:997786422260023366>"
+                        emoji = discord.PartialEmoji.from_str(emoji_str)
+                    elif channel.type == ChannelType.voice:
+                        label = channel.name
+                        value = str(channel.id)
+                        emoji_str = "<:DVB_GreyVoiceChannel:997786435853758546>" if channel.permissions_for(
+                            channel.guild.default_role).view_channel else "<:DVB_GreyVoiceChannelLock:997786434104729641>"
+                        emoji = discord.PartialEmoji.from_str(emoji_str)
+                    elif channel.type == ChannelType.category:
+                        label = channel.name
+                        value = str(channel.id)
+                        emoji = discord.PartialEmoji.from_str("<:DVB_ChannelCategory:997787503744516126>")
+                    elif channel.type == ChannelType.news:
+                        label = channel.name
+                        value = str(channel.id)
+                        emoji_str = "<:DVB_AnnouncementChannel:997786427775529010>" if channel.permissions_for(
+                            channel.guild.default_role).view_channel else "<:DVB_AnnouncementChannelLock:997786425875517450>"
+                        emoji = discord.PartialEmoji.from_str(emoji_str)
+                    elif channel.type == ChannelType.stage_voice and type(channel) == discord.StageChannel:
+                        label = channel.name
+                        value = str(channel.id)
+                        emoji_str = "<:DVB_GreyStageChannel:997786431982415874>" if channel.permissions_for(
+                            channel.guild.default_role).view_channel else "<:DVB_StageChannelLock:997786430195630100>"
+                        emoji = discord.PartialEmoji.from_str(emoji_str)
+                    else:
+                        print(f"Unidentified channel with ID {channel.id} in guild {channel.guild.id}: {type(channel)}")
+                        continue
+                    if channel.id == target_channel.id:
+                        description = "This is the channel you selected, do not choose this."
+                    else:
+                        description = None
+                    if channel.type == ChannelType.category and channel.id == self.target_channel.id:
+                        default = True
+                    else:
+                        default = False
+
+                    options.append(discord.SelectOption(label=label, value=value, emoji=emoji, default=default,
+                                                        description=description))
+                options.append(discord.SelectOption(label="More channels...", value="morechannels", emoji="➡️", default=False, description=f"{min_index+1} to {max_index+1} out of {len(channels)} channels"))
+
+
         else:
             options.append(discord.SelectOption(label="No channels found", emoji=None, default=True))
         super().__init__(placeholder=placeholder, min_values=1, max_values=1, options=options, disabled=True if len(options) == 1 and options[0].label == "No channels found" else False)
@@ -75,40 +126,89 @@ class ChannelList(discord.ui.Select):
         if len(list_of_channels) > 0:
             if self.view.move_category is True:
                 self.options.append(discord.SelectOption(label="No category", value="nil", default=True if self.target_channel.category is None else False))
-            for channel in list_of_channels:
-                channel: Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel]
-                if channel.type == ChannelType.text:
-                    label = channel.name
-                    value = str(channel.id)
-                    emoji_str = "<:DVB_TextChannel:997786423820288061>" if channel.overwrites_for(channel.guild.default_role).view_channel is True else "<:DVB_TextChannelLock:997786422260023366>"
-                    emoji = discord.PartialEmoji.from_str(emoji_str)
-                elif channel.type == ChannelType.voice:
-                    label = channel.name
-                    value = str(channel.id)
-                    emoji_str = "<:DVB_GreyVoiceChannel:997786435853758546>" if channel.overwrites_for(channel.guild.default_role).view_channel is True else "<:DVB_GreyVoiceChannelLock:997786434104729641>"
-                    emoji = discord.PartialEmoji.from_str(emoji_str)
-                elif channel.type == ChannelType.category:
-                    label = channel.name
-                    value = str(channel.id)
-                    emoji = discord.PartialEmoji.from_str("<:DVB_ChannelCategory:997787503744516126>")
-                elif channel.type == ChannelType.news:
-                    label = channel.name
-                    value = str(channel.id)
-                    emoji_str = "<:DVB_AnnouncementChannel:997786427775529010>" if channel.overwrites_for(channel.guild.default_role).view_channel else "<:DVB_AnnouncementChannelLock:997786425875517450>"
-                    emoji = discord.PartialEmoji.from_str(emoji_str)
-                elif channel.type == ChannelType.stage_voice and type(channel) == discord.StageChannel:
-                    label = channel.name
-                    value = str(channel.id)
-                    emoji_str = "<:DVB_GreyStageChannel:997786431982415874>" if channel.overwrites_for(channel.guild.default_role).view_channel else "<:DVB_StageChannelLock:997786430195630100>"
-                    emoji = discord.PartialEmoji.from_str(emoji_str)
-                else:
-                    print(f"Unidentified channel with ID {channel.id} in guild {channel.guild.id}: {type(channel)}")
-                    continue
-                if channel.type == ChannelType.category and self.target_channel.category is not None and channel.id == self.target_channel.category.id:
-                    default = True
-                else:
-                    default = False
-                self.options.append(discord.SelectOption(label=label, value=value, emoji=emoji, default=default))
+            if len(list_of_channels) <= 20:
+                for channel in list_of_channels:
+                    channel: Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel]
+                    if channel.type == ChannelType.text:
+                        label = channel.name
+                        value = str(channel.id)
+                        emoji_str = "<:DVB_TextChannel:997786423820288061>" if channel.overwrites_for(channel.guild.default_role).view_channel is True else "<:DVB_TextChannelLock:997786422260023366>"
+                        emoji = discord.PartialEmoji.from_str(emoji_str)
+                    elif channel.type == ChannelType.voice:
+                        label = channel.name
+                        value = str(channel.id)
+                        emoji_str = "<:DVB_GreyVoiceChannel:997786435853758546>" if channel.overwrites_for(channel.guild.default_role).view_channel is True else "<:DVB_GreyVoiceChannelLock:997786434104729641>"
+                        emoji = discord.PartialEmoji.from_str(emoji_str)
+                    elif channel.type == ChannelType.category:
+                        label = channel.name
+                        value = str(channel.id)
+                        emoji = discord.PartialEmoji.from_str("<:DVB_ChannelCategory:997787503744516126>")
+                    elif channel.type == ChannelType.news:
+                        label = channel.name
+                        value = str(channel.id)
+                        emoji_str = "<:DVB_AnnouncementChannel:997786427775529010>" if channel.overwrites_for(channel.guild.default_role).view_channel else "<:DVB_AnnouncementChannelLock:997786425875517450>"
+                        emoji = discord.PartialEmoji.from_str(emoji_str)
+                    elif channel.type == ChannelType.stage_voice and type(channel) == discord.StageChannel:
+                        label = channel.name
+                        value = str(channel.id)
+                        emoji_str = "<:DVB_GreyStageChannel:997786431982415874>" if channel.overwrites_for(channel.guild.default_role).view_channel else "<:DVB_StageChannelLock:997786430195630100>"
+                        emoji = discord.PartialEmoji.from_str(emoji_str)
+                    else:
+                        print(f"Unidentified channel with ID {channel.id} in guild {channel.guild.id}: {type(channel)}")
+                        continue
+                    if channel.type == ChannelType.category and self.target_channel.category is not None and channel.id == self.target_channel.category.id:
+                        default = True
+                    else:
+                        default = False
+                    self.options.append(discord.SelectOption(label=label, value=value, emoji=emoji, default=default))
+
+            else:
+                min_index, max_index = self.index*20, (self.index+1)*20-1
+                for channel in list_of_channels[min_index:max_index+1]:
+                    channel: Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel]
+                    if channel.type == ChannelType.text:
+                        label = channel.name
+                        value = str(channel.id)
+                        emoji_str = "<:DVB_TextChannel:997786423820288061>" if channel.permissions_for(
+                            channel.guild.default_role).view_channel else "<:DVB_TextChannelLock:997786422260023366>"
+                        emoji = discord.PartialEmoji.from_str(emoji_str)
+                    elif channel.type == ChannelType.voice:
+                        label = channel.name
+                        value = str(channel.id)
+                        emoji_str = "<:DVB_GreyVoiceChannel:997786435853758546>" if channel.permissions_for(
+                            channel.guild.default_role).view_channel else "<:DVB_GreyVoiceChannelLock:997786434104729641>"
+                        emoji = discord.PartialEmoji.from_str(emoji_str)
+                    elif channel.type == ChannelType.category:
+                        label = channel.name
+                        value = str(channel.id)
+                        emoji = discord.PartialEmoji.from_str("<:DVB_ChannelCategory:997787503744516126>")
+                    elif channel.type == ChannelType.news:
+                        label = channel.name
+                        value = str(channel.id)
+                        emoji_str = "<:DVB_AnnouncementChannel:997786427775529010>" if channel.permissions_for(
+                            channel.guild.default_role).view_channel else "<:DVB_AnnouncementChannelLock:997786425875517450>"
+                        emoji = discord.PartialEmoji.from_str(emoji_str)
+                    elif channel.type == ChannelType.stage_voice and type(channel) == discord.StageChannel:
+                        label = channel.name
+                        value = str(channel.id)
+                        emoji_str = "<:DVB_GreyStageChannel:997786431982415874>" if channel.permissions_for(
+                            channel.guild.default_role).view_channel else "<:DVB_StageChannelLock:997786430195630100>"
+                        emoji = discord.PartialEmoji.from_str(emoji_str)
+                    else:
+                        print(f"Unidentified channel with ID {channel.id} in guild {channel.guild.id}: {type(channel)}")
+                        continue
+                    if channel.id == self.target_channel.id:
+                        description = "This is the channel you selected, do not choose this."
+                    else:
+                        description = None
+                    if channel.type == ChannelType.category and channel.id == self.target_channel.id:
+                        default = True
+                    else:
+                        default = False
+
+                    self.options.append(discord.SelectOption(label=label, value=value, emoji=emoji, default=default,
+                                                        description=description))
+                self.options.append(discord.SelectOption(label="More channels...", value="morechannels", emoji="➡️", default=False, description=f"{min_index + 1} to {max_index + 1} out of {len(list_of_channels)} channels"))
         else:
             self.options.append(discord.SelectOption(label="No channels found", emoji=None, default=True))
         self.disabled = True if len(self.options) == 0 and self.options[0].label == "No channels found" else False
@@ -116,6 +216,17 @@ class ChannelList(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         if self.view.active is True:
             return interaction.response.send_message("A channel move is in progress, you can't interact with this menu until it's over.", ephemeral=True)
+        if self.values[0] == "morechannels":
+            self.index += 1
+            min_index, max_index = self.index*20, (self.index+1)*20-1
+            if self.view.move_category is True:
+                channels = interaction.guild.categories
+            else:
+                channels = interaction.channel.category.channels if interaction.channel.category is not None else get_non_category_channels(interaction.guild)
+            if min_index >= len(channels):
+                self.index = 0
+            self.regenerate_options(channels)
+            return await interaction.response.edit_message(view=self.view)
         if self.values[0].isdigit():
             if int(self.values[0]) == self.target_channel.id:
                 return await interaction.response.send_message(
