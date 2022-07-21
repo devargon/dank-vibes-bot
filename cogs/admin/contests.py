@@ -487,6 +487,7 @@ class Contests(commands.Cog):
 
 
     @commands.slash_command(name="submit")
+    @commands.cooldown(1, 60, commands.BucketType.user)
     async def contest_submit(self, ctx: discord.ApplicationContext, *, submission: discord.Option(discord.Attachment, description="Your submission for the contest.")):
         """
         Submit your entry for a contest!
