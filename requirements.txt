@@ -48,3 +48,5 @@ bugsnag
 amari.py
 python-Levenshtein
 filetype
+stringcase==1.2.0
+unidecode==1.3.4
