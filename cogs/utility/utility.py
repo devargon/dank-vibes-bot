@@ -1,7 +1,7 @@
 from collections import Counter
 
 import discord
-from discord.ext import commands, pages
+from discord.ext import commands
 
 import re
 import os
@@ -26,7 +26,7 @@ from utils.specialobjects import ContestSubmission, Contest
 from utils.time import humanize_timedelta
 from utils.errors import ArgumentBaseError
 from utils.converters import BetterTimeConverter
-from utils.format import ordinal, comma_number, plural
+from utils.format import ordinal
 
 from .l2lvc import L2LVC
 from .whois import Whois
