@@ -662,13 +662,17 @@ class GiveawayView(discord.ui.View):
                             remarks.append(f"You can get <@&899185283881381889> by chatting in <#608498967474601995> and reaching **150 messages sent** in `dv.mymessages`.")
                         elif elite_giveaway_ping():
                             remarks.append(f"You can get <@&758174135276142593> by running `-rank elite giveaway ping` in <#698462922682138654>, or selecting the **Elite Giveaway Ping** role under **Dank Pings** in <#782586550486695936>.")
+                        if gway_only_requires_voting():
+                            final_desc = f"To join this giveaway, vote for Dank Vibes on Top.gg!\n\nIt doesn't take longer than 30 seconds, and we really appreciate it!"
+                        else:
+                            final_desc = desc + "\n\n" + "\n".join(remarks)
 
-                        final_desc = desc + "\n\n" + "\n".join(remarks)
-
+                        requirements_embed = discord.Embed(title=f"Unable to join the \"{giveawayentry.title}\" giveaway", description=final_desc, color=discord.Color.yellow())
+                        if gway_only_requires_voting():
+                            requirements_embed.color = 0xEBCEDA
+                            requirements_embed.set_footer(text="Click on the button below to vote!")
                         return await interaction.response.send_message(
-                            embed=discord.Embed(title=f"Unable to join the \"{giveawayentry.title}\" giveaway",
-                                                description=final_desc,
-                                                color=discord.Color.yellow()),
+                            embed=requirements_embed,
                             view=VoteLink() if gway_only_requires_voting() else None,
                             ephemeral=True
                         )
