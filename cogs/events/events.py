@@ -95,20 +95,23 @@ class Events(MemberJoin, StatusTasks, PresenceUpdate, OnMessage, commands.Cog):
                                 member.guild.id,
                                 None))
                         if now - member_created_timestamp < number_of_days_in_seconds:
-                            msg = f"Welcome to {member.guild.name}, {member.name}!\nAs we do not allow alts in this server, **all new accounts are automatically banned**. \n\nIf you were wrongfully banned, feel free to appeal at this link: https://docs.google.com/forms/d/e/1FAIpQLScfv1HTWkpimqS3Q8MviVG92K0xmHm87T0vBx3dNZ19mXB7VQ/viewform\nAllow a few days for a response."
-                            try:
-                                await member.send(msg)
-                            except Exception as e:
-                                if log_channel is not None:
+                            allow_bypass = await self.client.db.fetchval(
+                                "SELECT bypass_ban FROM userconfig WHERE user_id = $1", member.id)
+                            if allow_bypass is True:
+                                continue
+                            else:
+                                msg = f"Welcome to {member.guild.name}, {member.name}!\nAs we do not allow alts in this server, **all new accounts are automatically banned**. \n\nIf you were wrongfully banned, feel free to appeal at this link: https://docs.google.com/forms/d/e/1FAIpQLScfv1HTWkpimqS3Q8MviVG92K0xmHm87T0vBx3dNZ19mXB7VQ/viewform\nAllow a few days for a response."
+                                try:
+                                    await member.send(msg)
+                                except Exception as e:
+                                    if log_channel is not None:
+                                        await log_channel.send(
+                                            f"I was unable to DM {member} ({member.id}) about their auto-ban.")
+                                try:
+                                    await member.ban(reason="Account too young")
+                                    return
+                                except Exception as e:
                                     await log_channel.send(
-                                        f"I was unable to DM {member} ({member.id}) about their auto-ban.")
-                            try:
-                                await member.ban(reason="Account too young")
-                                member_is_banned = True
-                                return
-                            except Exception as e:
-                                await log_channel.send(
-                                    f"I was unable to ban {member} ({member.id}):\n{box(str(e), lang='py')}")
-                                member_is_banned = False
+                                        f"I was unable to ban {member} ({member.id}):\n{box(str(e), lang='py')}")
 
 

@@ -350,7 +350,7 @@ class Admin(Contests, BetterSelfroles, Joining, ServerRule, commands.Cog, name='
         Shows guild's server configuration settings and also allows you to allow/disable them.
         """
         embed = discord.Embed(title=f"Server Configuration Settings For {ctx.guild.name}", color=self.client.embed_color, timestamp=discord.utils.utcnow())
-        serverconf = await self.client.fetch_guild_settings(ctx.guild.id)
+        serverconf = await self.client.get_guild_settings(ctx.guild.id)
         view = ServerConfigView(ctx, serverconf, self.client)
         embed = view.get_embed()
         view.response = await ctx.send(embed=embed, view=view)
@@ -712,3 +712,27 @@ class Admin(Contests, BetterSelfroles, Joining, ServerRule, commands.Cog, name='
         except Exception as e:
             return await ctx.send(f"There was an issue with adding roles. I've temporarily stopped promoting {member}. More details: {e}")
         return await ctx.send(f"{member.mention} congratulations on your promotion to:  **{', '.join(role.name for role in tupremove)}**!")
+
+    @commands.group(name="dungeon", invoke_without_command=True)
+    async def dungeon(self, ctx):
+        """
+        This is the placeholder base command for `dungeon bypass`
+        """
+        return await ctx.help()
+
+    @dungeon.command(name="bypass")
+    async def dungeon_bypass(self, ctx: DVVTcontext, *, user: discord.User):
+        """
+        Allow a user to bypass dungeon bans. If you run it again it will remove the bypass.
+        """
+        bypass_ban = await self.client.db.fetchval("SELECT bypass_ban FROM userconfig WHERE user_id = $1", user.id)
+        if bypass_ban is not True:
+            set = True
+        else:
+            set = False
+        await self.client.db.execute("INSERT INTO userconfig (user_id, bypass_ban) VALUES($1, $2) ON CONFLICT(user_id) DO UPDATE SET bypass_ban = $2", user.id, set)
+        if set is True:
+            await ctx.send(f"{user} ({user.id}) will be allowed to bypass the auto ban regardless of their account age.")
+        else:
+            await ctx.send(f"{user} ({user.id}) will NOT be able to bypass the auto ban if their account age is less than the set specified age.")
+
