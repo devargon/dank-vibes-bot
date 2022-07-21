@@ -420,6 +420,7 @@ CREATE SCHEMA IF NOT EXISTS donations""")
         if serverconfig is None:
             await self.db.execute("INSERT INTO serverconfig(guild_id) VALUES ($1)", guild_id)
             serverconfig = await self.db.fetchrow("SELECT * FROM serverconfig WHERE guild_id=$1", guild_id)
+        self.serverconfig[guild_id] = ServerConfiguration(serverconfig)
         return ServerConfiguration(serverconfig)
 
     async def get_all_blacklisted_users(self):
