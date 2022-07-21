@@ -30,13 +30,14 @@ from .itemgames import ItemGames
 from .games import games
 from .color import color
 from .fun_slash import FunSlash
+from .bigmoji import Bigmoji
 
 alexflipnoteAPI = os.getenv('alexflipnoteAPI')
 tenorAPI = os.getenv('tenorAPI')
 
 RandomColorID = 943530953110880327 if os.getenv('state') == '1' else 758176387806396456
 
-class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
+class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
     """
     Fun commands
     """
@@ -59,8 +60,11 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
         self.rcdata = ""
         self.alex_api = alexflipnote.Client()
         self.rantimes = {}
+        self.session = aiohttp.ClientSession()
         with open('assets/localization/dumbfight_statements.json', 'r') as f:
             self.dumbfight_statements = json.load(f)
+
+
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
@@ -690,3 +694,6 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
             summary.append(text)
         embed = discord.Embed(title="Active items", description="\n\n".join(summary), color=self.client.embed_color, timestamp=discord.utils.utcnow())
         await ctx.send(embed=embed)
+
+    def cog_unload(self):
+        self.bot.loop.create_task(self.session.close())
