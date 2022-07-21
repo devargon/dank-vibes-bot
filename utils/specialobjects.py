@@ -76,7 +76,7 @@ class DankItem:
 
 
 class ServerConfiguration:
-    __slots__ = ('guild_id', 'owodailylb', 'verification', 'censor', 'owoweeklylb', 'votelb', 'timeoutlog', 'pls_ar', 'mrob_ar', 'statusroleenabled', 'statusroleid', 'statustext', 'statusmatchtype', 'autoban_duration', 'auto_decancer')
+    __slots__ = ('guild_id', 'owodailylb', 'verification', 'censor', 'owoweeklylb', 'votelb', 'timeoutlog', 'pls_ar', 'mrob_ar', 'statusroleenabled', 'statusroleid', 'statustext', 'statusmatchtype', 'autoban_duration', 'auto_decancer', 'log_channel', 'modlog_channel')
 
     def __init__(self, record):
         self.guild_id: int = record.get('guild_id')
@@ -94,14 +94,15 @@ class ServerConfiguration:
         self.statusmatchtype: str = record.get('statusmatchtype')
         self.autoban_duration: int = record.get('autoban_duration')
         self.auto_decancer: bool = record.get('auto_decancer')
-
+        self.log_channel: int = record.get('log_channel')
+        self.modlog_channel: int = record.get('modlog_channel')
 
     def __repr__(self) -> str:
-        return f"<ServerConfiguration guild_id={self.guild_id} owodailylb={self.owodailylb} verification={self.verification} censor={self.censor} owoweeklylb={self.owoweeklylb} votelb={self.votelb} timeoutlog={self.timeoutlog} pls_ar={self.pls_ar} mrob_ar={self.mrob_ar} statusroleenabled={self.statusroleenabled} statusroleid={self.statusroleid} statustext={self.statustext} statusmatchtype={self.statusmatchtype} autoban_duration={self.autoban_duration} auto_decancer={self.auto_decancer}>"
+        return f"<ServerConfiguration guild_id={self.guild_id} owodailylb={self.owodailylb} verification={self.verification} censor={self.censor} owoweeklylb={self.owoweeklylb} votelb={self.votelb} timeoutlog={self.timeoutlog} pls_ar={self.pls_ar} mrob_ar={self.mrob_ar} statusroleenabled={self.statusroleenabled} statusroleid={self.statusroleid} statustext={self.statustext} statusmatchtype={self.statusmatchtype} autoban_duration={self.autoban_duration} auto_decancer={self.auto_decancer} log_channel={self.log_channel} modlog_channel={self.modlog_channel}>"
 
     async def update(self, client):
-        a = await client.db.execute("UPDATE serverconfig SET owodailylb=$1, verification=$2, censor=$3, owoweeklylb=$4, votelb=$5, timeoutlog=$6, pls_ar=$7, mrob_ar=$8, statusrole=$9, statusroleid=$10, statustext=$11, statusmatchtype=$12, autoban_duration = $13, auto_decancer = $14 WHERE guild_id=$15",
-                                self.owodailylb, self.verification, self.censor, self.owoweeklylb, self.votelb, self.timeoutlog, self.pls_ar, self.mrob_ar, self.statusroleenabled, self.statusroleid, self.statustext, self.statusmatchtype, self.autoban_duration, self.auto_decancer, self.guild_id)
+        a = await client.db.execute("UPDATE serverconfig SET owodailylb=$1, verification=$2, censor=$3, owoweeklylb=$4, votelb=$5, timeoutlog=$6, pls_ar=$7, mrob_ar=$8, statusrole=$9, statusroleid=$10, statustext=$11, statusmatchtype=$12, autoban_duration = $13, auto_decancer = $14, log_channel = $15, modlog_channel = $16 WHERE guild_id = $17",
+                                self.owodailylb, self.verification, self.censor, self.owoweeklylb, self.votelb, self.timeoutlog, self.pls_ar, self.mrob_ar, self.statusroleenabled, self.statusroleid, self.statustext, self.statusmatchtype, self.autoban_duration, self.auto_decancer, self.log_channel, self.modlog_channel, self.guild_id)
         client.serverconfig[self.guild_id] = self
 
 MISSING: Any = _MissingSentinel()
