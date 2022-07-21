@@ -18,7 +18,7 @@ class TimeoutTracking(commands.Cog):
     async def on_member_update(self, before: discord.Member, after: discord.Member):
         now = round(time.time())
         if before.communication_disabled_until != after.communication_disabled_until:
-            if (await self.client.fetch_guild_settings(before.guild.id)).timeoutlog is True:
+            if (await self.client.get_guild_settings(before.guild.id)).timeoutlog is True:
                 guild = before.guild
                 offender, moderator, reason, com_disabled_until = None, None, None, None
                 if guild.get_member(self.client.user.id).guild_permissions.view_audit_log:

@@ -550,7 +550,7 @@ class Mod(ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreenshot, lockd
             if reason is not None:
                 msg += f"\nReason: {reason}"
             await ctx.send(msg)
-            if (await self.client.fetch_guild_settings(ctx.guild.id)).timeoutlog is True:
+            if (await self.client.get_guild_settings(ctx.guild.id)).timeoutlog is True:
                 offender = member
                 moderator = ctx.author
                 reason = reason or "NA"

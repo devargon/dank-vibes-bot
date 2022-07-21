@@ -19,7 +19,7 @@ class Events(StatusTasks, PresenceUpdate, OnMessage, commands.Cog):
     async def check_status(self):
         await self.client.wait_until_ready()
         for guild in self.client.guilds:
-            settings = await self.client.fetch_guild_settings(guild.id)
+            settings = await self.client.get_guild_settings(guild.id)
             if settings.statusroleenabled is not True:
                 return
             if guild is None:
@@ -34,6 +34,8 @@ class Events(StatusTasks, PresenceUpdate, OnMessage, commands.Cog):
                         status = ""
                     else:
                         status = activity.name
+                    if status is None:
+                        status = ""
                     if role is None:
                         return
 
@@ -51,7 +53,7 @@ class Events(StatusTasks, PresenceUpdate, OnMessage, commands.Cog):
     async def on_ready(self):
         self.check_status.start()
         for guild in self.client.guilds:
-            settings = await self.client.fetch_guild_settings(guild.id)
+            settings = await self.client.get_guild_settings(guild.id)
             if settings.statusroleenabled is not True:
                 return
             guild = self.client.get_guild(guild_id)
@@ -67,6 +69,8 @@ class Events(StatusTasks, PresenceUpdate, OnMessage, commands.Cog):
                         status = ""
                     else:
                         status = activity.name
+                    if status is None:
+                        status = ""
                     if role is None:
                         return
 

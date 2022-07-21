@@ -157,7 +157,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
     @tasks.loop(hours=24.0)
     async def leaderboardloop(self):
         await self.client.wait_until_ready()
-        if (await self.client.fetch_guild_settings(guildid)).votelb is True:
+        if (await self.client.get_guild_settings(guildid)).votelb is True:
             votecount = await self.client.db.fetch("SELECT * FROM votecount ORDER BY count DESC LIMIT 10")  # gets top 10 voters
             leaderboard = []
             guild = self.client.get_guild(guildid)

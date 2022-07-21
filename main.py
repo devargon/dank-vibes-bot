@@ -77,6 +77,7 @@ class dvvt(commands.Bot):
         self.uptime = None
         self.embed_color: int = 0x57F0F0
         self.db: asyncpg.pool = None
+        self.serverconfig = {}
         self.maintenance = {}
         self.maintenance_message = {}
         self.available_extensions = AVAILABLE_EXTENSIONS
@@ -86,6 +87,7 @@ class dvvt(commands.Bot):
         self.webhooks = {}
         self.amari_data = {}
         self.mafia_channels = {}
+        #self.logger = Logger(self)
         self.logstrf = strfformat
         for ext in self.available_extensions:
             self.load_extension(ext)
@@ -261,6 +263,10 @@ class dvvt(commands.Bot):
         await self.wait_until_ready()
 
     async def on_ready(self):
+        for guild in self.guilds:
+            guild_settings = await client.fetch_guild_settings(guild.id)
+            self.serverconfig[guild.id] = guild_settings
+        print(f"{datetime.datetime.utcnow().strftime(strfformat)} | Loaded all Server Configurations")
         all_tables = ['prefixes', 'dankreminders', 'stats', 'nicknames', 'channelconfigs', 'dmrequestslog',
                       'dumbfightlog', 'joinmessages', 'dmrequests', 'messagelog', 'lockdownmsgs',
                       'remindersettings', 'inventories', 'iteminfo', 'tempweekly', 'rules', 'serverconfig',
@@ -400,6 +406,14 @@ CREATE SCHEMA IF NOT EXISTS donations""")
             if word.get('string') in string.lower():
                 return True
         return False
+
+    async def get_guild_settings(self, guild_id):
+        serverconf = self.serverconfig.get(guild_id, None)
+        if serverconf is None:
+            serverconf = await self.fetch_guild_settings(guild_id)
+            self.serverconfig[guild_id] = serverconf
+        return serverconf
+
 
     async def fetch_guild_settings(self, guild_id):
         serverconfig = await self.db.fetchrow("SELECT * FROM serverconfig WHERE guild_id=$1", guild_id)

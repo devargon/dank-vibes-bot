@@ -101,7 +101,7 @@ class OnMessage(commands.Cog):
                     await message.channel.send(um)
                     await message.channel.send("What it means:\n<:DVB_ban:930310804203503626> - Ban\n<:DVB_Mute:930308084885241926> - Mute\n<:DVB_Unmute:930308214132707338> - Unmute\n<:DVB_Unban:930308373440765982> - Unban\n<:DVB_warn:930312114629931028> - Warn\n<:DVB_tempban:930310741213454336> - Tempban")
         if not message.author.bot:
-            settings = await self.client.fetch_guild_settings(message.guild.id)
+            settings = await self.client.get_guild_settings(message.guild.id)
             con = message.content.lower()
             if settings.pls_ar is True:
                 if con.startswith('pls '):

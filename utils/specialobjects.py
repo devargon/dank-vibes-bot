@@ -102,7 +102,7 @@ class ServerConfiguration:
     async def update(self, client):
         a = await client.db.execute("UPDATE serverconfig SET owodailylb=$1, verification=$2, censor=$3, owoweeklylb=$4, votelb=$5, timeoutlog=$6, pls_ar=$7, mrob_ar=$8, statusrole=$9, statusroleid=$10, statustext=$11, statusmatchtype=$12, autoban_duration = $13, auto_decancer = $14 WHERE guild_id=$15",
                                 self.owodailylb, self.verification, self.censor, self.owoweeklylb, self.votelb, self.timeoutlog, self.pls_ar, self.mrob_ar, self.statusroleenabled, self.statusroleid, self.statustext, self.statusmatchtype, self.autoban_duration, self.auto_decancer, self.guild_id)
-        print(a)
+        client.serverconfig[self.guild_id] = self
 
 MISSING: Any = _MissingSentinel()
 
