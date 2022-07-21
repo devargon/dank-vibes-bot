@@ -17,7 +17,7 @@ def format_custom(text: str, member: discord.Member):
 
 class Joining(commands.Cog):
     def __init__(self, client):
-        self.client= client
+        self.client = client
 
 
     @commands.Cog.listener()

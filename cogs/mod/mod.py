@@ -6,6 +6,7 @@ from discord.ext import menus, pages
 
 from main import dvvt
 from utils.paginator import SingleMenuPaginator
+from .decancer import Decancer
 from .lockdown import lockdown
 from .censor import censor
 from .browser_screenshot import BrowserScreenshot
@@ -37,8 +38,6 @@ class ViewEmbedJSONs(discord.ui.View):
     async def view_raw_json(self, button: discord.ui.Button, interaction: discord.Interaction):
         button.disabled = True
         await interaction.response.edit_message(embeds=self.embeds, view=self)
-
-modlog_channelID = 873616122388299837 if os.getenv('state') == '1' else 640029959213285387
 
 class ListWatchlistNotifyMethods(discord.ui.Select):
     def __init__(self, client, default_index):
@@ -166,7 +165,8 @@ class ModlogPagination:
                 embed.add_field(name=f"#{entry.get('case_id')}: {entry.get('action').capitalize()} (<t:{entry.get('start_time')}:d>)", value=value, inline=False)
         return embed
 
-class Mod(ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
+
+class Mod(Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
     """
     Mod commands
     """
@@ -550,7 +550,7 @@ class Mod(ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreenshot, lockd
             if reason is not None:
                 msg += f"\nReason: {reason}"
             await ctx.send(msg)
-            if (await self.client.fetch_guild_settings(ctx.guild.id)).timeoutlog is True:
+            if (await self.client.get_guild_settings(ctx.guild.id)).timeoutlog is True:
                 offender = member
                 moderator = ctx.author
                 reason = reason or "NA"
@@ -560,7 +560,10 @@ class Mod(ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreenshot, lockd
                     description=f'**Offender**: {offender} {offender.mention}\n**Reason**: {reason}\n**Duration**: {duration}\n**Responsible Moderator**: {moderator}',
                     color=discord.Color.orange(), timestamp=discord.utils.utcnow())
                 try:
-                    await self.client.get_channel(modlog_channelID).send(embed=embed)
+                    serverconf = await self.client.get_guild_settings(ctx.guild.id)
+                    modlogchan = ctx.guild.get_channel(serverconf.modlog_channel)
+                    if modlogchan is not None:
+                        await modlogchan.send(embed=embed)
                 except Exception as e:
                     print(e)
 

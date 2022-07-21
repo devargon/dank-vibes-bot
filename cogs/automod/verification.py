@@ -15,7 +15,7 @@ class Verification(commands.Cog):
         await self.client.wait_until_ready()
         try:
             for guild in self.client.guilds:
-                g = await self.client.fetch_guild_settings(guild.id)
+                g = await self.client.get_guild_settings(guild.id)
                 if g.verification is True:
                     has_not_verified = []
                     for member in guild.members:
@@ -47,7 +47,7 @@ class Verification(commands.Cog):
     async def on_member_update(self, member_before, member_after):
         if time() - member_before.joined_at.timestamp() > 86400:
             return
-        sc = await self.client.fetch_guild_settings(member_after.guild.id)
+        sc = await self.client.get_guild_settings(member_after.guild.id)
         if sc.verification is not True:
             return
         if member_before.pending != True or member_after.pending != False or member_before.bot:

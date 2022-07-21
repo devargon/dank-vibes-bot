@@ -14,7 +14,7 @@ class PresenceUpdate(commands.Cog):
 
     @commands.Cog.listener()
     async def on_presence_update(self, before: discord.Member, after: discord.Member):
-        settings = await self.client.fetch_guild_settings(after.guild.id)
+        settings = await self.client.get_guild_settings(after.guild.id)
         if before.bot:
             return
         if before.id in self.cooldown:
@@ -24,8 +24,10 @@ class PresenceUpdate(commands.Cog):
             status = ""
         else:
             status = activity.name
+        if status is None:
+            status = ""
 
-        settings = await self.client.fetch_guild_settings(after.guild.id)
+        settings = await self.client.get_guild_settings(after.guild.id)
         if settings.statusroleenabled:
             role = after.guild.get_role(settings.statusroleid)
             if role is None:

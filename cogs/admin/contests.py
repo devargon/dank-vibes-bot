@@ -279,7 +279,7 @@ class SubmissionApproval(discord.ui.View):
                 contest_channel = interaction.guild.get_channel(contest_channel_id)
                 if contest_channel is None:
                     return await interaction.response.send_message(f"I could not find a channel with ID {contest_channel_id}for this contest.", ephemeral=True)
-                contest_submission = await self.view.client.db.fetchrow("SELECT * FROM contest_submissions WHERE entry_id = $1", derived_entry_id)
+                contest_submission = await self.view.client.db.fetchrow("SELECT * FROM contest_submissions WHERE entry_id = $1 AND contest_id = $2", derived_entry_id, derived_contest_id)
                 submission = ContestSubmission(contest_submission)
                 entry_embed = discord.Embed(title=f"Submission #{derived_entry_id}", color=self.view.client.embed_color, timestamp=discord.utils.utcnow())
                 entry_embed.set_footer(text="Submitted at")
@@ -487,6 +487,7 @@ class Contests(commands.Cog):
 
 
     @commands.slash_command(name="submit")
+    @commands.cooldown(1, 60, commands.BucketType.user)
     async def contest_submit(self, ctx: discord.ApplicationContext, *, submission: discord.Option(discord.Attachment, description="Your submission for the contest.")):
         """
         Submit your entry for a contest!

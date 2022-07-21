@@ -58,6 +58,23 @@ class Blacklist(menus.ListPageSource):
         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return embed
 
+class UpdateNumberofDays(discord.ui.Modal):
+    def __init__(self, *args, **kwargs) -> None:
+        self.number_of_days: int = None
+        self.interaction: discord.Interaction = None
+        super().__init__(*args, **kwargs)
+
+        self.add_item(discord.ui.InputText(label="How many days old should a user's account be?"))
+
+    async def callback(self, interaction: discord.Interaction):
+        try:
+            self.number_of_days = int(self.children[0].value)
+        except ValueError:
+            return await interaction.response.send_message("You need to input a number, please try again.")
+        else:
+            self.interaction = interaction
+            self.stop()
+
 
 class UpdateStatusText(discord.ui.Modal):
     def __init__(self, *args, **kwargs) -> None:
@@ -148,8 +165,11 @@ class ServerConfigView(discord.ui.View):
                 elif self.custom_id == "statusroleenabled":
                     self.serverconfig.statusroleenabled = update_bool(self.serverconfig.statusroleenabled)
                     self.style = get_style(self.serverconfig.statusroleenabled)
+                elif self.custom_id == "auto_decancer":
+                    self.serverconfig.auto_decancer = update_bool(self.serverconfig.auto_decancer)
+                    self.style = get_style(self.serverconfig.auto_decancer)
                 await self.serverconfig.update(self.client)
-                await interaction.response.edit_message(view=self.view)
+                await interaction.response.edit_message(embed=self.view.get_embed(), view=self.view)
 
         class ChangeRoleID(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
@@ -172,6 +192,7 @@ class ServerConfigView(discord.ui.View):
                         else:
                             self.view.serverconfig.statusroleid = modal.role_id
                             await self.view.serverconfig.update(self.view.client)
+                            await interaction.edit_original_message(embed=self.view.get_embed(), view=self.view)
                             if modal.interaction.response.is_done():
                                 await modal.interaction.followup.send(f"Status role has been changed to **{role.name}**.", ephemeral=True)
                             else:
@@ -181,6 +202,20 @@ class ServerConfigView(discord.ui.View):
                         await modal.interaction.followup.send("You did not provide a valid Role ID.", ephemeral=True)
                     else:
                         await modal.interaction.response.send_message("You did not provide a valid Role ID.", ephemeral=True)
+
+        class ChangeBanDays(discord.ui.Button):
+            async def callback(self, interaction: discord.Interaction):
+                modal = UpdateNumberofDays(title="Change Ban Days")
+                await interaction.response.send_modal(modal)
+                await modal.wait()
+                self.view.serverconfig.autoban_duration = modal.number_of_days
+                await self.view.serverconfig.update(self.view.client)
+                summary = f"Number of days has been changed to `{modal.number_of_days}`.\nUsers whose age is under {self.view.serverconfig.autoban_duration} days will be banned when they join. Use `dv.dungeon bypass <user>` to bypass it."
+                if modal.interaction.response.is_done():
+                    await modal.interaction.followup.send(summary, ephemeral=True)
+                else:
+                    await modal.interaction.response.send_message(summary, ephemeral=True)
+                await interaction.edit_original_message(embed=self.view.get_embed(), view=self.view)
 
         class StatusText(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
@@ -198,6 +233,7 @@ class ServerConfigView(discord.ui.View):
                     await modal.interaction.followup.send(summary, ephemeral=True)
                 else:
                     await modal.interaction.response.send_message(summary, ephemeral=True)
+                await interaction.edit_original_message(embed=self.view.get_embed(), view=self.view)
 
         class ChangeStatusMatchType(discord.ui.Select):
             def __init__(self, current):
@@ -221,7 +257,7 @@ class ServerConfigView(discord.ui.View):
                         op.default = True
                     else:
                         op.default = False
-                await interaction.response.edit_message(view=self.view)
+                await interaction.response.edit_message(embed=self.view.get_embed(), view=self.view)
                 await interaction.followup.send(summary, ephemeral=True)
                 for op in self.options:
                     if op.label == chosen:
@@ -235,10 +271,31 @@ class ServerConfigView(discord.ui.View):
         self.add_item(BaseToggleButton(self.serverconfig, self.client, label="Timeout Log", custom_id="timeoutlog", style=get_style(self.serverconfig.timeoutlog)))
         self.add_item(BaseToggleButton(self.serverconfig, self.client, label="pls command AR", custom_id="pls_ar", style=get_style(self.serverconfig.pls_ar)))
         self.add_item(BaseToggleButton(self.serverconfig, self.client, label="MafiaBot Rob AR", custom_id="mrob_ar", style=get_style(self.serverconfig.mrob_ar)))
+        self.add_item(BaseToggleButton(self.serverconfig, self.client, label="Auto Decancer", custom_id="auto_decancer", style=get_style(self.serverconfig.auto_decancer)))
         self.add_item(BaseToggleButton(self.serverconfig, self.client, label="Status Role", custom_id="statusroleenabled", style=get_style(self.serverconfig.statusroleenabled)))
         self.add_item(ChangeRoleID(label="Status Reward -> Role ID (Click here to change)"))
         self.add_item(StatusText(label="Status Text (Click here to change)"))
+        self.add_item(ChangeBanDays(label="Ban Days (Click here to change)"))
         self.add_item(ChangeStatusMatchType(self.serverconfig.statusmatchtype))
+
+    def get_embed(self):
+        embed = discord.Embed(title="Dank Vibes Server Configuration", color=self.client.embed_color)
+        embed.add_field(name=f"OwO Daily Leaderboard - {return_emoji(self.serverconfig.owodailylb)}", value=f"Shows the OwO Daily Leaderboard when it resets.")
+        embed.add_field(name=f"OwO Weekly Leaderboard - {return_emoji(self.serverconfig.owoweeklylb)}", value=f"Shows the OwO Weekly Leaderboard when it resets.")
+        embed.add_field(name=f"Verification - {return_emoji(self.serverconfig.verification)}", value=f"Runs member verification related tasks.")
+        embed.add_field(name=f"Censor - {return_emoji(self.serverconfig.votelb)}", value=f"Deletes blacklisted words.")
+        embed.add_field(name=f"Vote Leaderboard - {return_emoji(self.serverconfig.votelb)}", value=f"Shows the Vote Leaderboard every 24 hours.")
+        embed.add_field(name=f"Timeout Log - {return_emoji(self.serverconfig.timeoutlog)}", value=f"Logs timeouts in #mod-log.")
+        embed.add_field(name=f"`pls` AR - {return_emoji(self.serverconfig.pls_ar)}", value=f"Responds to `pls ...` in #general or #bot-lounge.")
+        embed.add_field(name=f"Auto Decancer - {return_emoji(self.serverconfig.auto_decancer)}", value="Decancer user's names when they join")
+        embed.add_field(name=f"MafiaBot Rob AR - {return_emoji(self.serverconfig.mrob_ar)}", value=f"Responds to `m.rob`.")
+        embed.add_field(name=f"Status Rewards - {return_emoji(self.serverconfig.statusroleenabled)}", value=f"Whether status role rewards are enabled.")
+        embed.add_field(name=f"Status Text - `{self.serverconfig.statustext}`", value=f"The text in a user's status to be able to obtain the role.", inline=False)
+        embed.add_field(name=f"Status Role - `{self.ctx.guild.get_role(self.serverconfig.statusroleid) or self.serverconfig.statusroleid}`", value=f"The ID of the role that can be obtained.", inline=False)
+        embed.add_field(name=f"Status Matching - `{self.serverconfig.statusmatchtype}`", value=f"How should the status text be matched.\n`Strict`: Must be exactly the same.\n`Contains`: Must contain the text but any other text can be addded.", inline=False)
+        embed.add_field(name=f"Days for auto-ban - `{self.serverconfig.autoban_duration}`", value=f"The minimum number of days a user's account should be created.")
+        embed.set_footer(text=self.ctx.guild.name, icon_url=self.ctx.guild.icon.url)
+        return embed
 
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id != self.ctx.author.id:
@@ -293,22 +350,9 @@ class Admin(Contests, BetterSelfroles, Joining, ServerRule, commands.Cog, name='
         Shows guild's server configuration settings and also allows you to allow/disable them.
         """
         embed = discord.Embed(title=f"Server Configuration Settings For {ctx.guild.name}", color=self.client.embed_color, timestamp=discord.utils.utcnow())
-        serverconf = await self.client.fetch_guild_settings(ctx.guild.id)
+        serverconf = await self.client.get_guild_settings(ctx.guild.id)
         view = ServerConfigView(ctx, serverconf, self.client)
-        embed = discord.Embed(title="Dank Vibes Server Configuration", color=self.client.embed_color)
-        embed.add_field(name=f"OwO Daily Leaderboard - {return_emoji(serverconf.owodailylb)}", value=f"Shows the OwO Daily Leaderboard when it resets.")
-        embed.add_field(name=f"OwO Weekly Leaderboard - {return_emoji(serverconf.owoweeklylb)}", value=f"Shows the OwO Weekly Leaderboard when it resets.")
-        embed.add_field(name=f"Verification - {return_emoji(serverconf.verification)}", value=f"Runs member verification related tasks.")
-        embed.add_field(name=f"Censor - {return_emoji(serverconf.votelb)}", value=f"Deletes blacklisted words.")
-        embed.add_field(name=f"Vote Leaderboard - {return_emoji(serverconf.votelb)}", value=f"Shows the Vote Leaderboard every 24 hours.")
-        embed.add_field(name=f"Timeout Log - {return_emoji(serverconf.timeoutlog)}", value=f"Logs timeouts in #mod-log.")
-        embed.add_field(name=f"`pls` AR - {return_emoji(serverconf.pls_ar)}", value=f"Responds to `pls ...` in #general or #bot-lounge.")
-        embed.add_field(name=f"MafiaBot Rob AR - {return_emoji(serverconf.mrob_ar)}", value=f"Responds to `m.rob`.")
-        embed.add_field(name=f"Status Rewards - {return_emoji(serverconf.statusroleenabled)}", value=f"Whether status role rewards are enabled.")
-        embed.add_field(name=f"Status Text - `{serverconf.statustext}`", value=f"The text in a user's status to be able to obtain the role.", inline=False)
-        embed.add_field(name=f"Status Role - `{ctx.guild.get_role(serverconf.statusroleid) or serverconf.statusroleid}`", value=f"The ID of the role that can be obtained.", inline=False)
-        embed.add_field(name=f"Status Matching - `{serverconf.statusmatchtype}`", value=f"How should the status text be matched.\n`Strict`: Must be exactly the same.\n`Contains`: Must contain the text but any other text can be addded.", inline=False)
-        embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon.url)
+        embed = view.get_embed()
         view.response = await ctx.send(embed=embed, view=view)
         await view.wait()
 
@@ -668,3 +712,27 @@ class Admin(Contests, BetterSelfroles, Joining, ServerRule, commands.Cog, name='
         except Exception as e:
             return await ctx.send(f"There was an issue with adding roles. I've temporarily stopped promoting {member}. More details: {e}")
         return await ctx.send(f"{member.mention} congratulations on your promotion to:  **{', '.join(role.name for role in tupremove)}**!")
+
+    @commands.group(name="dungeon", invoke_without_command=True)
+    async def dungeon(self, ctx):
+        """
+        This is the placeholder base command for `dungeon bypass`
+        """
+        return await ctx.help()
+
+    @dungeon.command(name="bypass")
+    async def dungeon_bypass(self, ctx: DVVTcontext, *, user: discord.User):
+        """
+        Allow a user to bypass dungeon bans. If you run it again it will remove the bypass.
+        """
+        bypass_ban = await self.client.db.fetchval("SELECT bypass_ban FROM userconfig WHERE user_id = $1", user.id)
+        if bypass_ban is not True:
+            set = True
+        else:
+            set = False
+        await self.client.db.execute("INSERT INTO userconfig (user_id, bypass_ban) VALUES($1, $2) ON CONFLICT(user_id) DO UPDATE SET bypass_ban = $2", user.id, set)
+        if set is True:
+            await ctx.send(f"{user} ({user.id}) will be allowed to bypass the auto ban regardless of their account age.")
+        else:
+            await ctx.send(f"{user} ({user.id}) will NOT be able to bypass the auto ban if their account age is less than the set specified age.")
+

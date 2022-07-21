@@ -1138,6 +1138,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 await self.handle_reminder_entry(member.id, 23, aftermsg.channel.id, aftermsg.guild.id, nextpettime, uses_name=True)
                 await checkmark(beforemsg)
 
+    @commands.cooldown(1, 20, commands.BucketType.user)
     @checks.not_in_gen()
     @commands.command(name="dankreminders", aliases=["dankrm", "drm"])
     async def dankreminders(self, ctx):

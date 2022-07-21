@@ -30,13 +30,14 @@ from .itemgames import ItemGames
 from .games import games
 from .color import color
 from .fun_slash import FunSlash
+from .bigmoji import Bigmoji
 
 alexflipnoteAPI = os.getenv('alexflipnoteAPI')
 tenorAPI = os.getenv('tenorAPI')
 
 RandomColorID = 943530953110880327 if os.getenv('state') == '1' else 758176387806396456
 
-class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
+class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
     """
     Fun commands
     """
@@ -59,8 +60,11 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
         self.rcdata = ""
         self.alex_api = alexflipnote.Client()
         self.rantimes = {}
+        self.session = aiohttp.ClientSession()
         with open('assets/localization/dumbfight_statements.json', 'r') as f:
             self.dumbfight_statements = json.load(f)
+
+
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
@@ -272,22 +276,24 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
             embed.set_footer(text=extra_info, icon_url="https://cdn.discordapp.com/emojis/944226900988026890.webp?size=96&quality=lossless")
         await ctx.send(embed=embed)
         await asyncio.sleep(duration)
-        if muted.id == 781764427287756841:
+        if muted.id != 781764427287756841:
+            await channel.set_permissions(muted, overwrite=originaloverwrite)
+            if muted.id in self.mutedusers[ctx.channel.id]:
+                if len(self.mutedusers[ctx.channel.id]) == 1:
+                    del self.mutedusers[ctx.channel.id]
+                else:
+                    lst = self.mutedusers[ctx.channel.id]
+                    lst.remove(muted.id)
+                    self.mutedusers[ctx.channel.id] = lst
+
+        else:
             error = f"discord.InvalidData: User {muted} ({muted.id}) received invalid data: \nSWYgeW91IHJlYWQgdGhpcyB5b3UncmUgc21hcnQ="
             embed = discord.Embed(title="⚠️ Oh no!",
                                   description="Something terribly went wrong when this command was used.\n\nThe developers have been notified and it'll fixed soon.",
                                   color=discord.Color.red())
             embed.add_field(name="Error", value=f"```prolog\n{error}\n```\n<#871737028105109574>")
             return await ctx.send(embed=embed)
-        else:
-            await channel.set_permissions(muted, overwrite=originaloverwrite)
-        if muted.id in self.mutedusers[ctx.channel.id]:
-            if len(self.mutedusers[ctx.channel.id]) == 1:
-                del self.mutedusers[ctx.channel.id]
-            else:
-                lst = self.mutedusers[ctx.channel.id]
-                lst.remove(muted.id)
-                self.mutedusers[ctx.channel.id] = lst
+
 
     @checks.dev()
     @dumbfight.command(name="statistics", aliases = ["stats"])
@@ -688,3 +694,6 @@ class Fun(FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'
             summary.append(text)
         embed = discord.Embed(title="Active items", description="\n\n".join(summary), color=self.client.embed_color, timestamp=discord.utils.utcnow())
         await ctx.send(embed=embed)
+
+    def cog_unload(self):
+        self.bot.loop.create_task(self.session.close())
