@@ -713,6 +713,7 @@ class Admin(Contests, BetterSelfroles, Joining, ServerRule, commands.Cog, name='
             return await ctx.send(f"There was an issue with adding roles. I've temporarily stopped promoting {member}. More details: {e}")
         return await ctx.send(f"{member.mention} congratulations on your promotion to:  **{', '.join(role.name for role in tupremove)}**!")
 
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.group(name="dungeon", invoke_without_command=True)
     async def dungeon(self, ctx):
         """
@@ -720,6 +721,7 @@ class Admin(Contests, BetterSelfroles, Joining, ServerRule, commands.Cog, name='
         """
         return await ctx.help()
 
+    @checks.has_permissions_or_role(manage_roles=True)
     @dungeon.command(name="bypass")
     async def dungeon_bypass(self, ctx: DVVTcontext, *, user: discord.User):
         """

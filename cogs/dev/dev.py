@@ -575,8 +575,8 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
             return await pages.start(ctx)
 
     @checks.dev()
-    @commands.command(name="mock", aliases=["pretend"])
-    async def mock(self, ctx, channel: Optional[discord.TextChannel], member: discord.Member, *, message: str):
+    @commands.command(name="dmock", aliases=["pretend"])
+    async def dmock(self, ctx, channel: Optional[discord.TextChannel], member: discord.Member, *, message: str):
         """Mock a user.
 
         This will send a message that looks like someone else sent it
