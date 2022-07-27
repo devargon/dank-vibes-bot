@@ -228,8 +228,9 @@ class FunSlash(commands.Cog):
             await ctx.respond("Your DM request has been submitted, check your DMs!", ephemeral=True)
 
     @commands.has_permissions(manage_server=True)
+    @checks.has_permissions_or_role(administrator=True)
     @commands.user_command(name="Time Joe out")
-    async def time_joe_out(self, ctx: discord.ApplicationContext):
+    async def time_joe_out(self, ctx: discord.ApplicationContext, member: discord.Member):
         """Time Joe out."""
         a = ctx.guild.get_member(549744200078327819)
         if a is None:
