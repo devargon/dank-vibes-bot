@@ -495,7 +495,7 @@ class ChannelUtils(commands.Cog):
 
     @checks.has_permissions_or_role(manage_roles=True)
     @channel_base.command(name="move")
-    async def channel_move(self, ctx, channel: discord.TextChannel = None):
+    async def channel_move(self, ctx, channel: Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel] = None):
         """
         Move a channel to a different category
         """
