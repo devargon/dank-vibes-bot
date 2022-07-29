@@ -87,6 +87,9 @@ class dvvt(commands.Bot):
         self.webhooks = {}
         self.amari_data = {}
         self.mafia_channels = {}
+        self.clownmode = {}
+        self.clownprofiles = {}
+        self.clown_duration = 180
         #self.logger = Logger(self)
         self.logstrf = strfformat
         for ext in self.available_extensions:

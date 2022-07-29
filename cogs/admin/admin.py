@@ -722,6 +722,15 @@ class Admin(Contests, BetterSelfroles, Joining, ServerRule, commands.Cog, name='
         return await ctx.help()
 
     @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name='resetclowns')
+    async def resetclowns(self, ctx):
+        """
+        Resets the state of clowns so no one will change to a clown in any channel.
+        """
+        self.client.clownmode = {}
+        return await ctx.send("<:DVB_checkmark:955345523139805214> Reset clown mode")
+
+    @checks.has_permissions_or_role(manage_roles=True)
     @dungeon.command(name="bypass")
     async def dungeon_bypass(self, ctx: DVVTcontext, *, user: discord.User):
         """
