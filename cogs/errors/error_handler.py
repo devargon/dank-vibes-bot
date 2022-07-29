@@ -30,18 +30,23 @@ class ErrorHandler(commands.Cog):
         """
         The event triggered when an error is raised while invoking an ApplicationCommand.
         """
+        handled = False
         async def send_error(*args, **kwargs):
             await ctx.respond(*args, ephemeral=True, **kwargs)
 
         if (cog := ctx.cog):
             if cog._get_overridden_method(cog.cog_command_error) is not None:
+                handled = True
                 return
         ignore = (commands.CommandNotFound)
         if isinstance(error, ignore):
+            handled = True
             return
         if isinstance(error, commands.NoPrivateMessage):
+            handled = True
             await send_error("Sowwi, you can't use this command in DMs :(", delete_after=10)
         elif isinstance(error, commands.CheckFailure):
+            handled = True
             await send_error("Oops!, looks like you don't have enough permission to use this command.", delete_after=5)
         elif isinstance(error, commands.CommandOnCooldown):
             #enabled = await ctx.bot.db.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
@@ -52,28 +57,36 @@ class ErrorHandler(commands.Cog):
                 message += "\nPeople with **Vibing Investor** will have a cooldown of only **30 minutes**!"
             if ctx.command.name == "lockgen":
                 message = f"This command is currently under a global cooldown of **{humanize_timedelta(seconds=error.retry_after)}** to prevent abuse.\n"
+                handled = True
             await send_error(message)
         elif isinstance(error, commands.MemberNotFound):
             ctx.command.reset_cooldown(ctx)
+            handled = True
             await send_error("I couldn't find a member called {}.".format(error.argument))
         elif isinstance(error, commands.RoleNotFound):
             ctx.command.reset_cooldown(ctx)
+            handled = True
             await send_error("I couldn't find a role called {}.".format(error.argument))
         elif isinstance(error, commands.BadUnionArgument):
             ctx.command.reset_cooldown(ctx)
             if error.converters == (discord.TextChannel, discord.VoiceChannel):
+                handled = True
                 await send_error("I couldn't find that channel.")
         elif isinstance(error, ArgumentBaseError):
             ctx.command.reset_cooldown(ctx)
+            handled = True
             await send_error(error)
         elif isinstance(error, commands.BadArgument):
             ctx.command.reset_cooldown(ctx)
+            handled = True
             await send_error(error, delete_after=10)
         elif isinstance(error, discord.ApplicationCommandInvokeError):
             error_original = error.original
             if isinstance(error_original, commands.MissingPermissions):
+                handled = True
                 await send_error("Oops!, looks like you don't have enough permission to use this command.", delete_after=5)
-        else:
+
+        if handled is not True:
             traceback_error = print_exception(f'Ignoring exception in command {ctx.command}:', error)
             if os.getenv('state') == '1':
                 await ctx.send(embed=discord.Embed(description=f"```py\n{traceback_error}\n```", color=0x1E90FF))
