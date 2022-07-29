@@ -1,5 +1,6 @@
 from datetime import datetime
 
+import amari
 import discord
 from discord.ext import commands
 from pytz import timezone
@@ -7,7 +8,9 @@ from pytz import timezone
 from utils.format import durationdisplay
 from utils.converters import MemberUserConverter
 from utils.time import humanize_timedelta
+from utils.format import comma_number
 from time import time
+from main import dvvt
 
 def spotify_embed(member: discord.Member):
     today = discord.utils.utcnow()
@@ -149,7 +152,7 @@ class ViewUserProfile(discord.ui.View):
 
 class Whois(commands.Cog):
     def __init__(self, client):
-        self.client = client
+        self.client: dvvt = client
 
     @commands.guild_only()
     @commands.command(name='whois', usage='<user>', aliases=['wi'])
@@ -168,10 +171,21 @@ class Whois(commands.Cog):
         if (joined_at := getattr(user, 'joined_at', None)):
             joined_at = joined_at.strftime("%a, %b %d, %Y") if joined_at is not None else 'Unknown'
             description.append(f"• Joined server on: **{joined_at}**")
+        else:
+            description.append(f"• Not in server")
         if ctx.author.guild_permissions.kick_members and isinstance(user, discord.Member):
             description.append(f"• User is verified: {f'<:DVB_False:887589731515392000> They have **{humanize_timedelta(seconds=user.joined_at.timestamp()+86400-round(time()))}** to complete the Membership Screening.' if user.pending else '<:DVB_True:887589686808309791>'}")
         embed = discord.Embed(color=self.client.embed_color)
         embed.set_author(name="{}'s Information".format(user.name), icon_url=user.display_avatar.url)
+        a = await self.client.fetch_amari_data(user.id, ctx.guild.id)
+        user_amari = a[0]
+        if isinstance(user_amari, amari.objects.User):
+            amaridetails = [f"Level: **{user_amari.level}**",
+                            f"XP: **{comma_number(user_amari.exp)}**",
+                            f"Weekly XP: **{comma_number(user_amari.weeklyexp)}**",
+                            f"Rank: **{comma_number(user_amari.position+1)}**"
+                            ]
+            embed.add_field(name=f"<:DVB_Amari:975377537658134528> Amari Data", value="\n".join(amaridetails))
         embed.set_thumbnail(url=user.display_avatar.url)
         if discord.utils.get(ctx.author.roles, id=608495204399448066) or discord.utils.get(ctx.author.roles, id=684591962094829569) or ctx.author.guild_permissions.manage_roles:
             embed.add_field(name="Past nicknames", value="Retrieving their past nicknames...", inline=False)
