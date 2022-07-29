@@ -6,6 +6,81 @@ from discord.ext import commands
 from main import dvvt
 from utils import checks
 from typing import Union, Optional
+from utils.format import box
+
+channel_starters = [
+    "・",
+    "꒰﹕",
+    "╭・",
+    "┆・",
+    "╰・"
+]
+
+class ChooseSymbolMenu(discord.ui.Select):
+    def __init__(self):
+        super().__init__(
+            placeholder="Choose a channel symbol...",
+            min_values=1,
+            max_values=1,
+            options=[
+                discord.SelectOption(label="No symbol", value="nil", default=True),
+                discord.SelectOption(label="・", value="・"),
+                discord.SelectOption(label="꒰﹕", value="꒰﹕"),
+                discord.SelectOption(label="╭・", value="╭・"),
+                discord.SelectOption(label="┆・", value="┆・"),
+                discord.SelectOption(label="╰・", value="╰・")
+            ]
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        if self.values[0] == "nil":
+            symbol = ""
+        else:
+            symbol = self.values[0]
+        self.view.new_channel_name = symbol + self.view.unedited_new_name
+        for op in self.options:
+            if op.value == self.values[0]:
+                op.default = True
+            else:
+                op.default = False
+        self.view.button.label = f"Change to new name: {self.view.new_channel_name}"
+        return await interaction.response.edit_message(view=self.view)
+
+
+class ConfirmChannelName(discord.ui.Button):
+    def __init__(self, initial_name):
+        super().__init__(label=f"Change to new name: {initial_name}", style=discord.ButtonStyle.green)
+
+    async def callback(self, interaction):
+        old_name = self.view.channel.name
+        try:
+            new_channel = await self.view.channel.edit(name=self.view.new_channel_name)
+        except Exception as e:
+            await interaction.response.send_message(f"The channel **{old_name}**'s name could not be edited:\n{box(str(e), lang='py')}")
+        else:
+            await interaction.response.send_message(f"The channel **{old_name}**'s name has been edited to {new_channel.mention}.")
+        self.view.disable_all_items()
+        await interaction.edit_original_message(view=self.view)
+
+class ChooseSymbol(discord.ui.View):
+    def __init__(self, author, channel, new_channel_name):
+        self.author = author
+        self.channel = channel
+        self.select = ChooseSymbolMenu()
+        self.button = ConfirmChannelName(new_channel_name)
+        self.unedited_new_name = new_channel_name
+        self.new_channel_name = new_channel_name
+        super().__init__(timeout=30)
+
+        self.add_item(self.select)
+        self.add_item(self.button)
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.author.id:
+            return False
+        else:
+            return True
+
 
 def get_non_category_channels(arg: Union[discord.abc.GuildChannel, discord.Guild]):
     if isinstance(arg, discord.abc.GuildChannel):
@@ -507,4 +582,13 @@ class ChannelUtils(commands.Cog):
         await ctx.send(embed=view.initial_embed, view=view)
         await view.wait()
 
-
+    @checks.has_permissions_or_role(manage_roles=True)
+    @channel_base.command(name="name")
+    async def channel_name(self, ctx, channel: Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel], *, name: str):
+        """
+        Rename a channel.
+        """
+        if channel is None:
+            channel = ctx.channel
+        view = ChooseSymbol(ctx.author, channel, name)
+        await ctx.send("If you do not want to add a symbol, just click the button directly.", view=view)
