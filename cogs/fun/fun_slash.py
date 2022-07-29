@@ -2,13 +2,14 @@ import asyncio
 import json
 import random
 import time
-
+import datetime
 import discord
 from discord import Webhook, Option
 from discord.ext import commands
 import aiohttp
 from utils import checks
-
+from utils.format import box
+from utils.time import humanize_timedelta
 
 def lowered_cooldown(message: discord.Message):
     if discord.utils.get(message.author.roles, id=874833402052878396):  # Contributor 24T
@@ -225,3 +226,21 @@ class FunSlash(commands.Cog):
             await ctx.respond("Your DM request has been submitted!", embed=authorembed, ephemeral=True)
         else:
             await ctx.respond("Your DM request has been submitted, check your DMs!", ephemeral=True)
+
+    @commands.has_permissions(manage_guild=True)
+    @commands.user_command(name="Time Joe out")
+    async def time_joe_out(self, ctx: discord.ApplicationContext, member: discord.Member):
+        """Time Joe out."""
+        a = ctx.guild.get_member(549744200078327819)
+        if a is None:
+            return await ctx.respond("Couldn't find someone with the ID 549744200078327819.")
+        if a.timed_out is True:
+            return await ctx.respond("Joe is already timed out <:dv_pepeTiredOfYourShitOwO:837652681081356329>")
+        duration_timedelta = datetime.timedelta(seconds=random.randint(1, 604800))
+        try:
+            await a.timeout_for(duration_timedelta, reason=f"Requested by {ctx.author}")
+        except Exception as e:
+            return await ctx.respond(f"Couldn't time Joe out: {box(str(e), lang='py')}")
+        else:
+            return await ctx.respond(
+                f"{a} has been timed out for {humanize_timedelta(seconds=duration_timedelta.total_seconds())} <a:PandaYay:867100945773756476>")
