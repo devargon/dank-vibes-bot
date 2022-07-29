@@ -279,40 +279,30 @@ class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreac
         await ctx.send(embed=embed)
 
     @commands.command(name="checkpvc", aliases = ["privchannel", "pvc"])
-    async def checkoverwrites(self, ctx, channel:discord.TextChannel=None):
+    async def checkoverwrites(self, ctx, channel:discord.TextChannel = None):
         """
         Checks the permission overwrites for that channel. Can be used to check who is in a private channel.
         """
         if channel is None:
             channel = ctx.channel
         modrole = ctx.guild.get_role(608495204399448066)
-        messages = await channel.history(limit=1, oldest_first=True).flatten()
-        message = None if len(messages) == 0 else messages[0]
         if modrole not in ctx.author.roles:
             channel = ctx.channel
-            if ctx.channel.category_id not in [802467427208265728, 763457841133912074, 789195494664306688, 783299769580781588, 805052824185733120, 834696686923284510, 847897065081274409]:
-                return await ctx.send("You can only use this command in your own private channel.")
-            if not ctx.author.mentioned_in(message):
-                return await ctx.send("You can't check the members in this channel as you do not own this channel. If you think there is an error, please contact a Moderator in <#870880772985344010>.")
-        owner = None
-        owner_member = None
-        if len(message.mentions) > 0:
-            owner_member = message.mentions[0]
-            owner = f"**{owner_member}** {owner_member.mention}"
-            if owner_member not in channel.overwrites:
-                owner += "\n⚠️ Not in channel"
-        else:
-            owner_member = None
+        channel_details = await self.client.db.fetch("SELECT * FROM channels WHERE channel_id = $1", channel)
+        owner = self.client.get_user(channel_details.get('owner_id'))
+        owner_str = f"**{owner}** {owner.mention}"
+        if owner not in channel.overwrites and not (owner.permissions_for(channel).send_messages and owner.permissions_for(channel).view_channel):
+            owner_str += "\n⚠️ Not in channel"
         members = [overwriteobject for overwriteobject in channel.overwrites if isinstance(overwriteobject, discord.Member) and not overwriteobject.bot] # gets all members who have some sort of overwrite in that channel
         membersin = []
         for member in members:
-            if member != owner_member:
+            if member.id != owner.id:
                 permissions = channel.permissions_for(member)
                 if permissions.view_channel == True:
                     membersin.append(f"**{member}** {member.mention}")
         membermsg = "".join(f"`{count}.` {i}\n" for count, i in enumerate(membersin, start=1))
         embed = discord.Embed(title=f"Private Channel Details of #{channel.name}", color=self.client.embed_color, timestamp=discord.utils.utcnow())
-        embed.add_field(name="Owner 🧑‍⚖️", value = owner or "Unknown", inline=True)
+        embed.add_field(name="Owner 🧑‍⚖️", value=owner or "Unknown", inline=True)
         embed.add_field(name="Members", value=membermsg if len(membermsg) > 0 else "No one is in this channel.", inline=True)
         embed.add_field(name="\u200b", value="\u200b", inline=False)
         embed.add_field(name="Member Count", value=f"`{len(membersin)}`", inline=True)
