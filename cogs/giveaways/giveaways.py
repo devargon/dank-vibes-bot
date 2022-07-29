@@ -995,7 +995,7 @@ class giveaways(commands.Cog):
 
                         winembed = discord.Embed(title=f"You've won the {g_entry.title} giveaway!",
                                                  description=f"{winnerdmmsg[1]}\n\n[Link to giveaway]({msg_link})",
-                                                 color=self.client.embed_color, timestamp=discord.utils.utcnow()).set_footer(text=f"Giveaway type: {winnerdmmsg[0]}")
+                                                 color=0x2fbf71, timestamp=discord.utils.utcnow()).set_footer(text=f"Giveaway type: {winnerdmmsg[0]}")
                         winembed.set_author(name=guild.name, icon_url=guild.icon.url)
                         content = "🎉 **Congratulations on winning one of our celeb giveaways!** 🎉 \nThank you for being a part of our 3 year celebrations 🥳" if channel.id in [992065949320630363, 992366430857203833, 991019248467976202] else None
                         for winner in winners:
@@ -1006,7 +1006,7 @@ class giveaways(commands.Cog):
                                 title=f"Your {g_entry.title} giveaway has ended!",
                                 description=f"{human_join([f'**{winner} ({winner.id})**' for winner in winners], final='and')} won the giveaway.",
                                 url=msg_link,
-                                color=self.client.embed_color, timestamp=discord.utils.utcnow())
+                                color=0xed7d3a, timestamp=discord.utils.utcnow())
                             self.dm_queue.append((host, None, hostembed, None))
                     return True
             else:
@@ -1918,7 +1918,7 @@ class giveaways(commands.Cog):
             msg_link = f"https://discord.com/channels/{ctx.guild.id}/{giveaway.channel_id}/{giveaway.message_id}"
             winembed = discord.Embed(title=f"You've won the __reroll__ for the {giveaway.title} giveaway!",
                                      description=f"{winnerdmmsg[1]}\n\n[Link to giveaway]({msg_link})",
-                                     color=self.client.embed_color, timestamp=discord.utils.utcnow()).set_footer(
+                                     color=0x2fbf71, timestamp=discord.utils.utcnow()).set_footer(
                 text=f"Giveaway type: {winnerdmmsg[0]}")
             winembed.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url)
             for winner in winners:
