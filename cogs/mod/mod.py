@@ -487,7 +487,7 @@ class Mod(Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreens
         moderator = ctx.guild.get_member(existing.get('responsible_moderator'))
         if moderator is not None:
             if moderator != ctx.guild.owner:
-                if moderator.top_role >= ctx.author.top_role:
+                if moderator.top_role > ctx.author.top_role:
                     return await ctx.send(f"You cannot unfreezenick **{member}**'s nickname, as their nickname was frozen by **{moderator}**, whose highest role is the same as or above your own role.")
         try:
             await member.edit(nick=existing.get('old_nickname'))
