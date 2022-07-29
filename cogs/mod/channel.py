@@ -592,3 +592,17 @@ class ChannelUtils(commands.Cog):
             channel = ctx.channel
         view = ChooseSymbol(ctx.author, channel, name)
         await ctx.send("If you do not want to add a symbol, just click the button directly.", view=view)
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @channel_base.command(name="description")
+    async def channel_description(self, ctx, channel: Optional[discord.TextChannel] = None, *, description: str):
+        """
+        Change a channel's description.
+        """
+        if channel is None:
+            channel = ctx.channel
+        if len(description) > 1024:
+            await ctx.send("Channel description can only be 1024 characters long.")
+            return
+        await channel.edit(topic=description)
+        await ctx.send(f"{channel.mention}'s description has been updated.")
