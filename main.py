@@ -1,3 +1,4 @@
+import asyncio
 import os
 import time
 from typing import Optional, Union, Tuple
@@ -166,6 +167,7 @@ class dvvt(commands.Bot):
                 self.deleted_edit_messages.append(m.id)
             except Exception as e:
                 print(e)
+            await asyncio.sleep(0.5)
         else:
             pass
             # nothing in queue
