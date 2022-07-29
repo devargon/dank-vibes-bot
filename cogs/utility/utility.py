@@ -40,6 +40,39 @@ from .reminders import reminders
 from .utility_slash import UtilitySlash
 from .customrole import CustomRoleManagement
 
+class GetHeistPing(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Get the Heist Ping role", style=discord.ButtonStyle.green)
+    async def callback(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if not discord.utils.get(interaction.user.roles, name="Heist Ping"):
+            await interaction.user.add_roles(discord.utils.get(interaction.guild.roles, name="Heist Ping"))
+            await interaction.response.send_message("<:DVB_True:887589686808309791> The <@&758174643814793276> role has been added to you!", ephemeral=True)
+        else:
+            await interaction.response.send_message("<:DVB_True:887589686808309791> You already have the <@&758174643814793276> role.", ephemeral=True)
+
+class TimerRemindMe(discord.ui.View):
+    def __init__(self, timestamp, what_to_remind):
+        self.timestamp = timestamp
+        self.what_to_remind = what_to_remind
+        self.reminded = []
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Remind Me!", emoji="🔔", style=discord.ButtonStyle.blurple)
+    async def remind_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if time.time() > self.timestamp:
+            await interaction.response.send_message("This timer is over.", view=GetHeistPing(), ephemeral=True)
+            button.disabled = True
+            return await interaction.edit_original_message(view=self)
+        if interaction.user.id in self.reminded:
+            return await interaction.response.send_message("You've already chosen to be reminded!", view=GetHeistPing(), ephemeral=True)
+        else:
+            await interaction.client.get_cog('utility').add_reminder(interaction.user.id, interaction.guild.id, 698462922682138654, interaction.message.id, self.what_to_remind, self.timestamp)
+            await interaction.response.send_message(f"Alright! I'll remind you about **{self.what_to_remind}** in **{humanize_timedelta(seconds=round(self.timestamp - time.time()))}**.", view=GetHeistPing(), ephemeral=True)
+            self.reminded.append(interaction.user.id)
+            return
+
 
 LANGUAGE_CODES = [l for l in googletrans.LANGUAGES.keys()]
 
@@ -359,7 +392,7 @@ class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreac
         embed = discord.Embed(title=humanize_timedelta(seconds=duration), color=self.client.embed_color, timestamp=datetime.fromtimestamp(endtime))
         embed.set_author(name=f"{ctx.author.name}'s {titleembed}", icon_url=ctx.guild.icon.url)
         embed.set_footer(text="Ends at")
-        msg = await channel.send(embed=embed)
+        msg = await channel.send(embed=embed, view=TimerRemindMe(endtime, f"{title} in {channel.mention}"))
         await self.client.db.execute("INSERT INTO timers(guild_id, channel_id, message_id, user_id, time, title) VALUES ($1, $2, $3, $4, $5, $6)", ctx.guild.id, channel.id, msg.id, ctx.author.id, endtime, title)
 
     @commands.cooldown(10, 1, commands.BucketType.user)
