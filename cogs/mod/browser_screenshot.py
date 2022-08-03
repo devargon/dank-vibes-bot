@@ -2,6 +2,7 @@ import json
 import discord
 import selenium
 from selenium import webdriver
+from selenium.webdriver.common.by import By
 import os
 import ssl, socket
 from urllib.parse import urlparse
@@ -96,7 +97,7 @@ class BrowserScreenshot(commands.Cog):
                 try:
                     req_height = browser.execute_script('return document.body.parentNode.scrollHeight')
                     browser.set_window_size(1920, req_height if req_height < 10000 else 10000)
-                    el = browser.find_element_by_tag_name('body')
+                    el = browser.find_element(By.TAG_NAME, 'body')
                     try:
                         el.screenshot(f'temp/{filename}')
                     except:
