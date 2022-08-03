@@ -171,7 +171,7 @@ class Mod(Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreens
     Mod commands
     """
     def __init__(self, client):
-        PROXY = "161.35.235.103:8889"
+        PROXY = "152.67.4.88:8889"
         self.queue = []
         self.op = webdriver.ChromeOptions() # selenium options for chrome
         self.op.add_argument('--no-sandbox')
