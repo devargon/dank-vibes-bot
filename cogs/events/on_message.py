@@ -2,7 +2,7 @@ import asyncio
 import contextlib
 import json
 import os
-
+import asyncio
 from main import dvvt
 import discord
 from discord.ext import commands, tasks
@@ -12,6 +12,17 @@ import pytz
 
 modcommands_id = 978563862896967681 if os.getenv('state') == '1' else 616007729718231161
 dankmemerplayerrole_id = 982153033523793950 if os.getenv('state') == '1' else 837594909917708298
+
+def get_channel_name(channel: discord.abc.GuildChannel):
+    time_created_at = channel.created_at.strftime("%H-%M-%S-utc")
+    log_channel_name = f"mafia-at-{time_created_at}"
+    return log_channel_name
+
+def return_emoji(truefalse: bool):
+    if truefalse:
+        return "<:DVB_True:887589686808309791> "
+    else:
+        return "<:DVB_False:887589731515392000>"
 
 class GetDankMemerPlayerRole(discord.ui.Button):
     def __init__(self):
@@ -47,6 +58,7 @@ class ChannelOnlyView(discord.ui.View):
 class OnMessage(commands.Cog):
     def __init__(self, client):
         self.client: dvvt = client
+        self.mafia_wait = False
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -60,46 +72,47 @@ class OnMessage(commands.Cog):
                 try:
                     await self.client.wait_for("raw_reaction_add", check=check, timeout=60)
                 except asyncio.TimeoutError:
-                    return await message.remove_reaction("🧐", self.client.user)
-                statusmsg = await message.reply("<a:DVB_typing:955345484648710154> **Reading exported modlog**...")
-                attachment = message.attachments[0]
-                data_bytes = await attachment.read()
-                data = data_bytes.decode('utf-8')
-                try:
-                    data_json = json.loads(data)
-                except json.decoder.JSONDecodeError:
-                    return await statusmsg.edit(content="<:DVB_redcross:955345440356859944> **Error:** `JSONDecodeError`")
+                    await message.remove_reaction("🧐", self.client.user)
                 else:
-                    um = ""
-                    emojis = {
-                        'ban': '<:DVB_ban:930310804203503626>',
-                        'mute': '<:DVB_Mute:930308084885241926>',
-                        'kick': '👢',
-                        'unmute': '<:DVB_Unmute:930308214132707338>',
-                        'unban': '<:DVB_Unban:930308373440765982>',
-                        'warn': '<:DVB_warn:930312114629931028>',
-                        'tempban': '<:DVB_tempban:930310741213454336>'
-                    }
-                    for modcase in data_json:
-                        moderator_id = modcase.get('moderator_id')
-                        moderator = self.client.get_user(moderator_id) or moderator_id
-                        action = modcase.get('action')
-                        reason = modcase.get('reason')
-                        timestamp = modcase.get('timestamp')
-                        timestamp = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%f').replace(tzinfo=pytz.utc).timestamp()
-                        timestamp = f"<t:{round(timestamp)}>"
-                        symbol = emojis.get(action) if action in emojis else action
-                        if reason is None:
-                            tempstr = f"{symbol} by **{moderator}** on {timestamp}"
-                        else:
-                            tempstr = f"{symbol} by **{moderator}** on {timestamp}: {reason}"
-                        if len(symbol) + len(tempstr) + len(um) < 1990:
-                            um += f"{tempstr}\n"
-                        else:
-                            await message.channel.send(um)
-                            um = f"{tempstr}\n"
-                    await message.channel.send(um)
-                    await message.channel.send("What it means:\n<:DVB_ban:930310804203503626> - Ban\n<:DVB_Mute:930308084885241926> - Mute\n<:DVB_Unmute:930308214132707338> - Unmute\n<:DVB_Unban:930308373440765982> - Unban\n<:DVB_warn:930312114629931028> - Warn\n<:DVB_tempban:930310741213454336> - Tempban")
+                    statusmsg = await message.reply("<a:DVB_typing:955345484648710154> **Reading exported modlog**...")
+                    attachment = message.attachments[0]
+                    data_bytes = await attachment.read()
+                    data = data_bytes.decode('utf-8')
+                    try:
+                        data_json = json.loads(data)
+                    except json.decoder.JSONDecodeError:
+                        await statusmsg.edit(content="<:DVB_redcross:955345440356859944> **Error:** `JSONDecodeError`")
+                    else:
+                        um = ""
+                        emojis = {
+                            'ban': '<:DVB_ban:930310804203503626>',
+                            'mute': '<:DVB_Mute:930308084885241926>',
+                            'kick': '👢',
+                            'unmute': '<:DVB_Unmute:930308214132707338>',
+                            'unban': '<:DVB_Unban:930308373440765982>',
+                            'warn': '<:DVB_warn:930312114629931028>',
+                            'tempban': '<:DVB_tempban:930310741213454336>'
+                        }
+                        for modcase in data_json:
+                            moderator_id = modcase.get('moderator_id')
+                            moderator = self.client.get_user(moderator_id) or moderator_id
+                            action = modcase.get('action')
+                            reason = modcase.get('reason')
+                            timestamp = modcase.get('timestamp')
+                            timestamp = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%f').replace(tzinfo=pytz.utc).timestamp()
+                            timestamp = f"<t:{round(timestamp)}>"
+                            symbol = emojis.get(action) if action in emojis else action
+                            if reason is None:
+                                tempstr = f"{symbol} by **{moderator}** on {timestamp}"
+                            else:
+                                tempstr = f"{symbol} by **{moderator}** on {timestamp}: {reason}"
+                            if len(symbol) + len(tempstr) + len(um) < 1990:
+                                um += f"{tempstr}\n"
+                            else:
+                                await message.channel.send(um)
+                                um = f"{tempstr}\n"
+                        await message.channel.send(um)
+                        await message.channel.send("What it means:\n<:DVB_ban:930310804203503626> - Ban\n<:DVB_Mute:930308084885241926> - Mute\n<:DVB_Unmute:930308214132707338> - Unmute\n<:DVB_Unban:930308373440765982> - Unban\n<:DVB_warn:930312114629931028> - Warn\n<:DVB_tempban:930310741213454336> - Tempban")
         if not message.author.bot:
             settings = await self.client.get_guild_settings(message.guild.id)
             con = message.content.lower()
@@ -108,7 +121,7 @@ class OnMessage(commands.Cog):
                     split_cmd = con.split(' ')
                     if len(split_cmd) > 1:
                         if split_cmd[1] == 'rob':
-                            return await message.channel.send(f"**Robbing is disabled** in {message.guild.name}. This is for the safety of everyone's wallets in this server.")
+                            await message.channel.send(f"**Robbing is disabled** in {message.guild.name}. This is for the safety of everyone's wallets in this server.")
                         else:
                             whitelisted_user_ids = [758173667682287616, 758175713983201300]
                             if message.channel.id in [698462922682138654, 608498967474601995, 871737314831908974] and not any(discord.utils.get(message.author.roles, id=roleid) for roleid in whitelisted_user_ids):
@@ -138,6 +151,79 @@ class OnMessage(commands.Cog):
                         await message.reply(offender_msg)
                     except Exception as e:
                         await message.channel.send(offender_msg)
+        if (message.content.lower().startswith('m.setup') or message.content.lower().startswith('m.prep')) and not message.author.bot and self.mafia_wait is not True:
+            lounge_category = 595457764935991327 if message.guild.id == 595457764935991326 else 875316745416617984
+            if message.channel.id == 711377990113820924 or discord.utils.get(message.author.roles, id=735417263968223234) or message.author.guild_permissions.manage_roles:
+                #         it will treat it as a to be monitored game if it's in events, or user is a modm+/event hoster
+                status = ["<a:DVB_CLoad3:994913503771111515> Waiting for Mafia Channel creation."]
+                self.mafia_wait = True
+                mafia_status_msg = await message.channel.send("\n".join(status))
+                async def safe_edit(m):
+                    try:
+                        await m.edit(content="\n".join(status))
+                        return m
+                    except:
+                        return await message.channel.send("\n".join(status))
+                mafia_channel = discord.utils.get(message.guild.channels, category_id=lounge_category, name="mafia")
+                if mafia_channel is not None and mafia_channel.id in self.client.mafia_channels.keys():
+                    # detected mafia channel already exists, perhaps that game was reset and a new one was being created?
+                    mafia_channel = None
+                if mafia_channel is None:
+
+                    def check(channel: discord.abc.GuildChannel):
+                        return channel.name == 'mafia' and channel.category_id == lounge_category
+                    try:
+                        mafia_channel = await self.client.wait_for('guild_channel_create', check=check, timeout=60.0)
+                    except asyncio.TimeoutError:
+                        status = [f"{return_emoji(False)} **I could not detect a mafia channel created** in the last minute. Try to start it manually with `dv.afkmafia` instead."]
+                        mafia_status_msg = await safe_edit(mafia_status_msg)
+                        self.mafia_wait = False
+                    else:
+                        status = [f"{return_emoji(True)} {mafia_channel.mention} game found", "<a:DVB_CLoad2:994913353388527668> Setting up Mafia Log channel..."]
+                    log_channel_name = get_channel_name(mafia_channel)
+                    if message.guild.id == 595457764935991326:
+                        # set perms if the game was started in mafia
+                        event_hoster_role = message.guild.get_role(735417263968223234)
+                        event_manager_role = message.guild.get_role(756667326623121568)
+                        planet_role = message.guild.get_role(649499248320184320)
+                        mod_manager_role = message.guild.get_role(684591962094829569)
+                        overwrites = {}
+                        manager_overwrite = discord.PermissionOverwrite(
+                            view_channel=True,
+                            send_messages=True,
+                            add_reactions=True,
+                            embed_links=True,
+                            read_message_history=True,
+                            use_external_emojis=True,
+                            attach_files=True,
+                            use_external_stickers=True,
+                            manage_messages=False
+                        )
+                        overwrites[message.guild.default_role] = discord.PermissionOverwrite(view_channel=False)
+                        if planet_role is not None:
+                            overwrites[planet_role] = discord.PermissionOverwrite(view_channel=False)
+                        if event_hoster_role is not None:
+                            overwrites[event_hoster_role] = manager_overwrite
+                        if event_manager_role is not None:
+                            overwrites[event_manager_role] = manager_overwrite
+                        if mod_manager_role is not None:
+                            overwrites[mod_manager_role] = manager_overwrite
+                        log_channel = await message.guild.create_text_channel(name=log_channel_name, category=message.guild.get_channel(lounge_category), overwrites=overwrites, reason="Mafia Game tracking", topic=f"For the {mafia_channel.mention} game that was started at <t:{round(mafia_channel.created_at.timestamp())}>.")
+                    else:
+                        log_channel = await message.guild.create_text_channel(name=log_channel_name, category=message.guild.get_channel(lounge_category), reason="Mafia Game tracking", topic=f"For the {mafia_channel.mention} game that was started at <t:{round(mafia_channel.created_at.timestamp())}>.")
+
+                    webhook = await log_channel.create_webhook(name=self.client.user.name)
+                    self.client.webhooks[log_channel.id] = webhook
+                    self.client.mafia_channels[mafia_channel.id] = log_channel.id
+                    status[1] = f"{return_emoji(True)} {log_channel.mention} Mafia Log channel created."
+                    mafia_status_msg = await safe_edit(mafia_status_msg)
+                    self.mafia_wait = False
+
+
+
+
+
+
         if message.channel.id in self.client.mafia_channels.keys():
             #mafia logging
             log_channel_id = self.client.mafia_channels[message.channel.id]
@@ -162,6 +248,14 @@ class OnMessage(commands.Cog):
                     embeds=embeds,
                     allowed_mentions=discord.AllowedMentions.none()
                 )
+        if message.channel.name == 'mafia':
+            lounge_category = 595457764935991327 if message.guild.id == 595457764935991326 else 875316745416617984
+            if message.channel.category_id == lounge_category:
+                if message.channel.id not in self.client.mafia_channels.keys():
+                    log_channel = discord.utils.get(message.guild.channels, name=get_channel_name(message.channel))
+                    if log_channel is not None:
+                        self.client.mafia_channels[message.channel.id] = log_channel.id
+                        await message.channel.send("This channel's log has been restored after a bot restart.")
 
 
 
