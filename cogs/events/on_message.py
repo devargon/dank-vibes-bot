@@ -292,7 +292,7 @@ class OnMessage(commands.Cog):
             log_channel_id = self.client.mafia_channels[message.channel.id]
             log_channel = message.guild.get_channel(log_channel_id)
             if log_channel is not None:
-                if len(message.mentions) > 0 and message.author.id == 235148962103951360:
+                if len(message.mentions) > 0 and message.author.id == 511786918783090688:
                     if message.channel.id not in self.client.mafia_game_details:
                         rules = """<a:dv_wExclamationOwO:837787071531450368> **__Remember:__** <a:dv_wExclamationOwO:837787071531450368> 
 <:d_snowydash:921327788223500288> You must be __actively__ participating in order to receive a prize. Merely interacting in MafiaBot's DMs does not count.
@@ -324,7 +324,7 @@ class OnMessage(commands.Cog):
                 game_details: MafiaGameDetails = self.client.mafia_game_details.get(message.channel.id, None)
                 if game_details is not None:
                     if message.author.bot is True:
-                        if message.author.id == 235148962103951360:
+                        if message.author.id == 511786918783090688:
                             if len(message.embeds) > 0:
                                 embed = message.embeds[0]
 
