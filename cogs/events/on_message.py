@@ -55,8 +55,6 @@ class MafiaGameDetails:
     def add_message_count(self, member: discord.Member):
         if member.id in self.message_count:
             self.message_count[member.id] += 1
-        else:
-            self.message_count[member.id] = 1
 
 
 def get_dead_users(embed: discord.Embed, embed_type: typing.Literal['day', 'night']):
