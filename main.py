@@ -88,6 +88,7 @@ class dvvt(commands.Bot):
         self.webhooks = {}
         self.amari_data = {}
         self.mafia_channels = {}
+        self.mafia_game_details = {}
         self.clownmode = {}
         self.clownprofiles = {}
         self.clown_duration = 180

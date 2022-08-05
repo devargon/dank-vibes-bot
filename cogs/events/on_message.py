@@ -1,8 +1,15 @@
 import asyncio
 import contextlib
 import json
+import operator
 import os
 import asyncio
+import re
+
+import typing
+from utils.format import human_join
+from utils.time import humanize_timedelta
+
 from main import dvvt
 import discord
 from discord.ext import commands, tasks
@@ -12,6 +19,73 @@ import pytz
 
 modcommands_id = 978563862896967681 if os.getenv('state') == '1' else 616007729718231161
 dankmemerplayerrole_id = 982153033523793950 if os.getenv('state') == '1' else 837594909917708298
+
+ID_REGEX = re.compile(r"([0-9]{15,20})")
+
+class DeleteChannel(discord.ui.View):
+    def __init__(self):
+        self.delete = False
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Delete this channel", emoji="🗑", style=discord.ButtonStyle.red)
+    async def delete_channel(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if "mafia-at" not in interaction.channel.name:
+            await interaction.response.send_message("This button cannot be used here.")
+        else:
+            if self.delete is True:
+                self.delete = False
+                await interaction.response.send_message("Cancelled channel deletion.")
+            else:
+                self.delete = True
+                await interaction.response.send_message("This channel will be deleted in 10 seconds, press the button again to cancel.")
+                await asyncio.sleep(10)
+                if self.delete is True:
+                    await interaction.channel.delete()
+
+
+class MafiaGameDetails:
+    def __init__(self, players: typing.List[discord.Member]):
+        self.players = players
+        self.message_count = {}
+        self.deaths = {}
+        for i in self.players:
+            self.message_count[i.id] = 0
+        self.night = 1
+
+    def add_message_count(self, member: discord.Member):
+        if member.id in self.message_count:
+            self.message_count[member.id] += 1
+        else:
+            self.message_count[member.id] = 1
+
+
+def get_dead_users(embed: discord.Embed, embed_type: typing.Literal['day', 'night']):
+    dead = []
+    if embed_type == 'day':
+        dead_field = embed.fields[1]
+        value = dead_field.value
+        if type(value) == str and len(value) > 0: ## in case somehow the content is empty
+            for line in value.split('\n'):
+                try:
+                    user_id = ID_REGEX.findall(line)[0]
+                    user_id = int(user_id)
+                except Exception as e:
+                    pass
+                else:
+                    dead.append(user_id)
+    elif embed_type == 'night':
+        description = embed.description
+        if type(description) == str and len(description) > 0: ## in case somehow the content is empty
+            for line in description.split('\n'):
+                try:
+                    user_id = ID_REGEX.findall(line)[0]
+                    user_id = int(user_id)
+                except Exception as e:
+                    pass
+                else:
+                    dead.append(user_id)
+    return dead
+
 
 def get_channel_name(channel: discord.abc.GuildChannel):
     time_created_at = channel.created_at.strftime("%H-%M-%S-utc")
@@ -59,6 +133,7 @@ class OnMessage(commands.Cog):
     def __init__(self, client):
         self.client: dvvt = client
         self.mafia_wait = False
+
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -164,71 +239,112 @@ class OnMessage(commands.Cog):
                         return m
                     except:
                         return await message.channel.send("\n".join(status))
-                mafia_channel = discord.utils.get(message.guild.channels, category_id=lounge_category, name="mafia")
-                if mafia_channel is not None and mafia_channel.id in self.client.mafia_channels.keys():
-                    # detected mafia channel already exists, perhaps that game was reset and a new one was being created?
-                    mafia_channel = None
-                if mafia_channel is None:
-
-                    def check(channel: discord.abc.GuildChannel):
-                        return channel.name == 'mafia' and channel.category_id == lounge_category
-                    try:
-                        mafia_channel = await self.client.wait_for('guild_channel_create', check=check, timeout=60.0)
-                    except asyncio.TimeoutError:
-                        status = [f"{return_emoji(False)} **I could not detect a mafia channel created** in the last minute. Try to start it manually with `dv.afkmafia` instead."]
-                        mafia_status_msg = await safe_edit(mafia_status_msg)
-                        self.mafia_wait = False
-                    else:
-                        status = [f"{return_emoji(True)} {mafia_channel.mention} game found", "<a:DVB_CLoad2:994913353388527668> Setting up Mafia Log channel..."]
-                    log_channel_name = get_channel_name(mafia_channel)
-                    if message.guild.id == 595457764935991326:
-                        # set perms if the game was started in mafia
-                        event_hoster_role = message.guild.get_role(735417263968223234)
-                        event_manager_role = message.guild.get_role(756667326623121568)
-                        planet_role = message.guild.get_role(649499248320184320)
-                        mod_manager_role = message.guild.get_role(684591962094829569)
-                        overwrites = {}
-                        manager_overwrite = discord.PermissionOverwrite(
-                            view_channel=True,
-                            send_messages=True,
-                            add_reactions=True,
-                            embed_links=True,
-                            read_message_history=True,
-                            use_external_emojis=True,
-                            attach_files=True,
-                            use_external_stickers=True,
-                            manage_messages=False
-                        )
-                        overwrites[message.guild.default_role] = discord.PermissionOverwrite(view_channel=False)
-                        if planet_role is not None:
-                            overwrites[planet_role] = discord.PermissionOverwrite(view_channel=False)
-                        if event_hoster_role is not None:
-                            overwrites[event_hoster_role] = manager_overwrite
-                        if event_manager_role is not None:
-                            overwrites[event_manager_role] = manager_overwrite
-                        if mod_manager_role is not None:
-                            overwrites[mod_manager_role] = manager_overwrite
-                        log_channel = await message.guild.create_text_channel(name=log_channel_name, category=message.guild.get_channel(lounge_category), overwrites=overwrites, reason="Mafia Game tracking", topic=f"For the {mafia_channel.mention} game that was started at <t:{round(mafia_channel.created_at.timestamp())}>.")
-                    else:
-                        log_channel = await message.guild.create_text_channel(name=log_channel_name, category=message.guild.get_channel(lounge_category), reason="Mafia Game tracking", topic=f"For the {mafia_channel.mention} game that was started at <t:{round(mafia_channel.created_at.timestamp())}>.")
-
-                    webhook = await log_channel.create_webhook(name=self.client.user.name)
-                    self.client.webhooks[log_channel.id] = webhook
-                    self.client.mafia_channels[mafia_channel.id] = log_channel.id
-                    status[1] = f"{return_emoji(True)} {log_channel.mention} Mafia Log channel created."
+                def check(channel: discord.abc.GuildChannel):
+                    return channel.name == 'mafia' and channel.category_id == lounge_category
+                try:
+                    mafia_channel = await self.client.wait_for('guild_channel_create', check=check, timeout=60.0)
+                except asyncio.TimeoutError:
+                    status = [f"{return_emoji(False)} **I could not detect a mafia channel created** in the last minute. Try to start it manually with `dv.afkmafia` instead."]
                     mafia_status_msg = await safe_edit(mafia_status_msg)
                     self.mafia_wait = False
+                else:
+                    status = [f"{return_emoji(True)} {mafia_channel.mention} game found", "<a:DVB_CLoad2:994913353388527668> Setting up Mafia Log channel..."]
+                log_channel_name = get_channel_name(mafia_channel)
+                if message.guild.id == 595457764935991326:
+                    # set perms if the game was started in mafia
+                    event_hoster_role = message.guild.get_role(735417263968223234)
+                    event_manager_role = message.guild.get_role(756667326623121568)
+                    planet_role = message.guild.get_role(649499248320184320)
+                    mod_manager_role = message.guild.get_role(684591962094829569)
+                    overwrites = {}
+                    manager_overwrite = discord.PermissionOverwrite(
+                        view_channel=True,
+                        send_messages=True,
+                        add_reactions=True,
+                        embed_links=True,
+                        read_message_history=True,
+                        use_external_emojis=True,
+                        attach_files=True,
+                        use_external_stickers=True,
+                        manage_messages=False
+                    )
+                    overwrites[message.guild.default_role] = discord.PermissionOverwrite(view_channel=False)
+                    if planet_role is not None:
+                        overwrites[planet_role] = discord.PermissionOverwrite(view_channel=False)
+                    if event_hoster_role is not None:
+                        overwrites[event_hoster_role] = manager_overwrite
+                    if event_manager_role is not None:
+                        overwrites[event_manager_role] = manager_overwrite
+                    if mod_manager_role is not None:
+                        overwrites[mod_manager_role] = manager_overwrite
+                    log_channel = await message.guild.create_text_channel(name=log_channel_name, category=message.guild.get_channel(lounge_category), overwrites=overwrites, reason="Mafia Game tracking", topic=f"For the {mafia_channel.mention} game that was started at <t:{round(mafia_channel.created_at.timestamp())}>.")
+                else:
+                    log_channel = await message.guild.create_text_channel(name=log_channel_name, category=message.guild.get_channel(lounge_category), reason="Mafia Game tracking", topic=f"For the {mafia_channel.mention} game that was started at <t:{round(mafia_channel.created_at.timestamp())}>.")
 
-
-
-
-
-
+                webhook = await log_channel.create_webhook(name=self.client.user.name)
+                self.client.webhooks[log_channel.id] = webhook
+                self.client.mafia_channels[mafia_channel.id] = log_channel.id
+                status[1] = f"{return_emoji(True)} {log_channel.mention} Mafia Log channel created."
+                mafia_status_msg = await safe_edit(mafia_status_msg)
+                self.mafia_wait = False
         if message.channel.id in self.client.mafia_channels.keys():
             #mafia logging
             log_channel_id = self.client.mafia_channels[message.channel.id]
             log_channel = message.guild.get_channel(log_channel_id)
             if log_channel is not None:
+                if len(message.mentions) > 0 and message.author.id == 235148962103951360:
+                    if message.channel.id not in self.client.mafia_game_details:
+                        rules = """<a:dv_wExclamationOwO:837787071531450368> **__Remember:__** <a:dv_wExclamationOwO:837787071531450368> 
+<:d_snowydash:921327788223500288> You must be __actively__ participating in order to receive a prize. Merely interacting in MafiaBot's DMs does not count.
+<:d_snowydash:921327788223500288> You are not allowed to send __screenshots__ or __copy/paste__ messages from the bot.
+<:d_snowydash:921327788223500288> You are not allowed to __reveal information__ after you are __dead__.
+<:d_snowydash:921327788223500288>  Visiting the sponsor on the first night is not allowed.
+<:d_snowydash:921327788223500288> Random shooting n1 as Vigilante is not allowed (Falls under gamethrowing)
+<:d_snowydash:921327788223500288> __Illegal teaming__ is not allowed (ex: executioner teaming with their target).
+<:d_snowydash:921327788223500288> __Bribing__ other players is not allowed."""
+                        self.client.mafia_game_details[message.channel.id] = MafiaGameDetails(message.mentions)
+                        print("MafiaGameDetails for channel created.")
+
+                        if message.guild.id == 595457764935991326: # dank vibes event sposnor stuff
+                            event_sponsor_role = message.guild.get_role(724971657143255170) # event sponsor role, check if event sponsor joined the event
+                            if event_sponsor_role is not None:
+                                sponsors_in_game = []
+                                for a in event_sponsor_role.members:
+                                    if a in message.mentions:
+                                        sponsors_in_game.append(f"**{a}** {a.mention}")
+                                if len(sponsors_in_game) > 0:
+                                    rules = f"**NOTE**:\n{human_join(sponsors_in_game, final='and')} are sponsors of this game. **__Do not__** target them on the first night." + rules
+                        mentions = '\n'.join([b.mention for b in message.mentions])
+                        rules = f"{mentions}\n\n" + rules
+                        await message.channel.send(rules)
+                    else:
+                        print("Game already stored in cache")
+                else:
+                    print(len(message.mentions), message.author.id)
+                game_details: MafiaGameDetails = self.client.mafia_game_details.get(message.channel.id, None)
+                if game_details is not None:
+                    if message.author.bot is True:
+                        if message.author.id == 235148962103951360:
+                            if len(message.embeds) > 0:
+                                embed = message.embeds[0]
+
+                                if isinstance(embed.title, str):
+                                    if embed.title.startswith("Night ") and embed.title[-1].isdigit():  # Sent after day ended, so it represents a day
+                                        game_details.night = int(embed.title[-1])
+                                        dead_users = get_dead_users(embed, 'day')
+                                        for user in dead_users:
+                                            if user not in game_details.deaths.keys():
+                                                game_details.deaths[user] = f"Died ☀ D**{game_details.night-1}**"
+
+                                    elif embed.title.startswith("Currently ded:"):  # sent after night ended, so it represents a night, might not appear if there's no one dead
+                                        dead_users = get_dead_users(embed, 'night')
+                                        for user in dead_users:
+                                            if user not in game_details.deaths.keys():
+                                                game_details.deaths[user] = f"Died 🌘 N**{game_details.night}**"
+
+                    else:
+                        game_details.add_message_count(message.author)
+
                 webh = await self.client.get_webhook(log_channel)
                 original_content = message.content
                 add_author_label = f"`{message.author} - {message.author.id}`"
@@ -257,6 +373,39 @@ class OnMessage(commands.Cog):
                         self.client.mafia_channels[message.channel.id] = log_channel.id
                         await message.channel.send("This channel's log has been restored after a bot restart.")
 
+
+
+
+
+
+
+    @commands.Cog.listener()
+    async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel):
+        if isinstance(channel, discord.TextChannel):
+            if channel.name == 'mafia':
+                if channel.id in self.client.mafia_channels.keys():
+                    log_channel_id = self.client.mafia_channels[channel.id]
+                    mafia_log_channel = channel.guild.get_channel(log_channel_id)
+                    if mafia_log_channel is not None:
+                        webh = await self.client.get_webhook(mafia_log_channel)
+                        del self.client.mafia_channels[channel.id]
+                        message_count = []
+                        game_details: MafiaGameDetails = self.client.mafia_game_details.pop(channel.id, None)
+                        if game_details is not None:
+                            a = sorted(game_details.message_count.items(), key=operator.itemgetter(1), reverse=True)
+                            for user_id, m_count in a:
+                                user = self.client.get_user(user_id) or user_id
+                                user_death = game_details.deaths.get(user_id, "")
+                                user_death = f"({user_death})" if user_death != "" else ""
+                                message_count.append(f"**{user}**: {m_count} messages {user_death}")
+                            message_count = "\n".join(message_count)
+                            duration = discord.utils.utcnow() - channel.created_at
+                            duration = duration.total_seconds()
+                            summary_embed = discord.Embed(title=f"{humanize_timedelta(seconds=duration)} - {discord.utils.format_dt(channel.created_at, style='D')}{discord.utils.format_dt(channel.created_at, style='t')} to {discord.utils.format_dt(discord.utils.utcnow(), style='t')}", color=self.client.embed_color)
+                            summary_embed.description = message_count
+                        else:
+                            summary_embed = discord.Embed(title="No summary to display.")
+                        await webh.send(username="Game Summary", embed=summary_embed, view=DeleteChannel())
 
 
 
