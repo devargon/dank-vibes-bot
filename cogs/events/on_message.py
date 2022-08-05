@@ -300,7 +300,6 @@ class OnMessage(commands.Cog):
 <:d_snowydash:921327788223500288> __Illegal teaming__ is not allowed (ex: executioner teaming with their target).
 <:d_snowydash:921327788223500288> __Bribing__ other players is not allowed."""
                         self.client.mafia_game_details[message.channel.id] = MafiaGameDetails(message.mentions)
-                        print("MafiaGameDetails for channel created.")
 
                         if message.guild.id == 595457764935991326: # dank vibes event sposnor stuff
                             event_sponsor_role = message.guild.get_role(724971657143255170) # event sponsor role, check if event sponsor joined the event
@@ -314,10 +313,6 @@ class OnMessage(commands.Cog):
                         mentions = '\n'.join([b.mention for b in message.mentions])
                         rules = f"{mentions}\n\n" + rules
                         await message.channel.send(rules)
-                    else:
-                        print("Game already stored in cache")
-                else:
-                    print(len(message.mentions), message.author.id)
                 game_details: MafiaGameDetails = self.client.mafia_game_details.get(message.channel.id, None)
                 if game_details is not None:
                     if message.author.bot is True:
