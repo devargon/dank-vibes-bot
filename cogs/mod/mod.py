@@ -29,6 +29,41 @@ from collections import Counter
 from datetime import timedelta, datetime
 import time
 
+class SelectMafiaGame(discord.ui.Select):
+    def __init__(self, channels):
+        options = []
+        for channel in channels:
+            options.append(discord.SelectOption(label=f"Mafia game created {humanize_timedelta(timedelta=discord.utils.utcnow() - channel.created_at)} ago", value=str(channel.id)))
+        super().__init__(placeholder="Choose a mafia game to track:", options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view.selected = interaction.guild.get_channel(int(self.values[0]))
+        self.view.disable_all_items()
+        await interaction.response.edit_message(view=self.view)
+        self.view.stop()
+
+class SelectMafiaView(discord.ui.View):
+    def __init__(self, user, channels):
+        self.response = None
+        self.user = user
+        self.selected = None
+        super().__init__(timeout=30.0)
+
+        self.add_item(SelectMafiaGame(channels))
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id == self.user.id:
+            return True
+        else:
+            return False
+
+
+    async def on_timeout(self) -> None:
+        self.disable_all_items()
+        self.response.edit(view=self)
+        self.stop()
+
+
 class ViewEmbedJSONs(discord.ui.View):
     def __init__(self, embeds):
         self.embeds = embeds
@@ -1056,63 +1091,101 @@ class Mod(Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreens
                 return "<:DVB_True:887589686808309791> "
             else:
                 return "<:DVB_False:887589731515392000>"
-        if len(self.client.mafia_channels.keys()) > 0:
-            return await ctx.send("There's already a Mafia game channel being tracked, run `dv.afkmafia end` in that channel to stop tracking the game.")
+        qualified_channels = []
+        for channel in ctx.guild.channels:
+            if isinstance(channel, discord.TextChannel):
+                if channel.name == "mafia":
+                    if ctx.guild.id == 595457764935991326 and channel.category_id == 595457764935991327:
+                        qualified_channels.append(channel)
+                    elif ctx.guild.id == 871734809154707467 and channel.category_id == 875316745416617984:
+                        qualified_channels.append(channel)
+        for channel in qualified_channels:
+            if channel.id in self.client.mafia_channels.keys():
+                qualified_channels.remove(channel)
+        if len(qualified_channels) == 0:
+            return await ctx.send("Either there are no ongoing mafia games to be tracked, or all current mafia games are already being tracked. ")
         lounge_category_id = 595457764935991327 if ctx.guild.id == 595457764935991326 else 875316745416617984
         lounge_category = ctx.guild.get_channel(lounge_category_id)
         if lounge_category is None:
             return await ctx.send(f"{return_emoji(False)} Tried to find the lounge category where Mafia games are hosted, but could not find category.")
         else:
-            mafia_channel = discord.utils.get(lounge_category.channels, name="mafia")
-            if mafia_channel is None:
-                return await ctx.send(f"{return_emoji(False)} No Mafia game was detected in this server (no channel named `mafia` in the **{lounge_category}** category).")
-            else:
-                #format time to hh-mm-yy
-                time_created_at = mafia_channel.created_at.strftime("%H-%M-%S-UTC")
-                log_channel_name = f"mafia-at-{time_created_at}"
-                log_channel = await ctx.guild.create_text_channel(name=log_channel_name, category=lounge_category, reason="Started tracking Mafia game")
-                if ctx.guild.id == 595457764935991326:
-                    event_hoster_role = ctx.guild.get_role(735417263968223234)
-                    event_manager_role = ctx.guild.get_role(756667326623121568)
-                    planet_role = ctx.guild.get_role(649499248320184320)
-                    if planet_role is not None:
-                        planet_overwrite = log_channel.overwrites_for(planet_role)
-                        planet_overwrite.view_channel = False
-                        await log_channel.set_permissions(planet_role, overwrite=planet_overwrite)
-                    else:
-                        await ctx.send(f"{return_emoji(False)} Could not find the `Planet` role.")
-                    overwrite = discord.PermissionOverwrite()
-                    overwrite.view_channel = True
-                    overwrite.send_messages = True
-                    overwrite.add_reactions = True
-                    overwrite.embed_links = True
-                    overwrite.read_message_history = True
-                    overwrite.use_external_emojis = True
-                    overwrite.attach_files = True
-                    overwrite.use_external_stickers = True
-                    if event_hoster_role is not None:
-                        await log_channel.set_permissions(event_hoster_role, overwrite=overwrite, reason="Give Event Hoster/Manager permissions to view logs")
-                    else:
-                        await ctx.send(f"{return_emoji(False)} Could not find the Event Hoster role.")
-                    if event_manager_role is not None:
-                        await log_channel.set_permissions(event_manager_role, overwrite=overwrite, reason="Give Event Hoster/Manager permissions to view logs")
-                    else:
-                        await ctx.send(f"{return_emoji(False)} Could not find the Event Manager role.")
 
-                webhook = await log_channel.create_webhook(name=self.client.user.name)
-                self.client.webhooks[log_channel.id] = webhook
+            view = SelectMafiaView(ctx.author, qualified_channels)
+            view.response = await ctx.send(f"Select a mafia game to track below.", view=view)
+            await view.wait()
+            if view.selected is None:
+                return
+            else:
+                mafia_channel = view.selected
+                #format time to hh-mm-yy
+                time_created_at = mafia_channel.created_at.strftime("%H-%M-%S-utc")
+                log_channel_name = f"mafia-at-{time_created_at}"
+                log_channel = discord.utils.get(ctx.guild.channels, name=log_channel_name)
+                if log_channel is None:
+                    if ctx.guild.id == 595457764935991326:
+                        # set perms if the game was started in mafia
+                        event_hoster_role = ctx.guild.get_role(735417263968223234)
+                        event_manager_role = ctx.guild.get_role(756667326623121568)
+                        planet_role = ctx.guild.get_role(649499248320184320)
+                        mod_manager_role = ctx.guild.get_role(684591962094829569)
+                        overwrites = {}
+                        manager_overwrite = discord.PermissionOverwrite(
+                            view_channel=True,
+                            send_messages=True,
+                            add_reactions=True,
+                            embed_links=True,
+                            read_message_history=True,
+                            use_external_emojis=True,
+                            attach_files=True,
+                            use_external_stickers=True,
+                            manage_messages=False
+                        )
+                        overwrites[ctx.guild.default_role] = discord.PermissionOverwrite(view_channel=False)
+                        if planet_role is not None:
+                            overwrites[planet_role] = discord.PermissionOverwrite(view_channel=False)
+                        if event_hoster_role is not None:
+                            overwrites[event_hoster_role] = manager_overwrite
+                        if event_manager_role is not None:
+                            overwrites[event_manager_role] = manager_overwrite
+                        if mod_manager_role is not None:
+                            overwrites[mod_manager_role] = manager_overwrite
+                        log_channel = await ctx.guild.create_text_channel(
+                            name=log_channel_name,
+                            category=lounge_category,
+                            overwrites=overwrites,
+                            reason=f"Mafia game tracking manually started by {ctx.author}",
+                            topic=f"For the {mafia_channel.mention} game that was started at <t:{round(mafia_channel.created_at.timestamp())}>.",
+                            )
+                    else:
+                        log_channel = await ctx.guild.create_text_channel(
+                            name=log_channel_name,
+                            category=lounge_category,
+                            reason=f"Mafia game tracking manually started by {ctx.author}",
+                            topic=f"For the {mafia_channel.mention} game that was started at <t:{round(mafia_channel.created_at.timestamp())}>."
+                        )
+                await self.client.get_webhook(log_channel)
                 self.client.mafia_channels[mafia_channel.id] = log_channel.id
                 return await ctx.send(f"{return_emoji(True)} Started tracking {mafia_channel.mention} game in {log_channel.mention}.")
 
+
     @checks.has_permissions_or_role(manage_roles=True)
     @afkmafia.command(name="end", aliases=['stop'])
-    async def afkmafia_end(self, ctx: DVVTcontext):
+    async def afkmafia_end(self, ctx: DVVTcontext, channel: discord.TextChannel = None):
         """
         Stops tracking a Mafia game channel.
         """
         if len(self.client.mafia_channels) == 0:
             return await ctx.send("There's no Mafia game being tracked.")
-        channel_id, log_channel_id = list(self.client.mafia_channels.items())[0]
+        if channel is None:
+            return await ctx.send("Provide a **mafia game** or **mafia log** channel.")
+        def find_channel():
+            for channel_id, log_channel_id in self.client.mafia_channels.items():
+                if channel_id == channel.id or log_channel_id == channel.id:
+                    return channel_id, log_channel_id
+            return None, None
+        channel_id, log_channel_id = find_channel()
+        if channel_id is None or log_channel_id is None:
+            return await ctx.send("Provide a **mafia game** or **mafia log** channel.")
         log_channel = ctx.guild.get_channel(log_channel_id)
         if log_channel is None:
             return await ctx.send("There's no Mafia game being tracked.")
