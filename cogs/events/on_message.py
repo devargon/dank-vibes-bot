@@ -7,8 +7,7 @@ import asyncio
 import re
 
 import typing
-from utils.format import human_join
-from utils.time import humanize_timedelta
+from utils.format import human_join, durationdisplay
 
 from main import dvvt
 import discord
@@ -399,7 +398,7 @@ class OnMessage(commands.Cog):
                             message_count = "\n".join(message_count)
                             duration = discord.utils.utcnow() - channel.created_at
                             duration = duration.total_seconds()
-                            summary_embed = discord.Embed(title=f"{humanize_timedelta(seconds=duration)} - {discord.utils.format_dt(channel.created_at, style='D')}{discord.utils.format_dt(channel.created_at, style='t')} to {discord.utils.format_dt(discord.utils.utcnow(), style='t')}", color=self.client.embed_color)
+                            summary_embed = discord.Embed(title=f"{durationdisplay(duration)} - {discord.utils.format_dt(channel.created_at, style='D')}{discord.utils.format_dt(channel.created_at, style='t')} to {discord.utils.format_dt(discord.utils.utcnow(), style='t')}", color=self.client.embed_color)
                             summary_embed.description = message_count
                         else:
                             summary_embed = discord.Embed(title="No summary to display.")
