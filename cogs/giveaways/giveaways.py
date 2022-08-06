@@ -910,6 +910,7 @@ class giveaways(commands.Cog):
 
     @tasks.loop(seconds=1)
     async def process_dms(self):
+        print('a')
         if len(self.dm_queue) > 0:
             while len(self.dm_queue) > 0:
                 # example item in queue: (user_id, content, embed, view)
@@ -935,8 +936,7 @@ class giveaways(commands.Cog):
                     entrant_no = await self.client.db.fetchval("SELECT COUNT(DISTINCT user_id) FROM giveawayentrants WHERE message_id = $1", g_entry.message_id)
                     view = discord.ui.View.from_message(gawmessage)
                     for b in view.children:
-                        if isinstance(b, discord.ui.Button):
-                            b.disabled = True
+                        b.disabled = True
                     #await gawmessage.edit(view=view)
                     entries = await self.client.db.fetch("SELECT * FROM giveawayentrants WHERE message_id = $1", g_entry.message_id)
                     random.shuffle(entries)
@@ -963,12 +963,12 @@ class giveaways(commands.Cog):
                             self.client.remove_queued_edit(gawmessage.id)
                             g_entry.active = False
                             end_embed = await self.format_giveaway_embed(g_entry, winners = [])
-                            self.client.add_to_edit_queue(message=gawmessage.channel.get_partial_message(gawmessage.id), embed=end_embed, view=view, index=0)
+                            self.client.add_to_edit_queue(gawmessage, embed=end_embed, view=view)
                             self.dm_queue.append((host, None, hostembed, None))
                     else:
                         embed = await self.format_giveaway_embed(g_entry, winners)
                         self.client.remove_queued_edit(gawmessage.id)
-                        self.client.add_to_edit_queue(message=gawmessage.channel.get_partial_message(gawmessage.id), embed=embed, view=view, index=0)
+                        self.client.add_to_edit_queue(message=gawmessage.channel.get_partial_message(gawmessage.id), embed=embed, view=view)
                         message = f"{random.choice(guild.emojis)} **{entrant_no}** user(s) entered, {human_join([winner.mention for winner in winners], final='and')} snagged away **{g_entry.title}**!"
                         ended_msg = await channel.send(message, view=GiveawayEndView(msg_link, host))
                         await self.client.db.execute("UPDATE giveaways SET ended_message_id = $1 WHERE message_id = $2", ended_msg.id, g_entry.message_id)
