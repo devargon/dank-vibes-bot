@@ -162,7 +162,6 @@ class dvvt(commands.Bot):
                             await m.edit(embed=embed)
                     else:
                         if view != 0:
-
                             await m.edit(view=view)
             except discord.NotFound:
                 self.deleted_edit_messages.append(m.id)
