@@ -28,6 +28,7 @@ from thefuzz import process
 from collections import Counter
 from datetime import timedelta, datetime
 import time
+import captcha
 
 class SelectMafiaGame(discord.ui.Select):
     def __init__(self, channels):
@@ -1201,3 +1202,10 @@ class Mod(Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreens
         else:
             await ctx.send("Log stop aborted.")
 
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name="captcha")
+    async def captcha(self, ctx: DVVTcontext, user: discord.Member, channel: discord.TextChannel = None):
+        """
+        Creates a captcha that a user will have to solve.
+        """
+        pass
