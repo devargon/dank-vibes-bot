@@ -66,8 +66,9 @@ class polls(commands.Cog):
             else:
                 progress_bar = generate_loadbar(polldata[key] / total, length=8)
                 percent = round(polldata[key] / total * 100, 1)
+            name = f"{key} ({polldata[key]} votes)" if anonymous is not True else f"{key}"
             value = f"{progress_bar} {percent}%" if anonymous is not True else "\u200b"
-            embed.add_field(name=f"{key} ({polldata[key]} votes)", value=value, inline=False)
+            embed.add_field(name=name, value=value, inline=False)
         return embed
 
     @commands.Cog.listener()
