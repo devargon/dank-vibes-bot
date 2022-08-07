@@ -113,3 +113,5 @@ async def upload_file_to_bunnycdn(file: typing.Union[str, bytes, os.PathLike, io
             resp.raise_for_status()
         return commercial_url, resp.status
 
+async def generate_captcha():
+    pass
