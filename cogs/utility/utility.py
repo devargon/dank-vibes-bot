@@ -61,15 +61,27 @@ class TimerRemindMe(discord.ui.View):
 
     @discord.ui.button(label="Remind Me!", emoji="🔔", style=discord.ButtonStyle.blurple)
     async def remind_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if interaction.channel.id in [876827800236064808, 690125458272288814, 871737314831908974]:
+            heistpingview = GetHeistPing()
+        else:
+            heistpingview = None
         if time.time() > self.timestamp:
-            await interaction.response.send_message("This timer is over.", view=GetHeistPing(), ephemeral=True)
+
+            await interaction.response.send_message("This timer is over.", view=heistpingview, ephemeral=True)
             button.disabled = True
-            return await interaction.edit_original_message(view=self)
+            return await interaction.message.edit(view=self)
         if interaction.user.id in self.reminded:
-            return await interaction.response.send_message("You've already chosen to be reminded!", view=GetHeistPing(), ephemeral=True)
+            return await interaction.response.send_message("You've already chosen to be reminded!", view=heistpingview, ephemeral=True)
         else:
             await interaction.client.get_cog('utility').add_reminder(interaction.user.id, interaction.guild.id, 698462922682138654, interaction.message.id, self.what_to_remind, self.timestamp)
-            await interaction.response.send_message(f"Alright! I'll remind you about **{self.what_to_remind}** in **{humanize_timedelta(seconds=round(self.timestamp - time.time()))}**.", view=GetHeistPing(), ephemeral=True)
+            if interaction.channel.id in [876827800236064808, 690125458272288814, 871737314831908974]:
+                if interaction.guild.id == 595457764935991326:
+                    heistping = interaction.guild.get_role(758174643814793276)
+                    if heistping in interaction.guild.roles:
+                        await interaction.user.add_roles(heistping)
+                await interaction.response.send_message(f"Alright! I'll remind you about **{self.what_to_remind}** in **{humanize_timedelta(seconds=round(self.timestamp - time.time()))}**.\nI've also given you the **Heist Ping** role for you to be reminded of future heists!", ephemeral=True)
+            else:
+                await interaction.response.send_message(f"Alright! I'll remind you about **{self.what_to_remind}** in **{humanize_timedelta(seconds=round(self.timestamp - time.time()))}**.", ephemeral=True)
             self.reminded.append(interaction.user.id)
             return
 
