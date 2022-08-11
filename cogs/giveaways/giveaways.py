@@ -910,7 +910,6 @@ class giveaways(commands.Cog):
 
     @tasks.loop(seconds=1)
     async def process_dms(self):
-        print('a')
         if len(self.dm_queue) > 0:
             while len(self.dm_queue) > 0:
                 # example item in queue: (user_id, content, embed, view)
