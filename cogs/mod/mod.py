@@ -406,6 +406,8 @@ class Mod(Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreens
                 await ctx.send(f"I could not find a category for the ID {category}")
             else:
                 categories.append(category) # gets all the categories for channels
+        owner_channel_ids = await self.client.db.fetch("SELECT channel_id FROM channels WHERE owner_id = $1")
+        owner_channels = [owner_channel_id.get('channel_id') for owner_channel_id in owner_channel_ids] # gets all the channel IDs for the owner channels
         accessiblechannels = []
         for category in categories:
             for channel in category.channels:
@@ -414,7 +416,11 @@ class Mod(Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreens
                 else:
                     permissions = channel.permissions_for(member)
                     if permissions.view_channel == True:
-                        accessiblechannels.append(channel.mention) # gets all the channels that the user can see in private channels
+                        if channel.id in owner_channels:
+                            crown = " 👑"
+                        else:
+                            crown = ""
+                        accessiblechannels.append(f"{channel.mention}{crown}") # gets all the channels that the user can see in private channels
         streeng = "" #ignore the spelling
         for channel in accessiblechannels:
             if len(streeng) < 3900:
