@@ -25,9 +25,13 @@ class polledition(commands.Cog):
     def __init__(self, client):
         self.client: dvvt = client
 
-    def generate_embed(self, author: str, author_icon: Optional[str], poll_name: str, polldata: dict):
+    def generate_embed(self, author: str, author_icon: Optional[str], poll_name: str, polldata: dict, anonymous: bool):
         embed = discord.Embed(title=poll_name, color=self.client.embed_color)
-        embed.set_footer(text="The poll data updates every 15 seconds.")
+        if anonymous:
+            embed.set_footer(text="Votes are hidden for this poll.")
+        else:
+            embed.set_footer(text="The poll data updates every 15 seconds.")
+
         if author_icon is not None:
             embed.set_author(name=author, icon_url=author_icon)
         else:
@@ -40,15 +44,17 @@ class polledition(commands.Cog):
             else:
                 progress_bar = generate_loadbar(polldata[key] / total, length=8)
                 percent = round(polldata[key]/total*100, 1)
-            embed.add_field(name=f"{key} ({polldata[key]} votes)", value=f"{progress_bar} {percent}%", inline=False)
+            name = f"{key} ({polldata[key]} votes)" if anonymous is not True else f"{key}"
+            value = f"{progress_bar} {percent}%" if anonymous is not True else "\u200b"
+            embed.add_field(name=name, value=value, inline=False)
         return embed
 
-    @tasks.loop(seconds=5)
+    @tasks.loop(seconds=10)
     async def edit_polls(self):
         try:
             await self.client.wait_until_ready()
             time_past_expiry = round(time.time()) - 5*24*60*60
-            polls = await self.client.db.fetch("SELECT * FROM polls WHERE created > $1", time_past_expiry)
+            polls = await self.client.db.fetch("SELECT * FROM polls WHERE created > $1 AND anonymous is FALSE", time_past_expiry)
             for poll in polls:
                 creator_id = poll.get('creator_id')
                 guild_id = poll.get('guild_id')
@@ -56,6 +62,7 @@ class polledition(commands.Cog):
                 message_id = poll.get('message_id')
                 poll_id = poll.get('poll_id')
                 creator = self.client.get_user(creator_id)
+                anonymous = poll.get('anonymous')
                 guild: discord.Guild = self.client.get_guild(guild_id)
                 if guild is not None:
                     channel: discord.TextChannel = guild.get_channel(channel_id)
@@ -72,7 +79,7 @@ class polledition(commands.Cog):
                             poll_dict[choice] = 0
                         for polled in polldata:
                             poll_dict[polled.get('choice')] += 1
-                        embed = self.generate_embed(author_name, author_icon, question, poll_dict)
+                        embed = self.generate_embed(author_name, author_icon, question, poll_dict, anonymous)
 
                         # For some reason I am unable to edit the message if the embed is enclosed in another object, for now this function will be used for embeds only
                         partial_message: discord.PartialMessage = channel.get_partial_message(message_id)
