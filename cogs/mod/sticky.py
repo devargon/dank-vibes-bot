@@ -112,8 +112,6 @@ class Sticky(commands.Cog):
         if message_type == "text" and len(content) > 2000:
             return await ctx.send(f"Your message is currently {len(content)} characters long. It can only be 2000 characters long. Consider using a embed instead, as its description supports up to 4096 characters.")
         all = await self.client.db.fetch("SELECT * FROM stickymessages WHERE guild_id = $1", ctx.guild.id)
-        if len(all) > 1:
-            await ctx.send("You have already created **2** sticky messages with Dank Vibes Bot. To create more sticky messages, purchase Premium for Dank Vibes Bot. <http://premium.dvbot.nogra.xyz/>", delete_after = 3.0)
         if message_type == "embed":
             try:
                 embedjson = json.loads(content)
