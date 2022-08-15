@@ -267,8 +267,8 @@ class DVBotHelp(commands.DefaultHelpCommand):
         embed.set_footer(text=f"Requested by {self.context.author}", icon_url=self.context.author.display_avatar.url)
         if isinstance(command, commands.Group):
             subcommand = command.commands
-            value = "\n".join(self.get_command_signature(c) for c in subcommand)
-            embed.add_field(name="Subcommands", value=value)
+            value = "\n".join(self.get_command_usage(c) for c in subcommand)
+            embed.add_field(name="Subcommands", value=value, inline=False)
         return embed
 
     async def get_cog_help(self, cog):
