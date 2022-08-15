@@ -95,7 +95,7 @@ class dvvt(commands.Bot):
         #self.logger = Logger(self)
         self.logstrf = strfformat
         for ext in self.available_extensions:
-            self.load_extension(ext)
+            self.load_extension(ext, store=False)
             print(f"{datetime.datetime.utcnow().strftime(strfformat)} | Loaded {ext}")
 
     async def fetch_amari_data(self, user_id: int, guild_id: int) -> Tuple[Union[None, api.User, AwaitingAmariData, NoAmariData], int, Exception]:
