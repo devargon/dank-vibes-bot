@@ -1,3 +1,4 @@
+import asyncio
 import itertools
 import json
 import re
@@ -18,9 +19,10 @@ from .channel import ChannelUtils
 from utils import checks
 from utils.buttons import *
 from utils.format import text_to_file, ordinal, human_join
-from utils.time import humanize_timedelta
+from utils.time import humanize_timedelta, short_humanize_timedelta
 from utils.menus import CustomMenu
 from utils.converters import BetterTimeConverter, MemberUserConverter
+from utils.helper import generate_captcha
 
 import os
 from selenium import webdriver
@@ -28,7 +30,59 @@ from thefuzz import process
 from collections import Counter
 from datetime import timedelta, datetime
 import time
-import captcha
+
+class InputCaptcha(discord.ui.Modal):
+    def __init__(self, captchatext):
+        self.captchatext = captchatext
+        self.value = None
+        super().__init__(title="Complete the captcha text", timeout=None)
+        self.add_item(discord.ui.InputText(label="The captcha contains ONLY LETTTERS.", style=discord.InputTextStyle.short, placeholder="It is NOT case sensitive.", min_length=4, max_length=4))
+
+    async def callback(self, interaction: discord.Interaction):
+        input = self.children[0].value
+        self.value = input
+        self.children[0].value = ""
+        if input.lower() == self.captchatext.lower():
+
+            await interaction.response.send_message("<:DVB_True:887589686808309791> You have successfully completed the captcha.", ephemeral=True)
+            self.stop()
+        else:
+            await interaction.response.send_message("<:DVB_False:887589731515392000> The text you entered does not match, **please try again**.\nIf you're having trouble completing the captcha, open a ticket in <#870880772985344010>.", ephemeral=True)
+            self.stop()
+
+class CaptchaFrontView(discord.ui.View):
+    def __init__(self, target: Union[discord.User, discord.Member], captchatext):
+        self.target = target
+        self.captchatext = captchatext
+        self.captcha_url = None
+        self.inputmodal = InputCaptcha(captchatext)
+        self.user_completed_captcha = False
+        self.time_completed_captcha = None
+        self.attempts = []
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Enter Captcha Text", style=discord.ButtonStyle.red)
+    async def callback(self, button: discord.ui.Button, interaction: discord.Interaction):
+        print(f"Started callback:\n|--- completed_captcha: {self.user_completed_captcha}\n|--- time_completed_captcha: {self.time_completed_captcha}")
+        await interaction.response.send_modal(self.inputmodal)
+        await self.inputmodal.wait()
+        self.attempts.append(self.inputmodal.value)
+        if type(self.inputmodal.value) == str:
+            if self.inputmodal.value.lower() == self.captchatext.lower():
+                self.user_completed_captcha = True
+                button.disabled = True
+                await interaction.message.edit(view=self)
+                self.time_completed_captcha = time.time()
+                self.stop()
+        print(f"Ended callback:\n|--- completed_captcha: {self.user_completed_captcha}\n|--- time_completed_captcha: {self.time_completed_captcha}\n|--- text: {self.inputmodal.value}")
+        self.inputmodal = InputCaptcha(self.captchatext)
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.user.id != self.target.id:
+            await interaction.response.defer()
+        return interaction.user.id == self.target.id
+
+
 
 class SelectMafiaGame(discord.ui.Select):
     def __init__(self, channels):
@@ -58,7 +112,6 @@ class SelectMafiaView(discord.ui.View):
         else:
             return False
 
-
     async def on_timeout(self) -> None:
         self.disable_all_items()
         self.response.edit(view=self)
@@ -75,14 +128,23 @@ class ViewEmbedJSONs(discord.ui.View):
         button.disabled = True
         await interaction.response.edit_message(embeds=self.embeds, view=self)
 
+
 class ListWatchlistNotifyMethods(discord.ui.Select):
     def __init__(self, client, default_index):
         self.default_index = default_index
         self.client = client
-        options = []
-        options.append(discord.SelectOption(label="None", value='none', description="You will not be notified about any watchlist joins.", default = False))
-        options.append(discord.SelectOption(label="DM", value='dm', description="You will be DMed when a user on your watchlist joins this server.", emoji = discord.PartialEmoji.from_str("<:DVB_Letter:884743813166407701>"), default = True if default_index == 1 else False))
-        options.append(discord.SelectOption(label = "Ping", value='ping', description = f"You will be pinged when a user on your watchlist joins this server.", emoji = discord.PartialEmoji.from_str("<:DVB_Ping:883744614295674950>"), default = True if default_index == 2 else False))
+        options = [
+            discord.SelectOption(label="None", value='none',
+                                 description="You will not be notified about any watchlist joins.", default=False),
+            discord.SelectOption(label="DM", value='dm',
+                                 description="You will be DMed when a user on your watchlist joins this server.",
+                                 emoji=discord.PartialEmoji.from_str("<:DVB_Letter:884743813166407701>"),
+                                 default=True if default_index == 1 else False),
+            discord.SelectOption(label="Ping", value='ping',
+                                 description=f"You will be pinged when a user on your watchlist joins this server.",
+                                 emoji=discord.PartialEmoji.from_str("<:DVB_Ping:883744614295674950>"),
+                                 default=True if default_index == 2 else False)
+        ]
         super().__init__(placeholder='Change how you want to be notified for your watchlist...', min_values=1, max_values=1, options=options)
 
     async def callback(self, interaction: discord.Interaction):
@@ -143,6 +205,7 @@ class FrozenNicknames(menus.ListPageSource):
             embed.add_field(name=f"{entry[0]}", value=entry[1], inline=self.inline)
         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return embed
+
 
 class GetHeistPing(discord.ui.View):
     def __init__(self):
@@ -1209,9 +1272,70 @@ class Mod(Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreens
             await ctx.send("Log stop aborted.")
 
     @checks.has_permissions_or_role(manage_roles=True)
-    @commands.command(name="captcha")
-    async def captcha(self, ctx: DVVTcontext, user: discord.Member, channel: discord.TextChannel = None):
+    @commands.command(name="modcaptcha")
+    async def modcaptcha(self, ctx: DVVTcontext, user: discord.Member, channel: discord.TextChannel):
         """
         Creates a captcha that a user will have to solve.
         """
-        pass
+        captcha_string, image_bytes = await generate_captcha()
+        warnembed = discord.Embed(title=f"Please complete a captcha and continue interaction.", description="Your behaviour was flagged by a Moderator.\nYou must complete a captcha before proceeding.", color=discord.Color.red())
+        warnembed.set_thumbnail(url="https://cdn.discordapp.com/attachments/871737314831908974/1007187090771038299/unknown.png")
+
+        message = await ctx.send("<a:DVB_CLoad2:994913353388527668> Preparing Captcha...", file=discord.File(fp=image_bytes, filename="captcha.png"))
+        captcha_url = message.attachments[0].url
+        mainview = CaptchaFrontView(user, captcha_string)
+        time_until_expiry = round(time.time()) + 180 # user has 3 minutes to complete the captcha
+        times_sent = 0
+        warnembed.set_image(url=captcha_url)
+        await message.edit(content="<a:DVB_CLoad1:994913315442663475> Captcha was sent, awaiting results...")
+        while mainview.is_finished() is not True:
+            if time_until_expiry - time.time() <= 0: # user has run out of time to complete the captcha
+                mainview.stop()
+            else:
+                if time_until_expiry - time.time() > 60:
+                    ping_user = f"{user}"
+                else:
+                    ping_user = f"{user.mention}"
+                content = f"⚠️**{ping_user}, read this message**."
+                times_sent += 1
+                print(mainview.is_finished())
+                notify_msg = await channel.send(content, embed=warnembed, view=mainview)
+                try:
+                    last_sent = time.time()
+                    def check(m: discord.Message):
+                        return (m.author.id == user.id and m.guild.id == ctx.guild.id and time.time() - last_sent > 5) or time.time() - last_sent > 30
+                    autotype_msg = await self.client.wait_for('message', check=check, timeout=time_until_expiry - time.time())
+                except asyncio.TimeoutError:
+                    mainview.stop()
+                else:
+                    channel = autotype_msg.channel
+                    pass
+        embed = discord.Embed(
+            title="Captcha Completed" if mainview.user_completed_captcha is True else "Captcha Failed",
+            color=discord.Color.green() if mainview.user_completed_captcha is True else discord.Color.red(),
+            timestamp=discord.utils.utcnow()
+        )
+        embed.set_author(name=f"{user} ({user.id})", icon_url=user.display_avatar.url)
+        embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon.url)
+        if mainview.user_completed_captcha is True:
+            descriptions = [
+                f"**{user.mention} answered the captcha correctly after {short_humanize_timedelta(seconds=round(time.time()-mainview.time_completed_captcha))}.**",
+                f"They had attempted the captcha **{len(mainview.attempts)}** times.",
+                f"The captcha message was sent **{times_sent}** times before it was answered.",
+            ]
+        else:
+            descriptions = [
+                f"**{user.mention} failed to answer the captcha.**",
+                f"They had attempted the captcha **{len(mainview.attempts)}** times.",
+                f"The captcha message was sent **{times_sent}** times.",
+            ]
+        embed.set_image(url=captcha_url)
+        attempts = "None" if len(mainview.attempts) < 1 else "\n".join(mainview.attempts)
+        embed.description = "\n".join(descriptions)
+        embed.add_field(name="Attempts", value=attempts)
+        await ctx.send(embed=embed)
+
+
+
+
+

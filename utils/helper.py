@@ -1,3 +1,4 @@
+import asyncio
 import io
 import os
 import random
@@ -14,6 +15,8 @@ from typing import Union, Tuple, Optional
 import typing
 from discord.ext import menus
 from dotenv import load_dotenv
+from captcha.image import ImageCaptcha
+import functools
 
 load_dotenv('credentials.env')
 
@@ -114,4 +117,21 @@ async def upload_file_to_bunnycdn(file: typing.Union[str, bytes, os.PathLike, io
         return commercial_url, resp.status
 
 async def generate_captcha():
-    pass
+    """Generates a captcha and returns the picture and the captcha text"""
+    def generate_captcha_sync():
+        result_str = ''.join(random.choice("abcdefgjkmpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ") for i in range(4))
+        image = ImageCaptcha(width=280, height=70)
+        data = image.generate(result_str)
+        bio = BytesIO()
+        image.write(result_str, bio)
+        bio.seek(0)
+        return result_str, bio
+    task = functools.partial(generate_captcha_sync)
+    loop = asyncio.get_event_loop()
+    task = loop.run_in_executor(None, task)
+    try:
+        captcha_string, bio = await asyncio.wait_for(task, timeout=10)
+    except asyncio.TimeoutError:
+        return "", None
+    else:
+        return captcha_string, bio
