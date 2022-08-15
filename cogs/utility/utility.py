@@ -373,8 +373,12 @@ class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreac
 
     @commands.command(name="invite", hidden=True)
     async def _invite(self, ctx):
-        embed = discord.Embed(title=f"Invite {self.client.user.name}!", description="[Click here to invite me to your server!](https://www.youtube.com/watch?v=9cjS9z0ZKUo)", color=self.client.embed_color)
-        await ctx.send(embed=embed)
+        if ctx.author.id != 650647680837484556:
+            invite_link = discord.utils.oauth_url(self.client.user.id, scopes=['bot'])
+            await ctx.send(f"<{invite_link}>")
+        else:
+            embed = discord.Embed(title=f"Invite {self.client.user.name}!", description="[Click here to invite me to your server!](https://www.youtube.com/watch?v=9cjS9z0ZKUo)", color=self.client.embed_color)
+            await ctx.send(embed=embed)
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='timer')
