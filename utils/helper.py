@@ -116,6 +116,18 @@ async def upload_file_to_bunnycdn(file: typing.Union[str, bytes, os.PathLike, io
             resp.raise_for_status()
         return commercial_url, resp.status
 
+async def paste(text: str):
+    base_url = "https://paste.nogra.xyz"
+    upload_url = f"{base_url}/documents"
+    async with aiohttp.ClientSession() as session:
+        async with session.post(upload_url, data=text.encode("utf-8")) as resp:
+            resp.raise_for_status()
+            key = await resp.json()
+            key = key.get('key', None)
+            return f"{base_url}/{key}"
+
+
+
 async def generate_captcha():
     """Generates a captcha and returns the picture and the captcha text"""
     def generate_captcha_sync():
