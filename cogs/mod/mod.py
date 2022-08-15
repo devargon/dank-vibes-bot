@@ -1308,7 +1308,8 @@ class Mod(Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreens
                 except asyncio.TimeoutError:
                     mainview.stop()
                 else:
-                    channel = autotype_msg.channel
+                    if autotype_msg.author.id == user.id:
+                        channel = autotype_msg.channel
                     pass
         embed = discord.Embed(
             title="Captcha Completed" if mainview.user_completed_captcha is True else "Captcha Failed",
