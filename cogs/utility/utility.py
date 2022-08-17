@@ -300,7 +300,7 @@ class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreac
         modrole = ctx.guild.get_role(608495204399448066)
         if modrole not in ctx.author.roles:
             channel = ctx.channel
-        channel_details = await self.client.db.fetch("SELECT * FROM channels WHERE channel_id = $1", channel.id)
+        channel_details = await self.client.db.fetchrow("SELECT * FROM channels WHERE channel_id = $1", channel.id)
         owner = self.client.get_user(channel_details.get('owner_id'))
         owner_str = f"**{owner}** {owner.mention}"
         if owner not in channel.overwrites and not (owner.permissions_for(channel).send_messages and owner.permissions_for(channel).view_channel):
