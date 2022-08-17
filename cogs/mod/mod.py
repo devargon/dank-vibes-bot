@@ -64,7 +64,6 @@ class CaptchaFrontView(discord.ui.View):
 
     @discord.ui.button(label="Enter Captcha Text", style=discord.ButtonStyle.red)
     async def callback(self, button: discord.ui.Button, interaction: discord.Interaction):
-        print(f"Started callback:\n|--- completed_captcha: {self.user_completed_captcha}\n|--- time_completed_captcha: {self.time_completed_captcha}")
         await interaction.response.send_modal(self.inputmodal)
         await self.inputmodal.wait()
         self.attempts.append(self.inputmodal.value)
@@ -75,7 +74,6 @@ class CaptchaFrontView(discord.ui.View):
                 await interaction.message.edit(view=self)
                 self.time_completed_captcha = time.time()
                 self.stop()
-        print(f"Ended callback:\n|--- completed_captcha: {self.user_completed_captcha}\n|--- time_completed_captcha: {self.time_completed_captcha}\n|--- text: {self.inputmodal.value}")
         self.inputmodal = InputCaptcha(self.captchatext)
 
     async def interaction_check(self, interaction: discord.Interaction):
@@ -1261,7 +1259,6 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
                     ping_user = f"{user.mention}"
                 content = f"⚠️**{ping_user}, read this message**."
                 times_sent += 1
-                print(mainview.is_finished())
                 notify_msg = await channel.send(content, embed=warnembed, view=mainview)
                 try:
                     last_sent = time.time()

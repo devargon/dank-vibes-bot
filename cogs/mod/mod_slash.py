@@ -116,7 +116,6 @@ class ModSlash(commands.Cog):
             userid_startswith_true = False
             text_in_name_true = False
             if joined_before_dt is not None:
-                print(joined_before_dt.timestamp())
                 if member.joined_at < joined_before_dt:
                     joined_before_true = True
             else:

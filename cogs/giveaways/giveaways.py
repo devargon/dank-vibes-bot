@@ -1632,9 +1632,7 @@ class giveaways(commands.Cog):
                 embed.description += "\n\n__Timeout__\nYou didn't respond in time. The giveaway has been cancelled."
             elif confirmview.returning_value is False:
                 embed.description += "\n\n__Cancelled__\nYou cancelled the giveaway."
-            print("editing message")
-            print(confirmview.response)
-            return await confirmview.response.edit_original_message(content="abc", embed=embed)
+            return await confirmview.response.edit_original_message(embed=embed)
         required_role_list_str = ",".join([str(role.id) for role in required_roles]) if len(required_roles) > 0 else None
         blacklisted_role_list_str = ",".join([str(role.id) for role in blacklisted_roles]) if type(blacklisted_roles) == list and len(blacklisted_roles) > 0 else None
         if required_roles:
