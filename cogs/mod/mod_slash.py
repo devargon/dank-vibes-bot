@@ -43,8 +43,8 @@ class ModSlash(commands.Cog):
 
 
 
-    @default_permissions(manage_roles=True)
-    @checks.has_permissions_or_role(manage_roles=True)
+    @default_permissions(administrator=True)
+    @checks.has_permissions_or_role(administrator=True)
     @commands.slash_command(name="massban")
     async def massban(self, ctx: discord.ApplicationContext,
                       reason: discord.Option(str, "The reason for the ban."),
@@ -102,12 +102,12 @@ class ModSlash(commands.Cog):
         if (joined_after_dt is not None and discord.utils.utcnow() < joined_after_dt) or (joined_before_dt is not None and discord.utils.utcnow() < joined_before_dt):
             return await ctx.respond("<:DVB_False:887589731515392000> You cannot specify a date/time in the future.")
         two_day_timedelta = datetime.timedelta(days=2)
-        """if joined_after_dt is not None:
+        if joined_after_dt is not None:
             if discord.utils.utcnow() - joined_after_dt > two_day_timedelta:
                 return await ctx.respond("<:DVB_False:887589731515392000> You cannot specify a date/time more than 2 days ago.")
         if joined_before_dt is not None:
             if discord.utils.utcnow() - joined_before_dt > two_day_timedelta:
-                return await ctx.respond("<:DVB_False:887589731515392000> You cannot specify a date/time more than 2 days ago.")"""
+                return await ctx.respond("<:DVB_False:887589731515392000> You cannot specify a date/time more than 2 days ago.")
 
         qualified_members = []
         for member in ctx.guild.members:
@@ -138,7 +138,8 @@ class ModSlash(commands.Cog):
             else:
                 text_in_name_true = True
             if joined_before_true is True and joined_after_true is True and userid_startswith_true is True and text_in_name_true is True:
-                qualified_members.append(member)
+                if discord.utils.utcnow() - member.joined_at < two_day_timedelta:
+                    qualified_members.append(member)
         qualified_description = []
         if joined_before_timestamp:
             qualified_description.append(f"• Joined before <t:{joined_before_timestamp}:f>")
@@ -148,6 +149,7 @@ class ModSlash(commands.Cog):
             qualified_description.append(f"• Has a User ID starting with `{user_id_startswith}...`")
         if text_in_name:
             qualified_description.append(f"• Has `{text_in_name}` in their user name")
+        qualified_description.append(f"• Joined within the last two days")
 
         ids_only_str = ""
         ids_and_proper_str = ""
