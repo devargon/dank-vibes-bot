@@ -484,6 +484,14 @@ class ItemGames(commands.Cog):
                     await ctx.channel.set_permissions(ctx.guild.default_role, overwrite=original_overwrite)
                     msgstatus2 = await ctx.send(
                         f"A yellowish gas starts coming out of the canister. Without warning, everyone in the channel turns into a clown for {humanize_timedelta(seconds=self.client.clown_duration)}. 🤡\n{ctx.author} now has {remaining} Cans of clown gas left.")
+            elif itemname == 'wickedrusteze':
+                for command in self.client.commands:
+                    command.reset_cooldown(ctx)
+                    if isinstance(command, commands.Group):
+                        for subcommand in command.commands:
+                            subcommand.reset_cooldown(ctx)
+                await ctx.send("You took a bath in Rust-eze Medicated Bumper Ointment and wiped away all your cooldowns! ")
+
         else:
             return await ctx.send(f"**{itemdata.get('fullname')}** isn't a usable item lol")
 
@@ -537,7 +545,8 @@ class ItemGames(commands.Cog):
             if embeds is not None:
                 await webhook.send(content=message.content, embeds=embeds, username=disp_name, avatar_url=clown_avatar)
             else:
-                await webhook.send(content=message.content, username=disp_name, avatar_url=clown_avatar)
+                if len(message.content) > 0:
+                    await webhook.send(content=message.content, username=disp_name, avatar_url=clown_avatar)
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='itemleaderboard', aliases=['ilb', 'itemlb'])
