@@ -1,3 +1,4 @@
+import asyncio
 import os
 import time
 from typing import Optional, Union, Tuple
@@ -14,6 +15,7 @@ from utils.context import DVVTcontext
 from utils.format import print_exception
 from utils.specialobjects import MISSING, ServerConfiguration, AwaitingAmariData, NoAmariData
 from utils.errors import AmariUserNotFound, AmariDataNotFound, AmariError, AmariDeveloperError
+from utils.botlogger import BotLogger
 
 
 class EditContent:
@@ -46,7 +48,6 @@ AVAILABLE_EXTENSIONS = [
     'cogs.grinder',
     'cogs.automod',
     'cogs.giveaways',
-    'cogs.donations',
     'cogs.dankmemer',
     'cogs.events',
     'cogs.imgen',
@@ -87,10 +88,14 @@ class dvvt(commands.Bot):
         self.webhooks = {}
         self.amari_data = {}
         self.mafia_channels = {}
-        #self.logger = Logger(self)
+        self.mafia_game_details = {}
+        self.clownmode = {}
+        self.clownprofiles = {}
+        self.clown_duration = 180
+        self.logger = BotLogger(self)
         self.logstrf = strfformat
         for ext in self.available_extensions:
-            self.load_extension(ext)
+            self.load_extension(ext, store=False)
             print(f"{datetime.datetime.utcnow().strftime(strfformat)} | Loaded {ext}")
 
     async def fetch_amari_data(self, user_id: int, guild_id: int) -> Tuple[Union[None, api.User, AwaitingAmariData, NoAmariData], int, Exception]:
@@ -157,12 +162,12 @@ class dvvt(commands.Bot):
                             await m.edit(embed=embed)
                     else:
                         if view != 0:
-
                             await m.edit(view=view)
             except discord.NotFound:
                 self.deleted_edit_messages.append(m.id)
             except Exception as e:
                 print(e)
+            await asyncio.sleep(0.5)
         else:
             pass
             # nothing in queue

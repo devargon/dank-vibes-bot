@@ -99,8 +99,6 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, n
             return commands.Cooldown(1, 900)
         elif discord.utils.get(message.author.roles, id=931174008970444800): # weekly top grinder
             return commands.Cooldown(1, 900)
-        elif discord.utils.get(message.author.roles, id=915094236582518834):
-            return commands.Cooldown(1, 900)
         elif discord.utils.get(message.author.roles, name="Vibing Investor"):
             return commands.Cooldown(1, 1800)
         else:

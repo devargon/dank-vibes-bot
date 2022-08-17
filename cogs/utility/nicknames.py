@@ -5,10 +5,11 @@ from discord.ext import commands
 emojis = ["<:DVB_checkmark:955345523139805214>", "<:DVB_crossmark:955345521151737896>"]
 from utils import checks
 from utils.errors import NicknameIsManaged
+from main import dvvt
 
 class NicknamePersistentView(discord.ui.View):
     def __init__(self, client):
-        self.client = client
+        self.client: dvvt = client
         super().__init__(timeout=None)
 
     @discord.ui.button(label='Approve', emoji=discord.PartialEmoji.from_str("<:DVB_checkmark:955345523139805214>"), style=discord.ButtonStyle.green, custom_id="button:approve_nickname") #, custom_id='persistent_view:approve')
@@ -58,6 +59,7 @@ class NicknamePersistentView(discord.ui.View):
                 pass
         await asyncio.sleep(10)
         await interaction.delete_original_message()
+        await self.client.logger.log_approved_nickname(interaction.user, nicktarget, nickname)
 
     @discord.ui.button(label='Deny', emoji=discord.PartialEmoji.from_str("<:DVB_crossmark:955345521151737896>"), style=discord.ButtonStyle.red, custom_id="button:deny_nickname") #c, custom_id='persistent_view:red')
     async def red(self, button: discord.ui.Button, interaction: discord.Interaction):

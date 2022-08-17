@@ -935,8 +935,7 @@ class giveaways(commands.Cog):
                     entrant_no = await self.client.db.fetchval("SELECT COUNT(DISTINCT user_id) FROM giveawayentrants WHERE message_id = $1", g_entry.message_id)
                     view = discord.ui.View.from_message(gawmessage)
                     for b in view.children:
-                        if isinstance(b, discord.ui.Button):
-                            b.disabled = True
+                        b.disabled = True
                     #await gawmessage.edit(view=view)
                     entries = await self.client.db.fetch("SELECT * FROM giveawayentrants WHERE message_id = $1", g_entry.message_id)
                     random.shuffle(entries)
@@ -963,12 +962,12 @@ class giveaways(commands.Cog):
                             self.client.remove_queued_edit(gawmessage.id)
                             g_entry.active = False
                             end_embed = await self.format_giveaway_embed(g_entry, winners = [])
-                            self.client.add_to_edit_queue(message=gawmessage.channel.get_partial_message(gawmessage.id), embed=end_embed, view=view, index=0)
+                            self.client.add_to_edit_queue(gawmessage, embed=end_embed, view=view)
                             self.dm_queue.append((host, None, hostembed, None))
                     else:
                         embed = await self.format_giveaway_embed(g_entry, winners)
                         self.client.remove_queued_edit(gawmessage.id)
-                        self.client.add_to_edit_queue(message=gawmessage.channel.get_partial_message(gawmessage.id), embed=embed, view=view, index=0)
+                        self.client.add_to_edit_queue(message=gawmessage.channel.get_partial_message(gawmessage.id), embed=embed, view=view)
                         message = f"{random.choice(guild.emojis)} **{entrant_no}** user(s) entered, {human_join([winner.mention for winner in winners], final='and')} snagged away **{g_entry.title}**!"
                         ended_msg = await channel.send(message, view=GiveawayEndView(msg_link, host))
                         await self.client.db.execute("UPDATE giveaways SET ended_message_id = $1 WHERE message_id = $2", ended_msg.id, g_entry.message_id)
@@ -995,7 +994,7 @@ class giveaways(commands.Cog):
 
                         winembed = discord.Embed(title=f"You've won the {g_entry.title} giveaway!",
                                                  description=f"{winnerdmmsg[1]}\n\n[Link to giveaway]({msg_link})",
-                                                 color=self.client.embed_color, timestamp=discord.utils.utcnow()).set_footer(text=f"Giveaway type: {winnerdmmsg[0]}")
+                                                 color=0x2fbf71, timestamp=discord.utils.utcnow()).set_footer(text=f"Giveaway type: {winnerdmmsg[0]}")
                         winembed.set_author(name=guild.name, icon_url=guild.icon.url)
                         content = "🎉 **Congratulations on winning one of our celeb giveaways!** 🎉 \nThank you for being a part of our 3 year celebrations 🥳" if channel.id in [992065949320630363, 992366430857203833, 991019248467976202] else None
                         for winner in winners:
@@ -1006,7 +1005,7 @@ class giveaways(commands.Cog):
                                 title=f"Your {g_entry.title} giveaway has ended!",
                                 description=f"{human_join([f'**{winner} ({winner.id})**' for winner in winners], final='and')} won the giveaway.",
                                 url=msg_link,
-                                color=self.client.embed_color, timestamp=discord.utils.utcnow())
+                                color=0xed7d3a, timestamp=discord.utils.utcnow())
                             self.dm_queue.append((host, None, hostembed, None))
                     return True
             else:
@@ -1633,9 +1632,7 @@ class giveaways(commands.Cog):
                 embed.description += "\n\n__Timeout__\nYou didn't respond in time. The giveaway has been cancelled."
             elif confirmview.returning_value is False:
                 embed.description += "\n\n__Cancelled__\nYou cancelled the giveaway."
-            print("editing message")
-            print(confirmview.response)
-            return await confirmview.response.edit_original_message(content="abc", embed=embed)
+            return await confirmview.response.edit_original_message(embed=embed)
         required_role_list_str = ",".join([str(role.id) for role in required_roles]) if len(required_roles) > 0 else None
         blacklisted_role_list_str = ",".join([str(role.id) for role in blacklisted_roles]) if type(blacklisted_roles) == list and len(blacklisted_roles) > 0 else None
         if required_roles:
@@ -1918,7 +1915,7 @@ class giveaways(commands.Cog):
             msg_link = f"https://discord.com/channels/{ctx.guild.id}/{giveaway.channel_id}/{giveaway.message_id}"
             winembed = discord.Embed(title=f"You've won the __reroll__ for the {giveaway.title} giveaway!",
                                      description=f"{winnerdmmsg[1]}\n\n[Link to giveaway]({msg_link})",
-                                     color=self.client.embed_color, timestamp=discord.utils.utcnow()).set_footer(
+                                     color=0x2fbf71, timestamp=discord.utils.utcnow()).set_footer(
                 text=f"Giveaway type: {winnerdmmsg[0]}")
             winembed.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url)
             for winner in winners:

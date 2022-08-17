@@ -17,6 +17,7 @@ from utils.format import plural, get_image
 from PIL import Image
 import asyncio
 from io import BytesIO
+from main import dvvt
 
 from utils.time import humanize_timedelta
 
@@ -106,7 +107,7 @@ class karutaevent(discord.ui.View):
 
 class ItemGames(commands.Cog):
     def __init__(self, client):
-        self.client = client
+        self.client: dvvt = client
         self.karutaconfig = ''
         self.karutaevent_isrunning = False
 
@@ -463,15 +464,89 @@ class ItemGames(commands.Cog):
                 else:
                     return await ctx.send("It appears that you already have an active Snipe Pill in effect. (2)")
 
+            elif itemname == 'canisterofclowngas':
+                if ctx.channel.id in self.client.clownmode:
+                    return await ctx.send("The clown gas haven't worn off in this channel. If you use it now, the effects would be more potent and everyone might stay as a clown permanently (as if they aren't already).")
+                if await self.get_item_count(itemname, ctx.author) > 0:
+                    overwrite = ctx.channel.overwrites_for(ctx.guild.default_role)
+                    original_overwrite = ctx.channel.overwrites_for(ctx.guild.default_role)
+                    overwrite.send_messages = False
+                    await ctx.channel.set_permissions(ctx.guild.default_role, overwrite=overwrite)
+                    msgstatus = await ctx.send(
+                        f"**{ctx.author.name}** slowly places a canister containing something unknown in the center of {ctx.channel.mention}. No one notices as **{ctx.author.name}** quietly leaves the channel, leaving the canister sitting in the channel.")
+                    await asyncio.sleep(6.0)
+                    await msgstatus.edit(content="<:clown_gas_can:958622707568771072>")
+                    await asyncio.sleep(3.0)
+                    await msgstatus.add_reaction("⚠️")
+                    remaining = await self.remove_item_count(itemname, ctx.author, 1)
+                    now = round(time.time())
+                    self.client.clownmode[ctx.channel.id] = now + self.client.clown_duration
+                    await ctx.channel.set_permissions(ctx.guild.default_role, overwrite=original_overwrite)
+                    msgstatus2 = await ctx.send(
+                        f"A yellowish gas starts coming out of the canister. Without warning, everyone in the channel turns into a clown for {humanize_timedelta(seconds=self.client.clown_duration)}. 🤡\n{ctx.author} now has {remaining} Cans of clown gas left.")
+            elif itemname == 'wickedrusteze':
+                for command in self.client.commands:
+                    command.reset_cooldown(ctx)
+                    if isinstance(command, commands.Group):
+                        for subcommand in command.commands:
+                            subcommand.reset_cooldown(ctx)
+                await ctx.send("You took a bath in Rust-eze Medicated Bumper Ointment and wiped away all your cooldowns! ")
 
-            else:
-                return await ctx.send("Invalid")
         else:
             return await ctx.send(f"**{itemdata.get('fullname')}** isn't a usable item lol")
 
-
-
-
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if message.author.bot or message.webhook_id is not None:
+            return
+        if message.channel.id in self.client.clownmode:
+            if self.client.clownmode[message.channel.id] < round(time.time()):
+                del self.client.clownmode[message.channel.id]
+                return await message.channel.send(f"The clown gas has dissipated away, and everyone is back to normal. {message.author.mention} quickly kicks away the canister, and life goes on as normal.")
+            webhook = await self.client.get_webhook(message.channel)
+            clown_avatar = self.client.clownprofiles.get(message.author.id, None)
+            if clown_avatar is None:
+                list_of_clown_avatars = [
+                    "https://cdn.nogra.xyz/images/clowns/imp_clown.png",
+                    "https://cdn.nogra.xyz/images/clowns/woozy_clown.png",
+                    "https://cdn.nogra.xyz/images/clowns/relieved_clown.png",
+                    "https://cdn.nogra.xyz/images/clowns/pensive_clown.png",
+                    "https://cdn.nogra.xyz/images/clowns/original_clown.png",
+                    "https://cdn.nogra.xyz/images/clowns/neutral_clown.png",
+                    "https://cdn.nogra.xyz/images/clowns/weary_clown.png",
+                    "https://cdn.nogra.xyz/images/clowns/skeptical_clown.png",
+                    "https://cdn.nogra.xyz/images/clowns/nerd_clown.png",
+                    "https://cdn.nogra.xyz/images/clowns/flushed_clown.png",
+                    "https://cdn.nogra.xyz/images/clowns/sunglasses_clown.png",
+                    "https://cdn.nogra.xyz/images/clowns/smirk_clown.png",
+                    "https://cdn.nogra.xyz/images/clowns/sleeping_clown.png",
+                    "https://cdn.nogra.xyz/images/clowns/rolling_eyes_clown.png",
+                    "https://cdn.nogra.xyz/images/clowns/heart_eyes_clown.png",
+                    "https://cdn.nogra.xyz/images/clowns/grimace_clown.png",
+                    "https://cdn.nogra.xyz/images/clowns/floating_heart_clown.png",
+                    "https://cdn.nogra.xyz/images/clowns/crying_clown.png",
+                    "https://cdn.nogra.xyz/images/clowns/angry_clown.png",
+                ]
+                clown_avatar = random.choice(list_of_clown_avatars)
+                self.client.clownprofiles[message.author.id] = clown_avatar
+            disp_name = message.author.display_name
+            if len(message.attachments) > 0:
+                embeds = []
+                for attachment in message.attachments:
+                    embed = discord.Embed(color=self.client.embed_color,
+                                          description=f"📂 [{attachment.filename}]({attachment.proxy_url})").set_author(
+                        icon_url=clown_avatar, name=disp_name)
+                    if attachment.height is not None:
+                        embed.set_image(url=attachment.url)
+                    embeds.append(embed)
+            else:
+                embeds = None
+            await message.delete()
+            if embeds is not None:
+                await webhook.send(content=message.content, embeds=embeds, username=disp_name, avatar_url=clown_avatar)
+            else:
+                if len(message.content) > 0:
+                    await webhook.send(content=message.content, username=disp_name, avatar_url=clown_avatar)
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='itemleaderboard', aliases=['ilb', 'itemlb'])

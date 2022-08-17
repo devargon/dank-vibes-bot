@@ -9,6 +9,7 @@ from utils.converters import BetterInt
 from utils import checks
 from time import time
 import asyncpg
+from main import dvvt
 def get_emoji(category):
     name = category.lower().strip()
     if "owo" == name:
@@ -71,7 +72,7 @@ class DonationLeaderboard(menus.ListPageSource):
 class donations(commands.Cog):
     """Donation commands"""
     def __init__(self, client):
-        self.client = client
+        self.client: dvvt = client
 
     async def get_donation_count(self, member: discord.Member, category: str):
         """
@@ -304,15 +305,8 @@ class donations(commands.Cog):
         embed.set_thumbnail(url=member.display_avatar.url)
         embed.set_author(name="Success!", icon_url="https://cdn.discordapp.com/emojis/575412409737543694.gif?size=96")
         embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
-        if category_name.lower() == 'celebdank' and currentcount < 60000000 and newamount >= 60000000:
-            con = "Looks like they've reached at least ⏣ 60,000,000 donated, please give them the **Celeb Donator** role if necessary."
-        elif category_name.lower() == 'celebowo' and currentcount < 2000000 and newamount >= 2000000:
-            con = "Looks like they've reached at least <:dv_owoCowoncy:889983770285969408> 1,000,000 donated, please give them the **Celeb Donator** role if necessary."
-        elif category_name.lower() == 'celebkaruta' and currentcount < 20 and newamount >= 20:
-            con = "Looks like they've reached at least 🎟️ 30 tickets donated, please give them the **Celeb Donator** role if necessary."
-        else:
-            con = ""
-        await ctx.send(con, embed=embed)
+        await ctx.send(embed=embed)
+        await self.client.logger.log_donation_edit('add', ctx.author, member, comma_number(amount))
         notify_about_logging = await self.client.db.fetchval("SELECT notify_about_logging FROM userconfig WHERE user_id = $1", ctx.author.id)
         if notify_about_logging is not True:
             if ctx.channel.id == 652729093649072168:
@@ -361,7 +355,8 @@ class donations(commands.Cog):
         embed.set_thumbnail(url=member.display_avatar.url)
         embed.set_author(name="Success!", icon_url="https://cdn.discordapp.com/emojis/575412409737543694.gif?size=96")
         embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
-        return await ctx.send(embed=embed)
+        await ctx.send(embed=embed)
+        await self.client.logger.log_donation_edit('remove', ctx.author, member, comma_number(amount))
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="setdonations", aliases=["sd"])
@@ -384,7 +379,8 @@ class donations(commands.Cog):
         embed.set_thumbnail(url=member.display_avatar.url)
         embed.set_author(name="Success!", icon_url="https://cdn.discordapp.com/emojis/575412409737543694.gif?size=96")
         embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
-        return await ctx.send(embed=embed)
+        await ctx.send(embed=embed)
+        await self.client.logger.log_donation_edit('remove', ctx.author, member, comma_number(amount))
 
     @checks.not_in_gen()
     @commands.command(name="weeklydankleaderboard", aliases=["wdlb", "weeklylb", "wlb"])

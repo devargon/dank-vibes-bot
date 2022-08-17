@@ -221,6 +221,8 @@ class Role(commands.Cog):
     @role_cmd.command(name="color", aliases=["colour"])
     async def role_color(self, ctx: DVVTcontext, role: BetterRoles, color: BetterColor):
         role: discord.Role = role
+        if color is None:
+            return await ctx.send("Please provide a valid color in the format of:\n`#FFFFFF`\n`FFFFFF`\n`0xFFFFFF`\n`0x#FFFFFF`\n`rgb(255, 255, 255)`\nA colour name")
         failembed = discord.Embed(title="Role Edit Failed", color=discord.Color.red())
         if not ctx.me.guild_permissions.manage_roles:
             failembed.description = "I don't have permission to edit any roles. Please allow me the `Manage Roles` permission in your server's Role settings."

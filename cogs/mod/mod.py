@@ -1,3 +1,4 @@
+import asyncio
 import itertools
 import json
 import re
@@ -14,13 +15,15 @@ from .sticky import Sticky
 from .mod_slash import ModSlash
 from .role import Role
 from .channel import ChannelUtils
+from .donations import donations
 
 from utils import checks
 from utils.buttons import *
 from utils.format import text_to_file, ordinal, human_join
-from utils.time import humanize_timedelta
+from utils.time import humanize_timedelta, short_humanize_timedelta
 from utils.menus import CustomMenu
 from utils.converters import BetterTimeConverter, MemberUserConverter
+from utils.helper import generate_captcha
 
 import os
 from selenium import webdriver
@@ -28,6 +31,91 @@ from thefuzz import process
 from collections import Counter
 from datetime import timedelta, datetime
 import time
+
+class InputCaptcha(discord.ui.Modal):
+    def __init__(self, captchatext):
+        self.captchatext = captchatext
+        self.value = None
+        super().__init__(title="Complete the captcha text", timeout=None)
+        self.add_item(discord.ui.InputText(label="The captcha contains ONLY LETTTERS.", style=discord.InputTextStyle.short, placeholder="It is NOT case sensitive.", min_length=4, max_length=4))
+
+    async def callback(self, interaction: discord.Interaction):
+        input = self.children[0].value
+        self.value = input
+        self.children[0].value = ""
+        if input.lower() == self.captchatext.lower():
+
+            await interaction.response.send_message("<:DVB_True:887589686808309791> You have successfully completed the captcha.", ephemeral=True)
+            self.stop()
+        else:
+            await interaction.response.send_message("<:DVB_False:887589731515392000> The text you entered does not match, **please try again**.\nIf you're having trouble completing the captcha, open a ticket in <#870880772985344010>.", ephemeral=True)
+            self.stop()
+
+class CaptchaFrontView(discord.ui.View):
+    def __init__(self, target: Union[discord.User, discord.Member], captchatext):
+        self.target = target
+        self.captchatext = captchatext
+        self.captcha_url = None
+        self.inputmodal = InputCaptcha(captchatext)
+        self.user_completed_captcha = False
+        self.time_completed_captcha = None
+        self.attempts = []
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Enter Captcha Text", style=discord.ButtonStyle.red)
+    async def callback(self, button: discord.ui.Button, interaction: discord.Interaction):
+        await interaction.response.send_modal(self.inputmodal)
+        await self.inputmodal.wait()
+        self.attempts.append(self.inputmodal.value)
+        if type(self.inputmodal.value) == str:
+            if self.inputmodal.value.lower() == self.captchatext.lower():
+                self.user_completed_captcha = True
+                button.disabled = True
+                await interaction.message.edit(view=self)
+                self.time_completed_captcha = time.time()
+                self.stop()
+        self.inputmodal = InputCaptcha(self.captchatext)
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.user.id != self.target.id:
+            await interaction.response.defer()
+        return interaction.user.id == self.target.id
+
+
+
+class SelectMafiaGame(discord.ui.Select):
+    def __init__(self, channels):
+        options = []
+        for channel in channels:
+            options.append(discord.SelectOption(label=f"Mafia game created {humanize_timedelta(timedelta=discord.utils.utcnow() - channel.created_at)} ago", value=str(channel.id)))
+        super().__init__(placeholder="Choose a mafia game to track:", options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view.selected = interaction.guild.get_channel(int(self.values[0]))
+        self.view.disable_all_items()
+        await interaction.response.edit_message(view=self.view)
+        self.view.stop()
+
+class SelectMafiaView(discord.ui.View):
+    def __init__(self, user, channels):
+        self.response = None
+        self.user = user
+        self.selected = None
+        super().__init__(timeout=30.0)
+
+        self.add_item(SelectMafiaGame(channels))
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id == self.user.id:
+            return True
+        else:
+            return False
+
+    async def on_timeout(self) -> None:
+        self.disable_all_items()
+        self.response.edit(view=self)
+        self.stop()
+
 
 class ViewEmbedJSONs(discord.ui.View):
     def __init__(self, embeds):
@@ -39,14 +127,23 @@ class ViewEmbedJSONs(discord.ui.View):
         button.disabled = True
         await interaction.response.edit_message(embeds=self.embeds, view=self)
 
+
 class ListWatchlistNotifyMethods(discord.ui.Select):
     def __init__(self, client, default_index):
         self.default_index = default_index
         self.client = client
-        options = []
-        options.append(discord.SelectOption(label="None", value='none', description="You will not be notified about any watchlist joins.", default = False))
-        options.append(discord.SelectOption(label="DM", value='dm', description="You will be DMed when a user on your watchlist joins this server.", emoji = discord.PartialEmoji.from_str("<:DVB_Letter:884743813166407701>"), default = True if default_index == 1 else False))
-        options.append(discord.SelectOption(label = "Ping", value='ping', description = f"You will be pinged when a user on your watchlist joins this server.", emoji = discord.PartialEmoji.from_str("<:DVB_Ping:883744614295674950>"), default = True if default_index == 2 else False))
+        options = [
+            discord.SelectOption(label="None", value='none',
+                                 description="You will not be notified about any watchlist joins.", default=False),
+            discord.SelectOption(label="DM", value='dm',
+                                 description="You will be DMed when a user on your watchlist joins this server.",
+                                 emoji=discord.PartialEmoji.from_str("<:DVB_Letter:884743813166407701>"),
+                                 default=True if default_index == 1 else False),
+            discord.SelectOption(label="Ping", value='ping',
+                                 description=f"You will be pinged when a user on your watchlist joins this server.",
+                                 emoji=discord.PartialEmoji.from_str("<:DVB_Ping:883744614295674950>"),
+                                 default=True if default_index == 2 else False)
+        ]
         super().__init__(placeholder='Change how you want to be notified for your watchlist...', min_values=1, max_values=1, options=options)
 
     async def callback(self, interaction: discord.Interaction):
@@ -108,6 +205,7 @@ class FrozenNicknames(menus.ListPageSource):
         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return embed
 
+
 class GetHeistPing(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -166,7 +264,7 @@ class ModlogPagination:
         return embed
 
 
-class Mod(Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
+class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
     """
     Mod commands
     """
@@ -370,6 +468,8 @@ class Mod(Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreens
                 await ctx.send(f"I could not find a category for the ID {category}")
             else:
                 categories.append(category) # gets all the categories for channels
+        owner_channel_ids = await self.client.db.fetch("SELECT channel_id FROM channels WHERE owner_id = $1")
+        owner_channels = [owner_channel_id.get('channel_id') for owner_channel_id in owner_channel_ids] # gets all the channel IDs for the owner channels
         accessiblechannels = []
         for category in categories:
             for channel in category.channels:
@@ -378,7 +478,11 @@ class Mod(Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreens
                 else:
                     permissions = channel.permissions_for(member)
                     if permissions.view_channel == True:
-                        accessiblechannels.append(channel.mention) # gets all the channels that the user can see in private channels
+                        if channel.id in owner_channels:
+                            crown = " 👑"
+                        else:
+                            crown = ""
+                        accessiblechannels.append(f"{channel.mention}{crown}") # gets all the channels that the user can see in private channels
         streeng = "" #ignore the spelling
         for channel in accessiblechannels:
             if len(streeng) < 3900:
@@ -487,7 +591,7 @@ class Mod(Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreens
         moderator = ctx.guild.get_member(existing.get('responsible_moderator'))
         if moderator is not None:
             if moderator != ctx.guild.owner:
-                if moderator.top_role >= ctx.author.top_role:
+                if moderator.top_role > ctx.author.top_role:
                     return await ctx.send(f"You cannot unfreezenick **{member}**'s nickname, as their nickname was frozen by **{moderator}**, whose highest role is the same as or above your own role.")
         try:
             await member.edit(nick=existing.get('old_nickname'))
@@ -951,6 +1055,7 @@ class Mod(Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreens
         target_str = human_join([target.mention for target in targets], final='and')
         channel_str = human_join([channel.mention for channel in channels], final='and')
         await ctx.send(f"{target_str} will be prevented from sending messages in {channel_str}. You'll need to set the cleanup message again for any newly added channels with `dv.messagecleanup message [target] [message]`.")
+        await self.client.logger.log_messagecommand('add', ctx.author, targets, channels)
 
     @checks.has_permissions_or_role(manage_roles=True)
     @messagecleanup.command(name='remove', aliases=['r'])
@@ -972,6 +1077,7 @@ class Mod(Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreens
         for _channel in channel:
             if _channel.id not in existing:
                 failed.append(f"{_channel.mention} not in list of channels for {target}")
+                channel.remove(_channel)
             else:
                 to_push.append((ctx.guild.id, target.id, _channel.id))
         if len(failed) > 0:
@@ -979,12 +1085,14 @@ class Mod(Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreens
         if len(to_push) > 0:
             await self.client.db.executemany("DELETE FROM usercleanup WHERE guild_id = $1 AND target_id = $2 AND channel_id = $3", to_push)
             await ctx.send(f"{target} will no longer be prevented from sending messages in {human_join([channel.mention for channel in channel], final='and')}.")
+            await self.client.logger.log_messagecommand('remove', ctx.author, [target], channel)
 
     @checks.has_permissions_or_role(manage_roles=True)
     @messagecleanup.command(name="message", aliases=['m'])
     async def messagecleanup_message(self, ctx: DVVTcontext, target: discord.Member = None, *, message: str = None):
         """
         Sets a message to be shown when a message is deleted with the messagecleanup feature.
+        To remove the message, type `none` in the `message` argument.
         """
         if target is None:
             return await ctx.send("You need to specify a target to edit or display its messages.")
@@ -1001,49 +1109,7 @@ class Mod(Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreens
                 return await ctx.send(f"Your message is {len(message)} characters long, which is too long. Please keep it under 1500 characters.")
             await self.client.db.execute("UPDATE usercleanup SET message = $1 WHERE guild_id = $2 AND target_id = $3", message, ctx.guild.id, target.id)
             await ctx.send(f"{target}'s message has been set to: {message}")
-
-    @checks.has_permissions_or_role(manage_roles=True)
-    @commands.command(name="claimed", aliases=['c'])
-    async def claimed(self, ctx: DVVTcontext, user: discord.Member, *, message_id: str = None):
-        """
-        Refer to a message by pasting its message ID, message link, or reply to a message containing the message link.
-        The third method should only be used if there's ONE message link.
-        """
-        channel_id = None
-        if message_id is None and not ctx.message.reference:
-            return await ctx.help()
-        if type(message_id) == str and message_id.isdigit():
-            message_id = int(message_id)
-        else:
-            if message_id is None:
-                if ctx.message.reference and isinstance(ctx.message.reference.resolved, discord.Message):
-                    message_link = re.search("(?P<url>https?://[^\s]+)", ctx.message.reference.resolved.content).group("url")
-                else:
-                    return await ctx.send("I couldn't find a message link in your message or in the replied message.")
-            else:
-                message_url = re.search("(?P<url>https?://[^\s]+)", message_id).group("url")
-                message_link = message_url
-            try:
-                message_id = message_link.split("/")[-1]
-                channel_id = int(message_link.split("/")[-2])
-            except Exception as e:
-                return await ctx.send("I couldn't find a PROPER message link in your message or in the replied message.")
-            if not message_id.isdigit():
-                return await ctx.send("I couldn't find a PROPER message link in your message or in the replied message.")
-            else:
-                message_id = int(message_id)
-        if channel_id is not None:
-            if channel_id in [992366430857203833, 992065949320630363]:
-                alternate_id = await self.client.db.fetchval("SELECT ended_message_id FROM giveaways WHERE message_id = $1", message_id)
-                if alternate_id is None:
-                    alternate_id = await self.client.db.fetchval("SELECT message_id FROM giveaways WHERE ended_message_id = $1", message_id)
-                if alternate_id is not None:
-                    await self.client.db.execute("INSERT INTO claimed_messageids(message_id, claimer_id, user_id, time) VALUES ($1, $2, $3, $4)", alternate_id, user.id, ctx.author.id, round(time.time()))
-                    await ctx.message.add_reaction("2️⃣")
-
-        await self.client.db.execute("INSERT INTO claimed_messageids(message_id, claimer_id, user_id, time) VALUES ($1, $2, $3, $4)", message_id, user.id, ctx.author.id, round(time.time()))
-        await ctx.checkmark()
-
+            await self.client.logger.log_messagecommand_message(ctx.author, target, message)
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.group(name="afkmafia", invoke_without_command=True)
@@ -1056,63 +1122,101 @@ class Mod(Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreens
                 return "<:DVB_True:887589686808309791> "
             else:
                 return "<:DVB_False:887589731515392000>"
-        if len(self.client.mafia_channels.keys()) > 0:
-            return await ctx.send("There's already a Mafia game channel being tracked, run `dv.afkmafia end` in that channel to stop tracking the game.")
+        qualified_channels = []
+        for channel in ctx.guild.channels:
+            if isinstance(channel, discord.TextChannel):
+                if channel.name == "mafia":
+                    if ctx.guild.id == 595457764935991326 and channel.category_id == 595457764935991327:
+                        qualified_channels.append(channel)
+                    elif ctx.guild.id == 871734809154707467 and channel.category_id == 875316745416617984:
+                        qualified_channels.append(channel)
+        for channel in qualified_channels:
+            if channel.id in self.client.mafia_channels.keys():
+                qualified_channels.remove(channel)
+        if len(qualified_channels) == 0:
+            return await ctx.send("Either there are no ongoing mafia games to be tracked, or all current mafia games are already being tracked. ")
         lounge_category_id = 595457764935991327 if ctx.guild.id == 595457764935991326 else 875316745416617984
         lounge_category = ctx.guild.get_channel(lounge_category_id)
         if lounge_category is None:
             return await ctx.send(f"{return_emoji(False)} Tried to find the lounge category where Mafia games are hosted, but could not find category.")
         else:
-            mafia_channel = discord.utils.get(lounge_category.channels, name="mafia")
-            if mafia_channel is None:
-                return await ctx.send(f"{return_emoji(False)} No Mafia game was detected in this server (no channel named `mafia` in the **{lounge_category}** category).")
-            else:
-                #format time to hh-mm-yy
-                time_created_at = mafia_channel.created_at.strftime("%H-%M-%S-UTC")
-                log_channel_name = f"mafia-at-{time_created_at}"
-                log_channel = await ctx.guild.create_text_channel(name=log_channel_name, category=lounge_category, reason="Started tracking Mafia game")
-                if ctx.guild.id == 595457764935991326:
-                    event_hoster_role = ctx.guild.get_role(735417263968223234)
-                    event_manager_role = ctx.guild.get_role(756667326623121568)
-                    planet_role = ctx.guild.get_role(649499248320184320)
-                    if planet_role is not None:
-                        planet_overwrite = log_channel.overwrites_for(planet_role)
-                        planet_overwrite.view_channel = False
-                        await log_channel.set_permissions(planet_role, overwrite=planet_overwrite)
-                    else:
-                        await ctx.send(f"{return_emoji(False)} Could not find the `Planet` role.")
-                    overwrite = discord.PermissionOverwrite()
-                    overwrite.view_channel = True
-                    overwrite.send_messages = True
-                    overwrite.add_reactions = True
-                    overwrite.embed_links = True
-                    overwrite.read_message_history = True
-                    overwrite.use_external_emojis = True
-                    overwrite.attach_files = True
-                    overwrite.use_external_stickers = True
-                    if event_hoster_role is not None:
-                        await log_channel.set_permissions(event_hoster_role, overwrite=overwrite, reason="Give Event Hoster/Manager permissions to view logs")
-                    else:
-                        await ctx.send(f"{return_emoji(False)} Could not find the Event Hoster role.")
-                    if event_manager_role is not None:
-                        await log_channel.set_permissions(event_manager_role, overwrite=overwrite, reason="Give Event Hoster/Manager permissions to view logs")
-                    else:
-                        await ctx.send(f"{return_emoji(False)} Could not find the Event Manager role.")
 
-                webhook = await log_channel.create_webhook(name=self.client.user.name)
-                self.client.webhooks[log_channel.id] = webhook
+            view = SelectMafiaView(ctx.author, qualified_channels)
+            view.response = await ctx.send(f"Select a mafia game to track below.", view=view)
+            await view.wait()
+            if view.selected is None:
+                return
+            else:
+                mafia_channel = view.selected
+                #format time to hh-mm-yy
+                time_created_at = mafia_channel.created_at.strftime("%H-%M-%S-utc")
+                log_channel_name = f"mafia-at-{time_created_at}"
+                log_channel = discord.utils.get(ctx.guild.channels, name=log_channel_name)
+                if log_channel is None:
+                    if ctx.guild.id == 595457764935991326:
+                        # set perms if the game was started in mafia
+                        event_hoster_role = ctx.guild.get_role(735417263968223234)
+                        event_manager_role = ctx.guild.get_role(756667326623121568)
+                        planet_role = ctx.guild.get_role(649499248320184320)
+                        mod_manager_role = ctx.guild.get_role(684591962094829569)
+                        overwrites = {}
+                        manager_overwrite = discord.PermissionOverwrite(
+                            view_channel=True,
+                            send_messages=True,
+                            add_reactions=True,
+                            embed_links=True,
+                            read_message_history=True,
+                            use_external_emojis=True,
+                            attach_files=True,
+                            use_external_stickers=True,
+                            manage_messages=False
+                        )
+                        overwrites[ctx.guild.default_role] = discord.PermissionOverwrite(view_channel=False)
+                        if planet_role is not None:
+                            overwrites[planet_role] = discord.PermissionOverwrite(view_channel=False)
+                        if event_hoster_role is not None:
+                            overwrites[event_hoster_role] = manager_overwrite
+                        if event_manager_role is not None:
+                            overwrites[event_manager_role] = manager_overwrite
+                        if mod_manager_role is not None:
+                            overwrites[mod_manager_role] = manager_overwrite
+                        log_channel = await ctx.guild.create_text_channel(
+                            name=log_channel_name,
+                            category=lounge_category,
+                            overwrites=overwrites,
+                            reason=f"Mafia game tracking manually started by {ctx.author}",
+                            topic=f"For the {mafia_channel.mention} game that was started at <t:{round(mafia_channel.created_at.timestamp())}>.",
+                            )
+                    else:
+                        log_channel = await ctx.guild.create_text_channel(
+                            name=log_channel_name,
+                            category=lounge_category,
+                            reason=f"Mafia game tracking manually started by {ctx.author}",
+                            topic=f"For the {mafia_channel.mention} game that was started at <t:{round(mafia_channel.created_at.timestamp())}>."
+                        )
+                await self.client.get_webhook(log_channel)
                 self.client.mafia_channels[mafia_channel.id] = log_channel.id
                 return await ctx.send(f"{return_emoji(True)} Started tracking {mafia_channel.mention} game in {log_channel.mention}.")
 
+
     @checks.has_permissions_or_role(manage_roles=True)
     @afkmafia.command(name="end", aliases=['stop'])
-    async def afkmafia_end(self, ctx: DVVTcontext):
+    async def afkmafia_end(self, ctx: DVVTcontext, channel: discord.TextChannel = None):
         """
         Stops tracking a Mafia game channel.
         """
         if len(self.client.mafia_channels) == 0:
             return await ctx.send("There's no Mafia game being tracked.")
-        channel_id, log_channel_id = list(self.client.mafia_channels.items())[0]
+        if channel is None:
+            return await ctx.send("Provide a **mafia game** or **mafia log** channel.")
+        def find_channel():
+            for channel_id, log_channel_id in self.client.mafia_channels.items():
+                if channel_id == channel.id or log_channel_id == channel.id:
+                    return channel_id, log_channel_id
+            return None, None
+        channel_id, log_channel_id = find_channel()
+        if channel_id is None or log_channel_id is None:
+            return await ctx.send("Provide a **mafia game** or **mafia log** channel.")
         log_channel = ctx.guild.get_channel(log_channel_id)
         if log_channel is None:
             return await ctx.send("There's no Mafia game being tracked.")
@@ -1127,4 +1231,72 @@ class Mod(Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreens
             del self.client.mafia_channels[channel_id]
         else:
             await ctx.send("Log stop aborted.")
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name="modcaptcha")
+    async def modcaptcha(self, ctx: DVVTcontext, user: discord.Member, channel: discord.TextChannel):
+        """
+        Creates a captcha that a user will have to solve.
+        """
+        captcha_string, image_bytes = await generate_captcha()
+        warnembed = discord.Embed(title=f"Please complete a captcha and continue interaction.", description="Your behaviour was flagged by a Moderator.\nYou must complete a captcha before proceeding.", color=discord.Color.red())
+        warnembed.set_thumbnail(url="https://cdn.discordapp.com/attachments/871737314831908974/1007187090771038299/unknown.png")
+
+        message = await ctx.send("<a:DVB_CLoad2:994913353388527668> Preparing Captcha...", file=discord.File(fp=image_bytes, filename="captcha.png"))
+        captcha_url = message.attachments[0].url
+        mainview = CaptchaFrontView(user, captcha_string)
+        time_until_expiry = round(time.time()) + 180 # user has 3 minutes to complete the captcha
+        times_sent = 0
+        warnembed.set_image(url=captcha_url)
+        await message.edit(content="<a:DVB_CLoad1:994913315442663475> Captcha was sent, awaiting results...")
+        while mainview.is_finished() is not True:
+            if time_until_expiry - time.time() <= 0: # user has run out of time to complete the captcha
+                mainview.stop()
+            else:
+                if time_until_expiry - time.time() > 60:
+                    ping_user = f"{user}"
+                else:
+                    ping_user = f"{user.mention}"
+                content = f"⚠️**{ping_user}, read this message**."
+                times_sent += 1
+                notify_msg = await channel.send(content, embed=warnembed, view=mainview)
+                try:
+                    last_sent = time.time()
+                    def check(m: discord.Message):
+                        return (m.author.id == user.id and m.guild.id == ctx.guild.id and time.time() - last_sent > 5) or time.time() - last_sent > 30
+                    autotype_msg = await self.client.wait_for('message', check=check, timeout=time_until_expiry - time.time())
+                except asyncio.TimeoutError:
+                    mainview.stop()
+                else:
+                    if autotype_msg.author.id == user.id:
+                        channel = autotype_msg.channel
+                    pass
+        embed = discord.Embed(
+            title="Captcha Completed" if mainview.user_completed_captcha is True else "Captcha Failed",
+            color=discord.Color.green() if mainview.user_completed_captcha is True else discord.Color.red(),
+            timestamp=discord.utils.utcnow()
+        )
+        embed.set_author(name=f"{user} ({user.id})", icon_url=user.display_avatar.url)
+        embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon.url)
+        if mainview.user_completed_captcha is True:
+            descriptions = [
+                f"**{user.mention} answered the captcha correctly after {short_humanize_timedelta(seconds=round(time.time()-mainview.time_completed_captcha))}.**",
+                f"They had attempted the captcha **{len(mainview.attempts)}** times.",
+                f"The captcha message was sent **{times_sent}** times before it was answered.",
+            ]
+        else:
+            descriptions = [
+                f"**{user.mention} failed to answer the captcha.**",
+                f"They had attempted the captcha **{len(mainview.attempts)}** times.",
+                f"The captcha message was sent **{times_sent}** times.",
+            ]
+        embed.set_image(url=captcha_url)
+        attempts = "None" if len(mainview.attempts) < 1 else "\n".join(mainview.attempts)
+        embed.description = "\n".join(descriptions)
+        embed.add_field(name="Attempts", value=attempts)
+        await ctx.send(embed=embed)
+
+
+
+
 

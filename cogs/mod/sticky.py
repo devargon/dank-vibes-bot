@@ -1,4 +1,5 @@
 import discord
+from main import dvvt
 from utils import checks
 from discord.ext import commands, menus
 from utils.menus import CustomMenu
@@ -16,7 +17,7 @@ class betcheck_pagination(menus.ListPageSource):
 
 class Sticky(commands.Cog):
     def __init__(self, client):
-        self.client= client
+        self.client: dvvt = client
 
 
     @commands.Cog.listener()
@@ -112,8 +113,6 @@ class Sticky(commands.Cog):
         if message_type == "text" and len(content) > 2000:
             return await ctx.send(f"Your message is currently {len(content)} characters long. It can only be 2000 characters long. Consider using a embed instead, as its description supports up to 4096 characters.")
         all = await self.client.db.fetch("SELECT * FROM stickymessages WHERE guild_id = $1", ctx.guild.id)
-        if len(all) > 1:
-            await ctx.send("You have already created **2** sticky messages with Dank Vibes Bot. To create more sticky messages, purchase Premium for Dank Vibes Bot. <http://premium.dvbot.nogra.xyz/>", delete_after = 3.0)
         if message_type == "embed":
             try:
                 embedjson = json.loads(content)
@@ -123,11 +122,11 @@ class Sticky(commands.Cog):
                 try:
                     message = await channel.send(embed=discord.Embed.from_dict(embedjson))
                 except discord.HTTPException as e:
-                    return await ctx.send(
-                        f"<:DVB_eyeroll:878146268277374976> You entered a JSON code, but Discord was not able to decode it. More details: `{e}`.\nGet the JSON code directly from Carlbot's embed generator: https://cdn.nogra.xyz/core/embed.gif")
+                    return await ctx.send(f"<:DVB_eyeroll:878146268277374976> You entered a JSON code, but Discord was not able to decode it. More details: `{e}`.\nGet the JSON code directly from Carlbot's embed generator: https://cdn.nogra.xyz/core/embed.gif")
                 else:
                     await self.client.db.execute("INSERT INTO stickymessages VALUES($1, $2, $3, $4, $5)", ctx.guild.id, channel.id, message.id, 0, content)
-                    return await ctx.send(f"<:DVB_checkmark:955345523139805214> I am now sending a sticky embed message in {channel.mention}.")
+                    await ctx.send(f"<:DVB_checkmark:955345523139805214> I am now sending a sticky embed message in {channel.mention}.")
+                    await self.client.logger.log_sticky_action(action='add', user=ctx.author, target=channel, content=content)
         elif message_type == "text":
             try:
                 message = await channel.send(content)
@@ -135,7 +134,9 @@ class Sticky(commands.Cog):
                 return await ctx.send(f"I was not able to add this sticky message. Details: `{e}`")
             else:
                 await self.client.db.execute("INSERT INTO stickymessages VALUES($1, $2, $3, $4, $5)", ctx.guild.id, channel.id, message.id, 1, content)
-                return await ctx.send(f"<:DVB_checkmark:955345523139805214> I am now sending a sticky message in {channel.mention}.")
+                await ctx.send(f"<:DVB_checkmark:955345523139805214> I am now sending a sticky message in {channel.mention}.")
+                await self.client.logger.log_sticky_action(action='add', user=ctx.author, channel=channel, message=content)
+
 
     @checks.has_permissions_or_role(manage_roles=True)
     @sticky.command(name="remove", aliases=["delete"])
@@ -149,7 +150,8 @@ class Sticky(commands.Cog):
         if len(existing) == 0:
             return await ctx.send(f"You do not have a sticky message set for {channel.mention}.")
         await self.client.db.fetch("DELETE FROM stickymessages WHERE guild_id = $1 and channel_id = $2", ctx.guild.id, channel.id)
-        return await ctx.send(f"<:DVB_checkmark:955345523139805214> The sticky message for {channel.mention} has been removed.")
+        await ctx.send(f"<:DVB_checkmark:955345523139805214> The sticky message for {channel.mention} has been removed.")
+        await self.client.logger.log_sticky_action(action='remove', user=ctx.author, channel=channel)
 
     @checks.has_permissions_or_role(manage_roles=True)
     @sticky.command(name="view")

@@ -215,7 +215,7 @@ class Highlight(commands.Cog):
             msg_content = m.content
             msg_content = msg_content if len(msg_content) < 200 else msg_content[:200] + "..."
             fmt.append(f"**[{time}] {m.author.name}:** {msg_content}")
-        e = discord.Embed(title=f"**{hl}**", description='\n'.join(fmt[::-1]), color=self.client.embed_color, timestamp=discord.utils.utcnow())
+        e = discord.Embed(title=f"**{hl}**", description='\n'.join(fmt[::-1]), color=0xb47eb3, timestamp=discord.utils.utcnow())
         return e
 
     @commands.Cog.listener()

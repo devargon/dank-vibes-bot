@@ -41,7 +41,3 @@ class UtilitySlash(commands.Cog):
                 content_embed_raw = discord.Embed(title="Raw Embed (JSON)", description=f"```\n{embed_json}\n```", color=self.client.embed_color)
                 embeds.append(content_embed_raw)
             await ctx.respond(embeds=embeds, ephemeral=True)
-
-
-
-

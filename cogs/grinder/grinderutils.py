@@ -439,7 +439,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                 thursday += timedelta(weeks=1)
             timestamp = f"<t:{round(thursday.timestamp())}>"
             embed = discord.Embed(title="DV Grinders Team",
-                                  description=f"<a:dv_pointArrowOwO:837656328482062336> The weekly grinder requirement has been checked.\n<a:dv_pointArrowOwO:837656328482062336> <#862574856846704661> is now unlocked and you may send the cash (21M/35M) to `Dank Vibes Holder#2553` or 1 Trophy to `@{self.client.get_user(542905463541465088)}`\n<a:dv_pointArrowOwO:837656328482062336> The next requirement check will take place at {timestamp}.",
+                                  description=f"<a:dv_pointArrowOwO:837656328482062336> The weekly grinder requirement has been checked.\n<a:dv_pointArrowOwO:837656328482062336> <#862574856846704661> is now unlocked and you may send the cash (21M/35M) or 1 Trophy to `{ctx.author}`.\n<a:dv_pointArrowOwO:837656328482062336> The next requirement check will take place at {timestamp}.",
                                   color=self.client.embed_color)
             embed.set_thumbnail(url="https://cdn.discordapp.com/icons/595457764935991326/a_58b91a8c9e75742d7b423411b0205b2b.gif")
             embed.set_footer(text="DM/Ping Ari#0005 if you have any queries.", icon_url=ctx.guild.icon.url)

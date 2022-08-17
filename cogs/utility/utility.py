@@ -40,6 +40,51 @@ from .reminders import reminders
 from .utility_slash import UtilitySlash
 from .customrole import CustomRoleManagement
 
+class GetHeistPing(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Get the Heist Ping role", style=discord.ButtonStyle.green)
+    async def callback(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if not discord.utils.get(interaction.user.roles, name="Heist Ping"):
+            await interaction.user.add_roles(discord.utils.get(interaction.guild.roles, name="Heist Ping"))
+            await interaction.response.send_message("<:DVB_True:887589686808309791> The <@&758174643814793276> role has been added to you!", ephemeral=True)
+        else:
+            await interaction.response.send_message("<:DVB_True:887589686808309791> You already have the <@&758174643814793276> role.", ephemeral=True)
+
+class TimerRemindMe(discord.ui.View):
+    def __init__(self, timestamp, what_to_remind):
+        self.timestamp = timestamp
+        self.what_to_remind = what_to_remind
+        self.reminded = []
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Remind Me!", emoji="🔔", style=discord.ButtonStyle.blurple)
+    async def remind_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if interaction.channel.id in [876827800236064808, 690125458272288814, 871737314831908974]:
+            heistpingview = GetHeistPing()
+        else:
+            heistpingview = None
+        if time.time() > self.timestamp:
+
+            await interaction.response.send_message("This timer is over.", view=heistpingview, ephemeral=True)
+            button.disabled = True
+            return await interaction.message.edit(view=self)
+        if interaction.user.id in self.reminded:
+            return await interaction.response.send_message("You've already chosen to be reminded!", view=heistpingview, ephemeral=True)
+        else:
+            await interaction.client.get_cog('utility').add_reminder(interaction.user.id, interaction.guild.id, 698462922682138654, interaction.message.id, self.what_to_remind, self.timestamp)
+            if interaction.channel.id in [876827800236064808, 690125458272288814, 871737314831908974]:
+                if interaction.guild.id == 595457764935991326:
+                    heistping = interaction.guild.get_role(758174643814793276)
+                    if heistping in interaction.guild.roles:
+                        await interaction.user.add_roles(heistping)
+                await interaction.response.send_message(f"Alright! I'll remind you about **{self.what_to_remind}** in **{humanize_timedelta(seconds=round(self.timestamp - time.time()))}**.\nI've also given you the **Heist Ping** role for you to be reminded of future heists!", ephemeral=True)
+            else:
+                await interaction.response.send_message(f"Alright! I'll remind you about **{self.what_to_remind}** in **{humanize_timedelta(seconds=round(self.timestamp - time.time()))}**.", ephemeral=True)
+            self.reminded.append(interaction.user.id)
+            return
+
 
 LANGUAGE_CODES = [l for l in googletrans.LANGUAGES.keys()]
 
@@ -246,40 +291,30 @@ class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreac
         await ctx.send(embed=embed)
 
     @commands.command(name="checkpvc", aliases = ["privchannel", "pvc"])
-    async def checkoverwrites(self, ctx, channel:discord.TextChannel=None):
+    async def checkoverwrites(self, ctx, channel:discord.TextChannel = None):
         """
         Checks the permission overwrites for that channel. Can be used to check who is in a private channel.
         """
         if channel is None:
             channel = ctx.channel
         modrole = ctx.guild.get_role(608495204399448066)
-        messages = await channel.history(limit=1, oldest_first=True).flatten()
-        message = None if len(messages) == 0 else messages[0]
         if modrole not in ctx.author.roles:
             channel = ctx.channel
-            if ctx.channel.category_id not in [802467427208265728, 763457841133912074, 789195494664306688, 783299769580781588, 805052824185733120, 834696686923284510, 847897065081274409]:
-                return await ctx.send("You can only use this command in your own private channel.")
-            if not ctx.author.mentioned_in(message):
-                return await ctx.send("You can't check the members in this channel as you do not own this channel. If you think there is an error, please contact a Moderator in <#870880772985344010>.")
-        owner = None
-        owner_member = None
-        if len(message.mentions) > 0:
-            owner_member = message.mentions[0]
-            owner = f"**{owner_member}** {owner_member.mention}"
-            if owner_member not in channel.overwrites:
-                owner += "\n⚠️ Not in channel"
-        else:
-            owner_member = None
+        channel_details = await self.client.db.fetch("SELECT * FROM channels WHERE channel_id = $1", channel)
+        owner = self.client.get_user(channel_details.get('owner_id'))
+        owner_str = f"**{owner}** {owner.mention}"
+        if owner not in channel.overwrites and not (owner.permissions_for(channel).send_messages and owner.permissions_for(channel).view_channel):
+            owner_str += "\n⚠️ Not in channel"
         members = [overwriteobject for overwriteobject in channel.overwrites if isinstance(overwriteobject, discord.Member) and not overwriteobject.bot] # gets all members who have some sort of overwrite in that channel
         membersin = []
         for member in members:
-            if member != owner_member:
+            if member.id != owner.id:
                 permissions = channel.permissions_for(member)
                 if permissions.view_channel == True:
                     membersin.append(f"**{member}** {member.mention}")
         membermsg = "".join(f"`{count}.` {i}\n" for count, i in enumerate(membersin, start=1))
         embed = discord.Embed(title=f"Private Channel Details of #{channel.name}", color=self.client.embed_color, timestamp=discord.utils.utcnow())
-        embed.add_field(name="Owner 🧑‍⚖️", value = owner or "Unknown", inline=True)
+        embed.add_field(name="Owner 🧑‍⚖️", value=owner or "Unknown", inline=True)
         embed.add_field(name="Members", value=membermsg if len(membermsg) > 0 else "No one is in this channel.", inline=True)
         embed.add_field(name="\u200b", value="\u200b", inline=False)
         embed.add_field(name="Member Count", value=f"`{len(membersin)}`", inline=True)
@@ -338,8 +373,12 @@ class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreac
 
     @commands.command(name="invite", hidden=True)
     async def _invite(self, ctx):
-        embed = discord.Embed(title=f"Invite {self.client.user.name}!", description="[Click here to invite me to your server!](https://www.youtube.com/watch?v=9cjS9z0ZKUo)", color=self.client.embed_color)
-        await ctx.send(embed=embed)
+        if ctx.author.id != 650647680837484556:
+            invite_link = discord.utils.oauth_url(self.client.user.id, scopes=['bot'])
+            await ctx.send(f"<{invite_link}>")
+        else:
+            embed = discord.Embed(title=f"Invite {self.client.user.name}!", description="[Click here to invite me to your server!](https://www.youtube.com/watch?v=9cjS9z0ZKUo)", color=self.client.embed_color)
+            await ctx.send(embed=embed)
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='timer')
@@ -359,7 +398,7 @@ class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreac
         embed = discord.Embed(title=humanize_timedelta(seconds=duration), color=self.client.embed_color, timestamp=datetime.fromtimestamp(endtime))
         embed.set_author(name=f"{ctx.author.name}'s {titleembed}", icon_url=ctx.guild.icon.url)
         embed.set_footer(text="Ends at")
-        msg = await channel.send(embed=embed)
+        msg = await channel.send(embed=embed, view=TimerRemindMe(endtime, f"{title} in {channel.mention}"))
         await self.client.db.execute("INSERT INTO timers(guild_id, channel_id, message_id, user_id, time, title) VALUES ($1, $2, $3, $4, $5, $6)", ctx.guild.id, channel.id, msg.id, ctx.author.id, endtime, title)
 
     @commands.cooldown(10, 1, commands.BucketType.user)

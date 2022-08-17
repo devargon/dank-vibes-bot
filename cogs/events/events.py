@@ -17,6 +17,8 @@ guild_id = 871734809154707467 if os.getenv('state') == '1' else 5954577649359913
 class Events(MemberJoin, StatusTasks, PresenceUpdate, OnMessage, commands.Cog):
     def __init__(self, client):
         self.client: dvvt = client
+        self.mafia_wait = False
+        self.client: dvvt = client
         self.cooldown = []
 
     @tasks.loop(minutes=1)

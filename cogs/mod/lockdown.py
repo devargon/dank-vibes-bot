@@ -3,6 +3,8 @@ import os
 import discord
 from datetime import datetime
 from discord.ext import commands
+
+from main import dvvt
 from utils import checks
 import asyncio
 from discord.ext import commands, pages
@@ -101,7 +103,7 @@ class LockdownPagination:
 
 class lockdown(commands.Cog):
     def __init__(self, client):
-        self.client = client
+        self.client: dvvt = client
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.group(name="lockdown", invoke_without_command=True)
@@ -381,6 +383,7 @@ View the guide on https://docs.dvbot.nogra.xyz/commands/mod/tools/#lockdown-star
                 for case in special_cases:
                     msg_content += f"{case[0]} - {case[1]}"
             await ctx.send(msg_content)
+            await self.client.logger.log_lockdown('start', ctx.author, profile_name)
 
 
     @checks.has_permissions_or_role(manage_roles=True)
@@ -450,6 +453,7 @@ View the guide on https://docs.dvbot.nogra.xyz/commands/mod/tools/#lockdown-star
                 for case in special_cases:
                     msg_content += f"{case[0]} - {case[1]}"
             await ctx.send(msg_content)
+            await self.client.logger.log_lockdown('end', ctx.author, profile_name)
 
     @checks.has_permissions_or_role(manage_roles=True)
     @lockdown.command(name="msg", aliases = ["message"])
@@ -464,8 +468,7 @@ View the guide on https://docs.dvbot.nogra.xyz/commands/mod/tools/#lockdown-star
         if profile_name is None:
             return await ctx.send("You need to specify the name of the lockdown profile. `lockdown delete [profile_name]`")
         profile_name = profile_name.lower()
-        lockdown_profile = await self.client.db.fetch(
-            "SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
+        lockdown_profile = await self.client.db.fetch("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
         if len(lockdown_profile) == 0:
             return await ctx.send(f"There is no such lockdown profile with the name **{profile_name}**.")
         startEndview = start_or_end(ctx, self.client, 30.0)
@@ -480,28 +483,34 @@ View the guide on https://docs.dvbot.nogra.xyz/commands/mod/tools/#lockdown-star
             embed.color = discord.Color.red()
             embed.description = "You didn't select an option."
             return await msg.edit(embed=embed)
+        if startEndview.returning_value == 0:
+            refer_to_start = True
+        else:
+            refer_to_start = False
+        lockdownmsg_entry = await self.client.db.fetchrow("SELECT * FROM lockdownmsgs WHERE guild_id = $1 and profile_name = $2", ctx.guild.id, profile_name)
         if message is None:
-            lockdownmsg_entry = await self.client.db.fetchrow("SELECT * FROM lockdownmsgs WHERE guild_id = $1 and profile_name = $2", ctx.guild.id, profile_name)
             if lockdownmsg_entry is not None:
-                if startEndview.returning_value == 0:
+                if refer_to_start is True:
                     lockdownmsg = lockdownmsg_entry.get('startmsg')
-                elif startEndview.returning_value == 1:
+                elif refer_to_start is False:
                     lockdownmsg = lockdownmsg_entry.get('endmsg')
                 else:
                     lockdownmsg = None
                 if lockdownmsg is not None:
                     return await send_lockdown_message(self, ctx.channel, lockdownmsg, f"This is the message sent when channels are {'locked' if startEndview.returning_value == 0 else 'unlocked'} in the lockdown profile **{profile_name}**.", startEndview.returning_value == 0)
             return await ctx.send(f"There is no message set for **{'unlocking' if startEndview.returning_value == 0 else 'locking'}** channels in the lockdown profile **{profile_name}**. You can set one with `dv.lockdown msg {profile_name} [message_in_plain_text_or_json]`.")
-        lockdownprofilemsg = await self.client.db.fetchrow("SELECT * FROM lockdownmsgs WHERE profile_name = $1 and guild_id = $2", profile_name, ctx.guild.id)
-        slug = 'startmsg' if startEndview.returning_value == 0 else 'endmsg'
-        if lockdownprofilemsg is not None:
-            if startEndview.returning_value == 0:
+        slug = 'startmsg' if refer_to_start is True else 'endmsg'
+        if lockdownmsg_entry is not None:
+            if refer_to_start is True:
                 await self.client.db.execute("UPDATE lockdownmsgs SET startmsg = $1 WHERE profile_name = $2 and guild_id = $3", message, profile_name, ctx.guild.id)
-            elif startEndview.returning_value == 1:
+            elif refer_to_start is False:
                 await self.client.db.execute("UPDATE lockdownmsgs SET endmsg = $1 WHERE profile_name = $2 and guild_id = $3", message, profile_name, ctx.guild.id)
         else:
-            if startEndview.returning_value == 0:
+            if refer_to_start is True:
                 await self.client.db.execute("INSERT INTO lockdownmsgs (guild_id, profile_name, startmsg) VALUES($1, $2, $3)", ctx.guild.id, profile_name, message)
-            elif startEndview.returning_value == 1:
+            elif refer_to_start is False:
                 await self.client.db.execute("INSERT INTO lockdownmsgs (guild_id, profile_name, endmsg) VALUES($1, $2, $3)", ctx.guild.id, profile_name, message)
-        return await send_lockdown_message(self, ctx.channel, message, f"I have successfully set your lockdown message for the lockdown profile **{profile_name}**. This is how it will look like:", True if startEndview.returning_value == 0 else False)
+        await send_lockdown_message(self, ctx.channel, message, f"I have successfully set your lockdown message for the lockdown profile **{profile_name}**. This is how it will look like:", True if startEndview.returning_value == 0 else False)
+        original_message = lockdownmsg_entry.get(slug)
+
+        await self.client.logger.log_lockdown_message(ctx.author, original_message or "", message, profile_name, "Lockdown Start message" if refer_to_start is True else "Lockdown End message")
