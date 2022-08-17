@@ -301,10 +301,13 @@ class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreac
         if modrole not in ctx.author.roles:
             channel = ctx.channel
         channel_details = await self.client.db.fetchrow("SELECT * FROM channels WHERE channel_id = $1", channel.id)
-        owner = self.client.get_user(channel_details.get('owner_id'))
-        owner_str = f"**{owner}** {owner.mention}"
-        if owner not in channel.overwrites and not (owner.permissions_for(channel).send_messages and owner.permissions_for(channel).view_channel):
-            owner_str += "\n⚠️ Not in channel"
+        if channel_details is None:
+            owner = "Unknown"
+        else:
+            owner = self.client.get_user(channel_details.get('owner_id'))
+            owner_str = f"**{owner}** {owner.mention}"
+            if owner not in channel.overwrites and not (owner.permissions_for(channel).send_messages and owner.permissions_for(channel).view_channel):
+                owner_str += "\n⚠️ Not in channel"
         members = [overwriteobject for overwriteobject in channel.overwrites if isinstance(overwriteobject, discord.Member) and not overwriteobject.bot] # gets all members who have some sort of overwrite in that channel
         membersin = []
         for member in members:
