@@ -302,28 +302,29 @@ class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreac
             channel = ctx.channel
         channel_details = await self.client.db.fetchrow("SELECT * FROM channels WHERE channel_id = $1", channel.id)
         if channel_details is None:
-            owner = "Unknown"
+            owner = None
         else:
             owner = self.client.get_user(channel_details.get('owner_id'))
-            owner_str = f"**{owner}** {owner.mention}"
-            if owner not in channel.overwrites and not (owner.permissions_for(channel).send_messages and owner.permissions_for(channel).view_channel):
-                owner_str += "\n⚠️ Not in channel"
         members = [overwriteobject for overwriteobject in channel.overwrites if isinstance(overwriteobject, discord.Member) and not overwriteobject.bot] # gets all members who have some sort of overwrite in that channel
         membersin = []
         for member in members:
-            if (isinstance(owner, discord.Member) or isinstance(owner, discord.User)):
-                if member.id != owner.id:
-                    permissions = channel.permissions_for(member)
-                    if permissions.view_channel == True:
-                        membersin.append(f"**{member}** {member.mention}")
-            else:
-                permissions = channel.permissions_for(member)
-                if permissions.view_channel == True:
-                    membersin.append(f"**{member}** {member.mention}")
+            if owner is not None:
+                if member.id == owner.id:
+                    continue
+            permissions = channel.permissions_for(member)
+            if permissions.view_channel == True:
+                membersin.append(f"**{member}** {member.mention}")
+        if owner is not None:
+            owner_str = f"**{owner}** {owner.mention}"
+            if owner not in channel.overwrites and not (
+                    owner.permissions_for(channel).send_messages and owner.permissions_for(channel).view_channel):
+                owner_str += "\n⚠️ Not in channel"
+        else:
+            owner_str = "Unknown"
 
         membermsg = "".join(f"`{count}.` {i}\n" for count, i in enumerate(membersin, start=1))
         embed = discord.Embed(title=f"Private Channel Details of #{channel.name}", color=self.client.embed_color, timestamp=discord.utils.utcnow())
-        embed.add_field(name="Owner 🧑‍⚖️", value=owner or "Unknown", inline=True)
+        embed.add_field(name="Owner 🧑‍⚖️", value=owner_str, inline=True)
         embed.add_field(name="Members", value=membermsg if len(membermsg) > 0 else "No one is in this channel.", inline=True)
         embed.add_field(name="\u200b", value="\u200b", inline=False)
         embed.add_field(name="Member Count", value=f"`{len(membersin)}`", inline=True)
