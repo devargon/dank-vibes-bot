@@ -175,8 +175,14 @@ class BetterBetterRoles(commands.Converter):
 class BetterColor(commands.Converter):
     async def convert(self, ctx, argument):
         try:
-            return await commands.ColourConverter().convert(ctx, argument)
+            arg = await commands.ColourConverter().convert(ctx, argument)
         except commands.BadArgument:
             if len(argument) == 6:
                 argument = f"#{argument}"
-                return await commands.ColourConverter().convert(ctx, argument)
+                arg = await commands.ColourConverter().convert(ctx, argument)
+            else:
+                arg = None
+        if not isinstance(arg, discord.Colour):
+            return ArgumentBaseError(message=f"{argument} is not a valid color.\nPlease provide a valid color in the format of:\n`#FFFFFF`\n`FFFFFF`\n`0xFFFFFF`\n`0x#FFFFFF`\n`rgb(255, 255, 255)`\nA colour name")
+        else:
+            return arg
