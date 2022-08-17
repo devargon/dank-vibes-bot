@@ -15,6 +15,7 @@ from utils.context import DVVTcontext
 from utils.format import print_exception
 from utils.specialobjects import MISSING, ServerConfiguration, AwaitingAmariData, NoAmariData
 from utils.errors import AmariUserNotFound, AmariDataNotFound, AmariError, AmariDeveloperError
+from utils.botlogger import BotLogger
 
 
 class EditContent:
@@ -47,7 +48,6 @@ AVAILABLE_EXTENSIONS = [
     'cogs.grinder',
     'cogs.automod',
     'cogs.giveaways',
-    'cogs.donations',
     'cogs.dankmemer',
     'cogs.events',
     'cogs.imgen',
@@ -92,7 +92,7 @@ class dvvt(commands.Bot):
         self.clownmode = {}
         self.clownprofiles = {}
         self.clown_duration = 180
-        #self.logger = Logger(self)
+        self.logger = BotLogger(self)
         self.logstrf = strfformat
         for ext in self.available_extensions:
             self.load_extension(ext, store=False)

@@ -15,6 +15,7 @@ from .sticky import Sticky
 from .mod_slash import ModSlash
 from .role import Role
 from .channel import ChannelUtils
+from .donations import donations
 
 from utils import checks
 from utils.buttons import *
@@ -265,7 +266,7 @@ class ModlogPagination:
         return embed
 
 
-class Mod(Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
+class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreenshot, lockdown, commands.Cog, name='mod'):
     """
     Mod commands
     """
@@ -1056,6 +1057,7 @@ class Mod(Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreens
         target_str = human_join([target.mention for target in targets], final='and')
         channel_str = human_join([channel.mention for channel in channels], final='and')
         await ctx.send(f"{target_str} will be prevented from sending messages in {channel_str}. You'll need to set the cleanup message again for any newly added channels with `dv.messagecleanup message [target] [message]`.")
+        await self.client.logger.log_messagecommand('add', ctx.author, targets, channels)
 
     @checks.has_permissions_or_role(manage_roles=True)
     @messagecleanup.command(name='remove', aliases=['r'])
@@ -1077,6 +1079,7 @@ class Mod(Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreens
         for _channel in channel:
             if _channel.id not in existing:
                 failed.append(f"{_channel.mention} not in list of channels for {target}")
+                channel.remove(_channel)
             else:
                 to_push.append((ctx.guild.id, target.id, _channel.id))
         if len(failed) > 0:
@@ -1084,12 +1087,14 @@ class Mod(Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreens
         if len(to_push) > 0:
             await self.client.db.executemany("DELETE FROM usercleanup WHERE guild_id = $1 AND target_id = $2 AND channel_id = $3", to_push)
             await ctx.send(f"{target} will no longer be prevented from sending messages in {human_join([channel.mention for channel in channel], final='and')}.")
+            await self.client.logger.log_messagecommand('remove', ctx.author, [target], channel)
 
     @checks.has_permissions_or_role(manage_roles=True)
     @messagecleanup.command(name="message", aliases=['m'])
     async def messagecleanup_message(self, ctx: DVVTcontext, target: discord.Member = None, *, message: str = None):
         """
         Sets a message to be shown when a message is deleted with the messagecleanup feature.
+        To remove the message, type `none` in the `message` argument.
         """
         if target is None:
             return await ctx.send("You need to specify a target to edit or display its messages.")
@@ -1106,6 +1111,7 @@ class Mod(Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, BrowserScreens
                 return await ctx.send(f"Your message is {len(message)} characters long, which is too long. Please keep it under 1500 characters.")
             await self.client.db.execute("UPDATE usercleanup SET message = $1 WHERE guild_id = $2 AND target_id = $3", message, ctx.guild.id, target.id)
             await ctx.send(f"{target}'s message has been set to: {message}")
+            await self.client.logger.log_messagecommand_message(ctx.author, target, message)
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.group(name="afkmafia", invoke_without_command=True)
