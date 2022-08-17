@@ -4,6 +4,7 @@ import time
 
 import discord
 from discord.ext import commands
+from discord import SlashCommandGroup
 from discord import default_permissions
 from utils.format import stringtime_duration, human_join, comma_number, generate_loadbar, plural
 from utils.buttons import confirm
@@ -14,6 +15,33 @@ from utils import checks
 class ModSlash(commands.Cog):
     def __init__(self, client):
         self.client = client
+
+    mod_util = SlashCommandGroup("modutil", "Moderation Utility Commands")
+
+    #@checks.has_permissions_or_role(manage_roles=True)
+    @mod_util.command(name="dm")
+    async def mod_dm(self, ctx: discord.ApplicationContext, user: discord.Member, message: discord.Option(str, max_length=2000)):
+        embed = discord.Embed(title=f"You sent to {user}", description=message, color=self.client.embed_color)
+        user_embed = discord.Embed(title="Message", description=message, color=discord.Color.purple(), timestamp=discord.utils.utcnow())
+        try:
+            await user.send(f"You have received a message from a Moderator in {ctx.guild.name}.", embed=user_embed)
+        except discord.Forbidden:
+            confirmview = confirm(ctx, self.client, timeout=30)
+            confirmview.response = await ctx.respond(f"<:DVB_False:887589731515392000> **I was unable to DM {user}.**\nDo you want them to be pinged in <#698462922682138654> with the message instead?", view=confirmview)
+            await confirmview.wait()
+            if confirmview.returning_value is True:
+                bot_lounge = discord.utils.get(ctx.guild.channels, name="╭・bot-lounge")
+                if bot_lounge is not None:
+                    await bot_lounge.send(f"{user.mention} You have received a message from a Moderator in {ctx.guild.name}.", embed=user_embed)
+                    embed.title += f" via {bot_lounge.name}."
+                    await ctx.respond(embed=embed)
+                else:
+                    await ctx.respond("Bot Lounge channel not found.")
+        else:
+            await ctx.respond(embed=embed)
+
+
+
 
     @default_permissions(manage_roles=True)
     @checks.has_permissions_or_role(manage_roles=True)
