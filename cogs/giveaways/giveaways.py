@@ -858,7 +858,7 @@ class GiveawayView(discord.ui.View):
                 users_formatted.append(f"{user_id}")
         page_embeds = []
         if len(users_formatted) > 0:
-            chunks = [discord.utils.as_chunks(users_formatted, 25)]
+            chunks = [discord.utils.as_chunks(users_formatted, 20)]
             for index, group in enumerate(chunks):
                 embed = discord.Embed(title="Giveaway Entrants", description='\n'.join(users_formatted), color=self.client.embed_color)
                 embed.set_footer(text=f"{len(users_formatted)} entrants | Page {index + 1}/{len(chunks)}")
