@@ -304,15 +304,7 @@ class donations(commands.Cog):
         embed.set_thumbnail(url=member.display_avatar.url)
         embed.set_author(name="Success!", icon_url="https://cdn.discordapp.com/emojis/575412409737543694.gif?size=96")
         embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
-        if category_name.lower() == 'celebdank' and currentcount < 60000000 and newamount >= 60000000:
-            con = "Looks like they've reached at least ⏣ 60,000,000 donated, please give them the **Celeb Donator** role if necessary."
-        elif category_name.lower() == 'celebowo' and currentcount < 2000000 and newamount >= 2000000:
-            con = "Looks like they've reached at least <:dv_owoCowoncy:889983770285969408> 1,000,000 donated, please give them the **Celeb Donator** role if necessary."
-        elif category_name.lower() == 'celebkaruta' and currentcount < 20 and newamount >= 20:
-            con = "Looks like they've reached at least 🎟️ 30 tickets donated, please give them the **Celeb Donator** role if necessary."
-        else:
-            con = ""
-        await ctx.send(con, embed=embed)
+        await ctx.send(embed=embed)
         notify_about_logging = await self.client.db.fetchval("SELECT notify_about_logging FROM userconfig WHERE user_id = $1", ctx.author.id)
         if notify_about_logging is not True:
             if ctx.channel.id == 652729093649072168:
