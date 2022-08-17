@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands, menus
+from discord.ext import commands, menus, pages
 from colorthief import ColorThief
 from utils import checks
 from io import BytesIO
@@ -8,24 +8,21 @@ from typing import Union
 import re
 from utils import http
 from PIL import UnidentifiedImageError
+from utils.converters import BetterColor
 
 regex = re.compile(
         r'^https?://' # http:// or https://
         r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?))' #localhoar # optional port
         r'(?:/?|[/?]\S+)$', re.IGNORECASE)
 
-class ColorDisplay(menus.ListPageSource):
-    def __init__(self, entries, title, avatar):
-        self.title = title
-        self.avatar = avatar
-        super().__init__(entries, per_page=1)
-
-    async def format_page(self, menu, entries):
-        embed = discord.Embed(title=self.title, description=entries[0], color = entries[2], timestamp=discord.utils.utcnow())
-        embed.set_thumbnail(url=entries[1])
-        embed.set_image(url=self.avatar)
-        embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
-        return embed
+def format_pages(entries, avatar, title):
+    pages = []
+    for i in entries:
+        embed = discord.Embed(title=title, description=i[0], color=i[2])
+        embed.set_thumbnail(url=i[1])
+        embed.set_image(url=avatar)
+        pages.append(embed)
+    return pages
 
 def rgb_to_hex(rgb):
     return '%02x%02x%02x' % rgb
@@ -37,9 +34,9 @@ class color(commands.Cog):
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="color", aliases=["colour"])
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def color(self, ctx, argument:Union[discord.Member, discord.Colour, str] = None):
+    async def color(self, ctx, argument: Union[discord.Member, discord.Color, str] = None):
         """
-        Gets dominant and matching colors of your profile picture.
+        Gets dominant and matching colors of your profile picture. You can also specify another member, a color or an image link.
         """
         if argument is None:
             argument = ctx.author
@@ -70,7 +67,7 @@ class color(commands.Cog):
             color = image.to_rgb()
             hexcode = rgb_to_hex(color)
             hex_int = int(hexcode, 16)
-            messagecontents = (f"HEX: `{hexcode}`\nRGB: `{color}`\nINT: `{int(hex_int)}`", f"https://api.alexflipnote.dev/color/image/{hexcode}", hex_int)
+            messagecontents = (f"HEX: `{hexcode}`\nRGB: `{color}`\nINT: `{int(hex_int)}`", f"https://argon-alexflipnote-api.herokuapp.com/color?color={hexcode}", hex_int)
         else:
             try:
                 color_thief = ColorThief(BytesIO(image))
@@ -81,10 +78,10 @@ class color(commands.Cog):
             for color in palette:
                 hexcode = rgb_to_hex(color)
                 hex_int = int(hexcode, 16)
-                messagecontents.append((f"HEX: `{hexcode}`\nRGB: `{color}`\nINT: `{int(hex_int)}`", f"https://api.alexflipnote.dev/color/image/{hexcode}", int(hex_int)))
+                messagecontents.append((f"HEX: `{hexcode}`\nRGB: `{color}`\nINT: `{int(hex_int)}`", f"https://argon-alexflipnote-api.herokuapp.com/color?color={hexcode}", int(hex_int)))
         title = f"{argument.name}'s Profile Picture Color" if isinstance(argument, discord.Member) else "Your Color" if isinstance(argument, discord.Color) else "Image dominant colors"
-        if type(messagecontents) == tuple: # if type is a color
-            pages = CustomMenu(source=ColorDisplay([messagecontents], title, messagecontents[1]), clear_reactions_after=True, timeout=60)
-        else:
-            pages = CustomMenu(source=ColorDisplay(messagecontents, title, argument.display_avatar.url if isinstance(argument, discord.Member) else argument), clear_reactions_after=True, timeout=60)
-        return await pages.start(ctx)
+        raw_entries = [messagecontents] if type(messagecontents) == tuple else messagecontents
+        embed_pages = format_pages(raw_entries, argument.display_avatar.url if isinstance(argument, discord.Member) else f"https://argon-alexflipnote-api.herokuapp.com/color?color={hexcode}?size=1000" if isinstance(argument, discord.Colour) else argument if isinstance(argument, str) else discord.Embed.Empty, title)
+        paginator = pages.Paginator(embed_pages, show_disabled=True)
+        await paginator.send(ctx)
+
