@@ -468,7 +468,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
                 await ctx.send(f"I could not find a category for the ID {category}")
             else:
                 categories.append(category) # gets all the categories for channels
-        owner_channel_ids = await self.client.db.fetch("SELECT channel_id FROM channels WHERE owner_id = $1")
+        owner_channel_ids = await self.client.db.fetch("SELECT channel_id FROM channels WHERE owner_id = $1", member.id)
         owner_channels = [owner_channel_id.get('channel_id') for owner_channel_id in owner_channel_ids] # gets all the channel IDs for the owner channels
         accessiblechannels = []
         for category in categories:
