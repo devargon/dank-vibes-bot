@@ -121,7 +121,8 @@ class dvvt(commands.Bot):
                     weeklyexp = 0
                 else:
                     weeklyexp = weekly_leaderboard.exp
-                leaderboard.weeklyexp = weeklyexp
+                if leaderboard is not None:
+                    leaderboard.weeklyexp = weeklyexp
         return (leaderboard, data_last_updated, error)
 
 
