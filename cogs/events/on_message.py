@@ -225,8 +225,8 @@ class OnMessage(commands.Cog):
                         await message.channel.send(offender_msg)
         if (message.content.lower().startswith('m.setup') or message.content.lower().startswith('m.prep')) and not message.author.bot and self.mafia_wait is not True:
             lounge_category = 595457764935991327 if message.guild.id == 595457764935991326 else 875316745416617984
-            if message.channel.id == 711377990113820924 or discord.utils.get(message.author.roles, id=735417263968223234) or message.author.guild_permissions.manage_roles:
-                #         it will treat it as a to be monitored game if it's in events, or user is a modm+/event hoster
+            if message.channel.id == 711377990113820924 or discord.utils.get(message.author.roles, id=735417263968223234) or discord.utils.get(message.author.roles, id=724971657143255170) or message.author.guild_permissions.manage_roles:
+                #         it will treat it as a to be monitored game if it's in events, or user is a modm+/event hoster or event sponsor
                 status = ["<a:DVB_CLoad3:994913503771111515> Waiting for Mafia Channel creation."]
                 self.mafia_wait = True
                 mafia_status_msg = await message.channel.send("\n".join(status))
@@ -284,6 +284,7 @@ class OnMessage(commands.Cog):
                 status[1] = f"{return_emoji(True)} {log_channel.mention} Mafia Log channel created."
                 mafia_status_msg = await safe_edit(mafia_status_msg)
                 self.mafia_wait = False
+                await message.channel.send(f"**The Mafia logging channel {log_channel.mention} has been created**, it is now safe to start the game.")
         if message.channel.id in self.client.mafia_channels.keys():
             #mafia logging
             log_channel_id = self.client.mafia_channels[message.channel.id]
