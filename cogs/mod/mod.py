@@ -62,7 +62,7 @@ class CaptchaFrontView(discord.ui.View):
         self.attempts = []
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Enter Captcha Text", style=discord.ButtonStyle.red)
+    @discord.ui.button(label="Enter Captcha Text", style=discord.ButtonStyle.red, emoji=discord.PartialEmoji.from_str("<:DVB_click:1010590546252804187>"))
     async def callback(self, button: discord.ui.Button, interaction: discord.Interaction):
         await interaction.response.send_modal(self.inputmodal)
         await self.inputmodal.wait()
@@ -1240,6 +1240,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         """
         captcha_string, image_bytes = await generate_captcha()
         warnembed = discord.Embed(title=f"Please complete a captcha and continue interaction.", description="Your behaviour was flagged by a Moderator.\nYou must complete a captcha before proceeding.", color=discord.Color.red())
+        warnembed.set_footer(text="Press the button to complete the captcha.")
         warnembed.set_thumbnail(url="https://cdn.discordapp.com/attachments/871737314831908974/1007187090771038299/unknown.png")
 
         message = await ctx.send("<a:DVB_CLoad2:994913353388527668> Preparing Captcha...", file=discord.File(fp=image_bytes, filename="captcha.png"))
@@ -1280,7 +1281,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon.url)
         if mainview.user_completed_captcha is True:
             descriptions = [
-                f"**{user.mention} answered the captcha correctly after {short_humanize_timedelta(seconds=round(time.time()-mainview.time_completed_captcha))}.**",
+                f"**{user.mention} answered the captcha correctly after {short_humanize_timedelta(seconds=round(time.time()-message.created_at.timestamp()))}.**",
                 f"They had attempted the captcha **{len(mainview.attempts)}** times.",
                 f"The captcha message was sent **{times_sent}** times before it was answered.",
             ]
