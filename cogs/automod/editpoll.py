@@ -49,7 +49,7 @@ class polledition(commands.Cog):
             embed.add_field(name=name, value=value, inline=False)
         return embed
 
-    @tasks.loop(seconds=10)
+    @tasks.loop(seconds=20)
     async def edit_polls(self):
         try:
             await self.client.wait_until_ready()
