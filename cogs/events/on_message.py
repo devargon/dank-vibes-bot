@@ -206,14 +206,11 @@ class OnMessage(commands.Cog):
                                         await message.channel.send(content=message.author.mention, embed=embed)
                                         self.pls_prompt[message.channel.id] = round(time())
                                     else:
-                                        if message.channel.id in [614945340617130004, 677986732704137226]:
-                                            print("user has manage message perms")
+                                        print(f"{message.channel.name}:{message.author} | user has manage message perms")
                                 else:
-                                    if message.channel.id in [614945340617130004, 677986732704137226]:
-                                        print("not in appropraite category")
+                                    print(f"{message.channel.name}:{message.author} | not in appropraite category")
                             else:
-                                if message.channel.id in [614945340617130004, 677986732704137226]:
-                                    print(f"current time {round(time())} is not 60 more than {last_sent}")
+                                print(f"{message.channel.name}:{message.author} | current time {round(time())} is not 60 more than {last_sent}")
             if settings.mrob_ar is True:
                 if con.startswith('m.rob') or con.startswith('m.steal'):
                     split_cmd = con.split(' ')
