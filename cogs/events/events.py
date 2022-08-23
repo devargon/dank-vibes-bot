@@ -21,6 +21,7 @@ class Events(GuildChannelCreate, MemberJoin, StatusTasks, PresenceUpdate, OnMess
         self.mafia_wait = False
         self.client: dvvt = client
         self.cooldown = []
+        self.pls_prompt = {}
 
     @tasks.loop(minutes=1)
     async def check_status(self):

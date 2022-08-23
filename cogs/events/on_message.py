@@ -130,6 +130,7 @@ class OnMessage(commands.Cog):
     def __init__(self, client):
         self.client: dvvt = client
         self.mafia_wait = False
+        self.pls_prompt = {}
 
 
     @commands.Cog.listener()
@@ -196,16 +197,18 @@ class OnMessage(commands.Cog):
                             await message.channel.send(f"**Robbing is disabled** in {message.guild.name}. This is for the safety of everyone's wallets in this server.")
                         else:
                             whitelisted_user_ids = [758173667682287616, 758175713983201300]
-                            if message.channel.id in [698462922682138654, 608498967474601995, 871737314831908974] and not any(discord.utils.get(message.author.roles, id=roleid) for roleid in whitelisted_user_ids):
-                                if not message.channel.permissions_for(message.author).manage_messages:
-                                    if discord.utils.get(message.author.roles, id=dankmemerplayerrole_id):
-                                        msg = f"{message.author.mention}\n**Dank Memer does __not__ work in this channel.**\nClick below to head to a Bot channel to use Dank Memer."
-                                        await message.channel.send(msg, view=ChannelOnlyView())
+                            last_sent = self.pls_prompt.get(message.channel.id, round(time())-60)
+                            if time() - last_sent >= 60:
+                                if message.channel.category_id in [644006682392788992, 797167555767697408, 947298067500114061, 608505446717849630, 802467427208265728, 763457841133912074, 789195494664306688, 783299769580781588, 805052824185733120, 834696686923284510, 847897065081274409, 875316745416617984]:
+                                    if any(discord.utils.get(message.author.roles, id=roleid) for roleid in whitelisted_user_ids):
+                                        pass
                                     else:
-                                        msg = f"{message.author.mention}\n**Dank Memer does __not__ work in this channel.**\n<:dv_peepoblush2OwO:837653921949548605> The Dank Memer bot can be used in channels just for Dank Memer. <:dv_peepoBlushOwO:837653418017161236>\n\nClick the button below to get the **Dank Memer Player** role and access these channels!"
-                                        await message.channel.send(msg, view=RoleOnlyView())
-                                else:
-                                    pass
+                                        embed = discord.Embed(title="Dank Memer has switched to slash commands.", description="**`pls` commands have been replaced** with <:DVB_commands:913426937869926440> **slash commands.**\nType `/` to find your favorite Dank Memer command.\n\n`pls help` → `/help`\n`pls beg` -> `/beg`\n\nIf you have answers or queries, join [Dank Memer's Support Server.](https://discord.gg/dankmemerbot)", color=0xff0000)
+                                        embed.set_footer(text=message.guild.name, icon_url=message.guild.icon.url)
+                                        embed.set_image(url="https://cdn.discordapp.com/attachments/874651808943976498/1011681689916952627/unknown.png")
+                                        if not message.channel.permissions_for(message.author).manage_messages:
+                                            await message.channel.send(content=message.author.mention, embed=embed)
+                                            self.pls_prompt[message.channel.id] = round(time())
             if settings.mrob_ar is True:
                 if con.startswith('m.rob') or con.startswith('m.steal'):
                     split_cmd = con.split(' ')
