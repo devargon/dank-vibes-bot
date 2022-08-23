@@ -44,7 +44,6 @@ class InputCaptcha(discord.ui.Modal):
         self.value = input
         self.children[0].value = ""
         if input.lower() == self.captchatext.lower():
-
             await interaction.response.send_message("<:DVB_True:887589686808309791> You have successfully completed the captcha.", ephemeral=True)
             self.stop()
         else:
@@ -66,7 +65,7 @@ class CaptchaFrontView(discord.ui.View):
     async def callback(self, button: discord.ui.Button, interaction: discord.Interaction):
         await interaction.response.send_modal(self.inputmodal)
         await self.inputmodal.wait()
-        self.attempts.append(self.inputmodal.value)
+        self.attempts.append(self.inputmodal.value or "No input")
         if type(self.inputmodal.value) == str:
             if self.inputmodal.value.lower() == self.captchatext.lower():
                 self.user_completed_captcha = True
