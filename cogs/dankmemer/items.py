@@ -151,7 +151,7 @@ class DankItems(commands.Cog):
                         overwrite = checking_item.get('overwrite')
                         embed = discord.Embed(
                             title=name,
-                            description=f"```\n⏣ {comma_number(trade_value)}\n```",
+                            description=f"⚠️ ```\n⏣ {comma_number(trade_value)}\n```" if trade_value == 0 else f"```\n⏣ {comma_number(trade_value)}\n```",
                             color=self.client.embed_color,
                             timestamp=datetime.fromtimestamp(last_updated))
                         field_details = f"**Type**: {type}\n**ID**: `{result}`"
@@ -186,8 +186,12 @@ class DankItems(commands.Cog):
                     for chunked_list in discord.utils.as_chunks(lst, 10):
                         desc = []
                         for name, idcode, trade_value in chunked_list:
-                            all_items.append(f"**{name}** `{idcode}`: [⏣ {comma_number(trade_value)}](http://a/)")
-                            desc.append(f"**{name}** `{idcode}`: [⏣ {comma_number(trade_value)}](http://a/)")
+                            if trade_value == 0:
+                                warning = "⚠️ "
+                            else:
+                                warning = ""
+                            all_items.append(f"{warning}**{name}** `{idcode}`: [⏣ {comma_number(trade_value)}](http://a/)")
+                            desc.append(f"{warning}**{name}** `{idcode}`: [⏣ {comma_number(trade_value)}](http://a/)")
                         embed = discord.Embed(title=f"{type} Items", description="\n".join(desc),
                                               color=self.client.embed_color)
                         page_obj = discord.ext.pages.Page(embeds=[embed])
@@ -292,7 +296,11 @@ class DankItems(commands.Cog):
             item_calc_result = []
             for item in items:
                 total_worth += item[1] * item[2]
-                item_calc_result.append(f"`{item[2]}` **{item[0]}**: `⏣ {comma_number(item[1] * item[2])}`")
+                if item[1] == 0:
+                    warning = "⚠️ "
+                else:
+                    warning = ""
+                item_calc_result.append(f"{warning}`{item[2]}` **{item[0]}**: `⏣ {comma_number(item[1] * item[2])}`")
             item_summary_embed = discord.Embed(title=f"Detected items", description="", color=self.client.embed_color)
             embed_count = 0
             hidden_items = 0
