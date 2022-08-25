@@ -20,7 +20,7 @@ import cogs.dankmemer
 
 
 item_name_regex = re.compile(r"^(.+) \([\d,]*\)")
-trade_val_re = re.compile(r"^\*\*VALUE\*\* - \u23e3 ([\d,]*)")
+trade_val_re = re.compile(r"^\*\*VALUE\*\* - (\u23e3 [\d,]*|Unknown)")
 
 async def checkmark(message:discord.Message):
     try:
@@ -634,13 +634,11 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 if len(item_val_matches) != 1:
                     return
                 else:
-                    try:
-                        item_worth = int(item_val_matches[0].replace(',', ''))
-                    except ValueError:
-                        if type(item_name) == str and "plastic bit" in item_name.lower():
-                            item_worth = None
-                        else:
-                            item_worth = 0
+                    item_worth_raw = item_val_matches[0]
+                    if "\u23e3" in item_worth_raw:
+                        item_worth = int(item_worth_raw.split(' ')[1].replace(',', ''))
+                    else:
+                        item_worth = 0
             if item_name is None or item_worth is None or item_type is None:
                 return
             if type(embed.thumbnail.url) == str:
