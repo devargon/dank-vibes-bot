@@ -329,7 +329,7 @@ class ItemGames(commands.Cog):
             return await pages.start(ctx)
 
     @inventory.command(name="info", aliases=['item'])
-    async def item_info(self, ctx, item: str = None):
+    async def item_info(self, ctx, *, item: str = None):
         """
         Know more about an item.
         """
