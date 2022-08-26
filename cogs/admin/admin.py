@@ -90,7 +90,23 @@ class UpdateStatusText(discord.ui.Modal):
         self.interaction = interaction
         self.stop()
 
+class UpdateChannelID(discord.ui.Modal):
+    def __init__(self, *args, **kwargs) -> None:
+        self.channel_id: int = None
+        self.interaction: discord.Interaction = None
+        super().__init__(*args, **kwargs)
 
+        self.add_item(discord.ui.InputText(label="ID of the channel", required=True, placeholder="Only Channel IDs are accepted.", style=discord.InputTextStyle.short))
+
+    async def callback(self, interaction: discord.Interaction):
+        channel_id = self.children[0].value
+        channel_id = channel_id.strip()
+        try:
+            self.channel_id = int(channel_id)
+        except ValueError:
+            await interaction.response.send_message("You did not provide a valid Channel ID.", ephemeral=True)
+        self.interaction = interaction
+        self.stop()
 class UpdateRoleID(discord.ui.Modal):
     def __init__(self, *args, **kwargs) -> None:
         self.role_id: int = None
@@ -168,6 +184,16 @@ class ServerConfigView(discord.ui.View):
                 elif self.custom_id == "auto_decancer":
                     self.serverconfig.auto_decancer = update_bool(self.serverconfig.auto_decancer)
                     self.style = get_style(self.serverconfig.auto_decancer)
+                elif self.custom_id == "mute_lem":
+                    self.serverconfig.mute_lem = update_bool(self.serverconfig.mute_lem)
+                    self.style = get_style(self.serverconfig.mute_lem)
+                elif self.custom_id == "serverpool_donation_log":
+                    self.serverconfig.serverpool_donation_log = update_bool(self.serverconfig.serverpool_donation_log)
+                    self.style = get_style(self.serverconfig.serverpool_donation_log)
+                else:
+                    await interaction.response.send_message(f"invalid custom id {self.custom_id}", ephemeral=True)
+                    await self.serverconfig.update(self.client)
+                    return
                 await self.serverconfig.update(self.client)
                 await interaction.response.edit_message(embed=self.view.get_embed(), view=self.view)
 
@@ -202,6 +228,38 @@ class ServerConfigView(discord.ui.View):
                         await modal.interaction.followup.send("You did not provide a valid Role ID.", ephemeral=True)
                     else:
                         await modal.interaction.response.send_message("You did not provide a valid Role ID.", ephemeral=True)
+
+        class ChangeLoggingChanneL(discord.ui.Button):
+            async def callback(self, interaction: discord.Interaction):
+                modal = UpdateChannelID(title="Change Logging Channel")
+                await interaction.response.send_modal(modal)
+                await modal.wait()
+                if modal.channel_id is not None:
+                    channel = interaction.guild.get_channel(modal.channel_id)
+                    if channel is None:
+                        if modal.interaction.response.is_done():
+                            await modal.interaction.followup.send(f"A channel with ID **{modal.channel_id}** does not exist.", ephemeral=True)
+                        else:
+                            await modal.interaction.response.send_message(f"A channel with ID **{modal.channel_id}** does not exist.", ephemeral=True)
+                    else:
+                        if not isinstance(channel, discord.TextChannel):
+                            if modal.interaction.response.is_done():
+                                await modal.interaction.followup.send(f"**{channel.mention}** is **NOT** a **text** channel.", ephemeral=True)
+                            else:
+                                await modal.interaction.response.send_message(f"**{channel.mention}** is **NOT** a **text** channel.", ephemeral=True)
+                        else:
+                            self.view.serverconfig.log_channel = modal.channel_id
+                            await self.view.serverconfig.update(self.view.client)
+                            await interaction.edit_original_message(embed=self.view.get_embed(), view=self.view)
+                            if modal.interaction.response.is_done():
+                                await modal.interaction.followup.send(f"Log channel has been changed to **{channel.mention}**.", ephemeral=True)
+                            else:
+                                await modal.interaction.response.send_message(f"Log channel has been changed to **{channel.mention}**.", ephemeral=True)
+                else:
+                    if modal.interaction.response.is_done():
+                        await modal.interaction.followup.send("You did not provide a valid Channel ID.", ephemeral=True)
+                    else:
+                        await modal.interaction.response.send_message("You did not provide a valid Channel ID.", ephemeral=True)
 
         class ChangeBanDays(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
@@ -273,6 +331,9 @@ class ServerConfigView(discord.ui.View):
         self.add_item(BaseToggleButton(self.serverconfig, self.client, label="MafiaBot Rob AR", custom_id="mrob_ar", style=get_style(self.serverconfig.mrob_ar)))
         self.add_item(BaseToggleButton(self.serverconfig, self.client, label="Auto Decancer", custom_id="auto_decancer", style=get_style(self.serverconfig.auto_decancer)))
         self.add_item(BaseToggleButton(self.serverconfig, self.client, label="Status Role", custom_id="statusroleenabled", style=get_style(self.serverconfig.statusroleenabled)))
+        self.add_item(BaseToggleButton(self.serverconfig, self.client, label="Mute Lem", custom_id="mute_lem", style=get_style(self.serverconfig.mute_lem)))
+        self.add_item(BaseToggleButton(self.serverconfig, self.client, label="Serverpool Log", custom_id="serverpool_donation_log", style=get_style(self.serverconfig.serverpool_donation_log)))
+        self.add_item(ChangeLoggingChanneL(label="Log channel (Click here to change)"))
         self.add_item(ChangeRoleID(label="Status Reward -> Role ID (Click here to change)"))
         self.add_item(StatusText(label="Status Text (Click here to change)"))
         self.add_item(ChangeBanDays(label="Ban Days (Click here to change)"))
@@ -290,10 +351,15 @@ class ServerConfigView(discord.ui.View):
         embed.add_field(name=f"Auto Decancer - {return_emoji(self.serverconfig.auto_decancer)}", value="Decancer user's names when they join")
         embed.add_field(name=f"MafiaBot Rob AR - {return_emoji(self.serverconfig.mrob_ar)}", value=f"Responds to `m.rob`.")
         embed.add_field(name=f"Status Rewards - {return_emoji(self.serverconfig.statusroleenabled)}", value=f"Whether status role rewards are enabled.")
+        embed.add_field(name=f"Mute Lem - {return_emoji(self.serverconfig.mute_lem)}", value=f"Mute Lem whenever he starts typing")
+        embed.add_field(name=f"Log Serverpool Donations - {return_emoji(self.serverconfig.serverpool_donation_log)}", value=f"\u200b")
         embed.add_field(name=f"Status Text - `{self.serverconfig.statustext}`", value=f"The text in a user's status to be able to obtain the role.", inline=False)
         embed.add_field(name=f"Status Role - `{self.ctx.guild.get_role(self.serverconfig.statusroleid) or self.serverconfig.statusroleid}`", value=f"The ID of the role that can be obtained.", inline=False)
         embed.add_field(name=f"Status Matching - `{self.serverconfig.statusmatchtype}`", value=f"How should the status text be matched.\n`Strict`: Must be exactly the same.\n`Contains`: Must contain the text but any other text can be addded.", inline=False)
         embed.add_field(name=f"Days for auto-ban - `{self.serverconfig.autoban_duration}`", value=f"The minimum number of days a user's account should be created.")
+        log_channel = self.ctx.guild.get_channel(self.serverconfig.log_channel)
+        log_channel_repr = f"#{log_channel.name}" if log_channel is not None else f"{self.serverconfig.log_channel} (unknown)"
+        embed.add_field(name=f"Mod Log channel - `{log_channel_repr}`", value=f"The channel where DV Bot actions will be logged.")
         embed.set_footer(text=self.ctx.guild.name, icon_url=self.ctx.guild.icon.url)
         return embed
 
