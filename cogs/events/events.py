@@ -6,6 +6,7 @@ from main import dvvt
 from .on_message import OnMessage
 from .on_presence_update import PresenceUpdate
 from .on_ready import Ready
+from .on_raw_typing import RawTyping
 from .on_member_join import MemberJoin
 from .on_guild_channel_create import GuildChannelCreate
 from .status_task import StatusTasks
@@ -15,13 +16,14 @@ from utils.format import box
 
 guild_id = 871734809154707467 if os.getenv('state') == '1' else 595457764935991326
 
-class Events(GuildChannelCreate, MemberJoin, StatusTasks, PresenceUpdate, OnMessage, commands.Cog):
+class Events(RawTyping, GuildChannelCreate, MemberJoin, StatusTasks, PresenceUpdate, OnMessage, commands.Cog):
     def __init__(self, client):
         self.client: dvvt = client
         self.mafia_wait = False
         self.client: dvvt = client
         self.cooldown = []
         self.pls_prompt = {}
+        self.last_muted = 0
 
     @tasks.loop(minutes=1)
     async def check_status(self):
