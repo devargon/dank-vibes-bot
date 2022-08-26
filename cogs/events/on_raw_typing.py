@@ -18,9 +18,8 @@ class RawTyping(commands.Cog):
     async def on_raw_typing(self, payload: discord.RawTypingEvent):
         if payload.member is not None and payload.member.id == lems_id:
             member = payload.member
-            print("found target")
         else:
-            return print("not target")
+            return
         guild = self.client.get_guild(payload.guild_id)
         channel = guild.get_channel(payload.channel_id)
         settings = await self.client.get_guild_settings(payload.guild_id)
