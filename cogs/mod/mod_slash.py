@@ -186,7 +186,6 @@ class ModSlash(commands.Cog):
             confirmview = confirm(ctx, self.client, 60.0)
             confirmview.response = await ctx.respond(embed=confirm_embed, files=files, view=confirmview)
             confirmview.stop()
-            return
             await confirmview.wait()
             if confirmview.returning_value is not True:
                 confirm_embed.color = discord.Color.red()
