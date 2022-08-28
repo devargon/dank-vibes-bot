@@ -12,6 +12,11 @@ from utils.context import DVVTcontext
 from utils.menus import ListPageInteractionBase, MenuViewInteractionBase
 from utils.helper import BaseEmbed
 
+class SingleURLButton(discord.ui.View):
+    def __init__(self, link: str, text: str, emoji=None, timeout= 30):
+        super().__init__(timeout=timeout, disable_on_timeout=True)
+        self.add_item(discord.ui.Button(label=text, url=link, emoji=emoji))
+
 class confirm(discord.ui.View):
     def __init__(self, ctx: Union[DVVTcontext, discord.ApplicationContext], client, timeout):
         self.timeout = timeout or 30
