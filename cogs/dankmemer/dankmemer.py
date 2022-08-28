@@ -802,23 +802,22 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         """
         Hunting Reminder
         """
-        if (message.content.startswith("You went hunting") or message.content.startswith("Imagine going into the woods") or message.content.startswith("You might be the only hunter")) and message.author.id == dank_memer_id and len(message.mentions) > 0:
-            member = message.mentions[0]
+        if is_dank_slash_command(message, 'beg') and message.embeds[0].title not in cooldown_messages:
+            member = message.interaction.user
             nexthunttime = round(time.time()) + 25
             await self.handle_reminder_entry(member.id, 8, message.channel.id, message.guild.id, nexthunttime)
         """
         Fishing Reminder
         """
-        if (message.content.startswith("You cast out your line") or message.content.startswith("LMAO you found nothing.") or message.content.startswith("Awh man, no fis")) and message.author.id == dank_memer_id and len(message.mentions) > 0:
-            member = message.mentions[0]
+        if is_dank_slash_command(message, 'fish') and message.embeds[0].title not in cooldown_messages:
+            member = message.interaction.user
             nextfishtime = round(time.time()) + 25
             await self.handle_reminder_entry(member.id, 9, message.channel.id, message.guild.id, nextfishtime)
         """
         Dig Reminder
         """
-        if message.interaction.name == "beg" and
-        if (message.content.startswith("You dig in the dirt") or message.content.startswith("LMAO you found nothing in the ground.")) and message.author.id == dank_memer_id and len(message.mentions) > 0:
-            member = message.mentions[0]
+        if is_dank_slash_command(message, 'dig') and message.embeds[0].title not in cooldown_messages:
+            member = message.interaction.user
             nextdigtime = round(time.time()) + 25
             await self.handle_reminder_entry(member.id, 10, message.channel.id, message.guild.id, nextdigtime)
         """
