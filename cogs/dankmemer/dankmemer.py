@@ -664,7 +664,8 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                             log_channel = self.client.get_channel(serverpool_donate_log_channel_id)
                             if log_channel is not None:
                                 webh = await self.client.get_webhook(log_channel)
-                                await webh.send(username=self.client.user.name, display_avatar=self.client.user.display_avatar.url, embed=embed)
+                                view = SingleURLButton(message.jump_url, "Jump to Message", None)
+                                await webh.send(username=self.client.user.name, display_avatar=self.client.user.display_avatar.url, embed=embed, view=view)
 
         """
         Let's update trade values first
