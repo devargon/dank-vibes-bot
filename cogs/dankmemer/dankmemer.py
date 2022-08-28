@@ -422,6 +422,18 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         }
 
 
+    async def wait_for_edit(self, message: discord.Message):
+        def check_hl(payload_before, payload_after):
+            return payload_after.id == message.id
+
+        try:
+            await self.client.wait_for("message_edit", check=check_hl, timeout=30.0)
+        except asyncio.TimeoutError:
+            return False
+        else:
+            return True
+
+
     def cog_unload(self):
         self.dankmemerreminders.stop()
         self.dropreminder.stop()
@@ -634,7 +646,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             guild_settings = await self.client.get_guild_settings(message.guild.id)
             if guild_settings.serverpool_donation_log is True:
                 embed = message.embeds[0]
-                if "Successfully donated!" in embed.description:
+                if type(embed.description) == str and "Successfully donated!" in embed.description:
                     m_reference = message.reference
                     if m_reference.cached_message is None:
                         original_message = await message.channel.fetch_message(m_reference.channel_id)
@@ -825,88 +837,54 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         """
         # this requires advanced coding because the cooldown only occurs after the user "guessed" the number
         if is_dank_slash_command(message, 'highlow') and message.embeds[0].title not in cooldown_messages:
-            def check_hl(payload_before, payload_after):
-                return payload_after.id == message.id
-            try:
-                print('waiting for message edit')
-                await self.client.wait_for("message_edit", check=check_hl, timeout=30.0)
-            except asyncio.TimeoutError:
-                print("couldnt detect message edit")
+            if await self.wait_for_edit(message) is not True:
                 return await crossmark(message)
             else:
-                print('done')
                 member = message.interaction.user
                 nexthighlowtime = round(time.time()) + 15
                 await self.handle_reminder_entry(member.id, 15, message.channel.id, message.guild.id, nexthighlowtime)
         """
         Snakeeyes Reminder
         """
-        if message.content.lower().startswith("pls snakeeyes") or message.content.lower().startswith("pls se ") and not message.author.bot and not message.content.lower().startswith("pls search"):
-            content = message.content.split()
-            if len(content) < 3:
-                return await crossmark(message)
-            if content[2] == 'max':
-                pass
-            else:
-                try:
-                    content = int(content[2])
-                except ValueError:
-                        return await crossmark(message)
-                else:
-                    if content < 50:
-                        return await crossmark(message)
-            def check_snakeeyes(payload):
-                return len(payload.embeds) > 0 and payload.author.id == dank_memer_id and message.author.mentioned_in(payload) and payload.embeds[0].author.name == f"{message.author.name}'s snake eyes game"
-            try:
-                await self.client.wait_for('message', check=check_snakeeyes, timeout=30.0)
-            except asyncio.TimeoutError:
-                return await crossmark(message)
-            else:
-                member = message.author
-                nextsnakeeyestime = round(time.time()) + 5
-                await self.handle_reminder_entry(member.id, 14, message.channel.id, message.guild.id, nextsnakeeyestime)
+        if is_dank_slash_command(message, 'snakeeyes') and message.embeds[0].title not in cooldown_messages:
+            member = message.interaction.user
+            nextsnakeeyestime = round(time.time()) + 5
+            await self.handle_reminder_entry(member.id, 14, message.channel.id, message.guild.id, nextsnakeeyestime)
         """
         Search Reminder
         """
-        if "Where do you want to search?" in message.content and message.author.id == dank_memer_id and len(message.mentions) > 0:
-            member = message.mentions[0]
-            nextsearchtime = round(time.time()) + 15
-            existing = await self.client.db.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 13)
-            if len(existing) > 0:
-                await self.client.db.execute("UPDATE dankreminders set time = $1 WHERE member_id = $2 and remindertype = $3", nextsearchtime, member.id, 13)
+        if is_dank_slash_command(message, 'search') and message.embeds[0].title not in cooldown_messages:
+            if await self.wait_for_edit(message) is not True:
+                return await crossmark(message)
             else:
-                await self.client.db.execute("INSERT INTO dankreminders(member_id, remindertype, channel_id, guild_id, time) VALUES($1, $2, $3, $4, $5)", member.id, 13, message.channel.id, message.guild.id, nextsearchtime)
+                member = message.interaction.user
+                nextsearchtime = round(time.time()) + 15
+                await self.handle_reminder_entry(member.id, 13, message.channel.id, message.guild.id, nextsearchtime)
         """
         Crime Reminder
         """
-        if "What crime do you want to commit?" in message.content and message.author.id == dank_memer_id and len(message.mentions) > 0:
-            member = message.mentions[0]
-            nextcrimetime = round(time.time()) + 15
-            await self.handle_reminder_entry(member.id, 11, message.channel.id, message.guild.id, nextcrimetime)
+        if is_dank_slash_command(message, 'crime') and message.embeds[0].title not in cooldown_messages:
+            if await self.wait_for_edit(message) is not True:
+                return await crossmark(message)
+            else:
+                member = message.interaction.user
+                nextcrimetime = round(time.time()) + 15
+                await self.handle_reminder_entry(member.id, 11, message.channel.id, message.guild.id, nextcrimetime)
         """
         Beg Reminder
         """
-        if message.content.lower().startswith("pls beg") and not message.author.bot:
-            def check_beg(payload):
-                return len(payload.embeds) > 0 and message.author.mentioned_in(payload) and payload.author.id == dank_memer_id
-            try:
-                botresponse = await self.client.wait_for('message', check=check_beg, timeout = 5.0)
-            except asyncio.TimeoutError:
-                return await crossmark(message)
-            else:
-                if botresponse.embeds[0].description.startswith("Stop begging so much"):
-                    return await crossmark(botresponse)
-                else:
-                    member = message.author
-                    nextbegtime = round(time.time()) + 25
-                    await self.handle_reminder_entry(member.id, 12, message.channel.id, message.guild.id, nextbegtime)
+        if is_dank_slash_command(message, 'beg') and message.embeds[0].title not in cooldown_messages:
+            member = message.interaction.user
+            nextbegtime = round(time.time()) + 25
+            await self.handle_reminder_entry(member.id, 12, message.channel.id, message.guild.id, nextbegtime)
         """
         Horseshoe Reminder
         """
-        if message.content.startswith("You equip your lucky horseshoe") and message.author.id == dank_memer_id and len(message.mentions) > 0:
-            member = message.mentions[0]
-            nexthorseshoetime = round(time.time()) + 1800
-            await self.handle_reminder_entry(member.id, 17, message.channel.id, message.guild.id, nexthorseshoetime)
+        if is_dank_slash_command(message, 'use'):
+            if "Lucky Horseshoe" in message.embeds[0].description and "15 minutes" in message.embeds[0].description:
+                member = message.interaction.user
+                nexthorseshoetime = round(time.time()) + 900
+                await self.handle_reminder_entry(member.id, 17, message.channel.id, message.guild.id, nexthorseshoetime)
         """
         Pizza Reminder
         """
