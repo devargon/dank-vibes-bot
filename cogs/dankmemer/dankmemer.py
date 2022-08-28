@@ -729,7 +729,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         """
         Refer to https://discord.com/channels/871734809154707467/871737332431216661/873142587001827379 to all message events here
         """
-        if message.interaction.name == "daily" and message.author.id == dank_memer_id:
+        if is_dank_slash_command(message, 'daily'):
             member = message.interaction.user
             now = discord.utils.utcnow()
             next_reminder_time = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
@@ -802,7 +802,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         """
         Hunting Reminder
         """
-        if is_dank_slash_command(message, 'beg') and message.embeds[0].title not in cooldown_messages:
+        if is_dank_slash_command(message, 'hunt') and message.embeds[0].title not in cooldown_messages:
             member = message.interaction.user
             nexthunttime = round(time.time()) + 25
             await self.handle_reminder_entry(member.id, 8, message.channel.id, message.guild.id, nexthunttime)
@@ -823,25 +823,21 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         """
         Highlow Reminder
         """
-        if message.content.lower().startswith("pls hl") or message.content.lower().startswith("pls highlow") and not message.author.bot:
-            def check_hl(payload):
-                return payload.author.bot and len(payload.embeds) > 0 and payload.channel == message.channel and payload.author.id == dank_memer_id and message.author.mentioned_in(payload)
+        # this requires advanced coding because the cooldown only occurs after the user "guessed" the number
+        if is_dank_slash_command(message, 'highlow') and message.embeds[0].title not in cooldown_messages:
+            def check_hl(payload_before, payload_after):
+                return payload_after.id == message.id
             try:
-                botresponse = await self.client.wait_for("message", check=check_hl, timeout = 5.0)
+                print('waiting for message edit')
+                await self.client.wait_for("message_edit", check=check_hl, timeout=30.0)
             except asyncio.TimeoutError:
+                print("couldnt detect message edit")
                 return await crossmark(message)
             else:
-                if botresponse.embeds[0].author.name == f"{message.author.name}'s high-low game":
-                    def check_hl(payload_before, payload_after):
-                        return payload_after.id == botresponse.id
-                    try:
-                        await self.client.wait_for("message_edit", check=check_hl, timeout=30.0)
-                    except asyncio.TimeoutError:
-                        return await crossmark(botresponse)
-                    else:
-                        member = message.author
-                        nexthighlowtime = round(time.time()) + 15
-                        await self.handle_reminder_entry(member.id, 15, message.channel.id, message.guild.id, nexthighlowtime)
+                print('done')
+                member = message.interaction.user
+                nexthighlowtime = round(time.time()) + 15
+                await self.handle_reminder_entry(member.id, 15, message.channel.id, message.guild.id, nexthighlowtime)
         """
         Snakeeyes Reminder
         """
