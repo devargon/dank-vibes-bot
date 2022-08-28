@@ -2,6 +2,7 @@ import re
 import time
 import asyncio
 from typing import Tuple
+import os
 
 import discord
 import operator
@@ -15,18 +16,31 @@ from datetime import datetime, timedelta
 from discord.ext import commands, tasks, pages
 from utils.format import print_exception, short_time, comma_number, stringnum_toint
 from utils.buttons import *
+from utils.specialobjects import DankItem
 from .items import DankItems
 import cogs.dankmemer
 
 
 item_name_regex = re.compile(r"^(.+) \([\d,]*\)")
 trade_val_re = re.compile(r"^\*\*VALUE\*\* - (\u23e3 [\d,]*|Unknown)")
+server_coin_donate_re = re.compile(r"> You will donate \*\*\u23e3 ([\d,]*)\*\*")
+server_item_donate_re = re.compile(r"\*\*(.*)\*\*")
+serverpool_donate_log_channel_id = 871737314831908974 if os.getenv('state') == '1' else 1012700307383398430
+dank_memer_id = 270904126974590976
 
 async def checkmark(message:discord.Message):
     try:
         await message.add_reaction("<:DVB_checkmark:955345523139805214>")
     except discord.NotFound:
         return None
+
+def is_dank_slash_command(message: discord.Message, command: str):
+    if message.author.id == dank_memer_id:
+        if message.interaction is not None:
+            if message.interaction.type == 2:
+                if message.interaction.name == command:
+                    return True
+    return False
 
 
 async def clock(message:discord.Message):
@@ -596,8 +610,8 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 await self.client.get_guild(871734809154707467).get_channel(871737028105109574).send(embed=embed)
 
     @commands.Cog.listener()
-    async def on_message(self, message):
-        if message.author.bot and message.author.id != 270904126974590976:
+    async def on_message(self, message: discord.Message):
+        if message.author.bot and message.author.id != dank_memer_id:
             return
         if self.client.maintenance.get(self.qualified_name) and await self.client.db.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", message.author.id) is not True:
             return
@@ -605,6 +619,53 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             return
         #if message.guild.id != 595457764935991326:
 #            return
+        """
+        Serverevents Donate
+        """
+        if message.author.id == dank_memer_id and len(message.embeds) > 0 and message.reference is not None:
+            guild_settings = await self.client.get_guild_settings(message.guild.id)
+            if guild_settings.serverpool_donation_log is True:
+                embed = message.embeds[0]
+                if "Successfully donated!" in embed.description:
+                    m_reference = message.reference
+                    if m_reference.cached_message is None:
+                        original_message = await message.channel.fetch_message(m_reference.channel_id)
+                    else:
+                        original_message = m_reference.cached_message
+                    coins, item_count, item = None, None, None
+                    if original_message.interaction.name == "serverevents donate" and len(original_message.embeds) > 0:
+                        e = original_message.embeds[0]
+                        coins_line = e.description.split('\n')[2]
+                        coins = re.findall(server_coin_donate_re, coins_line)
+                        if len(coins) > 0: # match for coins in embed found
+                            try:
+                                coins = int(coins[0].replace(',', ''))
+                            except ValueError:
+                                pass
+                        else: #most likely item or error
+                            item_str_raw = re.findall(server_item_donate_re, coins_line)
+                            if len(item_str_raw) > 0:
+                                items_raw_str = item_str_raw[0]
+                                items_raw = items_raw_str.split(' ')
+                                if len(items_raw) >= 3: # "<count> <emoji> <item name...>"
+                                    item_count = int(items_raw[0].replace(',', '').strip())
+                                    item_name = items_raw[2:].strip()
+                                    a = await self.client.db.fetchrow("SELECT * FROM dankitems WHERE name = $1", item_name)
+                                    if a is not None:
+                                        item = DankItem(a)
+                        if coins is not None or (item is not None and item_count is not None):
+                            embed = discord.Embed(title="Server Pool Donation", color=discord.Color.brand_green(), timestamp=discord.utils.utcnow())
+                            embed.set_author(name=f"{original_message.interaction.user}", icon_url=original_message.interaction.user.display_avatar.url)
+                            embed.set_footer(text=f"{original_message.interaction.user.id}")
+                            if coins is not None:
+                                embed.description = f"**\u23e3 {comma_number(coins)}**"
+                            else:
+                                embed.description = f"**{comma_number(item_count)} {item.name}**\nWorth \u23e3 {comma_number(item_count*item.trade_value)}"
+                            log_channel = self.client.get_channel(serverpool_donate_log_channel_id)
+                            if log_channel is not None:
+                                webh = await self.client.get_webhook(log_channel)
+                                await webh.send(username=self.client.user.name, display_avatar=self.client.user.display_avatar.url, embed=embed)
+
         """
         Let's update trade values first
         """
@@ -659,32 +720,19 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         """
         Refer to https://discord.com/channels/871734809154707467/871737332431216661/873142587001827379 to all message events here
         """
-        if message.content.lower() in ["pls daily", "pls 24hr"]:
-            if not message.author.bot:
-                def check_daily(payload):
-                    if len(payload.embeds) == 0 or payload.author.id == message.author.id or not payload.author.bot or message.channel != payload.channel or payload.author.id != 270904126974590976:
-                        return False
-                    else:
-                        return payload.embeds[0].title and payload.embeds[0].title == f"{message.author.name}'s Daily Coins"
-                try:
-                    botresponse = await self.client.wait_for("message", check=check_daily, timeout=10)
-                except asyncio.TimeoutError:
-                    return await crossmark(message)
-                else:
-                    member = message.author
-                    nextdailytime = round(time.time())
-                    while nextdailytime % 86400 != 0:
-                        nextdailytime += 1
-                    await self.handle_reminder_entry(member.id, 2, message.channel.id, message.guild.id, nextdailytime, uses_name=True)
-                    with contextlib.suppress(discord.HTTPException):
-                        await clock(message)
-            else:
-                pass
+        if message.interaction.name == "daily" and message.author.id == dank_memer_id:
+            member = message.interaction.user
+            now = discord.utils.utcnow()
+            next_reminder_time = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+            nextdailytime = round(next_reminder_time.timestamp())
+            await self.handle_reminder_entry(member.id, 2, message.channel.id, message.guild.id, nextdailytime)
+            with contextlib.suppress(discord.HTTPException):
+                await clock(message)
 
         if "pls weekly" in message.content.lower():
             if not message.author.bot:
                 def check_weekly(payload):
-                    if len(payload.embeds) == 0 or payload.author.id == message.author.id or not payload.author.bot or message.channel != payload.channel or payload.author.id != 270904126974590976:
+                    if len(payload.embeds) == 0 or payload.author.id == message.author.id or not payload.author.bot or message.channel != payload.channel or payload.author.id != dank_memer_id:
                         return False
                     else:
                         return payload.embeds[0].title and payload.embeds[0].title == f"Here are yer weekly coins, {message.author.name}" or payload.embeds[0].title == f"Here are your weekly coins, {message.author.name}"
@@ -704,7 +752,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         if "pls monthly" in message.content.lower():
             if not message.author.bot:
                 def check_monthly(payload):
-                    if len(payload.embeds) == 0 or payload.author.id == message.author.id or not payload.author.bot or message.channel != payload.channel or payload.author.id != 270904126974590976:
+                    if len(payload.embeds) == 0 or payload.author.id == message.author.id or not payload.author.bot or message.channel != payload.channel or payload.author.id != dank_memer_id:
                         return False
                     else:
                         return payload.embeds[0].title and payload.embeds[0].title == f"Here are yer monthly coins, {message.author.name}" or payload.embeds[0].title == f"Here are your monthly coins, {message.author.name}"
@@ -747,7 +795,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         """
         if "pls redeem" in message.content.lower():
             def check_redeem(payload):
-                return payload.author.bot and len(payload.embeds) > 0 and payload.channel == message.channel and payload.author.id == 270904126974590976
+                return payload.author.bot and len(payload.embeds) > 0 and payload.channel == message.channel and payload.author.id == dank_memer_id
             try:
                 redeemresponse = await self.client.wait_for("message", check=check_redeem, timeout = 15)
             except asyncio.TimeoutError:
@@ -764,21 +812,22 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         """
         Hunting Reminder
         """
-        if (message.content.startswith("You went hunting") or message.content.startswith("Imagine going into the woods") or message.content.startswith("You might be the only hunter")) and message.author.id == 270904126974590976 and len(message.mentions) > 0:
+        if (message.content.startswith("You went hunting") or message.content.startswith("Imagine going into the woods") or message.content.startswith("You might be the only hunter")) and message.author.id == dank_memer_id and len(message.mentions) > 0:
             member = message.mentions[0]
             nexthunttime = round(time.time()) + 25
             await self.handle_reminder_entry(member.id, 8, message.channel.id, message.guild.id, nexthunttime)
         """
         Fishing Reminder
         """
-        if (message.content.startswith("You cast out your line") or message.content.startswith("LMAO you found nothing.") or message.content.startswith("Awh man, no fis")) and message.author.id == 270904126974590976 and len(message.mentions) > 0:
+        if (message.content.startswith("You cast out your line") or message.content.startswith("LMAO you found nothing.") or message.content.startswith("Awh man, no fis")) and message.author.id == dank_memer_id and len(message.mentions) > 0:
             member = message.mentions[0]
             nextfishtime = round(time.time()) + 25
             await self.handle_reminder_entry(member.id, 9, message.channel.id, message.guild.id, nextfishtime)
         """
         Dig Reminder
         """
-        if (message.content.startswith("You dig in the dirt") or message.content.startswith("LMAO you found nothing in the ground.")) and message.author.id == 270904126974590976 and len(message.mentions) > 0:
+        if message.interaction.name == "beg" and
+        if (message.content.startswith("You dig in the dirt") or message.content.startswith("LMAO you found nothing in the ground.")) and message.author.id == dank_memer_id and len(message.mentions) > 0:
             member = message.mentions[0]
             nextdigtime = round(time.time()) + 25
             await self.handle_reminder_entry(member.id, 10, message.channel.id, message.guild.id, nextdigtime)
@@ -787,7 +836,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         """
         if message.content.lower().startswith("pls hl") or message.content.lower().startswith("pls highlow") and not message.author.bot:
             def check_hl(payload):
-                return payload.author.bot and len(payload.embeds) > 0 and payload.channel == message.channel and payload.author.id == 270904126974590976 and message.author.mentioned_in(payload)
+                return payload.author.bot and len(payload.embeds) > 0 and payload.channel == message.channel and payload.author.id == dank_memer_id and message.author.mentioned_in(payload)
             try:
                 botresponse = await self.client.wait_for("message", check=check_hl, timeout = 5.0)
             except asyncio.TimeoutError:
@@ -822,7 +871,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                     if content < 50:
                         return await crossmark(message)
             def check_snakeeyes(payload):
-                return len(payload.embeds) > 0 and payload.author.id == 270904126974590976 and message.author.mentioned_in(payload) and payload.embeds[0].author.name == f"{message.author.name}'s snake eyes game"
+                return len(payload.embeds) > 0 and payload.author.id == dank_memer_id and message.author.mentioned_in(payload) and payload.embeds[0].author.name == f"{message.author.name}'s snake eyes game"
             try:
                 await self.client.wait_for('message', check=check_snakeeyes, timeout=30.0)
             except asyncio.TimeoutError:
@@ -834,7 +883,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         """
         Search Reminder
         """
-        if "Where do you want to search?" in message.content and message.author.id == 270904126974590976 and len(message.mentions) > 0:
+        if "Where do you want to search?" in message.content and message.author.id == dank_memer_id and len(message.mentions) > 0:
             member = message.mentions[0]
             nextsearchtime = round(time.time()) + 15
             existing = await self.client.db.fetch("SELECT * FROM dankreminders where member_id = $1 and remindertype = $2", member.id, 13)
@@ -845,7 +894,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         """
         Crime Reminder
         """
-        if "What crime do you want to commit?" in message.content and message.author.id == 270904126974590976 and len(message.mentions) > 0:
+        if "What crime do you want to commit?" in message.content and message.author.id == dank_memer_id and len(message.mentions) > 0:
             member = message.mentions[0]
             nextcrimetime = round(time.time()) + 15
             await self.handle_reminder_entry(member.id, 11, message.channel.id, message.guild.id, nextcrimetime)
@@ -854,7 +903,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         """
         if message.content.lower().startswith("pls beg") and not message.author.bot:
             def check_beg(payload):
-                return len(payload.embeds) > 0 and message.author.mentioned_in(payload) and payload.author.id == 270904126974590976
+                return len(payload.embeds) > 0 and message.author.mentioned_in(payload) and payload.author.id == dank_memer_id
             try:
                 botresponse = await self.client.wait_for('message', check=check_beg, timeout = 5.0)
             except asyncio.TimeoutError:
@@ -869,21 +918,21 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         """
         Horseshoe Reminder
         """
-        if message.content.startswith("You equip your lucky horseshoe") and message.author.id == 270904126974590976 and len(message.mentions) > 0:
+        if message.content.startswith("You equip your lucky horseshoe") and message.author.id == dank_memer_id and len(message.mentions) > 0:
             member = message.mentions[0]
             nexthorseshoetime = round(time.time()) + 1800
             await self.handle_reminder_entry(member.id, 17, message.channel.id, message.guild.id, nexthorseshoetime)
         """
         Pizza Reminder
         """
-        if message.content.startswith("You eat the perfect slice of pizza.") and message.author.id == 270904126974590976 and len(message.mentions) > 0:
+        if message.content.startswith("You eat the perfect slice of pizza.") and message.author.id == dank_memer_id and len(message.mentions) > 0:
             member = message.mentions[0]
             nextpizzatime = round(time.time()) + 7200
             await self.handle_reminder_entry(member.id, 18, message.channel.id, message.guild.id, nextpizzatime)
         """
         Work Reminder
         """
-        if len(message.embeds) > 0 and message.author.id == 270904126974590976 and len(message.mentions) > 0 and message.embeds[0].description and (message.embeds[0].description.startswith("**TERRIBLE work!**") or message.embeds[0].description.startswith("**Great work!**")):
+        if len(message.embeds) > 0 and message.author.id == dank_memer_id and len(message.mentions) > 0 and message.embeds[0].description and (message.embeds[0].description.startswith("**TERRIBLE work!**") or message.embeds[0].description.startswith("**Great work!**")):
                 member = message.mentions[0]
                 nextworktime = round(time.time()) + 3600
                 await self.handle_reminder_entry(member.id, 6, message.channel.id, message.guild.id, nextworktime)
@@ -892,7 +941,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         """
         Postmeme reminder
         """
-        if message.author.id == 270904126974590976:
+        if message.author.id == dank_memer_id:
             if len(message.mentions) > 0:
                 if len(message.embeds) > 0:
                     if message.embeds[0].author:
@@ -903,7 +952,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         """
         Marriage reminder
         """
-        if message.author.id == 270904126974590976:
+        if message.author.id == dank_memer_id:
             if len(message.mentions) > 0:
                 if len(message.embeds) > 0:
                     try:
@@ -921,7 +970,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         """
         Stream Start Reminder
         """
-        if message.author.id == 270904126974590976:
+        if message.author.id == dank_memer_id:
             if len(message.embeds) > 0:
                 embed = message.embeds[0]
                 if type(embed.footer.text) == str:
@@ -951,7 +1000,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
 
     @commands.Cog.listener()
     async def on_message_edit(self, beforemsg, aftermsg):
-        if beforemsg.author.id != 270904126974590976:
+        if beforemsg.author.id != dank_memer_id:
             return
         if len(beforemsg.embeds) == 0 or len(aftermsg.embeds) == 0:
             return
