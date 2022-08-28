@@ -885,13 +885,18 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 member = message.interaction.user
                 nexthorseshoetime = round(time.time()) + 900
                 await self.handle_reminder_entry(member.id, 17, message.channel.id, message.guild.id, nexthorseshoetime)
+                with contextlib.suppress(discord.HTTPException):
+                    await message.add_reaction('<:DVB_Horseshoe:888404491647463454>')
         """
         Pizza Reminder
         """
-        if message.content.startswith("You eat the perfect slice of pizza.") and message.author.id == dank_memer_id and len(message.mentions) > 0:
-            member = message.mentions[0]
-            nextpizzatime = round(time.time()) + 7200
-            await self.handle_reminder_entry(member.id, 18, message.channel.id, message.guild.id, nextpizzatime)
+        if is_dank_slash_command(message, 'use'):
+            if "perfect slice of pizza" in message.embeds[0].description and "the next hour" in message.embeds[0].description:
+                member = message.interaction.user
+                nextpizzatime = round(time.time()) + 3600
+                await self.handle_reminder_entry(member.id, 18, message.channel.id, message.guild.id, nextpizzatime)
+                with contextlib.suppress(discord.HTTPException):
+                    await message.add_reaction('<:DVB_pizza:888404502280024145>')
         """
         Work Reminder
         """
