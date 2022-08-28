@@ -27,6 +27,14 @@ server_coin_donate_re = re.compile(r"> You will donate \*\*\u23e3 ([\d,]*)\*\*")
 server_item_donate_re = re.compile(r"\*\*(.*)\*\*")
 serverpool_donate_log_channel_id = 871737314831908974 if os.getenv('state') == '1' else 1012700307383398430
 dank_memer_id = 270904126974590976
+cooldown_messages = ["Spam isn't cool fam",
+                     'Woah now, slow it down',
+                     'Take a chill pill',
+                     'Hold your horses...',
+                     'Take a breather...',
+                     'Woah nelly, slow it down'
+                     ]
+
 
 async def checkmark(message:discord.Message):
     try:
@@ -791,25 +799,6 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                     await self.handle_reminder_entry(member.id, 5, message.channel.id, message.guild.id, nextlotterytime)
                     with contextlib.suppress(discord.HTTPException):
                         await clock(message)
-        """
-        Redeem Reminder
-        """
-        if "pls redeem" in message.content.lower():
-            def check_redeem(payload):
-                return payload.author.bot and len(payload.embeds) > 0 and payload.channel == message.channel and payload.author.id == dank_memer_id
-            try:
-                redeemresponse = await self.client.wait_for("message", check=check_redeem, timeout = 15)
-            except asyncio.TimeoutError:
-                return await crossmark(message)
-            else:
-                if redeemresponse.embeds[0].title and f"{message.author.name} has redeemed their" in redeemresponse.embeds[0].title:
-                    member = message.author
-                    nextredeemtime = round(time.time()) + 604800
-                    await self.handle_reminder_entry(member.id, 7, message.channel.id, message.guild.id, nextredeemtime, uses_name=True)
-                    with contextlib.suppress(discord.HTTPException):
-                        await clock(message)
-                else:
-                    await crossmark(message)
         """
         Hunting Reminder
         """
