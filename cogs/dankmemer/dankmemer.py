@@ -744,8 +744,10 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             else:
                 new_idcode = ''.join([i for i in item_name if i.isalpha()])
                 await self.client.db.execute("INSERT INTO dankitems (name, idcode, type, image_url, trade_value, last_updated, overwrite) VALUES ($1, $2, $3, $4, $5, $6, $7)", item_name, new_idcode, item_type, item_thumnail_url, item_worth, round(time.time()), False)
+
+        #Refer to https://discord.com/channels/871734809154707467/871737332431216661/873142587001827379 to all message events here
         """
-        Refer to https://discord.com/channels/871734809154707467/871737332431216661/873142587001827379 to all message events here
+        Daily reminder
         """
         if is_dank_slash_command(message, 'daily'):
             member = message.interaction.user
@@ -755,6 +757,9 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             await self.handle_reminder_entry(member.id, 2, message.channel.id, message.guild.id, nextdailytime)
             with contextlib.suppress(discord.HTTPException):
                 await clock(message)
+        """
+        Weekly Reminder
+        """
         if is_dank_slash_command(message, 'weekly'):
             member = message.interaction.user
             today = datetime.date.today()
@@ -767,7 +772,9 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             await self.handle_reminder_entry(member.id, 3, message.channel.id, message.guild.id, nextweeklytime, uses_name=True)
             with contextlib.suppress(discord.HTTPException):
                 await clock(message)
-
+        """
+        Monthly Reminder
+        """
         if is_dank_slash_command(message, 'monthly'):
             if "You can buy the ability" not in message.embeds[0].description:
                 member = message.interaction.user
@@ -777,28 +784,35 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 await self.handle_reminder_entry(member.id, 4, message.channel.id, message.guild.id, nextmonthlytime, uses_name=True)
                 with contextlib.suppress(discord.HTTPException):
                     await clock(message)
-
-        if len(message.embeds) > 0 and len(message.mentions) > 0 and message.embeds[0].title and message.embeds[0].description and message.embeds[0].title == "Pending Confirmation" and "tryna buy a lottery ticket" in message.embeds[0].description:
-            member = message.mentions[0]
+        """
+        Lottery reminder
+        """
+        if is_dank_slash_command(message, "lottery") and len(message.embeds) > 0 and message.embeds[0].title == "Pending Confirmation" and "tryna buy" in message.embeds[0].description:
+            member = message.interaction.user
             def check_lottery(payload_before, payload_after):
-                return payload_before.author == message.author and payload_after.author == message.author and payload_before.id == message.id and payload_after.id == message.id and len(message.embeds) > 0
+                return message.id == payload_after.id
             try:
-                newedit = await self.client.wait_for("message_edit", check=check_lottery, timeout=20)
+                print('wait for edit')
+                before, newedit = await self.client.wait_for("message_edit", check=check_lottery, timeout=20)
             except asyncio.TimeoutError:
                 return await crossmark(message)
             else:
-                if not message.embeds[0].title:
+                print('edit done')
+                if not newedit.embeds[0].title:
+                    print('no title')
                     return
-                if message.embeds[0].title == "Action Canceled" or message.embeds[0].title == "Action Canceled":
+                if newedit.embeds[0].title == "Action Canceled" or message.embeds[0].title == "Action Canceled":
+                    print('cancelled')
                     return await message.add_reaction("<:DVB_crossmark:955345521151737896>")
-                if message.embeds[0].title == "Action Confirmed":
-                    nextlotterytime = round(time.time())
-                    while nextlotterytime % 3600 != 0:
-                        nextlotterytime += 1
-                    nextlotterytime += 30
+                if newedit.embeds[0].title == "Action Confirmed":
+                    print('among us')
+                    now = discord.utils.utcnow()
+                    now = now + datetime.timedelta(hours=1)
+                    now = now.replace(minute=0, second=0, microsecond=0)
+                    nextlotterytime = round(now.timestamp()) + 30
                     await self.handle_reminder_entry(member.id, 5, message.channel.id, message.guild.id, nextlotterytime)
                     with contextlib.suppress(discord.HTTPException):
-                        await clock(message)
+                        await clock(newedit)
         """
         Hunting Reminder
         """
@@ -909,7 +923,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 def check(before_msg, m: discord.Message):
                     if m.id != message.id:
                         return False
-                    if len(m.components) == 0
+                    if len(m.components) == 0:
                         return True
                     else:
                         for i in message.components:
