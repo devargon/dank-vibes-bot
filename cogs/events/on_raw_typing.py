@@ -24,7 +24,7 @@ class RawTyping(commands.Cog):
         channel = guild.get_channel(payload.channel_id)
         settings = await self.client.get_guild_settings(payload.guild_id)
         if settings is not None and settings.mute_lem is True:
-            if time.time() - self.last_muted > 35:
+            if time.time() - self.last_muted > 7:
                 # more than 35 seconds since lem was muted
                 originaloverwrite = channel.overwrites_for(member) if member in channel.overwrites else None
                 muteoverwrite = channel.overwrites_for(member) if member in channel.overwrites else discord.PermissionOverwrite()
