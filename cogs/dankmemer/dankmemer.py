@@ -968,6 +968,13 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             return
         if len(beforemsg.embeds) == 0 or len(aftermsg.embeds) == 0:
             return
+        if is_dank_slash_command(beforemsg, 'work shift'):
+            if "TERRIBLE work!" in aftermsg.embeds[0].description or "Great work!" in aftermsg.embeds[0].description:
+                member = aftermsg.interaction.user
+                nextworktime = round(time.time()) + 3600
+                await self.handle_reminder_entry(member.id, 6, aftermsg.channel.id, aftermsg.guild.id, nextworktime)
+                with contextlib.suppress(discord.HTTPException):
+                    await checkmark(aftermsg)
         if is_dank_slash_command(beforemsg, 'stream'):
             afterembed = aftermsg.embeds[0]
             if afterembed.author.name.endswith('Stream Manager'):
