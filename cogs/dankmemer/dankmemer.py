@@ -792,20 +792,15 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             def check_lottery(payload_before, payload_after):
                 return message.id == payload_after.id
             try:
-                print('wait for edit')
                 before, newedit = await self.client.wait_for("message_edit", check=check_lottery, timeout=20)
             except asyncio.TimeoutError:
                 return await crossmark(message)
             else:
-                print('edit done')
                 if not newedit.embeds[0].title:
-                    print('no title')
                     return
                 if newedit.embeds[0].title == "Action Canceled" or message.embeds[0].title == "Action Canceled":
-                    print('cancelled')
                     return await message.add_reaction("<:DVB_crossmark:955345521151737896>")
                 if newedit.embeds[0].title == "Action Confirmed":
-                    print('among us')
                     now = discord.utils.utcnow()
                     now = now + datetime.timedelta(hours=1)
                     now = now.replace(minute=0, second=0, microsecond=0)
