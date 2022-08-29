@@ -550,7 +550,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 elif config.get('method') == 0:  # chose not to be reminded
                     pass
                 elif config.get('method') in [1, 2]:  # DMs or Mentions
-                    def message(reminderaction):
+                    def dm_message(reminderaction):
                         if reminderaction == 2:
                             return "**claim your daily** <:DVB_calendar:873107952159059991>"
                         elif reminderaction == 3:
@@ -595,6 +595,51 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                             return "**continue your adventure** 🚀"
                         elif reminderaction == 1001:
                             return "**start a stream again** 🎮"
+                    def ping_message(reminderaction):
+                        if reminderaction == 2:
+                            return "**claim your </daily:1011560370864930856>** <:DVB_calendar:873107952159059991>"
+                        elif reminderaction == 3:
+                            return "**claim your </weekly:1011560370948800549>** <:DVB_week:876711052669247528> "
+                        elif reminderaction == 4:
+                            return "**claim your </monthly:1011560370911072262>** <:DVB_month:876711072030150707> "
+                        elif reminderaction == 5:
+                            return "**enter the </lottery:1011560370911072260>** <:DVB_lotteryticket:873110581085880321>"
+                        elif reminderaction == 6:
+                            return "**</work shift:1011560371267579942>** <:DVB_workbadge:873110507605872650>"
+                        elif reminderaction == 7:
+                            return "**redeem your Patreon perks** <:DVB_patreon:876628017194082395>"
+                        elif reminderaction == 8:
+                            return "</hunt:1011560371171102760> <:DVB_rifle:888404394805186571> "
+                        elif reminderaction == 9:
+                            return "</fish:1011560371078832206> <:DVB_fishing:888404317638369330>"
+                        elif reminderaction == 10:
+                            return "</dig:1011560371078832204> <:DVB_shovel:888404340426031126>"
+                        elif reminderaction == 11:
+                            return "</crime:1011560371078832202> <:DVB_Crime:888404653711192067>"
+                        elif reminderaction == 12:
+                            return "</beg:1011560371041095699> <:DVB_beg:888404456356610099>"
+                        elif reminderaction == 13:
+                            return "</search:1011560371267579935> <:DVB_search:888405048260976660>"
+                        elif reminderaction == 14:
+                            return "</snakeeyes:1011560370948800546> <a:DVB_snakeeyes:888404298608812112>"
+                        elif reminderaction == 15:
+                            return "</highlow:1011560370911072258> 🔢"
+                        elif reminderaction == 17:
+                            return "**</use:1011560371267579941> a horseshoe** <:DVB_Horseshoe:888404491647463454>"
+                        elif reminderaction == 18:
+                            return "**</use:1011560371267579941> a pizza** <:DVB_pizza:888404502280024145>"
+                        elif reminderaction == 20:
+                            return "**Interact with your </stream:1011560371267579938>** 🎮"
+                        elif reminderaction == 21:
+                            return "</postmemes:1011560370911072263> <:DVB_Laptop:915524266940854303>"
+                        elif reminderaction == 22:
+                            return "**interact with your marriage partner** <:DVB_Ring:928236453920669786>"
+                        elif reminderaction == 23:
+                            return "**interact with your </pets care:1011560371171102768>** <:DVB_pet:928236242469011476>"
+                        elif reminderaction == 24:
+                            return "**continue your </adventure:1011560371041095695>** 🚀"
+                        elif reminderaction == 1001:
+                            return "**start a </stream:1011560371267579938> again** 🎮"
                     try:
                         member = self.client.get_guild(result.get('guild_id')).get_member(result.get('member_id'))
                         channel = self.client.get_channel(result.get('channel_id'))
@@ -606,12 +651,12 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                         elif config.get('method') == 1:  # DMs or is lottery/daily reminder
                             if result.get('remindertype') in [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21]:
                                 try:
-                                    await channel.send(f"{member.mention} You can now {message(result.get('remindertype'))}")  # DM
+                                    await channel.send(f"{member.mention} You can now {ping_message(result.get('remindertype'))}")  # DM
                                 except:
-                                    await member.send(f"{member.mention} You can now {message(result.get('remindertype'))} ({channel.mention})")  # DM
+                                    await member.send(f"You can now {dm_message(result.get('remindertype'))} ({channel.mention})")  # DM
                             else:
                                 try:
-                                    await member.send(f"{member.mention} You can now {message(result.get('remindertype'))} ({channel.mention})") # DM
+                                    await member.send(f"You can now {dm_message(result.get('remindertype'))} ({channel.mention})") # DM
                                 except discord.Forbidden:
                                     try:
                                         await channel.send(f"{member.mention} {self.client.user.name} is unable to DM you.\nTo receive Dank Memer reminders properly, open your DMs or switch to ping reminders via `dv.drm ping`. Your reminders have been disabled for now.")
@@ -620,7 +665,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                                     await self.client.db.execute("UPDATE remindersettings SET method = $1 WHERE member_id = $2", 0, result.get('member_id')) # change reminder settings to None
                         elif config.get('method') == 2: # Mention
                             try:
-                                await channel.send(f"{member.mention} you can now {message(result.get('remindertype'))}")
+                                await channel.send(f"{member.mention} you can now {ping_message(result.get('remindertype'))}")
                             except:
                                 pass
                     await self.client.db.execute("INSERT into stats(member_id, remindertype, time) VALUES($1, $2, $3)", result.get('member_id'), result.get('remindertype'), result.get('time'))
@@ -878,7 +923,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         Horseshoe Reminder
         """
         if is_dank_slash_command(message, 'use'):
-            if "Lucky Horseshoe" in message.embeds[0].description and "15 minutes" in message.embeds[0].description:
+            if type(message.embeds[0].description) == str and "Lucky Horseshoe" in message.embeds[0].description and "15 minutes" in message.embeds[0].description:
                 member = message.interaction.user
                 nexthorseshoetime = round(time.time()) + 900
                 await self.handle_reminder_entry(member.id, 17, message.channel.id, message.guild.id, nexthorseshoetime)
@@ -888,7 +933,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         Pizza Reminder
         """
         if is_dank_slash_command(message, 'use'):
-            if "perfect slice of pizza" in message.embeds[0].description and "the next hour" in message.embeds[0].description:
+            if type(message.embeds[0].description) == str and "perfect slice of pizza" in message.embeds[0].description and "the next hour" in message.embeds[0].description:
                 member = message.interaction.user
                 nextpizzatime = round(time.time()) + 3600
                 await self.handle_reminder_entry(member.id, 18, message.channel.id, message.guild.id, nextpizzatime)
