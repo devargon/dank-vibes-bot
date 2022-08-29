@@ -905,29 +905,22 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             is_done = False
             if len(message.components) == 0:
                 is_done = True
-                print("pass: no components")
             else:
                 def check(before_msg, m: discord.Message):
                     if m.id != message.id:
-                        print("FAIL: not same message")
                         return False
-                    if len(m.components) == 0:
-                        print("pass: no components")
+                    if len(m.components) == 0
                         return True
                     else:
                         for i in message.components:
                             i: discord.ActionRow = i
                             for b in i.children:
                                 if isinstance(b, discord.SelectMenu):
-                                    print("has select menu")
                                     return False
                                 else:
                                     if b.disabled is not True:
-                                        print("has enabled button")
                                         return False
-                    print("done")
                     return True
-                print('waiting for fulfilled check')
                 try:
                     await self.client.wait_for('message_edit', check=check, timeout=120)
                 except asyncio.TimeoutError:
@@ -938,38 +931,25 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 target = message.interaction.user
                 await self.handle_reminder_entry(target.id, 24, message.channel.id, message.guild.id, round(time.time()) + 300)
                 await message.add_reaction('🚀')
-
-
-
         """
         Stream Start Reminder
         """
-        if message.author.id == dank_memer_id:
+        if is_dank_slash_command(message, "stream"):
             if len(message.embeds) > 0:
                 embed = message.embeds[0]
-                if type(embed.footer.text) == str:
-                    if "Wait at least half an hour to stream again!" in embed.footer.text:
-                        if embed.author:
-                            if type(embed.author.name) == str:
-                                if embed.author.name.endswith('Stream Manager'):
-                                    def get_member():
-                                        for member in message.guild.members:
-                                            if embed.author.name == f"{member.name}'s Stream Manager":
-                                                return member
-                                        return None
-                                    member = get_member()
-                                    if member:
-                                        if embed.fields is not None:
-                                            field_value = embed.fields[1].value
-                                            try:
-                                                timestamp_of_ended_stream = int(field_value.split(':')[1])
-                                            except:
-                                                pass
-                                            else:
-                                                timestamp_to_restart_stream = timestamp_of_ended_stream + 1800
-                                                if timestamp_to_restart_stream > round(time.time()):
-                                                    await self.handle_reminder_entry(member.id, 1001, message.channel.id, message.guild.id, timestamp_to_restart_stream, uses_name=True)
-                                                    await message.add_reaction("<:DVB_True:887589686808309791>")
+                if len(embed.fields) == 6:
+                    if embed.fields[1].name == "Last Live":
+                        field_value = embed.fields[1].value
+                        try:
+                            timestamp_of_ended_stream = int(field_value.split(':')[1])
+                        except:
+                            pass
+                        else:
+                            member = message.interaction.user
+                            timestamp_to_restart_stream = timestamp_of_ended_stream + 1800
+                            if timestamp_to_restart_stream > round(time.time()):
+                                await self.handle_reminder_entry(member.id, 1001, message.channel.id, message.guild.id, timestamp_to_restart_stream, uses_name=True)
+                                await clock(message)
 
 
     @commands.Cog.listener()
@@ -988,7 +968,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                         for com in message.components:
                             if isinstance(com, discord.ActionRow):
                                 for index, i in enumerate(com.children): #buttons
-                                    if not isinstance(i, discord.ui.Button):
+                                    if not isinstance(i, discord.Button):
                                         return False
                                     if i.disabled is True:
                                         return False
