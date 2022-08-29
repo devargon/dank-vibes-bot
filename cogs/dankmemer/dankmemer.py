@@ -237,7 +237,7 @@ class VoteSetting(discord.ui.Select):
             await interaction.response.send_message("Got it. You will **not be reminded** for your Dank Memer actions.", ephemeral=True)
 
 class dankreminders(discord.ui.View):
-    def __init__(self, ctx: DVVTcontext, client, rmtimes, timeout, daily, weekly, monthly, lottery, work, donor, hunt, fish, dig, crime, beg, search, se, highlow, horseshoe, pizza, drop, stream, postmeme, marriage, pet, adventure):
+    def __init__(self, ctx: DVVTcontext, client, rmtimes, timeout, daily, weekly, monthly, lottery, work, hunt, fish, dig, crime, beg, search, se, highlow, horseshoe, pizza, drop, stream, postmeme, marriage, pet, adventure):
         self.value = None
         self.timeout = timeout
         self.context = ctx
@@ -248,7 +248,7 @@ class dankreminders(discord.ui.View):
         super().__init__(timeout=timeout)
         reminderemojis = ["<:DVB_calendar:873107952159059991>", "<:DVB_week:876711052669247528>",
                           "<:DVB_month:876711072030150707>", "<:DVB_lotteryticket:873110581085880321>",
-                          "<:DVB_workbadge:873110507605872650>", "<:DVB_patreon:876628017194082395>",
+                          "<:DVB_workbadge:873110507605872650>",
                           "<:DVB_rifle:888404394805186571>", "<:DVB_fishing:888404317638369330>",
                           "<:DVB_shovel:888404340426031126>", "<:DVB_Crime:888404653711192067>",
                           "<:DVB_beg:888404456356610099>", "<:DVB_search:888405048260976660>",
@@ -256,13 +256,13 @@ class dankreminders(discord.ui.View):
                           "<:DVB_pizza:888404502280024145>", "<:DVB_sugarskull:904936096436215828>", "🎮", "<:DVB_Laptop:915524266940854303>", "<:DVB_Ring:928236453920669786>", "<:DVB_pet:928236242469011476>", "🚀"]
         labels = ["Claim daily", "Claim weekly",
                   "Claim monthly", "Enter the Lottery",
-                  "Work", "Redeem donor rewards",
+                  "Work",
                   "Hunt", "Fish",
                   "Dig", "Crime",
                   "Beg", "Search",
                   "Snakeeyes", "Highlow", "Use a horseshoe",
                   "Use a pizza", "Get drop items", "Interact on stream", "Post memes", "Marriage Interaction", "Interact with pet", "(NEW) Adventure Interaction"]
-        is_enabled = [daily, weekly, monthly, lottery, work, donor, hunt, fish, dig, crime, beg, search, se, highlow, horseshoe, pizza, drop, stream, postmeme, marriage, pet, adventure]
+        is_enabled = [daily, weekly, monthly, lottery, work, hunt, fish, dig, crime, beg, search, se, highlow, horseshoe, pizza, drop, stream, postmeme, marriage, pet, adventure]
 
         async def initialise_dank_reminders(user: Union[discord.Member, discord.User]):
             await self.client.db.execute("INSERT INTO remindersettings (member_id, method) VALUES ($1, $2) ON CONFLICT (member_id) DO UPDATE SET method = $2", user.id, 0)
@@ -279,8 +279,6 @@ class dankreminders(discord.ui.View):
                 await self.client.db.execute("UPDATE remindersettings SET lottery = $1 WHERE member_id = $2", numberswitcher(self.result.get('lottery')), ctx.author.id)
             elif str(emoji) == "<:DVB_workbadge:873110507605872650>":
                 await self.client.db.execute("UPDATE remindersettings SET work = $1 WHERE member_id = $2", numberswitcher(self.result.get('work')), ctx.author.id)
-            elif str(emoji) == "<:DVB_patreon:876628017194082395>":
-                await self.client.db.execute("UPDATE remindersettings SET redeem = $1 WHERE member_id = $2", numberswitcher(self.result.get('redeem')), ctx.author.id)
             elif str(emoji) == "<:DVB_rifle:888404394805186571>":
                 await self.client.db.execute("UPDATE remindersettings SET hunt = $1 WHERE member_id = $2", numberswitcher(self.result.get('hunt')), ctx.author.id)
             elif str(emoji) == "<:DVB_fishing:888404317638369330>":
@@ -1162,7 +1160,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             await self.client.db.execute("INSERT into remindersettings VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)", ctx.author.id, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) # creates new entry for settings
             result = await self.client.db.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
         reminders = await self.client.db.fetch("SELECT * FROM dankreminders WHERE member_id = $1 and guild_id = $2", ctx.author.id, ctx.guild.id) # gets user's reminders
-        dailytime, lotterytime, worktime, redeemtime, weeklytime, monthlytime, hunttime, fishtime, digtime, highlowtime, snakeeyestime, searchtime, crimetime, begtime, horseshoetime, pizzatime, droptime, pmtime, streamtime, marriagetime, pettime, adventuretime = None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
+        dailytime, lotterytime, worktime, weeklytime, monthlytime, hunttime, fishtime, digtime, highlowtime, snakeeyestime, searchtime, crimetime, begtime, horseshoetime, pizzatime, droptime, pmtime, streamtime, marriagetime, pettime, adventuretime = None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
         for reminder in reminders:
             if reminder.get('remindertype') == 2:
                 dailytime = round(reminder.get('time')-time.time()) # time in discord time format
@@ -1174,8 +1172,6 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 lotterytime = round(reminder.get('time')-time.time())
             if reminder.get('remindertype') == 6:
                 worktime = round(reminder.get('time')-time.time())
-            if reminder.get('remindertype') == 7:
-                redeemtime = round(reminder.get('time')-time.time())
             if reminder.get('remindertype') == 8:
                 hunttime = round(reminder.get('time')-time.time())
             if reminder.get('remindertype') == 9:
@@ -1206,8 +1202,8 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 pettime = round(reminder.get('time')-time.time())
             if reminder.get('remindertype') == 24:
                 adventuretime = round(reminder.get('time')-time.time())
-        remindertimes = [dailytime or None, weeklytime or None, monthlytime or None, lotterytime or None, worktime or None, redeemtime or None, hunttime or None, fishtime or None, digtime or None, crimetime or None, begtime or None, searchtime or None, snakeeyestime or None, highlowtime or None, horseshoetime or None, pizzatime or None, droptime or None, streamtime or None, pmtime or None, marriagetime or None, pettime or None, adventuretime or None]
-        newview = dankreminders(ctx, self.client, remindertimes, 15.0, truefalse(result.get('daily')), truefalse(result.get('weekly')), truefalse(result.get('monthly')), truefalse(result.get('lottery')), truefalse(result.get('work')), truefalse(result.get('redeem')), truefalse(result.get('hunt')), truefalse(result.get('fish')), truefalse(result.get('dig')), truefalse(result.get('crime')), truefalse(result.get('beg')), truefalse(result.get('search')), truefalse(result.get('snakeeyes')), truefalse(result.get('highlow')), truefalse(result.get('horseshoe')), truefalse(result.get('pizza')), truefalse(result.get('drop')), truefalse(result.get('stream')), truefalse(result.get('postmeme')), truefalse(result.get('marriage')), truefalse(result.get('pet')), truefalse(result.get('adventure')))
+        remindertimes = [dailytime or None, weeklytime or None, monthlytime or None, lotterytime or None, worktime or None, hunttime or None, fishtime or None, digtime or None, crimetime or None, begtime or None, searchtime or None, snakeeyestime or None, highlowtime or None, horseshoetime or None, pizzatime or None, droptime or None, streamtime or None, pmtime or None, marriagetime or None, pettime or None, adventuretime or None]
+        newview = dankreminders(ctx, self.client, remindertimes, 15.0, truefalse(result.get('daily')), truefalse(result.get('weekly')), truefalse(result.get('monthly')), truefalse(result.get('lottery')), truefalse(result.get('work')), truefalse(result.get('hunt')), truefalse(result.get('fish')), truefalse(result.get('dig')), truefalse(result.get('crime')), truefalse(result.get('beg')), truefalse(result.get('search')), truefalse(result.get('snakeeyes')), truefalse(result.get('highlow')), truefalse(result.get('horseshoe')), truefalse(result.get('pizza')), truefalse(result.get('drop')), truefalse(result.get('stream')), truefalse(result.get('postmeme')), truefalse(result.get('marriage')), truefalse(result.get('pet')), truefalse(result.get('adventure')))
         message = await ctx.send(f"**{ctx.author}'s Dank Memer Reminders**\nSelect the button that corresponds to the reminder to enable/disable it.\n\nYou're currently {'reminded via **DMs**' if result.get('method') == 1 else 'reminded via **ping**' if result.get('method') == 2 else 'not reminded'} for your reminders.\nTo see the duration of your reminders in timestamp format, use `dv.dankcooldown` or `dv.dcd`.", view=newview)
         newview.response = message
         newview.result = result
@@ -1336,7 +1332,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         Shows the existing reminders for Dank Memer.
         """
         reminders = await self.client.db.fetch("SELECT * FROM dankreminders WHERE member_id = $1 and guild_id = $2", ctx.author.id, ctx.guild.id)  # gets user's reminders
-        dailytime, lotterytime, worktime, redeemtime, weeklytime, monthlytime, hunttime, fishtime, digtime, highlowtime, snakeeyestime, searchtime, crimetime, begtime, horseshoetime, pizzatime, streamtime, pmtime, marriagetime, pettime, adventuretime = None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
+        dailytime, lotterytime, worktime, weeklytime, monthlytime, hunttime, fishtime, digtime, highlowtime, snakeeyestime, searchtime, crimetime, begtime, horseshoetime, pizzatime, streamtime, pmtime, marriagetime, pettime, adventuretime = None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
         for reminder in reminders:
             if reminder.get('remindertype') == 2:
                 dailytime = f"<t:{reminder.get('time')}:R>"  # time in discord time format
@@ -1348,8 +1344,6 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 lotterytime = f"<t:{reminder.get('time')}:R>"
             if reminder.get('remindertype') == 6:
                 worktime = f"<t:{reminder.get('time')}:R>"
-            if reminder.get('remindertype') == 7:
-                redeemtime = f"<t:{reminder.get('time')}:R>"
             if reminder.get('remindertype') == 8:
                 hunttime = f"<t:{reminder.get('time')}:R>"
             if reminder.get('remindertype') == 9:
@@ -1381,7 +1375,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             if reminder.get('remindertype') == 24:
                 adventuretime = f"<t:{reminder.get('time')}:R>"
         remindertimes = [dailytime or "**Ready!**", weeklytime or "**Ready!**", monthlytime or "**Ready!**",
-                         lotterytime or "**Ready!**", worktime or "**Ready!**", redeemtime or "**Ready!**",
+                         lotterytime or "**Ready!**", worktime or "**Ready!**",
                          hunttime or "**Ready!**", fishtime or "**Ready!**", digtime or "**Ready!**", crimetime or "**Ready!**",
                          begtime or "**Ready!**", searchtime or "**Ready!**", snakeeyestime or "**Ready!**",
                          highlowtime or "**Ready!**", horseshoetime or "**Ready!**", pizzatime or "**Ready!**", streamtime or "**Ready!**", pmtime or "**Ready!**", marriagetime or "**Ready!**", pettime or "**Ready!**", adventuretime or "**Ready!**"]
@@ -1392,22 +1386,21 @@ Claim weekly <:DVB_week:876711052669247528>: {remindertimes[1]}
 Claim monthly <:DVB_month:876711072030150707>: {remindertimes[2]}
 Enter the lottery <:DVB_lotteryticket:873110581085880321>: {remindertimes[3]}
 Work <:DVB_workbadge:873110507605872650>: {remindertimes[4]}
-Redeem donor rewards <:DVB_patreon:876628017194082395>: {remindertimes[5]}
-Hunt <:DVB_rifle:888404394805186571>: {remindertimes[6]}
-Fish <:DVB_fishing:888404317638369330>: {remindertimes[7]}
-Dig <:DVB_shovel:888404340426031126>: {remindertimes[8]}
-Crime <:DVB_Crime:888404653711192067>: {remindertimes[9]}
-Beg <:DVB_beg:888404456356610099> : {remindertimes[10]}
-Search <:DVB_search:888405048260976660>: {remindertimes[11]}
-Snakeeyes <a:DVB_snakeeyes:888404298608812112>: {remindertimes[12]}
-Highlow 🔢: {remindertimes[13]}
-Use a Horseshoe <:DVB_Horseshoe:888404491647463454>: {remindertimes[14]}
-Use a Pizza <:DVB_pizza:888404502280024145>: {remindertimes[15]}
-Stream 🎮: {remindertimes[16]}
-Post memes <:DVB_Laptop:915524266940854303>: {remindertimes[17]}
-Marriage 💍: {remindertimes[18]}
-Pet <:DVB_pet:928236242469011476>: {remindertimes[19]}
-Adventure 🚀: {remindertimes[20]}"""
+Hunt <:DVB_rifle:888404394805186571>: {remindertimes[5]}
+Fish <:DVB_fishing:888404317638369330>: {remindertimes[6]}
+Dig <:DVB_shovel:888404340426031126>: {remindertimes[7]}
+Crime <:DVB_Crime:888404653711192067>: {remindertimes[8]}
+Beg <:DVB_beg:888404456356610099> : {remindertimes[9]}
+Search <:DVB_search:888405048260976660>: {remindertimes[10]}
+Snakeeyes <a:DVB_snakeeyes:888404298608812112>: {remindertimes[11]}
+Highlow 🔢: {remindertimes[12]}
+Use a Horseshoe <:DVB_Horseshoe:888404491647463454>: {remindertimes[13]}
+Use a Pizza <:DVB_pizza:888404502280024145>: {remindertimes[14]}
+Stream 🎮: {remindertimes[15]}
+Post memes <:DVB_Laptop:915524266940854303>: {remindertimes[16]}
+Marriage 💍: {remindertimes[17]}
+Pet <:DVB_pet:928236242469011476>: {remindertimes[18]}
+Adventure 🚀: {remindertimes[19]}"""
         if ctx.author.id == 650647680837484556:
             embed.description = embed.description + "\nSlap Frenzy <a:DVB_pandaslap:876631217750048798>: **Always Ready**\nBonk Blu <a:DVB_bonk:877196623506194452>: **Always Ready**"
         embed.set_footer(text="To enable/disable reminders, use dv.dankreminder instead.", icon_url=ctx.guild.icon.url)
