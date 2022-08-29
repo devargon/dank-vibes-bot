@@ -1184,7 +1184,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 adventuretime = round(reminder.get('time')-time.time())
         remindertimes = [dailytime or None, weeklytime or None, monthlytime or None, lotterytime or None, worktime or None, hunttime or None, fishtime or None, digtime or None, crimetime or None, begtime or None, searchtime or None, snakeeyestime or None, highlowtime or None, horseshoetime or None, pizzatime or None, droptime or None, streamtime or None, pmtime or None, pettime or None, adventuretime or None]
         newview = dankreminders(ctx, self.client, remindertimes, 15.0, truefalse(result.get('daily')), truefalse(result.get('weekly')), truefalse(result.get('monthly')), truefalse(result.get('lottery')), truefalse(result.get('work')), truefalse(result.get('hunt')), truefalse(result.get('fish')), truefalse(result.get('dig')), truefalse(result.get('crime')), truefalse(result.get('beg')), truefalse(result.get('search')), truefalse(result.get('snakeeyes')), truefalse(result.get('highlow')), truefalse(result.get('horseshoe')), truefalse(result.get('pizza')), truefalse(result.get('drop')), truefalse(result.get('stream')), truefalse(result.get('postmeme')), truefalse(result.get('pet')), truefalse(result.get('adventure')))
-        message = await ctx.send(f"**{ctx.author}'s Dank Memer Reminders**\nSelect the button that corresponds to the reminder to enable/disable it.\n\nYou're currently {'reminded via **DMs**' if result.get('method') == 1 else 'reminded via **ping**' if result.get('method') == 2 else 'not reminded'} for your reminders.\nTo see the duration of your reminders in timestamp format, use `dv.dankcooldown` or `dv.dcd`.", view=newview)
+        message = await ctx.send(f"**{ctx.author}'s Dank Memer Reminders**\nSelect the button that corresponds to the reminder to enable/disable it.\n\nYou're currently {'reminded via **DMs**' if result.get('method') == 1 else 'reminded via **ping**' if result.get('method') == 2 else 'not reminded'} for your reminders.", view=newview)
         newview.response = message
         newview.result = result
         newview.rmtimes = remindertimes
@@ -1260,82 +1260,3 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             trendinggame_view.response = await ctx.send("The current trending game is **{}**".format(self.trending_game[1]), view=trendinggame_view)
         else:
             await ctx.send("I've set the current trending game. This is how it will look like:\n\nThe current trending game to stream is **{}**!\n\n**ALERT**: Please use `dv.trendinggame` and use the select menu to set today's trending game, it's more easier that way. Adding an argument for this command will soon be deprecated.".format(game))
-
-
-    @checks.not_in_gen()
-    @commands.command(name="dankcooldowns", aliases=["dankcd", "dcd"])
-    async def dankcooldowns(self, ctx):
-        """
-        Shows the existing reminders for Dank Memer.
-        """
-        reminders = await self.client.db.fetch("SELECT * FROM dankreminders WHERE member_id = $1 and guild_id = $2", ctx.author.id, ctx.guild.id)  # gets user's reminders
-        dailytime, lotterytime, worktime, weeklytime, monthlytime, hunttime, fishtime, digtime, highlowtime, snakeeyestime, searchtime, crimetime, begtime, horseshoetime, pizzatime, streamtime, pmtime, pettime, adventuretime = None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
-        for reminder in reminders:
-            if reminder.get('remindertype') == 2:
-                dailytime = f"<t:{reminder.get('time')}:R>"  # time in discord time format
-            if reminder.get('remindertype') == 3:
-                weeklytime = f"<t:{reminder.get('time')}:R>"
-            if reminder.get('remindertype') == 4:
-                monthlytime = f"<t:{reminder.get('time')}:R>"
-            if reminder.get('remindertype') == 5:
-                lotterytime = f"<t:{reminder.get('time')}:R>"
-            if reminder.get('remindertype') == 6:
-                worktime = f"<t:{reminder.get('time')}:R>"
-            if reminder.get('remindertype') == 8:
-                hunttime = f"<t:{reminder.get('time')}:R>"
-            if reminder.get('remindertype') == 9:
-                fishtime = f"<t:{reminder.get('time')}:R>"
-            if reminder.get('remindertype') == 10:
-                digtime = f"<t:{reminder.get('time')}:R>"
-            if reminder.get('remindertype') == 11:
-                crimetime = f"<t:{reminder.get('time')}:R>"
-            if reminder.get('remindertype') == 12:
-                begtime = f"<t:{reminder.get('time')}:R>"
-            if reminder.get('remindertype') == 13:
-                searchtime = f"<t:{reminder.get('time')}:R>"
-            if reminder.get('remindertype') == 14:
-                snakeeyestime = f"<t:{reminder.get('time')}:R>"
-            if reminder.get('remindertype') == 15:
-                highlowtime = f"<t:{reminder.get('time')}:R>"
-            if reminder.get('remindertype') == 17:
-                horseshoetime = f"<t:{reminder.get('time')}:R>"
-            if reminder.get('remindertype') == 18:
-                pizzatime = f"<t:{reminder.get('time')}:R>"
-            if reminder.get('remindertype') == 20:
-                streamtime = f"<t:{reminder.get('time')}:R>"
-            if reminder.get('remindertype') == 21:
-                pmtime = f"<t:{reminder.get('time')}:R>"
-            if reminder.get('remindertype') == 23:
-                pettime = f"<t:{reminder.get('time')}:R>"
-            if reminder.get('remindertype') == 24:
-                adventuretime = f"<t:{reminder.get('time')}:R>"
-        remindertimes = [dailytime or "**Ready!**", weeklytime or "**Ready!**", monthlytime or "**Ready!**",
-                         lotterytime or "**Ready!**", worktime or "**Ready!**",
-                         hunttime or "**Ready!**", fishtime or "**Ready!**", digtime or "**Ready!**", crimetime or "**Ready!**",
-                         begtime or "**Ready!**", searchtime or "**Ready!**", snakeeyestime or "**Ready!**",
-                         highlowtime or "**Ready!**", horseshoetime or "**Ready!**", pizzatime or "**Ready!**", streamtime or "**Ready!**", pmtime or "**Ready!**", pettime or "**Ready!**", adventuretime or "**Ready!**"]
-        embed = discord.Embed(title="Your Dank Memer reminders", color=self.client.embed_color, timestamp=discord.utils.utcnow())
-        embed.set_author(name=ctx.author, icon_url=ctx.author.display_avatar.url)
-        embed.description = f"""\nClaim daily <:DVB_calendar:873107952159059991>: {remindertimes[0]}
-Claim weekly <:DVB_week:876711052669247528>: {remindertimes[1]}
-Claim monthly <:DVB_month:876711072030150707>: {remindertimes[2]}
-Enter the lottery <:DVB_lotteryticket:873110581085880321>: {remindertimes[3]}
-Work <:DVB_workbadge:873110507605872650>: {remindertimes[4]}
-Hunt <:DVB_rifle:888404394805186571>: {remindertimes[5]}
-Fish <:DVB_fishing:888404317638369330>: {remindertimes[6]}
-Dig <:DVB_shovel:888404340426031126>: {remindertimes[7]}
-Crime <:DVB_Crime:888404653711192067>: {remindertimes[8]}
-Beg <:DVB_beg:888404456356610099> : {remindertimes[9]}
-Search <:DVB_search:888405048260976660>: {remindertimes[10]}
-Snakeeyes <a:DVB_snakeeyes:888404298608812112>: {remindertimes[11]}
-Highlow 🔢: {remindertimes[12]}
-Use a Horseshoe <:DVB_Horseshoe:888404491647463454>: {remindertimes[13]}
-Use a Pizza <:DVB_pizza:888404502280024145>: {remindertimes[14]}
-Stream 🎮: {remindertimes[15]}
-Post memes <:DVB_Laptop:915524266940854303>: {remindertimes[16]}
-Pet <:DVB_pet:928236242469011476>: {remindertimes[17]}
-Adventure 🚀: {remindertimes[18]}"""
-        if ctx.author.id == 650647680837484556:
-            embed.description = embed.description + "\nSlap Frenzy <a:DVB_pandaslap:876631217750048798>: **Always Ready**\nBonk Blu <a:DVB_bonk:877196623506194452>: **Always Ready**"
-        embed.set_footer(text="To enable/disable reminders, use dv.dankreminder instead.", icon_url=ctx.guild.icon.url)
-        await ctx.send(embed=embed)
