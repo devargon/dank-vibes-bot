@@ -79,6 +79,12 @@ async def crossmark(msg):
         pass
 
 
+def switch_bool(boolean):
+    if boolean is True:
+        return False
+    return True
+
+
 def numberswitcher(no):
     if no == 1:
         return 0
@@ -274,49 +280,49 @@ class dankreminders(discord.ui.View):
 
         async def update_message(emoji, interaction: discord.Interaction):
             if str(emoji) == "<:DVB_calendar:873107952159059991>":
-                await self.client.db.execute("UPDATE remindersettings SET daily = $1 WHERE member_id = $2", numberswitcher(self.result.get('daily')), ctx.author.id)  # switches to enabled/disabled reminder
+                await self.client.db.execute("UPDATE remindersettings SET daily = $1 WHERE member_id = $2", switch_bool(self.result.get('daily')), ctx.author.id)  # switches to enabled/disabled reminder
             elif str(emoji) == "<:DVB_week:876711052669247528>":
-                await self.client.db.execute("UPDATE remindersettings SET weekly = $1 WHERE member_id = $2", numberswitcher(self.result.get('weekly')), ctx.author.id)
+                await self.client.db.execute("UPDATE remindersettings SET weekly = $1 WHERE member_id = $2", switch_bool(self.result.get('weekly')), ctx.author.id)
             elif str(emoji) == "<:DVB_month:876711072030150707>":
-                await self.client.db.execute("UPDATE remindersettings SET monthly = $1 WHERE member_id = $2", numberswitcher(self.result.get('monthly')), ctx.author.id)
+                await self.client.db.execute("UPDATE remindersettings SET monthly = $1 WHERE member_id = $2", switch_bool(self.result.get('monthly')), ctx.author.id)
             elif str(emoji) == "<:DVB_lotteryticket:873110581085880321>":
-                await self.client.db.execute("UPDATE remindersettings SET lottery = $1 WHERE member_id = $2", numberswitcher(self.result.get('lottery')), ctx.author.id)
+                await self.client.db.execute("UPDATE remindersettings SET lottery = $1 WHERE member_id = $2", switch_bool(self.result.get('lottery')), ctx.author.id)
             elif str(emoji) == "<:DVB_workbadge:873110507605872650>":
-                await self.client.db.execute("UPDATE remindersettings SET work = $1 WHERE member_id = $2", numberswitcher(self.result.get('work')), ctx.author.id)
+                await self.client.db.execute("UPDATE remindersettings SET work = $1 WHERE member_id = $2", switch_bool(self.result.get('work')), ctx.author.id)
             elif str(emoji) == "<:DVB_rifle:888404394805186571>":
-                await self.client.db.execute("UPDATE remindersettings SET hunt = $1 WHERE member_id = $2", numberswitcher(self.result.get('hunt')), ctx.author.id)
+                await self.client.db.execute("UPDATE remindersettings SET hunt = $1 WHERE member_id = $2", switch_bool(self.result.get('hunt')), ctx.author.id)
             elif str(emoji) == "<:DVB_fishing:888404317638369330>":
-                await self.client.db.execute("UPDATE remindersettings SET fish = $1 WHERE member_id = $2", numberswitcher(self.result.get('fish')), ctx.author.id)
+                await self.client.db.execute("UPDATE remindersettings SET fish = $1 WHERE member_id = $2", switch_bool(self.result.get('fish')), ctx.author.id)
             elif str(emoji) == "<:DVB_shovel:888404340426031126>":
-                await self.client.db.execute("UPDATE remindersettings SET dig = $1 WHERE member_id = $2", numberswitcher(self.result.get('dig')), ctx.author.id)
+                await self.client.db.execute("UPDATE remindersettings SET dig = $1 WHERE member_id = $2", switch_bool(self.result.get('dig')), ctx.author.id)
             elif str(emoji) == "<:DVB_Crime:888404653711192067>":
-                await self.client.db.execute("UPDATE remindersettings SET crime = $1 WHERE member_id = $2", numberswitcher(self.result.get('crime')), ctx.author.id)
+                await self.client.db.execute("UPDATE remindersettings SET crime = $1 WHERE member_id = $2", switch_bool(self.result.get('crime')), ctx.author.id)
             elif str(emoji) == "<:DVB_beg:888404456356610099>":
-                await self.client.db.execute("UPDATE remindersettings SET beg = $1 WHERE member_id = $2", numberswitcher(self.result.get('beg')), ctx.author.id)
+                await self.client.db.execute("UPDATE remindersettings SET beg = $1 WHERE member_id = $2", switch_bool(self.result.get('beg')), ctx.author.id)
             elif str(emoji) == "<:DVB_search:888405048260976660>":
-                await self.client.db.execute("UPDATE remindersettings SET search = $1 WHERE member_id = $2", numberswitcher(self.result.get('search')), ctx.author.id)
+                await self.client.db.execute("UPDATE remindersettings SET search = $1 WHERE member_id = $2", switch_bool(self.result.get('search')), ctx.author.id)
             elif str(emoji) == "<a:DVB_snakeeyes:888404298608812112>":
-                await self.client.db.execute("UPDATE remindersettings SET snakeeyes = $1 WHERE member_id = $2", numberswitcher(self.result.get('snakeeyes')), ctx.author.id)
+                await self.client.db.execute("UPDATE remindersettings SET snakeeyes = $1 WHERE member_id = $2", switch_bool(self.result.get('snakeeyes')), ctx.author.id)
             elif str(emoji) == "🔢":
-                await self.client.db.execute("UPDATE remindersettings SET highlow = $1 WHERE member_id = $2", numberswitcher(self.result.get('highlow')), ctx.author.id)
+                await self.client.db.execute("UPDATE remindersettings SET highlow = $1 WHERE member_id = $2", switch_bool(self.result.get('highlow')), ctx.author.id)
             elif str(emoji) == "<:DVB_Horseshoe:888404491647463454>":
-                await self.client.db.execute("UPDATE remindersettings SET horseshoe = $1 WHERE member_id = $2", numberswitcher(self.result.get('horseshoe')), ctx.author.id)
+                await self.client.db.execute("UPDATE remindersettings SET horseshoe = $1 WHERE member_id = $2", switch_bool(self.result.get('horseshoe')), ctx.author.id)
             elif str(emoji) == "<:DVB_pizza:888404502280024145>":
-                await self.client.db.execute("UPDATE remindersettings SET pizza = $1 WHERE member_id = $2", numberswitcher(self.result.get('pizza')), ctx.author.id)
+                await self.client.db.execute("UPDATE remindersettings SET pizza = $1 WHERE member_id = $2", switch_bool(self.result.get('pizza')), ctx.author.id)
             elif str(emoji) == "<:DVB_sugarskull:904936096436215828>":
-                await self.client.db.execute("UPDATE remindersettings SET drop = $1 WHERE member_id = $2", numberswitcher(self.result.get('drop')), ctx.author.id)
+                await self.client.db.execute("UPDATE remindersettings SET drop = $1 WHERE member_id = $2", switch_bool(self.result.get('drop')), ctx.author.id)
             elif str(emoji) == "🎮":
-                await self.client.db.execute("UPDATE remindersettings SET stream = $1 WHERE member_id = $2", numberswitcher(self.result.get('stream')), ctx.author.id)
+                await self.client.db.execute("UPDATE remindersettings SET stream = $1 WHERE member_id = $2", switch_bool(self.result.get('stream')), ctx.author.id)
                 if self.result.get('stream') != 1:
                     await interaction.response.send_message("__**Important!**__\nThis uses the username shown in the Stream Manager embed from Dank Memer to identify who used the command. If there're people with the same name as you, the reminder may not work.\nhttps://cdn.nogra.xyz/screenshots/Discord_cAJOC18PCV.png", ephemeral=True)
             elif str(emoji) == "<:DVB_Laptop:915524266940854303>":
-                await self.client.db.execute("UPDATE remindersettings SET postmeme = $1 WHERE member_id = $2", numberswitcher(self.result.get('postmeme')), ctx.author.id)
+                await self.client.db.execute("UPDATE remindersettings SET postmeme = $1 WHERE member_id = $2", switch_bool(self.result.get('postmeme')), ctx.author.id)
             elif str(emoji) == "<:DVB_pet:928236242469011476>":
-                await self.client.db.execute("UPDATE remindersettings SET pet = $1 WHERE member_id = $2", numberswitcher(self.result.get('pet')), ctx.author.id)
+                await self.client.db.execute("UPDATE remindersettings SET pet = $1 WHERE member_id = $2", switch_bool(self.result.get('pet')), ctx.author.id)
                 if self.result.get('pet') != 1:
                     await interaction.response.send_message("__**Important!**__\nThis uses the username shown in your pet's embed from Dank Memer to identify who used the command. If there're people with the same username as you, the reminder may not work.\nhttps://cdn.nogra.xyz/screenshots/Discord_YVzJYHhFVa.png", ephemeral=True)
             elif str(emoji) == "🚀":
-                await self.client.db.execute("UPDATE remindersettings SET adventure = $1 WHERE member_id = $2", numberswitcher(self.result.get('adventure')), ctx.author.id)
+                await self.client.db.execute("UPDATE remindersettings SET adventure = $1 WHERE member_id = $2", switch_bool(self.result.get('adventure')), ctx.author.id)
             self.result = await self.client.db.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
             self.children[reminderemojis.index(str(emoji))].style = discord.ButtonStyle.red if is_enabled[reminderemojis.index(str(emoji))] is True else discord.ButtonStyle.green
             is_enabled[reminderemojis.index(str(emoji))] = False if is_enabled[reminderemojis.index(str(emoji))] is True else True
@@ -480,7 +486,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 price = drop.get('price')
                 guild = self.client.get_guild(drop.get('guild_id'))
                 name = drop.get('name')
-                enabled = await self.client.db.fetch("SELECT * FROM remindersettings WHERE drop = $1", 1)
+                enabled = await self.client.db.fetch("SELECT * FROM remindersettings WHERE drop = $1", True)
                 # crafting messages
                 msg = f"""
                 <a:dv_pepeConfettiOwO:837712470902571008> An item from Dank Memer is dropping! <a:dv_pepeConfettiOwO:837712470902571008>\nItem: {name}\nCost: {price}\n\nYou can buy this item now!
@@ -538,7 +544,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                     pass
                 elif result.get('remindertype') not in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24, 1001]: # if the reminder type is not a valid one
                     pass
-                elif config[check_reminder_enabled_index] != 1:  # activity specific reminder check
+                elif config[check_reminder_enabled_index] is not True:  # activity specific reminder check
                     pass
                 elif config.get('method') == 0:  # chose not to be reminded
                     pass
@@ -1139,7 +1145,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         """
         result = await self.client.db.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id) # gets the configuration for user to check if they have used dank reminder before
         if result is None:
-            await self.client.db.execute("INSERT into remindersettings VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)", ctx.author.id, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) # creates new entry for settings
+            await self.client.db.execute("INSERT into remindersettings VALUES ($1, $2)", ctx.author.id, 1) # creates new entry for settings
             result = await self.client.db.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
         reminders = await self.client.db.fetch("SELECT * FROM dankreminders WHERE member_id = $1 and guild_id = $2", ctx.author.id, ctx.guild.id) # gets user's reminders
         dailytime, lotterytime, worktime, weeklytime, monthlytime, hunttime, fishtime, digtime, highlowtime, snakeeyestime, searchtime, crimetime, begtime, horseshoetime, pizzatime, droptime, pmtime, streamtime, pettime, adventuretime = None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
@@ -1183,7 +1189,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             if reminder.get('remindertype') == 24:
                 adventuretime = round(reminder.get('time')-time.time())
         remindertimes = [dailytime or None, weeklytime or None, monthlytime or None, lotterytime or None, worktime or None, hunttime or None, fishtime or None, digtime or None, crimetime or None, begtime or None, searchtime or None, snakeeyestime or None, highlowtime or None, horseshoetime or None, pizzatime or None, droptime or None, streamtime or None, pmtime or None, pettime or None, adventuretime or None]
-        newview = dankreminders(ctx, self.client, remindertimes, 15.0, truefalse(result.get('daily')), truefalse(result.get('weekly')), truefalse(result.get('monthly')), truefalse(result.get('lottery')), truefalse(result.get('work')), truefalse(result.get('hunt')), truefalse(result.get('fish')), truefalse(result.get('dig')), truefalse(result.get('crime')), truefalse(result.get('beg')), truefalse(result.get('search')), truefalse(result.get('snakeeyes')), truefalse(result.get('highlow')), truefalse(result.get('horseshoe')), truefalse(result.get('pizza')), truefalse(result.get('drop')), truefalse(result.get('stream')), truefalse(result.get('postmeme')), truefalse(result.get('pet')), truefalse(result.get('adventure')))
+        newview = dankreminders(ctx, self.client, remindertimes, 15.0, result.get('daily'), result.get('weekly'), result.get('monthly'), result.get('lottery'), result.get('work'), result.get('hunt'), result.get('fish'), result.get('dig'), result.get('crime'), result.get('beg'), result.get('search'), result.get('snakeeyes'), result.get('highlow'), result.get('horseshoe'), result.get('pizza'), result.get('drop'), result.get('stream'), result.get('postmeme'), result.get('pet'), result.get('adventure'))
         message = await ctx.send(f"**{ctx.author}'s Dank Memer Reminders**\nSelect the button that corresponds to the reminder to enable/disable it.\n\nYou're currently {'reminded via **DMs**' if result.get('method') == 1 else 'reminded via **ping**' if result.get('method') == 2 else 'not reminded'} for your reminders.", view=newview)
         newview.response = message
         newview.result = result
