@@ -916,6 +916,11 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             nextpostmemetime = round(time.time()) + 45
             await self.handle_reminder_entry(member.id, 21, message.channel.id, message.guild.id, nextpostmemetime)
         """
+        Adventure Reminder
+        """
+        if is_dank_slash_command(message, 'adventure'):
+            pass
+        """
         Stream Start Reminder
         """
         if message.author.id == dank_memer_id:
@@ -948,189 +953,89 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
 
     @commands.Cog.listener()
     async def on_message_edit(self, beforemsg, aftermsg):
-        # work on work shift here 
+        # work on work shift here
         if beforemsg.author.id != dank_memer_id:
             return
         if len(beforemsg.embeds) == 0 or len(aftermsg.embeds) == 0:
             return
-        async def check_for_adventure():
-            if len(beforemsg.mentions) > 0:
-                if len(beforemsg.embeds) > 0:
-                    embed = beforemsg.embeds[0]
-                    if isinstance(embed.author.name, str) or isinstance(embed.title, str) or (embed.fields is not None and len(embed.fields) > 0):
-                        return
-                    if len(beforemsg.components) > 0:
-                        def find_one_enabled_component(mtarget):
-                            view = discord.ui.View.from_message(mtarget)
-                            for component in view.children:
-                                if component.disabled is False:
-                                    return True
-                            return False
-                        def find_all_disabled_component(mtarget):
-                            view = discord.ui.View.from_message(mtarget)
-                            for component in view.children:
-                                if component.disabled is True:
-                                    pass
-                                else:
-                                    return False
-                            return True
-                        if not find_one_enabled_component(beforemsg):
-                            return False
-                        if not find_all_disabled_component(aftermsg):
-                            return False
-                        if len(beforemsg.mentions) > 0:
-                            target = beforemsg.mentions[0]
-                            await self.handle_reminder_entry(target.id, 24, beforemsg.channel.id, beforemsg.guild.id, round(time.time()) + 120)
-                            await beforemsg.add_reaction('🚀')
-                    else:
-                        return False
-        await check_for_adventure()
-        beforeembed = beforemsg.embeds[0]
-        afterembed = aftermsg.embeds[0]
-        if beforeembed.author:
-            if not beforeembed.author.name:
-                return
-            if beforeembed.author.name.endswith('Stream Manager'):
-                def get_member():
-                    for member in beforemsg.guild.members:
-                        if beforeembed.author.name == f"{member.name}'s Stream Manager":
-                            return member
-                    return None
-                member = get_member()
-                if not member:
-                    return
-                beforeview = discord.ui.View.from_message(beforemsg)
-                afterview = discord.ui.View.from_message(aftermsg)
-                def check_before_view():
-                    for button in beforeview.children:
-                        if not isinstance(button, discord.ui.Button):
-                            return False
-                        if button.label.lower() == 'run ad' and button.disabled is False:
-                            pass
-                        elif button.label.lower() == "read chat" and button.disabled is False:
-                            pass
-                        elif button.label.lower() == "collect donations" and button.disabled is False:
-                            pass
-                        elif button.label.lower() == "end stream" and button.disabled is False:
-                            pass
-                        elif button.label.lower() == "view setup" and button.disabled is False:
-                            pass
-                        elif button.label.lower() == "end interaction" and button.disabled is False:
-                            pass
-                        else:
-                            return False
-                    return True
-                if not check_before_view():
-                    def check_start_not_stream():
-                        for children in beforeview.children:
-                            if not isinstance(children, discord.ui.Button):
+        if is_dank_slash_command(beforemsg, 'adventure'):
+            async def check_for_adventure():
+                if len(beforemsg.mentions) > 0:
+                    if len(beforemsg.embeds) > 0:
+                        embed = beforemsg.embeds[0]
+                        if isinstance(embed.author.name, str) or isinstance(embed.title, str) or (embed.fields is not None and len(embed.fields) > 0):
+                            return
+                        if len(beforemsg.components) > 0:
+                            def find_one_enabled_component(mtarget):
+                                view = discord.ui.View.from_message(mtarget)
+                                for component in view.children:
+                                    if component.disabled is False:
+                                        return True
                                 return False
-                        button = beforeview.children[0]
-                        if not (button.label.lower() == "go live" and button.disabled is False):
-                            return False
-                        button = beforeview.children[1]
-                        if not (button.label.lower() == "view setup" and button.disabled is False):
-                            return False
-                        button = beforeview.children[2]
-                        if not (button.label.lower() == "end interaction" and button.disabled is False):
-                            return False
-                        return True
-                    if not check_start_not_stream():
-                        return
-                    def check_start_selecting_stream():
-                        item = afterview.children[0]
-                        if not isinstance(item, discord.ui.Select):
-                            return False
-                        if item.placeholder.lower() != "select a game...":
-                            return False
-                        item = afterview.children[1]
-                        if not isinstance(item, discord.ui.Button):
-                            return False
-                        if not (item.label.lower() == "go live" and item.disabled is True):
-                            return False
-                        item = afterview.children[2]
-                        if not isinstance(item, discord.ui.Button):
-                            return False
-                        if not (item.label.lower() == "go back" and item.disabled is False):
-                            return False
-                        return True
-                    if check_start_selecting_stream():
-                        if self.trending_game[1] is not None:
-                            try:
-                                return await beforemsg.reply("The current trending game to stream is **{}**!".format(self.trending_game[1]), delete_after=10.0)
-                            except Exception as e:
-                                await beforemsg.channel.send("The current trending game to stream is **{}**!".format(self.trending_game[1]), delete_after=10.0)
-                    return
-                def check_after_view():
-                    for button in afterview.children:
-                        if not isinstance(button, discord.ui.Button):
-                            return False
-                        if button.label.lower() == 'run ad' and button.disabled is True:
-                            pass
-                        elif button.label.lower() == "read chat" and button.disabled is True:
-                            pass
-                        elif button.label.lower() == "collect donations" and button.disabled is True:
-                            pass
-                        elif button.label.lower() == "end stream" and button.disabled is False:
-                            pass
-                        elif button.label.lower() == "view setup" and button.disabled is False:
-                            pass
-                        elif button.label.lower() == "end interaction" and button.disabled is False:
-                            pass
+                            def find_all_disabled_component(mtarget):
+                                view = discord.ui.View.from_message(mtarget)
+                                for component in view.children:
+                                    if component.disabled is True:
+                                        pass
+                                    else:
+                                        return False
+                                return True
+                            if not find_one_enabled_component(beforemsg):
+                                return False
+                            if not find_all_disabled_component(aftermsg):
+                                return False
+                            if len(beforemsg.mentions) > 0:
+                                target = beforemsg.mentions[0]
+                                await self.handle_reminder_entry(target.id, 24, beforemsg.channel.id, beforemsg.guild.id, round(time.time()) + 120)
+                                await beforemsg.add_reaction('🚀')
                         else:
                             return False
+            await check_for_adventure()
+        if is_dank_slash_command(beforemsg, 'stream'):
+            afterembed = aftermsg.embeds[0]
+            if afterembed.author.name.endswith('Stream Manager'):
+                def is_in_stream_section(message: discord.Message):
+                    button_labels = ["Run AD", "Read Chat", "Collect Donations", "View Setup", "End Stream"]
+                    if len(message.components) > 0:
+                        for com in message.components:
+                            if isinstance(com, discord.ActionRow):
+                                for index, i in enumerate(com.children): #buttons
+                                    if not isinstance(i, discord.ui.Button):
+                                        return False
+                                    if i.disabled is True:
+                                        return False
+                                    if i.label not in button_labels:
+                                        return False
+                            else:
+                                if com.disabled is True:
+                                    return False
                     return True
-                if not check_after_view():
-                    return
-                nextstreamtime = round(time.time()) + 600
-                await self.handle_reminder_entry(member.id, 20, aftermsg.channel.id, aftermsg.guild.id, nextstreamtime, uses_name=True)
-                await checkmark(beforemsg)
-        elif beforeembed.footer is not None and beforeembed.title is not None and isinstance(beforeembed.title, str):
-            def get_member():
-                for member in beforemsg.guild.members:
-                    if beforeembed.title.startswith(f"{member.name}'s"):
-                        return member
-                return None
-            member = get_member()
-            if not member:
-                return
-            if isinstance(beforeembed.footer.text, str) and "You can't increase a stat" in beforeembed.footer.text:
-                beforeview = discord.ui.View.from_message(beforemsg)
-                afterview = discord.ui.View.from_message(aftermsg)
-                if beforeview is None or afterview is None:
-                    return
-                def check_before_view():
-                    buttons = {5: "Train", 6: "Change Name", 7: "Prestige", 8: "Browse Store", 9: "End Interaction"}
-                    for button in buttons:
+                def is_selecting_stream_game(message: discord.Message):
+                    if type(message.embeds[0].description) == str and "What game do you want to stream" in message.embeds[0].description:
+                        choose_view = message.components
+                        if isinstance(choose_view[0], discord.ActionRow):
+                            row = choose_view[0]
+                            if isinstance(row.children[0], discord.SelectMenu):
+                                select = row.children[0]
+                                for i in select.options:
+                                    if i.default is True and i.label != "Apex Legends": #apex legends is always the default
+                                        return False
+                                return True
+                    return False
+                if is_selecting_stream_game(aftermsg):
+                    if self.trending_game[1] is not None:
                         try:
-                            item = beforeview.children[button]
-                        except IndexError:
-                            return False
-                        if not isinstance(item, discord.ui.Button):
-                            return False
-                        if item.label != buttons[button]:
-                            return False
-                        if item.disabled is True:
-                            return False
-                    return True
-                if not check_before_view():
-                    return
-                def check_after_view():
-                    buttons = {5: "Train", 6: "Change Name", 7: "Prestige", 8: "Browse Store", 9: "End Interaction"}
-                    for button in buttons:
-                        try:
-                            item = afterview.children[button]
-                        except IndexError:
-                            return False
-                        if not isinstance(item, discord.ui.Button):
-                            return False
-                        if item.label != buttons[button]:
-                            return False
-                        if item.disabled is False:
-                            return False
-                    return True
-                if not check_after_view():
-                    return
+                            await beforemsg.reply("The current trending game to stream is **{}**!".format(self.trending_game[1]), delete_after=10.0)
+                        except discord.HTTPException:
+                            await beforemsg.channel.send("The current trending game to stream is **{}**!".format(self.trending_game[1]), delete_after=10.0)
+                elif is_in_stream_section(aftermsg):
+                    member = aftermsg.interaction.user
+                    nextstreamtime = round(time.time()) + 600
+                    await self.handle_reminder_entry(member.id, 20, aftermsg.channel.id, aftermsg.guild.id, nextstreamtime, uses_name=True)
+                    await checkmark(beforemsg)
+        if is_dank_slash_command(beforemsg, 'pets care'):
+            if type(beforemsg.embeds[0].title) == str and beforemsg.embeds[0].title.startswith(f"{beforemsg.interaction.user.name}'s"):
+                member = beforemsg.interaction.user
                 nextpettime = round(time.time()) + 43200
                 await self.handle_reminder_entry(member.id, 23, aftermsg.channel.id, aftermsg.guild.id, nextpettime, uses_name=True)
                 await checkmark(beforemsg)
