@@ -552,33 +552,33 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 elif config.get('method') in [1, 2]:  # DMs or Mentions
                     def dm_message(reminderaction):
                         if reminderaction == 2:
-                            return "**claim your daily** <:DVB_calendar:873107952159059991>"
+                            return "**claim your `/daily`** <:DVB_calendar:873107952159059991>"
                         elif reminderaction == 3:
-                            return "**claim your weekly** <:DVB_week:876711052669247528> "
+                            return "**claim your `/weekly`** <:DVB_week:876711052669247528> "
                         elif reminderaction == 4:
-                            return "**claim your monthly** <:DVB_month:876711072030150707> "
+                            return "**claim your `/monthly`** <:DVB_month:876711072030150707> "
                         elif reminderaction == 5:
-                            return "**enter the lottery** <:DVB_lotteryticket:873110581085880321>"
+                            return "**enter the `/lottery`** <:DVB_lotteryticket:873110581085880321>"
                         elif reminderaction == 6:
                             return "**work again** <:DVB_workbadge:873110507605872650>"
                         elif reminderaction == 7:
                             return "**redeem your Patreon perks** <:DVB_patreon:876628017194082395>"
                         elif reminderaction == 8:
-                            return "`pls hunt` <:DVB_rifle:888404394805186571> "
+                            return "`/hunt` <:DVB_rifle:888404394805186571> "
                         elif reminderaction == 9:
-                            return "`pls fish` <:DVB_fishing:888404317638369330>"
+                            return "`/fish` <:DVB_fishing:888404317638369330>"
                         elif reminderaction == 10:
-                            return "`pls dig` <:DVB_shovel:888404340426031126>"
+                            return "`/dig` <:DVB_shovel:888404340426031126>"
                         elif reminderaction == 11:
-                            return "`pls crime` <:DVB_Crime:888404653711192067>"
+                            return "`/crime` <:DVB_Crime:888404653711192067>"
                         elif reminderaction == 12:
-                            return "`pls beg` <:DVB_beg:888404456356610099>"
+                            return "`/beg` <:DVB_beg:888404456356610099>"
                         elif reminderaction == 13:
-                            return "`pls search` <:DVB_search:888405048260976660>"
+                            return "`/search` <:DVB_search:888405048260976660>"
                         elif reminderaction == 14:
-                            return "`pls snakeeyes` <a:DVB_snakeeyes:888404298608812112>"
+                            return "`/snakeeyes` <a:DVB_snakeeyes:888404298608812112>"
                         elif reminderaction == 15:
-                            return "`pls highlow` 🔢"
+                            return "`/highlow` 🔢"
                         elif reminderaction == 17:
                             return "**use a horseshoe** <:DVB_Horseshoe:888404491647463454>"
                         elif reminderaction == 18:
@@ -586,7 +586,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                         elif reminderaction == 20:
                             return "**Interact with your stream** 🎮"
                         elif reminderaction == 21:
-                            return "`pls pm` <:DVB_Laptop:915524266940854303>"
+                            return "`/postmemes` <:DVB_Laptop:915524266940854303>"
                         elif reminderaction == 22:
                             return "**interact with your marriage partner** <:DVB_Ring:928236453920669786>"
                         elif reminderaction == 23:
