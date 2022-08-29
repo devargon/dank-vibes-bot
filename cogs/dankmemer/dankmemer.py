@@ -32,7 +32,8 @@ cooldown_messages = ["Spam isn't cool fam",
                      'Take a chill pill',
                      'Hold your horses...',
                      'Take a breather...',
-                     'Woah nelly, slow it down'
+                     'Woah nelly, slow it down',
+                     'Too spicy, take a breather'
                      ]
 
 
@@ -900,23 +901,16 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         """
         Work Reminder
         """
-        if len(message.embeds) > 0 and message.author.id == dank_memer_id and len(message.mentions) > 0 and message.embeds[0].description and (message.embeds[0].description.startswith("**TERRIBLE work!**") or message.embeds[0].description.startswith("**Great work!**")):
-                member = message.mentions[0]
-                nextworktime = round(time.time()) + 3600
-                await self.handle_reminder_entry(member.id, 6, message.channel.id, message.guild.id, nextworktime)
-                with contextlib.suppress(discord.HTTPException):
-                    await checkmark(message)
+        # shifted to edit
+        #if is_dank_slash_command(message, 'work shift') and 'until you can work again!' not in message.embeds[0].description:
         """
         Postmeme reminder
         """
-        if message.author.id == dank_memer_id:
-            if len(message.mentions) > 0:
-                if len(message.embeds) > 0:
-                    if message.embeds[0].author:
-                        if message.embeds[0].author.name.endswith("meme posting session"):
-                            member = message.mentions[0]
-                            nextpostmemetime = round(time.time()) + 30
-                            await self.handle_reminder_entry(member.id, 21, message.channel.id, message.guild.id, nextpostmemetime)
+        if is_dank_slash_command(message, 'postmemes') and message.embeds[0].title not in cooldown_messages:
+            await self.wait_for_edit(message)
+            member = message.interaction.user
+            nextpostmemetime = round(time.time()) + 45
+            await self.handle_reminder_entry(member.id, 21, message.channel.id, message.guild.id, nextpostmemetime)
         """
         Marriage reminder
         """
@@ -968,6 +962,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
 
     @commands.Cog.listener()
     async def on_message_edit(self, beforemsg, aftermsg):
+        # work on work shift here 
         if beforemsg.author.id != dank_memer_id:
             return
         if len(beforemsg.embeds) == 0 or len(aftermsg.embeds) == 0:
