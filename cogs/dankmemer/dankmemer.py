@@ -7,12 +7,13 @@ import os
 import discord
 import operator
 
+import pytz
 from thefuzz import process
 
 from cogs.dankmemer.lottery import Lottery
 from main import dvvt
 from utils import checks, buttons
-from datetime import datetime, timedelta
+import datetime
 from discord.ext import commands, tasks, pages
 from utils.format import print_exception, short_time, comma_number, stringnum_toint
 from utils.buttons import *
@@ -471,7 +472,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         now = discord.utils.utcnow()
         next_run = now.replace(hour = 0, minute = 0, second = 0)
         if next_run <= now:
-            next_run += timedelta(days=1)
+            next_run += datetime.timedelta(days=1)
         await discord.utils.sleep_until(next_run)
 
 
@@ -749,51 +750,33 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         if is_dank_slash_command(message, 'daily'):
             member = message.interaction.user
             now = discord.utils.utcnow()
-            next_reminder_time = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+            next_reminder_time = now.replace(hour=0, minute=0, second=0, microsecond=0) + datetime.timedelta(days=1)
             nextdailytime = round(next_reminder_time.timestamp())
             await self.handle_reminder_entry(member.id, 2, message.channel.id, message.guild.id, nextdailytime)
             with contextlib.suppress(discord.HTTPException):
                 await clock(message)
+        if is_dank_slash_command(message, 'weekly'):
+            member = message.interaction.user
+            today = datetime.date.today()
+            days_ahead = 0 - today.weekday()
+            if days_ahead <= 0:
+                days_ahead += 7
+            next_weekly_date = today + datetime.timedelta(days_ahead)
+            next_weekly_datetime = datetime.datetime.combine(next_weekly_date, datetime.time.min, tzinfo=pytz.UTC)
+            nextweeklytime = next_weekly_datetime.timestamp()
+            await self.handle_reminder_entry(member.id, 3, message.channel.id, message.guild.id, nextweeklytime, uses_name=True)
+            with contextlib.suppress(discord.HTTPException):
+                await clock(message)
 
-        if "pls weekly" in message.content.lower():
-            if not message.author.bot:
-                def check_weekly(payload):
-                    if len(payload.embeds) == 0 or payload.author.id == message.author.id or not payload.author.bot or message.channel != payload.channel or payload.author.id != dank_memer_id:
-                        return False
-                    else:
-                        return payload.embeds[0].title and payload.embeds[0].title == f"Here are yer weekly coins, {message.author.name}" or payload.embeds[0].title == f"Here are your weekly coins, {message.author.name}"
-                try:
-                    botresponse = await self.client.wait_for("message", check=check_weekly, timeout=10)
-                except asyncio.TimeoutError:
-                    return await crossmark(message)
-                else:
-                    member = message.author
-                    nextweeklytime = round(time.time()) + 604800
-                    await self.handle_reminder_entry(member.id, 3, message.channel.id, message.guild.id, nextweeklytime, uses_name=True)
-                    with contextlib.suppress(discord.HTTPException):
-                        await clock(botresponse)
-            else:
-                pass
-
-        if "pls monthly" in message.content.lower():
-            if not message.author.bot:
-                def check_monthly(payload):
-                    if len(payload.embeds) == 0 or payload.author.id == message.author.id or not payload.author.bot or message.channel != payload.channel or payload.author.id != dank_memer_id:
-                        return False
-                    else:
-                        return payload.embeds[0].title and payload.embeds[0].title == f"Here are yer monthly coins, {message.author.name}" or payload.embeds[0].title == f"Here are your monthly coins, {message.author.name}"
-                try:
-                    botresponse = await self.client.wait_for("message", check=check_monthly, timeout=10)
-                except asyncio.TimeoutError:
-                    return await crossmark(message)
-                else:
-                    member = message.author
-                    nextmonthlytime = round(time.time()) + 2592000
-                    await self.handle_reminder_entry(member.id, 4, message.channel.id, message.guild.id, nextmonthlytime, uses_name=True)
-                    with contextlib.suppress(discord.HTTPException):
-                        await clock(botresponse)
-            else:
-                pass
+        if is_dank_slash_command(message, 'monthly'):
+            if "You can buy the ability" not in message.embeds[0].description:
+                member = message.interaction.user
+                now = discord.utils.utcnow()
+                next_monthly_datetime = (now.replace(day=1) + datetime.timedelta(days=32)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                nextmonthlytime = next_monthly_datetime.timestamp()
+                await self.handle_reminder_entry(member.id, 4, message.channel.id, message.guild.id, nextmonthlytime, uses_name=True)
+                with contextlib.suppress(discord.HTTPException):
+                    await clock(message)
 
         if len(message.embeds) > 0 and len(message.mentions) > 0 and message.embeds[0].title and message.embeds[0].description and message.embeds[0].title == "Pending Confirmation" and "tryna buy a lottery ticket" in message.embeds[0].description:
             member = message.mentions[0]
@@ -919,7 +902,45 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         Adventure Reminder
         """
         if is_dank_slash_command(message, 'adventure'):
-            pass
+            is_done = False
+            if len(message.components) == 0:
+                is_done = True
+                print("pass: no components")
+            else:
+                def check(before_msg, m: discord.Message):
+                    if m.id != message.id:
+                        print("FAIL: not same message")
+                        return False
+                    if len(m.components) == 0:
+                        print("pass: no components")
+                        return True
+                    else:
+                        for i in message.components:
+                            i: discord.ActionRow = i
+                            for b in i.children:
+                                if isinstance(b, discord.SelectMenu):
+                                    print("has select menu")
+                                    return False
+                                else:
+                                    if b.disabled is not True:
+                                        print("has enabled button")
+                                        return False
+                    print("done")
+                    return True
+                print('waiting for fulfilled check')
+                try:
+                    await self.client.wait_for('message_edit', check=check, timeout=120)
+                except asyncio.TimeoutError:
+                    pass
+                else:
+                    is_done = True
+            if is_done is True:
+                target = message.interaction.user
+                await self.handle_reminder_entry(target.id, 24, message.channel.id, message.guild.id, round(time.time()) + 300)
+                await message.add_reaction('🚀')
+
+
+
         """
         Stream Start Reminder
         """
@@ -958,39 +979,6 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             return
         if len(beforemsg.embeds) == 0 or len(aftermsg.embeds) == 0:
             return
-        if is_dank_slash_command(beforemsg, 'adventure'):
-            async def check_for_adventure():
-                if len(beforemsg.mentions) > 0:
-                    if len(beforemsg.embeds) > 0:
-                        embed = beforemsg.embeds[0]
-                        if isinstance(embed.author.name, str) or isinstance(embed.title, str) or (embed.fields is not None and len(embed.fields) > 0):
-                            return
-                        if len(beforemsg.components) > 0:
-                            def find_one_enabled_component(mtarget):
-                                view = discord.ui.View.from_message(mtarget)
-                                for component in view.children:
-                                    if component.disabled is False:
-                                        return True
-                                return False
-                            def find_all_disabled_component(mtarget):
-                                view = discord.ui.View.from_message(mtarget)
-                                for component in view.children:
-                                    if component.disabled is True:
-                                        pass
-                                    else:
-                                        return False
-                                return True
-                            if not find_one_enabled_component(beforemsg):
-                                return False
-                            if not find_all_disabled_component(aftermsg):
-                                return False
-                            if len(beforemsg.mentions) > 0:
-                                target = beforemsg.mentions[0]
-                                await self.handle_reminder_entry(target.id, 24, beforemsg.channel.id, beforemsg.guild.id, round(time.time()) + 120)
-                                await beforemsg.add_reaction('🚀')
-                        else:
-                            return False
-            await check_for_adventure()
         if is_dank_slash_command(beforemsg, 'stream'):
             afterembed = aftermsg.embeds[0]
             if afterembed.author.name.endswith('Stream Manager'):
