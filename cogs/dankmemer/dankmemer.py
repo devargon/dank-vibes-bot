@@ -556,7 +556,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                         elif reminderaction == 3:
                             return "**claim your `/weekly`** <:DVB_week:876711052669247528> "
                         elif reminderaction == 4:
-                            return "**claim your `/monthly`** <:DVB_month:876711072030150707> "
+                            return "**claim your `/monthly`** <:DVB_month:876711072030150707>\n**NOTE:** you need to have purchased the **Monthly Coins** upgrade in `/advancements upgrades` to use the command. (⏣ 15,000,000)"
                         elif reminderaction == 5:
                             return "**enter the `/lottery`** <:DVB_lotteryticket:873110581085880321>"
                         elif reminderaction == 6:
@@ -601,7 +601,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                         elif reminderaction == 3:
                             return "**claim your </weekly:1011560370948800549>** <:DVB_week:876711052669247528> "
                         elif reminderaction == 4:
-                            return "**claim your </monthly:1011560370911072262>** <:DVB_month:876711072030150707> "
+                            return "**claim your </monthly:1011560370911072262>** <:DVB_month:876711072030150707>\n**NOTE:** you need to have purchased the **Monthly Coins** upgrade in `/advancements upgrades` to use the command. (⏣ 15,000,000)"
                         elif reminderaction == 5:
                             return "**enter the </lottery:1011560370911072260>** <:DVB_lotteryticket:873110581085880321>"
                         elif reminderaction == 6:
@@ -682,6 +682,8 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        if message.channel.id != 736428352990347304:
+            return
         if message.author.bot and message.author.id != dank_memer_id:
             return
         if self.client.maintenance.get(self.qualified_name) and await self.client.db.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", message.author.id) is not True:
@@ -707,10 +709,10 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                     if original_message.interaction.name == "serverevents donate" and len(original_message.embeds) > 0:
                         e = original_message.embeds[0]
                         coins_line = e.description.split('\n')[2]
-                        coins = re.findall(server_coin_donate_re, coins_line)
-                        if len(coins) > 0: # match for coins in embed found
+                        coins_re = re.findall(server_coin_donate_re, coins_line)
+                        if len(coins_re) > 0: # match for coins in embed found
                             try:
-                                coins = int(coins[0].replace(',', ''))
+                                coins = int(coins_re[0].replace(',', ''))
                             except ValueError:
                                 pass
                         else: #most likely item or error
@@ -720,23 +722,32 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                                 items_raw = items_raw_str.split(' ')
                                 if len(items_raw) >= 3: # "<count> <emoji> <item name...>"
                                     item_count = int(items_raw[0].replace(',', '').strip())
-                                    item_name = items_raw[2:].strip()
+                                    item_name = ' '.join(items_raw[2:]).strip()
                                     a = await self.client.db.fetchrow("SELECT * FROM dankitems WHERE name = $1", item_name)
                                     if a is not None:
                                         item = DankItem(a)
-                        if coins is not None or (item is not None and item_count is not None):
+                                    else:
+                                        item = item_name
+                        if (coins is not None) or (item is not None and item_count is not None):
                             embed = discord.Embed(title="Server Pool Donation", color=discord.Color.brand_green(), timestamp=discord.utils.utcnow())
                             embed.set_author(name=f"{original_message.interaction.user}", icon_url=original_message.interaction.user.display_avatar.url)
                             embed.set_footer(text=f"{original_message.interaction.user.id}")
                             if coins is not None:
                                 embed.description = f"**\u23e3 {comma_number(coins)}**"
                             else:
-                                embed.description = f"**{comma_number(item_count)} {item.name}**\nWorth \u23e3 {comma_number(item_count*item.trade_value)}"
+                                if isinstance(item, DankItem): # is a valid item that can be found in the database
+                                    embed.description = f"**{comma_number(item_count)} {item.name}**\nWorth \u23e3 {comma_number(item_count*item.trade_value)}"
+                                    embed.set_thumbnail(url=item.image_url)
+                                else:
+                                    embed.description = f"**{comma_number(item_count)} {item}**\nWorth \u23e3 0 (unknown item)"
                             log_channel = self.client.get_channel(serverpool_donate_log_channel_id)
                             if log_channel is not None:
                                 webh = await self.client.get_webhook(log_channel)
                                 view = SingleURLButton(message.jump_url, "Jump to Message", None)
-                                await webh.send(username=self.client.user.name, display_avatar=self.client.user.display_avatar.url, embed=embed, view=view)
+                                try:
+                                    await webh.send(username=self.client.user.name, avatar_url=self.client.user.display_avatar.url, embed=embed, view=view)
+                                except Exception as a:
+                                    print(a)
 
         """
         Let's update trade values first
