@@ -148,7 +148,7 @@ class CustomRoleManagement(commands.Cog):
 
     @checks.has_permissions_or_role(manage_roles=True)
     @customrole.command(name="remove", aliases=['delete', 'clear'])
-    async def customrole_remove(self, ctx: DVVTcontext, *, member_or_role: Optional[Union[discord.Member, BetterBetterRoles]]):
+    async def customrole_remove(self, ctx: DVVTcontext, *, member_or_role: Union[discord.Member, BetterBetterRoles]):
         """
         Remove a custom role from a user.
         You can also reset a custom role's users by inputting a role instead.
