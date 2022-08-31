@@ -383,7 +383,7 @@ class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreac
 
     @commands.command(name="invite", hidden=True)
     async def _invite(self, ctx):
-        if ctx.author.id != 650647680837484556:
+        if ctx.author.id == 650647680837484556:
             invite_link = discord.utils.oauth_url(self.client.user.id, scopes=['bot'])
             await ctx.send(f"<{invite_link}>")
         else:
