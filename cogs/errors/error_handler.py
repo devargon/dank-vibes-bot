@@ -52,12 +52,12 @@ class ErrorHandler(commands.Cog):
             #enabled = await ctx.bot.db.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
             #if enabled == True:
                 #return await ctx.invoke(ctx.command, *ctx.args, **ctx.kwargs)
+            handled = True
             message = f"You're on cooldown. Try again in **{humanize_timedelta(seconds=error.retry_after)}**."
             if ctx.command.name == "dumbfight":
                 message += "\nPeople with **Vibing Investor** will have a cooldown of only **30 minutes**!"
             if ctx.command.name == "lockgen":
                 message = f"This command is currently under a global cooldown of **{humanize_timedelta(seconds=error.retry_after)}** to prevent abuse.\n"
-                handled = True
             await send_error(message)
         elif isinstance(error, commands.MemberNotFound):
             ctx.command.reset_cooldown(ctx)
