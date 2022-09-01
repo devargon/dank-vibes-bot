@@ -193,7 +193,7 @@ class OnMessage(commands.Cog):
             if round(time()) - karuta_last_sent >= 120:
                 if con.startswith('k') and message.channel.category_id == 847361120901398528 or message.channel.category_id == 875316745416617984:
                     embed = discord.Embed(title="Karuta has switched to slash commands.",
-                                          description="Type `/` to find your favorite Karuta command.\n\n`kdrop` → `/drop` or `/k input:drop`\n`kdaily` -> `/daily` or `/k input:daily`\n\nIf you have answers or queries, join [Karuta's Support Server.](discord.gg/karuta)",
+                                          description="Type `/` to find your favorite Karuta command.\n\n`kdrop` → `/drop` or `/k input:drop`\n`kdaily` -> `/daily` or `/k input:daily`\n\nIf you have answers or queries, join [Karuta's Support Server](discord.gg/karuta).",
                                           color=0xff0000)
                     embed.set_footer(text=message.guild.name, icon_url=message.guild.icon.url)
                     embed.set_image(url="https://cdn.nogra.xyz/dankvibes/slashbanner_karuta.png")
