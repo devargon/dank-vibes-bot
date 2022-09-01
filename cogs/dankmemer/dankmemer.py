@@ -745,7 +745,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                             log_channel = self.client.get_channel(serverpool_donate_log_channel_id)
                             if log_channel is not None:
                                 webh = await self.client.get_webhook(log_channel)
-                                view = SingleURLButton(message.jump_url, "Jump to Message", None)
+                                view = SingleURLButton(message.jump_url, f"Jump to Message in #{message.channel.name}", None)
                                 try:
                                     await webh.send(username=self.client.user.name, avatar_url=self.client.user.display_avatar.url, embed=embed, view=view)
                                 except Exception as a:
