@@ -720,8 +720,12 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                                 items_raw = items_raw_str.split(' ')
                                 if len(items_raw) >= 3: # "<count> <emoji> <item name...>"
                                     item_count = int(items_raw[0].replace(',', '').strip())
-                                    item_name = ' '.join(items_raw[2:]).strip()
-                                    a = await self.client.db.fetchrow("SELECT * FROM dankitems WHERE name = $1", item_name)
+                                    item_name_joined = ' '.join(items_raw[2:])
+                                    item_name = item_name_joined.strip()
+                                    item_name_non_plural = item_name
+                                    if item_name.lower().endswith('s'):
+                                        item_name_non_plural = item_name[:-1]
+                                    a = await self.client.db.fetchrow("SELECT * FROM dankitems WHERE name = $1 OR name = $2", item_name, item_name_non_plural)
                                     if a is not None:
                                         item = DankItem(a)
                                     else:
