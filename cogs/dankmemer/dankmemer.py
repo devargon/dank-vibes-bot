@@ -682,8 +682,6 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if message.channel.id != 736428352990347304:
-            return
         if message.author.bot and message.author.id != dank_memer_id:
             return
         if self.client.maintenance.get(self.qualified_name) and await self.client.db.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", message.author.id) is not True:
