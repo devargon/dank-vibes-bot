@@ -23,6 +23,7 @@ class Events(RawTyping, GuildChannelCreate, MemberJoin, StatusTasks, PresenceUpd
         self.client: dvvt = client
         self.cooldown = []
         self.pls_prompt = {}
+        self.k_prompt = {}
         self.last_muted = 0
 
     @tasks.loop(minutes=1)

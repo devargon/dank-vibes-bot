@@ -131,6 +131,7 @@ class OnMessage(commands.Cog):
         self.client: dvvt = client
         self.mafia_wait = False
         self.pls_prompt = {}
+        self.k_prompt = {}
 
 
     @commands.Cog.listener()
@@ -187,8 +188,19 @@ class OnMessage(commands.Cog):
                         await message.channel.send(um)
                         await message.channel.send("What it means:\n<:DVB_ban:930310804203503626> - Ban\n<:DVB_Mute:930308084885241926> - Mute\n<:DVB_Unmute:930308214132707338> - Unmute\n<:DVB_Unban:930308373440765982> - Unban\n<:DVB_warn:930312114629931028> - Warn\n<:DVB_tempban:930310741213454336> - Tempban")
         if not message.author.bot:
-            settings = await self.client.get_guild_settings(message.guild.id)
             con = message.content.lower()
+            karuta_last_sent = self.k_prompt.get(message.channel.id, 0)
+            if round(time()) - karuta_last_sent >= 120:
+                if con.startswith('k') and message.channel.category_id == 847361120901398528 or message.channel.category_id == 875316745416617984:
+                    embed = discord.Embed(title="Karuta has switched to slash commands.",
+                                          description="Type `/` to find your favorite Karuta command.\n\n`kdrop` → `/drop` or `/k input:drop`\n`kdaily` -> `/daily` or `/k input:daily`\n\nIf you have answers or queries, join [Karuta's Support Server.](discord.gg/karuta)",
+                                          color=0xff0000)
+                    embed.set_footer(text=message.guild.name, icon_url=message.guild.icon.url)
+                    embed.set_image(url="https://cdn.nogra.xyz/dankvibes/slashbanner_karuta.png")
+                    await message.channel.send(content=message.author.mention, embed=embed)
+                    self.k_prompt[message.channel.id] = round(time())
+
+            settings = await self.client.get_guild_settings(message.guild.id)
             if settings.pls_ar is True:
                 if con.startswith('pls '):
                     split_cmd = con.split(' ')
