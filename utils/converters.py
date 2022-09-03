@@ -167,9 +167,14 @@ class BetterBetterRoles(commands.Converter):
             for r in ctx.guild.roles:
                 roles_and_aliases[r.name] = r.id
                 # This might be a bad idea, don't care
-            name, ratio = process.extractOne(argument, [x for x in roles_and_aliases])
+            try:
+                name, ratio = process.extractOne(argument, [x for x in roles_and_aliases])
+            except TypeError:
+                raise RoleNotFound(argument)
             if ratio >= 75:
                 role_to_return = discord.utils.get(ctx.guild.roles, id=roles_and_aliases[name])
+                if role_to_return is None:
+                    raise RoleNotFound(argument)
                 return role_to_return
 
 class BetterColor(commands.Converter):
@@ -183,6 +188,6 @@ class BetterColor(commands.Converter):
             else:
                 arg = None
         if not isinstance(arg, discord.Colour):
-            return ArgumentBaseError(message=f"{argument} is not a valid color.\nPlease provide a valid color in the format of:\n`#FFFFFF`\n`FFFFFF`\n`0xFFFFFF`\n`0x#FFFFFF`\n`rgb(255, 255, 255)`\nA colour name")
+            raise ArgumentBaseError(message=f"{argument} is not a valid color.\nPlease provide a valid color in the format of:\n`#FFFFFF`\n`FFFFFF`\n`0xFFFFFF`\n`0x#FFFFFF`\n`rgb(255, 255, 255)`\nA colour name")
         else:
             return arg

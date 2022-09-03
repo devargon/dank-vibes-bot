@@ -14,27 +14,9 @@ from utils.context import DVVTcontext
 import re
 
 from utils.buttons import confirm
-from utils.converters import BetterColor
+from utils.converters import BetterColor, BetterBetterRoles
 from utils.format import generate_loadbar
 from utils.time import humanize_timedelta
-
-
-class BetterRoles(commands.Converter):
-    async def convert(self, ctx, argument):
-        try:
-            return await commands.RoleConverter().convert(ctx, argument)
-        except commands.BadArgument:
-            role_to_return = discord.utils.find(lambda x: x.name.lower() == argument.lower(), ctx.guild.roles)
-            if role_to_return is not None:
-                return role_to_return
-            roles_and_aliases = {}
-            for r in ctx.guild.roles:
-                roles_and_aliases[r.name] = r.id
-                # This might be a bad idea, don't care
-            name, ratio = process.extractOne(argument, [x for x in roles_and_aliases])
-            if ratio >= 75:
-                role_to_return = discord.utils.get(ctx.guild.roles, id=roles_and_aliases[name])
-                return role_to_return
 
 regex = re.compile(
         r'^(?:http|ftp)s?://' # http:// or https://
@@ -70,7 +52,7 @@ class Role(commands.Cog):
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.group(name="role", invoke_without_command=True)
-    async def role_cmd(self, ctx, member: discord.Member = None, *, role: BetterRoles = None):
+    async def role_cmd(self, ctx, member: discord.Member = None, *, role: BetterBetterRoles):
         """
         Use this command to add or remove a role to a user.
         """
@@ -99,7 +81,7 @@ class Role(commands.Cog):
 
     @checks.has_permissions_or_role(manage_roles=True)
     @role_cmd.command(name='icon')
-    async def role_icon(self, ctx, role: BetterRoles = None, argument: Union[discord.Emoji, discord.PartialEmoji, str] = None):
+    async def role_icon(self, ctx, role: BetterBetterRoles = None, argument: Union[discord.Emoji, discord.PartialEmoji, str] = None):
         """
         Changes the icon of a role in the server.
         The supported arguments are an emoji, a image URL, or an attachment.
@@ -190,7 +172,7 @@ class Role(commands.Cog):
 
     @checks.has_permissions_or_role(manage_roles=True)
     @role_cmd.command(name="name", aliases=["setname", "n"])
-    async def role_name(self, ctx: DVVTcontext, role: BetterRoles, *, new_name: str):
+    async def role_name(self, ctx: DVVTcontext, role: BetterBetterRoles, *, new_name: str):
         role: discord.Role = role
         failembed = discord.Embed(title="Role Edit Failed", color=discord.Color.red())
         if not ctx.me.guild_permissions.manage_roles:
@@ -219,7 +201,7 @@ class Role(commands.Cog):
 
     @checks.has_permissions_or_role(manage_roles=True)
     @role_cmd.command(name="color", aliases=["colour"])
-    async def role_color(self, ctx: DVVTcontext, role: BetterRoles, color: BetterColor):
+    async def role_color(self, ctx: DVVTcontext, role: BetterBetterRoles, color: BetterColor):
         role: discord.Role = role
         if color is None:
             return await ctx.send("Please provide a valid color in the format of:\n`#FFFFFF`\n`FFFFFF`\n`0xFFFFFF`\n`0x#FFFFFF`\n`rgb(255, 255, 255)`\nA colour name")
@@ -251,7 +233,7 @@ class Role(commands.Cog):
 
     @checks.has_permissions_or_role(manage_roles=True)
     @role_cmd.command(name="removeall", aliases=['rall'])
-    async def role_removeall(self, ctx, *, role: BetterRoles = None):
+    async def role_removeall(self, ctx, *, role: BetterBetterRoles = None):
         """Removes all members from a role."""
         if role is None:
             return await ctx.send("You need to provide a role.")
