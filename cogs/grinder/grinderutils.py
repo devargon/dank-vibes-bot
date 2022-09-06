@@ -3,6 +3,7 @@ import os
 import aiohttp
 import discord
 from typing import Optional
+from main import dvvt
 from utils.menus import CustomMenu
 from discord import Webhook
 from discord.ext import commands, menus
@@ -50,7 +51,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
     GrinderUtils commands
     """
     def __init__(self, client):
-        self.client = client
+        self.client: dvvt = client
         self.waitlist = []
         #self.daily_owo_reset.start()
 
@@ -317,7 +318,11 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                     logembed = discord.Embed(description=f"**Grinder**: {member.mention}\n**Amount**: `⏣ {comma_number(amt)}`\nClick [here]({message.jump_url}) to view.\n`⏣ {comma_number(int(total.get('sum')))}` total grinded by grinders!", color=self.client.embed_color, timestamp=discord.utils.utcnow())
                     logembed.set_footer(text=f"{message.guild.name} Grinder Log", icon_url=message.guild.icon.url)
                     await self.client.get_channel(grinderlogID).send(f"A grinder transaction by `{member} ({member.id})` has been logged.", embed=logembed)
-                    chan_msgs = [f"{member.mention}, Your donations of **⏣ {comma_number(amt)}** has been logged. Thank you for contributing to Dank Vibes!"]
+                    chan_msgs = [f"{member.mention}, your donation of **⏣ {comma_number(amt)}** has been logged. Thank you for your contributions to Dank Vibes!"]
+                    add_donations_cmd = self.client.get_command('adddonations')
+                    ctx = self.client.get_context(message)
+                    ctx.author = message.guild.get_member(264019387009204224)
+                    await add_donations_cmd(ctx, member, amt, 'dank')
                     if result is None:
                         old = 0
                     else:
