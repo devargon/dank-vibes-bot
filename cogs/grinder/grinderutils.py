@@ -14,8 +14,7 @@ from utils.buttons import confirm
 from utils.converters import BetterInt
 from datetime import datetime, timedelta
 
-
-
+from utils.specialobjects import DankItem
 
 guildid = 871734809154707467 if os.getenv('state') == '1' else 595457764935991326
 tgrinderroleID = 896052592797417492 if os.getenv('state') == '1' else 827270880182009956
@@ -27,6 +26,8 @@ logchannel = 871737332431216661 if os.getenv('state') == '1' else 89669378931231
 holder = 827080569501777942 if os.getenv('state') == '1' else 798238834340528149
 grinderlogID = 896068443093229579 if os.getenv('state') == '1' else 862433139921911809
 webhook_url = 'https://canary.discord.com/api/webhooks/932261660322832415/gSkRlKsA1wtHHQxU0TGt_eTIzcPysnZ5G-yiaEXHMQlkAODYg9YboU_9sEIZghysIdB4' if os.getenv('state') == '1' else 'https://discord.com/api/webhooks/922933444370104330/DxlVMQ7rxdk__R6Ej8SPWpaTXWprKcUVb606Hfo91PvFnA-5xXdMi3RuyQdIngZdU3Rf'
+server_coin_donate_re = re.compile(r"> You will donate \*\*\u23e3 ([\d,]*)\*\*")
+server_item_donate_re = re.compile(r"\*\*(.*)\*\*")
 
 class MessageFlag(commands.FlagConverter, case_insensitive = True, delimiter = ' ', prefix='--'):
     msg : Optional[str]
@@ -272,68 +273,85 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             return
         if message.channel.id != donochannel:
             return
-        dankholder = message.guild.get_member(holder)
-
-        msgembed = message.embeds[0]
-        if len(msgembed.fields) < 0:
+        if message.reference is None:
             return
-        try:
-            if not (type(msgembed.fields[0].value) == str and type(msgembed.fields[0].name) == str):
-                return
-        except IndexError:
-            return
-        title = msgembed.fields[0].name
-        if title != "Shared":
-            return
-        shared = msgembed.fields[0].value
-        shared = shared.split(' ')[1].replace('`', '').replace(',', '')
-        try:
-            shared = int(shared)
-        except Exception as e:
-            return await message.channel.send(f"There was an error converting the shared amount to a number: ```py\n{e}\n```")
-        else:
-            amt = shared
-            if len(message.mentions) > 0:
-                member = message.mentions[0]
+        embed = message.embeds[0]
+        if type(embed.description) == str and "Successfully donated!" in embed.description:
+            m_reference = message.reference
+            if m_reference.cached_message is None:
+                original_message = await message.channel.fetch_message(m_reference.channel_id)
             else:
-                return await message.reply("⚠️ **You need to have Reply Pings enabled!** Your grinder statistics will be manually added by <@!542905463541465088>, as I was unable to detect who shared the coins.")
-            if not (discord.utils.get(member.roles, id=tgrinderroleID) or discord.utils.get(member.roles, id=grinder3mroleID) or discord.utils.get(member.roles, id=grinderroleID)):
-                return await message.channel.send("You don't have the required roles or the roles declared are invalid.")
-            result = await self.client.db.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
-            if result is None:
-                await self.client.db.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)", member.id, amt, amt, 0, amt, amt, round(time.time()), message.jump_url)
-            else:
-                await self.client.db.execute("UPDATE grinderdata SET today = $1, past_week = $2, past_month = $3, all_time = $4, last_dono_time = $5, last_dono_msg = $6 WHERE user_id = $7", result.get('today') + amt, result.get('past_week') + amt, result.get('past_month') + amt, result.get('all_time') + amt, round(time.time()), message.jump_url, member.id)
-            total = await self.client.db.fetchrow("SELECT SUM(all_time) FROM grinderdata")
-            logembed = discord.Embed(description=f"**Grinder**: {member.mention}\n**Amount**: `⏣ {comma_number(amt)}`\nClick [here]({message.jump_url}) to view.\n`⏣ {comma_number(int(total.get('sum')))}` total grinded by grinders!", color=self.client.embed_color, timestamp=discord.utils.utcnow())
-            logembed.set_footer(text=f"{message.guild.name} Grinder Log", icon_url=message.guild.icon.url)
-            await self.client.get_channel(grinderlogID).send(f"A grinder transaction by `{member} ({member.id})` has been logged.", embed=logembed)
-            await message.channel.send(f"{member.mention}, I have logged your transfer of **⏣ {comma_number(amt)}** to {dankholder}.")
-            if result is None:
-                old = 0
-            else:
-                old = result.get('today')
-            if old + amt >= 21000000:
-                has_completed_3m = True
-            else:
-                has_completed_3m = False
-            if old + amt >= 335000000:
-                has_completed_5m = True
-            else:
-                has_completed_5m = False
-            if has_completed_3m == True:
-                if has_completed_5m is not True:
-                    msg = "**If you are on the 3M Grinder Tier:** \n<:DVB_True:887589686808309791> You have completed your Grinder requirement for today! I will notify you when you can submit your next ⏣ 3,000,000 again.\n\nIf you are on the **5M Grinder Tier**: \n<:DVB_False:887589731515392000> Ignore this message."
-                else:
-                    msg = "<:DVB_True:887589686808309791> You have completed your Grinder requirement for today! I will notify you when you can submit your next ⏣ 3,000,000/⏣ 5,000,000 again."
-                try:
-                    await member.send(msg)
-                except:
-                    await message.channel.send(f"{member.mention} {msg}")
-            currentcount = await self.get_donation_count(member, 'dank')
-            amount = amt
-            QUERY = "INSERT INTO donations.{} VALUES ($1, $2) ON CONFLICT(user_id) DO UPDATE SET value=$2 RETURNING value".format(f"guild{message.guild.id}_dank")
-            await self.client.db.execute(QUERY, member.id, amount + currentcount)
+                original_message = m_reference.cached_message
+            coins, item_count, item = None, None, None
+            member = original_message.interaction.user
+            if original_message.interaction.name == "serverevents donate" and len(original_message.embeds) > 0:
+                e = original_message.embeds[0]
+                coins_line = e.description.split('\n')[2]
+                coins_re = re.findall(server_coin_donate_re, coins_line)
+                if len(coins_re) > 0: # match for coins in embed found
+                    try:
+                        coins = int(coins_re[0].replace(',', ''))
+                    except ValueError:
+                        pass
+                else: #most likely item or error
+                    item_str_raw = re.findall(server_item_donate_re, coins_line)
+                    if len(item_str_raw) > 0:
+                        items_raw_str = item_str_raw[0]
+                        items_raw = items_raw_str.split(' ')
+                        if len(items_raw) >= 3: # "<count> <emoji> <item name...>"
+                            item_count = int(items_raw[0].replace(',', '').strip())
+                            item_name_joined = ' '.join(items_raw[2:])
+                            item_name = item_name_joined.strip()
+                            a = await self.client.db.fetchrow("SELECT * FROM dankitems WHERE name = $1 OR plural_name = $1", item_name)
+                            if a is not None:
+                                item = DankItem(a)
+                            else:
+                                item = item_name
+                if (coins is not None) or (item is not None and item_count is not None):
+                    if coins is not None:
+                        amt = coins
+                    else:
+                        if item.name != "Pepe Trophy":
+                            return await message.channel.send(f"⚠️ {member.mention}, only **Pepe Trophies** are accepted as grinder donations.")
+                        else:
+                            amt = item_count * item.trade_value
+                    if not (discord.utils.get(member.roles, id=tgrinderroleID) or discord.utils.get(member.roles, id=grinder3mroleID) or discord.utils.get(member.roles, id=grinderroleID)):
+                        return await message.channel.send("You don't have the required roles or the roles declared are invalid.")
+                    result = await self.client.db.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
+                    if result is None:
+                        await self.client.db.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)", member.id, amt, amt, 0, amt, amt, round(time.time()), message.jump_url)
+                    else:
+                        await self.client.db.execute("UPDATE grinderdata SET today = $1, past_week = $2, past_month = $3, all_time = $4, last_dono_time = $5, last_dono_msg = $6 WHERE user_id = $7", result.get('today') + amt, result.get('past_week') + amt, result.get('past_month') + amt, result.get('all_time') + amt, round(time.time()), message.jump_url, member.id)
+                    total = await self.client.db.fetchrow("SELECT SUM(all_time) FROM grinderdata")
+                    logembed = discord.Embed(description=f"**Grinder**: {member.mention}\n**Amount**: `⏣ {comma_number(amt)}`\nClick [here]({message.jump_url}) to view.\n`⏣ {comma_number(int(total.get('sum')))}` total grinded by grinders!", color=self.client.embed_color, timestamp=discord.utils.utcnow())
+                    logembed.set_footer(text=f"{message.guild.name} Grinder Log", icon_url=message.guild.icon.url)
+                    await self.client.get_channel(grinderlogID).send(f"A grinder transaction by `{member} ({member.id})` has been logged.", embed=logembed)
+                    await message.channel.send(f"{member.mention}, I have logged your donation of **⏣ {comma_number(amt)}**.")
+                    if result is None:
+                        old = 0
+                    else:
+                        old = result.get('today')
+                    if old + amt >= 21000000:
+                        has_completed_3m = True
+                    else:
+                        has_completed_3m = False
+                    if old + amt >= 335000000:
+                        has_completed_5m = True
+                    else:
+                        has_completed_5m = False
+                    if has_completed_3m == True:
+                        if has_completed_5m is not True:
+                            msg = "**If you are on the 3M Grinder Tier:** \n<:DVB_True:887589686808309791> You have completed your Grinder requirement for today! I will notify you when you can submit your next ⏣ 3,000,000 again.\n\nIf you are on the **5M Grinder Tier**: \n<:DVB_False:887589731515392000> Ignore this message."
+                        else:
+                            msg = "<:DVB_True:887589686808309791> You have completed your Grinder requirement for today! I will notify you when you can submit your next ⏣ 3,000,000/⏣ 5,000,000 again."
+                        try:
+                            await member.send(msg)
+                        except:
+                            await message.channel.send(f"{member.mention} {msg}")
+                    currentcount = await self.get_donation_count(member, 'dank')
+                    amount = amt
+                    QUERY = "INSERT INTO donations.{} VALUES ($1, $2) ON CONFLICT(user_id) DO UPDATE SET value=$2 RETURNING value".format(f"guild{message.guild.id}_dank")
+                    await self.client.db.execute(QUERY, member.id, amount + currentcount)
 
     @checks.is_bav_or_mystic()
     @commands.command(name="gdm", brief="Reminds DV Grinders that the requirement has been checked.", description="Reminds DV Grinders that the requirement has been checked.")
