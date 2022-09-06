@@ -17,8 +17,8 @@ from datetime import datetime, timedelta
 from utils.specialobjects import DankItem
 
 guildid = 871734809154707467 if os.getenv('state') == '1' else 595457764935991326
-tgrinderroleID = 896052592797417492 if os.getenv('state') == '1' else 827270880182009956
-grinderroleID = 896052612284166204 if os.getenv('state') == '1' else 859494328422367273
+grinderteamID = 896052592797417492 if os.getenv('state') == '1' else 827270880182009956
+grinder5mID = 896052612284166204 if os.getenv('state') == '1' else 859494328422367273
 grinder3mroleID = 931905577473409174 if os.getenv('state') == '1' else 931172654696788010
 argon = 650647680837484556
 donochannel = 871737314831908974 if os.getenv('state') == '1' else 862574856846704661
@@ -91,12 +91,12 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         return False
 
     def is_5m_grinder(self, member):
-        if discord.utils.get(member.roles, id=grinderroleID) is not None:
+        if discord.utils.get(member.roles, id=grinder5mID) is not None:
             return True
         return False
 
     def is_trial_grinder(self, member):
-        if discord.utils.get(member.roles, id=tgrinderroleID) is not None:
+        if discord.utils.get(member.roles, id=grinderteamID) is not None:
             return True
 
     @checks.has_permissions_or_role(manage_roles=True)
@@ -307,7 +307,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                             amt = item_count * item.trade_value
                     print("calculated done")
                     member = message.guild.get_member(member.id)
-                    if not (discord.utils.get(member.roles, id=tgrinderroleID) or discord.utils.get(member.roles, id=grinder3mroleID) or discord.utils.get(member.roles, id=grinderroleID)):
+                    if not (discord.utils.get(member.roles, id=grinderteamID) or discord.utils.get(member.roles, id=grinder3mroleID) or discord.utils.get(member.roles, id=grinder5mID)):
                         return await message.channel.send("You don't have the required roles or the roles declared are invalid.")
                     result = await self.client.db.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
                     if result is None:
@@ -355,9 +355,9 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         """
         if flags.msg is not None and len(flags.msg) > 2500:
             return await ctx.send("You might have included a message, but it's more than 2500 characters so I cannot send it.")
-        grinderrole = ctx.guild.get_role(grinderroleID)
+        grinderrole = ctx.guild.get_role(grinder5mID)
         grinder3mrole = ctx.guild.get_role(grinder3mroleID)
-        tgrinderrole = ctx.guild.get_role(tgrinderroleID)
+        tgrinderrole = ctx.guild.get_role(grinderteamID)
         if grinderrole is None or tgrinderrole is None:
             return await ctx.send("One or more roles declared in this command are invalid, hence the command cannot proceed.")
         grinders = [member for member in ctx.guild.members if (grinderrole in member.roles or tgrinderrole in member.roles or grinder3mrole in member.roles)]  # gets all grinders if not grinders:
