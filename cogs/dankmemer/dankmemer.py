@@ -722,10 +722,9 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                                     item_count = int(items_raw[0].replace(',', '').strip())
                                     item_name_joined = ' '.join(items_raw[2:])
                                     item_name = item_name_joined.strip()
-                                    item_name_non_plural = item_name
                                     if item_name.lower().endswith('s'):
                                         item_name_non_plural = item_name[:-1]
-                                    a = await self.client.db.fetchrow("SELECT * FROM dankitems WHERE name = $1 OR name = $2", item_name, item_name_non_plural)
+                                    a = await self.client.db.fetchrow("SELECT * FROM dankitems WHERE name = $1 OR plural_name = $1", item_name)
                                     if a is not None:
                                         item = DankItem(a)
                                     else:

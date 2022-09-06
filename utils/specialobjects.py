@@ -61,10 +61,11 @@ class Contest:
         return f"<ContestSubmission contest_id={self.contest_id} guild_id={self.guild_id} contest_starter_id={self.contest_starter_id} contest_channel_id={self.contest_channel_id} name={self.name} created={self.created} active={self.active} voting={self.voting}>"
 
 class DankItem:
-    __slots__ = ('name', 'idcode', 'type', 'image_url', 'trade_value', 'last_updated', 'overwrite', 'celeb_donation', 'celeb_overwrite_value')
+    __slots__ = ('name', 'plural_name', 'idcode', 'type', 'image_url', 'trade_value', 'last_updated', 'overwrite', 'celeb_donation', 'celeb_overwrite_value')
 
     def __init__(self, record):
         self.name: str = record.get('name')
+        self.plural_name: str = record.get('plural_name')
         self.idcode: str = record.get('idcode')
         self.type: str = record.get('type')
         self.image_url: str = record.get('image_url')
@@ -73,6 +74,15 @@ class DankItem:
         self.overwrite: bool = record.get('overwrite')
         self.celeb_donation: bool = record.get('celeb_donation')
         self.celeb_overwrite_value: int = record.get('celeb_overwrite_value')
+
+    def __repr__(self) -> str:
+        attributes = ["DankItem"]
+        for attr in dir(self):
+            if not attr.startswith('__'):
+                attributes.append(f"{attr}={self.__getattribute__(attr)}")
+        repr_string = " ".join(attributes)
+        repr_string = "<" + repr_string + ">"
+        return repr_string
 
 
 class ServerConfiguration:

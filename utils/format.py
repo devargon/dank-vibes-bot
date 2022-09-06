@@ -11,6 +11,8 @@ import aiohttp
 from utils.errors import ArgumentBaseError
 from typing import Optional, Union
 
+p = inflect.engine()
+
 def durationdisplay(seconds):
     seconds = round(seconds)
     time = []
@@ -156,8 +158,10 @@ def print_exception(text, error):
     return ''.join(lines)
 
 def ordinal(number:int):
-    p = inflect.engine()
     return p.ordinal(number)
+
+def plural_noun(noun: str):
+    return p.plural_noun(noun)
 
 
 def get_command_name(command: Union[commands.Command, discord.ApplicationCommand]):
