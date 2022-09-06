@@ -306,6 +306,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                         else:
                             amt = item_count * item.trade_value
                     print("calculated done")
+                    member = message.guild.get_member(member)
                     if not (discord.utils.get(member.roles, id=tgrinderroleID) or discord.utils.get(member.roles, id=grinder3mroleID) or discord.utils.get(member.roles, id=grinderroleID)):
                         return await message.channel.send("You don't have the required roles or the roles declared are invalid.")
                     result = await self.client.db.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
