@@ -320,7 +320,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                     await self.client.get_channel(grinderlogID).send(f"A grinder transaction by `{member} ({member.id})` has been logged.", embed=logembed)
                     chan_msgs = [f"{member.mention}, your donation of **⏣ {comma_number(amt)}** has been logged. Thank you for your contributions to Dank Vibes!"]
                     add_donations_cmd = self.client.get_command('adddonations')
-                    ctx = self.client.get_context(message)
+                    ctx = await self.client.get_context(message)
                     ctx.author = message.guild.get_member(264019387009204224)
                     await add_donations_cmd(ctx, member, amt, 'dank')
                     if result is None:
