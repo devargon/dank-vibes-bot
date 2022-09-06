@@ -305,7 +305,6 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                             return await message.channel.send(f"⚠️ {member.mention}, only **Pepe Trophies** are accepted as grinder donations.")
                         else:
                             amt = item_count * item.trade_value
-                    print("calculated done")
                     member = message.guild.get_member(member.id)
                     if not (discord.utils.get(member.roles, id=grinderteamID) or discord.utils.get(member.roles, id=grinder3mroleID) or discord.utils.get(member.roles, id=grinder5mID)):
                         return await message.channel.send("You don't have the required roles or the roles declared are invalid.")
@@ -318,24 +317,27 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                     logembed = discord.Embed(description=f"**Grinder**: {member.mention}\n**Amount**: `⏣ {comma_number(amt)}`\nClick [here]({message.jump_url}) to view.\n`⏣ {comma_number(int(total.get('sum')))}` total grinded by grinders!", color=self.client.embed_color, timestamp=discord.utils.utcnow())
                     logembed.set_footer(text=f"{message.guild.name} Grinder Log", icon_url=message.guild.icon.url)
                     await self.client.get_channel(grinderlogID).send(f"A grinder transaction by `{member} ({member.id})` has been logged.", embed=logembed)
-                    await message.channel.send(f"{member.mention}, I have logged your donation of **⏣ {comma_number(amt)}**.")
+                    chan_msgs = [f"{member.mention}, Your donations of **⏣ {comma_number(amt)}** has been logged. Thank you for contributing to Dank Vibes!"]
                     if result is None:
                         old = 0
                     else:
                         old = result.get('today')
+                    if old + amt < 21000000:
+                        chan_msgs.append(f"\nNote: You are still **⏣ {comma_number(21000000 - old - amt)}** away from completing the minimum Grinder Tier (3M).")
+                    await message.channel.send("\n".join(chan_msgs))
                     if old + amt >= 21000000:
                         has_completed_3m = True
                     else:
                         has_completed_3m = False
-                    if old + amt >= 335000000:
+                    if old + amt >= 35000000:
                         has_completed_5m = True
                     else:
                         has_completed_5m = False
                     if has_completed_3m == True:
                         if has_completed_5m is not True:
-                            msg = "**If you are on the 3M Grinder Tier:** \n<:DVB_True:887589686808309791> You have completed your Grinder requirement for today! I will notify you when you can submit your next ⏣ 3,000,000 again.\n\nIf you are on the **5M Grinder Tier**: \n<:DVB_False:887589731515392000> Ignore this message."
+                            msg = f"<:DVB_True:887589686808309791> **You have qualified for the 3M Grinder Tier!**\nThe **3M Grinder Tier role** has been assigned to you. You can now enjoy your perks! <3\n\nYou can still qualify for the **5M Grinder Tier** by donating another **⏣ {comma_number(35000000 - old - amt)}**."
                         else:
-                            msg = "<:DVB_True:887589686808309791> You have completed your Grinder requirement for today! I will notify you when you can submit your next ⏣ 3,000,000/⏣ 5,000,000 again."
+                            msg = f"<:DVB_True:887589686808309791> **You have qualified for both the 3M and 5M Grinder Tier!**\nBoth the **3M Grinder Tier** and **5M Grinder Tier** role has been assigned to you. You can now enjoy your perks! <3"
                         try:
                             await member.send(msg)
                         except:
