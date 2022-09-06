@@ -263,17 +263,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.author == self.client.user:
-            return
-        if message.author.id != 270904126974590976:
-            return
-        if not message.guild:
-            return
-        if len(message.embeds) == 0:
-            return
-        if message.channel.id != donochannel:
-            return
-        if message.reference is None:
+        if message.author.id != 270904126974590976 or len(message.embeds) == 0 or message.channel.id != donochannel or message.reference is None:
             return
         embed = message.embeds[0]
         if type(embed.description) == str and "Successfully donated!" in embed.description:
@@ -315,6 +305,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                             return await message.channel.send(f"⚠️ {member.mention}, only **Pepe Trophies** are accepted as grinder donations.")
                         else:
                             amt = item_count * item.trade_value
+                    print("calculated done")
                     if not (discord.utils.get(member.roles, id=tgrinderroleID) or discord.utils.get(member.roles, id=grinder3mroleID) or discord.utils.get(member.roles, id=grinderroleID)):
                         return await message.channel.send("You don't have the required roles or the roles declared are invalid.")
                     result = await self.client.db.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
