@@ -735,18 +735,21 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                             embed.set_footer(text=f"{original_message.interaction.user.id}")
                             if coins is not None:
                                 embed.description = f"**\u23e3 {comma_number(coins)}**"
+                                content = ""
                             else:
                                 if isinstance(item, DankItem): # is a valid item that can be found in the database
                                     embed.description = f"**{comma_number(item_count)} {item.name}**\nWorth \u23e3 {comma_number(item_count*item.trade_value)}"
                                     embed.set_thumbnail(url=item.image_url)
+                                    content = ""
                                 else:
                                     embed.description = f"**{comma_number(item_count)} {item}**\nWorth \u23e3 0 (unknown item)"
+                                    content = "<@650647680837484556>"
                             log_channel = self.client.get_channel(serverpool_donate_log_channel_id)
                             if log_channel is not None:
                                 webh = await self.client.get_webhook(log_channel)
                                 view = SingleURLButton(message.jump_url, f"Jump to Message in #{message.channel.name}", None)
                                 try:
-                                    await webh.send(username=self.client.user.name, avatar_url=self.client.user.display_avatar.url, embed=embed, view=view)
+                                    await webh.send(content=content, username=self.client.user.name, avatar_url=self.client.user.display_avatar.url, embed=embed, view=view)
                                 except Exception as a:
                                     print(a)
 
