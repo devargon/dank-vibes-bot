@@ -322,7 +322,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                     add_donations_cmd = self.client.get_command('adddonations')
                     ctx = await self.client.get_context(message)
                     ctx.author = message.guild.get_member(264019387009204224)
-                    await add_donations_cmd(ctx, member, amt, 'dank')
+                    await add_donations_cmd(ctx, member=member, amount=amt, category_name='dank')
                     if result is None:
                         old = 0
                     else:
