@@ -357,8 +357,19 @@ class SubmissionApproval(discord.ui.View):
                 else:
                     return await interaction.response.send_message('umm', ephemeral=True)
 
+        class FixImageButton(discord.ui.Button):
+            async def callback(self, interaction: discord.Interaction):
+                if len(interaction.message.embeds) > 0:
+                    embed = interaction.message.embeds[0]
+                    newembed = discord.Embed(title=embed.title, color=embed.colour).set_image(url=embed.image.url)
+                    await interaction.response.edit_message(embed=newembed)
+                    await interaction.followup.send("Attempted to fix the image.", ephemeral=True)
+                else:
+                    await interaction.response.send_message("This submission has no embed.", ephemeral=True)
+
         self.add_item(item=Approve(custom_id=f"{contest_id}:{entry_id}:{submitter_id}:approve", emoji=discord.PartialEmoji.from_str("<:DVB_checkmark:955345523139805214>"), style=discord.ButtonStyle.green))
         self.add_item(item=Deny(custom_id=f"{contest_id}:{entry_id}:{submitter_id}:deny", emoji=discord.PartialEmoji.from_str("<:DVB_crossmark:955345521151737896>"), style=discord.ButtonStyle.red))
+        self.add_item(item=FixImageButton(custom_id=f"abcdefg", label="Fix Image", style=discord.ButtonStyle.grey))
 
 
 class GetMediaEventsPing(discord.ui.View):
@@ -488,10 +499,16 @@ class Contests(commands.Cog):
 
     @commands.slash_command(name="submit")
     @commands.cooldown(1, 60, commands.BucketType.user)
-    async def contest_submit(self, ctx: discord.ApplicationContext, *, submission: discord.Option(discord.Attachment, description="Your submission for the contest.")):
+    async def contest_submit(self, ctx: discord.ApplicationContext, *,
+                             submission: discord.Option(discord.Attachment, description="Your submission for the contest.") = None,
+                             image_link: discord.Option(str, description="Link to the image") = None
+                             ):
         """
         Submit your entry for a contest!
         """
+        if submission is None and image_link is None:
+            return await ctx.respond("You need to provide a `submission` (attachment) or an **image link**.")
+
         user_has_submitted_before = False
         if (contest_obj := await self.client.db.fetchrow("SELECT * FROM contests WHERE guild_id = $1 AND (active = TRUE or voting = TRUE)", ctx.guild.id)) is None:
             return await ctx.respond("There are no contests taking place now.\n\nGet **Media Events Ping** to be notified when a contest starts!", view=GetMediaEventsPing(), ephemeral=True)
@@ -513,7 +530,15 @@ class Contests(commands.Cog):
             contest_obj = Contest(contest_obj)
             contest_id = contest_obj.contest_id
             stepsmsg = await ctx.respond(embed=stepsembed, ephemeral=True)
-            submission_content = await submission.read()
+            if submission is None:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(image_link) as response:
+                        if response.status != 200:
+                            return await stepsmsg.edit(embed=fatal_error_format_embed(title="Invalid image link", description=f"The image link you provided is invalid.\n`{image_link} returned a {response.status} error code.`"))
+                        submission = response
+                        submission_content = await submission.read()
+            else:
+                submission_content = await submission.read()
             if contest_obj.active is True:
                 # Check file format
                 if get_filetype(submission_content) is None or get_filetype(submission_content).extension not in ['png', 'jpg', 'jpeg', 'apng', 'gif', 'webp']:
