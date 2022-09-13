@@ -1,3 +1,4 @@
+import asyncio
 import os
 import time
 import contextlib
@@ -590,9 +591,9 @@ class Contests(commands.Cog):
                             f"File: [`{submission.filename}`]({submission.url}) {round(submission.size/1000000, 4)}MB",
                             f"Status Code: `{e.status}` {e.message}",
                         ]
-                        error_embed = discord.Embed(title="Error uploading submission file to BunnyCDN", description="\n".join(descriptions), color=discord.Color.red())
+                        error_embed = discord.Embed(title="Error uploading submission file to Nogra CDN", description="\n".join(descriptions), color=discord.Color.red())
                         error_embed.add_field(name="Error", value=box(str(e)))
-                        await error_channel.send(f"Error uploading file to BunnyCDN", embed=error_embed)
+                        await error_channel.send(f"Error uploading file to Nogra CDN", embed=error_embed)
                         stepsembed.description = f"<:DVB_False:887589731515392000> I failed to upload your file to our image host. The developer has been notified, please try again later.\nSorry for the inconvenience!"
                     return await stepsmsg.edit(embed=stepsembed)
                 except Exception as e:
@@ -603,10 +604,10 @@ class Contests(commands.Cog):
                             f"User: `{ctx.author} {ctx.author.id}` {ctx.author.mention}",
                             f"File: [`{submission.filename}`]({submission.url}) {round(submission.size / 1000000, 4)}MB",
                         ]
-                        error_embed = discord.Embed(title="Error uploading submission file to BunnyCDN",
+                        error_embed = discord.Embed(title="Error uploading submission file to Nogra CDN",
                                                     description="\n".join(descriptions), color=discord.Color.red())
                         error_embed.add_field(name="Error", value=box(str(e)))
-                        await error_channel.send(f"Error uploading file to BunnyCDN", embed=error_embed)
+                        await error_channel.send(f"Error uploading file to Nogra CDN", embed=error_embed)
                         stepsembed.description = f"<:DVB_False:887589731515392000> I failed to upload your file to our image host. The developer has been notified, please try again later.\nSorry for the inconvenience!"
                     return await stepsmsg.edit(embed=stepsembed)
 
@@ -616,6 +617,7 @@ class Contests(commands.Cog):
                 stepsembed.title = "I'm taking care of your submission!"
                 stepsembed.description = f"`[{step+1}/3]` {emojis[step]} {steps[step]}"
                 await stepsmsg.edit(embed=stepsembed)
+                await asyncio.sleep(3.0)
                 last_entry_no = await self.client.db.fetchval("SELECT entry_id FROM contest_submissions WHERE contest_id = $1 ORDER BY entry_id DESC limit 1", contest_id) or 0
                 next_entry_no = last_entry_no + 1
                 if (approve_channel := ctx.guild.get_channel(approving_channel_id)) is not None:
