@@ -247,7 +247,7 @@ class VoteView(discord.ui.View):
                         successembed.title = f"<:DVB_True:887589686808309791> You already voted for this entry."
                         return await interaction.followup.send(embed=successembed, view=RemoveVote(self.view.client, interaction.message.id), ephemeral=True)
                     confirmview = interactionconfirm(interaction.user, self.view.client, 30.0)
-                    confirmview.response = await interaction.followup.send(f"You have previously voted for [this entry](https://discord.com/channels/{interaction.guild.id}/{contest.contest_channel_id}/{submission.msg_id}).\nAre you sure you want to change your vote?", view=confirmview, wait=True)
+                    confirmview.response = await interaction.followup.send(f"You have previously voted for [this entry](https://discord.com/channels/{interaction.guild.id}/{contest.contest_channel_id}/{submission.msg_id}).\nAre you sure you want to change your vote?", view=confirmview, wait=True, ephemeral=True)
                     await confirmview.wait()
                     if confirmview.returning_value is not True:
                         return
