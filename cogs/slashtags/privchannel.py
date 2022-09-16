@@ -84,7 +84,7 @@ class PrivChannelTags(commands.Cog):
                 membersin.append(f"**{member}** {member.mention}")
         if owner is not None:
             owner_str = f"**{owner}** {owner.mention}"
-            if not (owner.permissions_for(channel).send_messages and owner.permissions_for(channel).view_channel):
+            if not (channel.permissions_for(owner).send_messages and channel.permissions_for(owner).view_channel):
                 owner_str += "\n⚠️ Not in channel"
         else:
             owner_str = "Unknown"
