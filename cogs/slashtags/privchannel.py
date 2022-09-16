@@ -22,9 +22,10 @@ class PrivChannelTags(commands.Cog):
         channel = await self.client.db.fetchval("SELECT channel_id FROM channels WHERE owner_id = $1", ctx.author.id)
         channel = ctx.guild.get_channel(channel)
         if channel is None:
-            return await ctx.respond(embed=discord.Embed(title="Channel rename <:DVB_False:887589731515392000> Failed", description="You don't own a private channel.", color=discord.Color.red()))
+            return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Channel rename failed", description="You don't own a private channel.", color=discord.Color.red()))
+        old_channel_name = channel.name
         await channel.edit(name=channel_name)
-        await ctx.respond(embed=discord.Embed(title="Channel renamed", description=f"Your private channel has been renamed to {channel.mention}.", color=discord.Color.green()))
+        await ctx.respond(embed=discord.Embed(title="<:DVB_True:887589686808309791> Channel renamed", description=f"Your private channel has been renamed from **{old_channel_name}** to {channel.mention}.", color=discord.Color.green()))
 
     @pvcGroup.command(name="add")
     async def add(self, ctx: discord.ApplicationContext, member: discord.Option(discord.Member, "A friend you want to add to your private channel.")):
@@ -108,3 +109,15 @@ class PrivChannelTags(commands.Cog):
         embed.add_field(name="Under Category", value=category.name or "Unknown")
         await ctx.respond(embed=embed)
 
+    @pvcGroup.command(name="topic")
+    @commands.cooldown(2, 600, commands.BucketType.user)
+    async def topic(self, ctx: discord.ApplicationContext, channel_topic: discord.Option(str, "Your private channel's new topic", min_length=1, max_length=1024)):
+        """
+        Change your private channel's topic.
+        """
+        channel = await self.client.db.fetchval("SELECT channel_id FROM channels WHERE owner_id = $1", ctx.author.id)
+        channel = ctx.guild.get_channel(channel)
+        if channel is None:
+            return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Channel rename failed", description="You don't own a private channel.", color=discord.Color.red()))
+        await channel.edit(topic=channel_topic)
+        await ctx.respond(embed=discord.Embed(title="<:DVB_True:887589686808309791> Channel topic changed", description=f"Your private channel {channel.mention}'s topic has been changed.", color=discord.Color.green()))
