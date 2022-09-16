@@ -41,7 +41,7 @@ class PrivChannelTags(commands.Cog):
         members.remove(ctx.author)
         if len(members) >= get_channel_capacity(ctx.author):
             minimum_removal = len(members) - get_channel_capacity(ctx.author) + 1
-            return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Failed", description=f"Your private channel {channel.mention} is full.\n\nYou have **{len(members)}** of **{get_channel_capacity(ctx.author)}** members in your channel. You need to remove at **{plural(minimum_removal):member}** from your channel via </privchannel remove:1020235323785105418>.", color=discord.Color.red()))
+            return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Failed", description=f"Your private channel {channel.mention} is full.\n\nYou need to remove **{plural(minimum_removal):member}** from your channel via </privchannel remove:1020235323785105418>.\nSee your channel capacity and members via </privchannel view:1020235323785105418>", color=discord.Color.red()))
         overwrite = discord.PermissionOverwrite(
             view_channel=True,
             send_messages=True,
