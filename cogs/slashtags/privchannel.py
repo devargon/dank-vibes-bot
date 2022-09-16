@@ -24,7 +24,6 @@ class PrivChannelTags(commands.Cog):
             return await ctx.respond(embed=discord.Embed(title="Channel rename <:DVB_False:887589731515392000> Failed", description="You don't own a private channel.", color=discord.Color.red()))
         await channel.edit(name=channel_name)
         await ctx.respond(embed=discord.Embed(title="Channel renamed", description=f"Your private channel has been renamed to {channel.mention}.", color=discord.Color.green()))
-        await ctx.respond("test")
 
     @pvcGroup.command(name="add")
     async def add(self, ctx: discord.ApplicationContext, member: discord.Option(discord.Member, "A friend you want to add to your private channel.")):
