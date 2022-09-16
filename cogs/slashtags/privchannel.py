@@ -14,6 +14,7 @@ class PrivChannelTags(commands.Cog):
     pvcGroup = discord.SlashCommandGroup(name="privchannel", description="Manage your private channel.", default_member_permissions=discord.Permissions(administrator=True))
 
     @pvcGroup.command(name="rename")
+    @commands.cooldown(2, 600, commands.BucketType.user)
     async def rename(self, ctx: discord.ApplicationContext, channel_name: discord.Option(str, "Your private channel's new name", min_length=1, max_length=32)):
         """
         Rename your private channel.
@@ -22,9 +23,7 @@ class PrivChannelTags(commands.Cog):
         channel = ctx.guild.get_channel(channel)
         if channel is None:
             return await ctx.respond(embed=discord.Embed(title="Channel rename <:DVB_False:887589731515392000> Failed", description="You don't own a private channel.", color=discord.Color.red()))
-        await ctx.respond("Before edit")
         await channel.edit(name=channel_name)
-        await ctx.respond("After edit")
         await ctx.respond(embed=discord.Embed(title="Channel renamed", description=f"Your private channel has been renamed to {channel.mention}.", color=discord.Color.green()))
 
     @pvcGroup.command(name="add")
