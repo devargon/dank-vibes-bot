@@ -52,6 +52,7 @@ AVAILABLE_EXTENSIONS = [
     'cogs.events',
     'cogs.imgen',
     'cogs.disboard',
+    'cogs.slashtags',
 ]
 
 load_dotenv('credentials.env')
