@@ -147,3 +147,18 @@ async def generate_captcha():
         return "", None
     else:
         return captcha_string, bio
+
+
+def get_channel_capacity(member: discord.Member):
+    capacity = 5
+    if discord.utils.get(member.roles, id=870850266868633640):  # Ace Mod
+        capacity += 2
+    if discord.utils.get(member.roles, id=931174008970444800):  # Weekly Top Grinder
+        capacity += 2
+    if discord.utils.get(member.roles, id=876323897451102328):  # Hidden OwO Donator (50M)
+        capacity += 5
+    if discord.utils.get(member.roles, id=819998800382132265):  # Donator 5B
+        capacity += 5
+    if discord.utils.get(member.roles, id=819998671742959636):  # Donator 3B
+        capacity += 2
+    return capacity
