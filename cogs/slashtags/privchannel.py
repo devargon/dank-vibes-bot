@@ -15,7 +15,7 @@ class PrivChannelTags(commands.Cog):
         """
         Rename your private channel.
         """
-        channel = await self.client.db.fetchval("SELECT * FROM channels WHERE owner_id = $1", ctx.author.id)
+        channel = await self.client.db.fetchval("SELECT channel_id FROM channels WHERE owner_id = $1", ctx.author.id)
         channel = ctx.guild.get_channel(channel)
         if channel is None:
             return await ctx.respond(embed=discord.Embed(title="Channel rename failed", description="You don't own a private channel.", color=discord.Color.red()), ephemeral=True)
@@ -28,7 +28,7 @@ class PrivChannelTags(commands.Cog):
         """
         Add a friend to your private channel.
         """
-        channel = await self.client.db.fetchval("SELECT * FROM channels WHERE owner_id = $1", ctx.author.id)
+        channel = await self.client.db.fetchval("SELECT channel_id FROM channels WHERE owner_id = $1", ctx.author.id)
         channel = ctx.guild.get_channel(channel)
         if channel is None:
             return await ctx.respond(embed=discord.Embed(title="Failed", description="You don't own a private channel.", color=discord.Color.red()), ephemeral=True)
@@ -53,7 +53,7 @@ class PrivChannelTags(commands.Cog):
         """
         Add a friend to your private channel.
         """
-        channel = await self.client.db.fetchval("SELECT * FROM channels WHERE owner_id = $1", ctx.author.id)
+        channel = await self.client.db.fetchval("SELECT channel_id FROM channels WHERE owner_id = $1", ctx.author.id)
         channel = ctx.guild.get_channel(channel)
         if channel is None:
             return await ctx.respond(embed=discord.Embed(title="Failed", description="You don't own a private channel.", color=discord.Color.red()), ephemeral=True)
@@ -68,7 +68,7 @@ class PrivChannelTags(commands.Cog):
         """
         View your private channel details, including your friends in your private channel.
         """
-        channel = await self.client.db.fetchval("SELECT * FROM channels WHERE owner_id = $1", ctx.author.id)
+        channel = await self.client.db.fetchval("SELECT channel_id FROM channels WHERE owner_id = $1", ctx.author.id)
         channel = ctx.guild.get_channel(channel)
         if channel is None:
             return await ctx.respond(embed=discord.Embed(title="Failed", description="You don't own a private channel.", color=discord.Color.red()), ephemeral=True)
