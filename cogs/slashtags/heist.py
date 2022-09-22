@@ -13,7 +13,7 @@ heistannouncements_channel_id = 1018414186516205608 if os.getenv('state') == '1'
 serverheists_channel_id = 1018414206481084477 if os.getenv('state') == '1' else 690125458272288814
 heists_ping_id = 895815773208051763 if os.getenv('state') == '1' else 758174643814793276
 vip_heists_ping_id = 895815546292035625 if os.getenv('state') == '1' else 817459252913635438
-dankmemer_id = 666152603339718667
+dankmemer_id = 270904126974590976
 
 class HeistUtils(discord.ui.View):
     def __init__(self, heistannouncements_channel, serverheists_channel, thx_embed):
