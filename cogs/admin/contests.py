@@ -138,14 +138,7 @@ class HowToSubmit2(discord.ui.View):
 
     @discord.ui.button(label="I'm on Mobile", emoji="📱")
     async def mobile(self, button: discord.ui.Button, interaction: discord.Interaction):
-        if (
-                isinstance(interaction.user, discord.Member) and interaction.user.top_role is not None
-                and interaction.user.top_role.id in [674774385894096896, 722871699325845626, 795914641191600129,
-                                                     870850266868633640, 608495204399448066]
-        ):
-            video_link = "https://cdn.discordapp.com/attachments/871737314831908974/981759681586409472/P_MobileSubmission.mp4"
-        else:
-            video_link = "https://cdn.discordapp.com/attachments/871737314831908974/980132319417483314/HowToSubmit_Mobile.mp4"
+        video_link = "https://cdn.discordapp.com/attachments/871737314831908974/1022380270965510144/HowToSubmit_MobileiPhone.mp4"
         instructions = "1. Update Discord.\n2. Type `/submit` to find the slash command.\n3. Tap the `/submit` slash command.\n4. Tap the `submission` button/the `/submit` slash command.\n4. Tap on the image that you're submitting.\n5. Tap the Send button to submit."
         for b in self.children:
             if b == button:
