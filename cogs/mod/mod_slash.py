@@ -55,8 +55,6 @@ class ModSlash(commands.Cog):
                       user_id_startswith: discord.Option(str, "Bans users that have a user ID starting with ___.") = None,
                       text_in_name: discord.Option(str, "Bans users that have a specified text in their username") = None,
                       ):
-        if ctx.guild.id != 871734809154707467:
-            return await ctx.respond("🏗️🚧 Command under construction.")
         if joined_after_duration is not None and joined_after_timestamp is not None:
             await ctx.respond("<:DVB_False:887589731515392000> You can't specify both `joined_after_duration` and `joined_after_timestamp`.")
             return
@@ -185,7 +183,6 @@ class ModSlash(commands.Cog):
             confirm_embed.description += f"\nPress confirm to proceed to ban users."
             confirmview = confirm(ctx, self.client, 60.0)
             confirmview.response = await ctx.respond(embed=confirm_embed, files=files, view=confirmview)
-            confirmview.stop()
             await confirmview.wait()
             if confirmview.returning_value is not True:
                 confirm_embed.color = discord.Color.red()
