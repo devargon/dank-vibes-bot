@@ -11,6 +11,11 @@ class PrivChannelTags(commands.Cog):
     def __init__(self, client):
         self.client: dvvt = client
 
+    async def get_owner_channel(self, owner: discord.Member) -> discord.TextChannel:
+        channel = await self.client.db.fetchval("SELECT channel_id FROM channels WHERE owner_id = $1", owner.id)
+        channel = self.client.get_channel(channel)
+        return channel
+
     pvcGroup = discord.SlashCommandGroup(name="privchannel", description="Manage your private channel.", default_member_permissions=discord.Permissions(administrator=True))
 
     @pvcGroup.command(name="rename")
@@ -19,8 +24,7 @@ class PrivChannelTags(commands.Cog):
         """
         Rename your private channel.
         """
-        channel = await self.client.db.fetchval("SELECT channel_id FROM channels WHERE owner_id = $1", ctx.author.id)
-        channel = ctx.guild.get_channel(channel)
+        channel = await self.get_owner_channel(ctx.author)
         if channel is None:
             return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Channel rename failed", description="You don't own a private channel.", color=discord.Color.red()))
         old_channel_name = channel.name
@@ -32,8 +36,7 @@ class PrivChannelTags(commands.Cog):
         """
         Add a friend to your private channel.
         """
-        channel = await self.client.db.fetchval("SELECT channel_id FROM channels WHERE owner_id = $1", ctx.author.id)
-        channel = ctx.guild.get_channel(channel)
+        channel = await self.get_owner_channel(ctx.author)
         if channel is None:
             return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Failed", description="You don't own a private channel.", color=discord.Color.red()))
         if member in channel.overwrites:
@@ -62,8 +65,7 @@ class PrivChannelTags(commands.Cog):
         """
         Add a friend to your private channel.
         """
-        channel = await self.client.db.fetchval("SELECT channel_id FROM channels WHERE owner_id = $1", ctx.author.id)
-        channel = ctx.guild.get_channel(channel)
+        channel = await self.get_owner_channel(ctx.author)
         if channel is None:
             return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Failed", description="You don't own a private channel.", color=discord.Color.red()))
         if member not in channel.overwrites:
@@ -77,8 +79,7 @@ class PrivChannelTags(commands.Cog):
         """
         View your private channel details, including your friends in your private channel.
         """
-        channel = await self.client.db.fetchval("SELECT channel_id FROM channels WHERE owner_id = $1", ctx.author.id)
-        channel = ctx.guild.get_channel(channel)
+        channel = await self.get_owner_channel(ctx.author)
         if channel is None:
             return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Failed", description="You don't own a private channel.", color=discord.Color.red()))
         owner = ctx.author
@@ -115,8 +116,7 @@ class PrivChannelTags(commands.Cog):
         """
         Change your private channel's topic.
         """
-        channel = await self.client.db.fetchval("SELECT channel_id FROM channels WHERE owner_id = $1", ctx.author.id)
-        channel = ctx.guild.get_channel(channel)
+        channel = await self.get_owner_channel(ctx.author)
         if channel is None:
             return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Channel rename failed", description="You don't own a private channel.", color=discord.Color.red()))
         await channel.edit(topic=channel_topic)
