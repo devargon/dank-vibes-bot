@@ -1027,7 +1027,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         if len(beforemsg.embeds) == 0 or len(aftermsg.embeds) == 0:
             return
         if is_dank_slash_command(beforemsg, 'work shift'):
-            if "TERRIBLE work!" in aftermsg.embeds[0].description or "Great work!" in aftermsg.embeds[0].description:
+            if "Terrible work!" in aftermsg.embeds[0].title or "Great work!" in aftermsg.embeds[0].title:
                 member = aftermsg.interaction.user
                 nextworktime = round(time.time()) + 3600
                 await self.handle_reminder_entry(member.id, 6, aftermsg.channel.id, aftermsg.guild.id, nextworktime)
