@@ -12,7 +12,7 @@ class PrivChannelTags(commands.Cog):
         self.client: dvvt = client
 
     async def get_owner_channel(self, owner: discord.Member) -> discord.TextChannel:
-        channel = await self.client.db.fetchval("SELECT channel_id FROM channels WHERE owner_id = $1", owner.id)
+        channel = await self.client.db.fetchval("SELECT channel_id FROM channels WHERE owner_id = $1 AND active = TRUE", owner.id)
         channel = self.client.get_channel(channel)
         return channel
 
