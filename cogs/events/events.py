@@ -11,12 +11,13 @@ from .on_member_join import MemberJoin
 from .on_guild_channel_create import GuildChannelCreate
 from .status_task import StatusTasks
 from .status_utils import *
+from .on_guild_channel_delete import GuildChannelDelete
 
 from utils.format import box
 
 guild_id = 871734809154707467 if os.getenv('state') == '1' else 595457764935991326
 
-class Events(RawTyping, GuildChannelCreate, MemberJoin, StatusTasks, PresenceUpdate, OnMessage, commands.Cog):
+class Events(GuildChannelDelete, RawTyping, GuildChannelCreate, MemberJoin, StatusTasks, PresenceUpdate, OnMessage, commands.Cog):
     def __init__(self, client):
         self.client: dvvt = client
         self.mafia_wait = False

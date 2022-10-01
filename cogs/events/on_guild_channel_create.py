@@ -16,4 +16,8 @@ class GuildChannelCreate(commands.Cog):
             except asyncio.TimeoutError:
                 pass
             else:
-                await self.client.db.execute("INSERT INTO channels(guild_id, channel_id, owner_id) VALUES($1, $2, $3)", channel.guild.id, channel.id, m.mentions[0].id)
+                if type(channel) == discord.TextChannel and channel.category is not None and "vip channels" in channel.category.name.lower():
+                    active = True
+                else:
+                    active = False
+                await self.client.db.execute("INSERT INTO channels(guild_id, channel_id, owner_id, active) VALUES($1, $2, $3, $4)", channel.guild.id, channel.id, m.mentions[0].id, active)
