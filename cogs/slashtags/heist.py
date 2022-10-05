@@ -22,7 +22,7 @@ class HeistUtils(discord.ui.View):
         self.thx_embed = thx_embed
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Send Heist Thanks embed (press this after heist is over)", style=discord.ButtonStyle.grey)
+    @discord.ui.button(label="Send Heist Thanks embed (press this AFTER heist is over)", style=discord.ButtonStyle.grey)
     async def send_heist_thanks_embed(self, button: discord.ui.Button, interaction: discord.Interaction):
         button.disabled = True
         button.style = discord.ButtonStyle.green
@@ -61,7 +61,7 @@ class HeistTags(commands.Cog):
         if serverheists_channel is None:
             return await ctx.respond("<:DVB_False:887589731515392000> The **server heists** channel is not found.", ephemeral=True)
         if heistannouncements_channel is None:
-            return await ctx.respond("<:DVB_False:887589731515392000> The **server heists** channel is not found.", ephemeral=True)
+            return await ctx.respond("<:DVB_False:887589731515392000> The **heist announcements** channel is not found.", ephemeral=True)
         await ctx.defer(ephemeral=True)
         # consolidate sponsors into a list if sponsors are not none
         sponsors = [sponsor1, sponsor2, sponsor3, sponsor4, sponsor5, sponsor6, sponsor7, sponsor8, sponsor9, sponsor10]
@@ -69,6 +69,8 @@ class HeistTags(commands.Cog):
         for i in sponsors:
             if i is not None and i not in sponsors_filtered:
                 sponsors_filtered.append(i)
+        if len(sponsors_filtered) == 0:
+            return await ctx.respond("<:DVB_False:887589731515392000> You must have specified at least 1 sponsor.", ephemeral=True)
         sponsors_str = human_join([f"{sponsor.mention}" for sponsor in sponsors_filtered], final="and")
         requirement_str = requirement.mention if requirement is not None else None
         server_heists_embed = discord.Embed(title=f"{currency} {comma_number(amount)} Heist", description=f"**Requirement:** {requirement_str}\nSponsors: {sponsors_str}", color=self.client.embed_color)
@@ -92,6 +94,8 @@ class HeistTags(commands.Cog):
         thx_embed = discord.Embed(title=f"<a:DVpopper:904267438839959553> {currency} {comma_number(amount)} HEIST <a:DVpopper:904267438839959553>", description=f"<:dv_itPepeCrownOwO:857898556487761951> Thank {sponsors_str} for the heist in <:dv_itPepeCrownOwO:857898556487761951>\n\nIf you wish to host a heist run `/hdonate <amount> [optional level req]` in <#786944439360290826> `[Minimum: 10,000,000]")
         thx_embed.set_thumbnail(url=ctx.guild.icon.with_size(128).url)
         await ctx.respond("Heist Started!\n**DO NOT dismiss this message until the heist is over.**", view=HeistUtils(heistannouncements_channel, serverheists_channel, thx_embed), ephemeral=True)
+
+        await info_message.add_reaction("<a:dv_iconOwO:837943874973466664>")
 
         if requirement is not None:
             original_everyone_overwrite = serverheists_channel.overwrites_for(ctx.guild.default_role)
