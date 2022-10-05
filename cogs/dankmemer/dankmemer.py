@@ -802,8 +802,6 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             else:
                 new_idcode = ''.join([i for i in item_name if i.isalpha()])
                 await self.client.db.execute("INSERT INTO dankitems (name, idcode, type, image_url, trade_value, last_updated, overwrite) VALUES ($1, $2, $3, $4, $5, $6, $7)", item_name, new_idcode, item_type, item_thumnail_url, item_worth, round(time.time()), False)
-
-        #Refer to https://discord.com/channels/871734809154707467/871737332431216661/873142587001827379 to all message events here
         """
         Daily reminder
         """
@@ -953,11 +951,6 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 with contextlib.suppress(discord.HTTPException):
                     await message.add_reaction('<:DVB_pizza:888404502280024145>')
         """
-        Work Reminder
-        """
-        # shifted to edit
-        #if is_dank_slash_command(message, 'work shift') and 'until you can work again!' not in message.embeds[0].description:
-        """
         Postmeme reminder
         """
         if is_dank_slash_command(message, 'postmemes') and message.embeds[0].title not in cooldown_messages:
@@ -1021,18 +1014,25 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
 
     @commands.Cog.listener()
     async def on_message_edit(self, beforemsg, aftermsg):
-        # work on work shift here
+        #
+        """
+        Work Reminder
+        """
         if beforemsg.author.id != dank_memer_id:
             return
         if len(beforemsg.embeds) == 0 or len(aftermsg.embeds) == 0:
             return
         if is_dank_slash_command(beforemsg, 'work shift'):
-            if "Terrible work!" in aftermsg.embeds[0].title or "Great work!" in aftermsg.embeds[0].title:
+            if type(aftermsg.embeds[0].title) == str and ("Terrible work!" in aftermsg.embeds[0].title or "Great work!" in aftermsg.embeds[0].title):
                 member = aftermsg.interaction.user
                 nextworktime = round(time.time()) + 3600
                 await self.handle_reminder_entry(member.id, 6, aftermsg.channel.id, aftermsg.guild.id, nextworktime)
                 with contextlib.suppress(discord.HTTPException):
                     await checkmark(aftermsg)
+
+        """
+        Stream reminder
+        """
         if is_dank_slash_command(beforemsg, 'stream'):
             afterembed = aftermsg.embeds[0]
             if afterembed.author.name.endswith('Stream Manager'):
