@@ -91,7 +91,7 @@ class HeistTags(commands.Cog):
             ping += f"<@&{vip_heists_ping_id}>"
         info_message = await heistannouncements_channel.send(ping + "\n🎉 **DANK VIBES HEIST** 🎉", embed=info_embed, allowed_mentions=discord.AllowedMentions(everyone=False, roles=True))
         timer = 0
-        thx_embed = discord.Embed(title=f"<a:DVpopper:904267438839959553> {currency} {comma_number(amount)} HEIST <a:DVpopper:904267438839959553>", description=f"<:dv_itPepeCrownOwO:857898556487761951> Thank {sponsors_str} for the heist in <:dv_itPepeCrownOwO:857898556487761951>\n\nIf you wish to host a heist run `/hdonate <amount> [optional level req]` in <#786944439360290826> `[Minimum: 10,000,000]")
+        thx_embed = discord.Embed(title=f"<a:DVpopper:904267438839959553> {currency} {comma_number(amount)} HEIST <a:DVpopper:904267438839959553>", description=f"<:dv_itPepeCrownOwO:857898556487761951> Thank {sponsors_str} for the heist in <#608498967474601995> <:dv_itPepeCrownOwO:857898556487761951>\n\nIf you wish to host a heist run `/hdonate <amount> [optional level req]` in <#786944439360290826> `[Minimum: 10,000,000]")
         thx_embed.set_thumbnail(url=ctx.guild.icon.with_size(128).url)
         await ctx.respond("Heist Started!\n**DO NOT dismiss this message until the heist is over.**", view=HeistUtils(heistannouncements_channel, serverheists_channel, thx_embed), ephemeral=True)
 
