@@ -63,7 +63,7 @@ class PrivChannelTags(commands.Cog):
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def remove(self, ctx: discord.ApplicationContext, member: discord.Option(discord.Member, "A friend you want to remove from your private channel.")):
         """
-        Add a friend to your private channel.
+        Remove a friend from your private channel.
         """
         channel = await self.get_owner_channel(ctx.author)
         if channel is None:
