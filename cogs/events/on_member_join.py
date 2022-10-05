@@ -29,7 +29,7 @@ class MemberJoin(commands.Cog):
                 {595457764935991326: 616007729718231161, 871734809154707467: 978563862896967681}.get(member.guild.id,
                                                                                                      None))
             if now - member_created_timestamp < number_of_days_in_seconds:
-                allow_bypass = await self.client.db.fetchval("SELECT bypass_ban FROM userconfig WHERE user_id = $1", member.id)
+                allow_bypass = await self.client.db.fetchval("SELECT bypass_ban FROM userinfo WHERE user_id = $1", member.id)
                 if allow_bypass is True:
                     if log_channel is not None:
                         await log_channel.send(f"{member} ({member.id}) was allowed to bypass the Auto-ban and allowed into the server.")

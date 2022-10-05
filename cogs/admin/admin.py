@@ -802,12 +802,12 @@ class Admin(Contests, BetterSelfroles, Joining, ServerRule, commands.Cog, name='
         """
         Allow a user to bypass dungeon bans. If you run it again it will remove the bypass.
         """
-        bypass_ban = await self.client.db.fetchval("SELECT bypass_ban FROM userconfig WHERE user_id = $1", user.id)
+        bypass_ban = await self.client.db.fetchval("SELECT bypass_ban FROM userinfo WHERE user_id = $1", user.id)
         if bypass_ban is not True:
             set = True
         else:
             set = False
-        await self.client.db.execute("INSERT INTO userconfig (user_id, bypass_ban) VALUES($1, $2) ON CONFLICT(user_id) DO UPDATE SET bypass_ban = $2", user.id, set)
+        await self.client.db.execute("INSERT INTO userinfo (user_id, bypass_ban) VALUES($1, $2) ON CONFLICT(user_id) DO UPDATE SET bypass_ban = $2", user.id, set)
         if set is True:
             await ctx.send(f"{user} ({user.id}) will be allowed to bypass the auto ban regardless of their account age.")
         else:

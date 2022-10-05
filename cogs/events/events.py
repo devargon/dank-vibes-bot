@@ -104,7 +104,7 @@ class Events(GuildChannelDelete, RawTyping, GuildChannelCreate, MemberJoin, Stat
                                 None))
                         if now - member_created_timestamp < number_of_days_in_seconds:
                             allow_bypass = await self.client.db.fetchval(
-                                "SELECT bypass_ban FROM userconfig WHERE user_id = $1", member.id)
+                                "SELECT bypass_ban FROM userinfo WHERE user_id = $1", member.id)
                             if allow_bypass is True:
                                 continue
                             else:

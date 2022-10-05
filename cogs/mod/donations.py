@@ -273,7 +273,7 @@ class donations(commands.Cog):
         embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
         await ctx.send(embed=embed)
         await self.client.logger.log_donation_edit('add', ctx.author, member, comma_number(amount))
-        notify_about_logging = await self.client.db.fetchval("SELECT notify_about_logging FROM userconfig WHERE user_id = $1", ctx.author.id)
+        notify_about_logging = await self.client.db.fetchval("SELECT notify_about_logging FROM userinfo WHERE user_id = $1", ctx.author.id)
         if notify_about_logging is not True:
             if ctx.channel.id == 652729093649072168:
                 structure = f"/d log [user,amount]"
@@ -291,7 +291,7 @@ class donations(commands.Cog):
                 return
             msg = f"**{ctx.author.display_name}**, remember to start logging your donations!\n\nSlash command: `{structure}`\nExample: `{commandname}`"
             await ctx.message.reply(msg)
-            await self.client.db.execute("INSERT INTO userconfig (user_id, notify_about_logging) VALUES($1, $2) ON CONFLICT (user_id) DO UPDATE SET notify_about_logging = $2", ctx.author.id, True)
+            await self.client.db.execute("INSERT INTO userinfo(user_id, notify_about_logging) VALUES($1, $2) ON CONFLICT (user_id) DO UPDATE SET notify_about_logging = $2", ctx.author.id, True)
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="removedonations", aliases=["rd"])
