@@ -424,8 +424,9 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             22: "marriage",
             23: "pet",
             24: "adventure",
-            1001: "stream"
-        }
+            1001: "stream",
+            1002: "stream"
+        } # for checking reminder settings
 
 
     async def wait_for_edit(self, message: discord.Message):
@@ -539,11 +540,16 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             if len(results) == 0:
                 return
             for result in results:
-                check_reminder_enabled_index = 20 if result.get('remindertype') == 1001 else result.get('remindertype')
+
+                if result.get('remindertype') == 1001 or result.get('remindertype') == 1002: # stream subreminders
+                    check_reminder_enabled_index = 20
+                else:
+                    check_reminder_enabled_index = result.get('remindertype')
+
                 config = await self.client.db.fetchrow("SELECT member_id, method, daily, weekly, monthly, lottery, work, redeem, hunt, fish, dig, crime, beg, search, snakeeyes, highlow, dailybox, horseshoe, pizza, drop, stream, postmeme, marriage, pet, adventure FROM remindersettings WHERE member_id = $1", result.get('member_id')) # get the user's configuration
                 if config is None: # no config means user doesn't even use this reminder system lol
                     pass
-                elif result.get('remindertype') not in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24, 1001]: # if the reminder type is not a valid one
+                elif result.get('remindertype') not in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24, 1001, 1002]: # if the reminder type is not a valid one
                     pass
                 elif config[check_reminder_enabled_index] is not True:  # activity specific reminder check
                     pass
@@ -595,6 +601,8 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                             return "**continue your adventure** 🚀"
                         elif reminderaction == 1001:
                             return "**start a stream again** 🎮"
+                        elif reminderaction == 1002:
+                            return "**start a stream again** (for your stream streak) 🎮"
                     def ping_message(reminderaction):
                         if reminderaction == 2:
                             return "**claim your </daily:1011560370864930856>** <:DVB_calendar:873107952159059991>"
@@ -640,6 +648,8 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                             return "**continue your </adventure:1011560371041095695>** 🚀"
                         elif reminderaction == 1001:
                             return "**start a </stream:1011560371267579938> again** 🎮"
+                        elif reminderaction == 1002:
+                            return "**start a </stream:1011560371267579938> again** (for your stream streak) 🎮"
                     try:
                         member = self.client.get_guild(result.get('guild_id')).get_member(result.get('member_id'))
                         channel = self.client.get_channel(result.get('channel_id'))
@@ -1074,7 +1084,16 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                     member = aftermsg.interaction.user
                     nextstreamtime = round(time.time()) + 600
                     await self.handle_reminder_entry(member.id, 20, aftermsg.channel.id, aftermsg.guild.id, nextstreamtime, uses_name=True)
+
+                    now = discord.utils.utcnow()
+                    next_reminder_time = now.replace(hour=0, minute=0, second=0, microsecond=0) + datetime.timedelta(days=1)
+                    nextdailystreamtime = round(next_reminder_time.timestamp())
+                    await self.handle_reminder_entry(member.id, 1002, aftermsg.channel.id, aftermsg.guild.id, nextdailystreamtime, uses_name=True)
+
                     await checkmark(beforemsg)
+        """
+        Pet reminder
+        """
         if is_dank_slash_command(beforemsg, 'pets care'):
             if type(beforemsg.embeds[0].title) == str and beforemsg.embeds[0].title.startswith(f"{beforemsg.interaction.user.name}'s"):
                 member = beforemsg.interaction.user
