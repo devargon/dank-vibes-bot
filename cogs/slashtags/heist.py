@@ -100,9 +100,9 @@ class HeistTags(commands.Cog):
         if requirement is not None:
             original_everyone_overwrite = serverheists_channel.overwrites_for(ctx.guild.default_role)
             original_requirement_overwrite = serverheists_channel.overwrites_for(requirement)
-            await serverheists_channel.set_permissions(ctx.guild.default_role, view_channel=False)
+            await serverheists_channel.set_permissions(ctx.guild.default_role, view_channel=False, send_messages=False)
             await ctx.respond(f"`@everyone`'s __View Channel__ permissions has been set to **False**.", ephemeral=True)
-            await serverheists_channel.set_permissions(requirement, view_channel=True)
+            await serverheists_channel.set_permissions(requirement, view_channel=True, send_messages=False)
             await ctx.respond(f"{requirement.mention}'s __View Channel__ permissions has been set to **True**.", ephemeral=True)
 
         while timer < 10:
@@ -138,7 +138,6 @@ class HeistTags(commands.Cog):
             wait_for_heist_embed.color = discord.Color.red()
             wait_for_heist_embed.description = "Timed out waiting for a heist to be started."
             await wait_for_heist_msg.edit(embed=wait_for_heist_embed)
-            return
         else:
             wait_for_heist_embed.description, wait_for_heist_embed.color = "Heist detected.", discord.Color.green()
             await wait_for_heist_msg.edit(embed=wait_for_heist_embed, delete_after=2.0)
