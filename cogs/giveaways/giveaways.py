@@ -803,6 +803,13 @@ class GiveawayView(discord.ui.View):
             else:
                 content = "You have already entered the giveaway."
             final_number_of_entries = len(await self.cog.fetch_user_entries(interaction.user.id, giveawaymessage.id))
+            if interaction.channel_id in [1027858329806045234, 871737314831908974]:
+                text_content = "It is suggested that you be in https://discord.gg/6YgNFh5YHY to claim the prize!"
+                if content != "You have already entered the giveaway.":
+                    with contextlib.suppress(Exception):
+                        await interaction.user.send(content=f"<:DVB_True:887589686808309791> Your entry for the giveaway **{giveawayentry.title}** has been counted.\n{text_content}")
+            else:
+                text_content = ""
             if giveaway_uses_multiple_entries is True:
                 embed = discord.Embed(description=f"Your total entries: {final_number_of_entries}")
                 embed.title = content
@@ -810,17 +817,17 @@ class GiveawayView(discord.ui.View):
                 summary_embed.title = content
                 summary_embed.set_footer(text=f"Your total entries: {final_number_of_entries}")
                 if edit_final is True:
-                    await interaction.edit_original_message(embed=embed, view=MultiEntryView(giveawaymessage.id, self.cog, self.client, summary_embed))
+                    await interaction.edit_original_message(content=text_content, embed=embed, view=MultiEntryView(giveawaymessage.id, self.cog, self.client, summary_embed))
                 else:
-                    await interaction.response.send_message(embed=embed, view=MultiEntryView(giveawaymessage.id, self.cog, self.client, summary_embed), ephemeral=True)
+                    await interaction.response.send_message(content=text_content, embed=embed, view=MultiEntryView(giveawaymessage.id, self.cog, self.client, summary_embed), ephemeral=True)
             else:
                 summary_embed.title = content
                 summary_embed.description = f"Your total entries: {final_number_of_entries}"
                 summary_embed.color = discord.Color.green()
                 if edit_final is True:
-                    await interaction.edit_original_message(embed=summary_embed, view=SingleEntryView(giveawaymessage.id, self.cog, self.client))
+                    await interaction.edit_original_message(content=text_content, embed=summary_embed, view=SingleEntryView(giveawaymessage.id, self.cog, self.client))
                 else:
-                    await interaction.response.send_message(embed=summary_embed, view=SingleEntryView(giveawaymessage.id, self.cog, self.client), ephemeral=True)
+                    await interaction.response.send_message(content=text_content, embed=summary_embed, view=SingleEntryView(giveawaymessage.id, self.cog, self.client), ephemeral=True)
         else:
             return await interaction.response.send_message("It appears that this giveaway doesn't exist or has ended.", embed = None, ephemeral=True)
 
