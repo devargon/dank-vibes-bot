@@ -13,7 +13,7 @@ from discord import client
 from discord.ext import commands, tasks
 from utils.context import DVVTcontext
 from utils.format import print_exception
-from utils.specialobjects import MISSING, ServerConfiguration, AwaitingAmariData, NoAmariData
+from utils.specialobjects import MISSING, ServerConfiguration, AwaitingAmariData, NoAmariData, UserInfo
 from utils.errors import AmariUserNotFound, AmariDataNotFound, AmariError, AmariDeveloperError
 from utils.botlogger import BotLogger
 
@@ -429,6 +429,13 @@ CREATE SCHEMA IF NOT EXISTS donations""")
             serverconfig = await self.db.fetchrow("SELECT * FROM serverconfig WHERE guild_id=$1", guild_id)
         self.serverconfig[guild_id] = ServerConfiguration(serverconfig)
         return ServerConfiguration(serverconfig)
+
+    async def fetch_user_info(self, user_id):
+        userinfo = await self.db.fetchrow("SELECT * FROM userinfo WHERE user_id=$1", user_id)
+        if userinfo is None:
+            await self.db.execute("INSERT INTO userinfo(user_id) VALUES ($1)", user_id)
+            userinfo = await self.db.fetchrow("SELECT * FROM userinfo WHERE user_id=$1", user_id)
+        return UserInfo(userinfo)
 
     async def get_all_blacklisted_users(self):
         blacklist_dict = {}
