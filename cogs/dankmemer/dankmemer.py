@@ -776,7 +776,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 return
             item_name = embed.title
             if type(embed.fields) == list:
-                if embed.footer != discord.Embed.Empty:
+                if embed.footer != discord.Embed.Empty and type(embed.footer.text) == str:
                     item_type = " ".join(embed.footer.text.split(' ')[1:])
                 else:
                     return
@@ -985,7 +985,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                                 if isinstance(b, discord.SelectMenu):
                                     return False
                                 else:
-                                    if b.disabled is not True:
+                                    if b.disabled is not True and b.label != "Check Progress":
                                         return False
                     return True
                 try:
