@@ -23,7 +23,7 @@ import cogs.dankmemer
 
 
 item_name_regex = re.compile(r"^(.+) \([\d,]*\)")
-trade_val_re = re.compile(r"^\*\*VALUE\*\* - (\u23e3 [\d,]*|Unknown)")
+trade_val_re = re.compile(r"Average Value: \u23e3 ([\d,]*)")
 server_coin_donate_re = re.compile(r"> You will donate \*\*\u23e3 ([\d,]*)\*\*")
 server_item_donate_re = re.compile(r"\*\*(.*)\*\*")
 serverpool_donate_log_channel_id = 871737314831908974 if os.getenv('state') == '1' else 1012700307383398430
@@ -774,27 +774,24 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             embed = m.embeds[0]
             if type(embed.title) != str:
                 return
-            item_name_matches = re.findall(item_name_regex, embed.title)
-            if len(item_name_matches) != 1:
-                return
-            item_name = item_name_matches[0]
+            item_name = embed.title
             if type(embed.fields) == list:
-                for field in embed.fields:
-                    if field.name == "Type":
-                        item_type = field.value.replace('`', '')
+                if embed.footer != discord.Embed.Empty:
+                    item_type = " ".join(embed.footer.text.split(' ')[1:])
+                else:
+                    return
+                if embed.fields != None and len(embed.fields) == 2:
+                    supposed_market_field = embed.fields[0]
+                    if supposed_market_field.name == "Market":
+                        item_worth_raw = re.findall(trade_val_re, supposed_market_field.value)
+                        if len(item_worth_raw) > 0:
+                            item_worth = int(item_worth_raw[0].replace(',', ''))
+                        else:
+                            return
+                    else:
+                        return
             else:
                 return
-            if type(embed.description) == str:
-                desc_split = embed.description.splitlines()[-1]
-                item_val_matches = re.findall(trade_val_re, desc_split)
-                if len(item_val_matches) != 1:
-                    return
-                else:
-                    item_worth_raw = item_val_matches[0]
-                    if "\u23e3" in item_worth_raw:
-                        item_worth = int(item_worth_raw.split(' ')[1].replace(',', ''))
-                    else:
-                        item_worth = 0
             if item_name is None or item_worth is None or item_type is None:
                 return
             if type(embed.thumbnail.url) == str:
