@@ -178,7 +178,7 @@ class HeistTags(commands.Cog):
         total_heistamt = int(await self.client.db.fetchval("SELECT SUM(heistamt) AS total FROM userinfo"))
         total_heists = int(await self.client.db.fetchval("SELECT SUM(heists) AS total FROM userinfo"))
         log_text = f"`{ctx.author} ({ctx.author.id})` started a heist!"
-        log_embed = discord.Embed(description=f"**Sponsors**: {sponsors_str}\n**Amount**: {currency} {comma_number(amount)}\n`{comma_number(total_heists)}` total heists worth over `{currency} {comma_number(total_heistamt)}` in the server!", color=self.client.embed_color)
+        log_embed = discord.Embed(description=f"**Sponsors**: {sponsors_str}\n**Amount**: `{currency} {comma_number(amount)}`\n`{comma_number(total_heists)}` total heists worth over \n`{currency} {comma_number(total_heistamt)}` in the server!", color=self.client.embed_color)
         log_channel = self.client.get_channel(heist_log_channel_id)
         try:
             await log_channel.send(log_text, embed=log_embed)
