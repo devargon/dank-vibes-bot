@@ -42,7 +42,8 @@ class PrivChannelTags(commands.Cog):
         if member in channel.overwrites:
             return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Failed", description=f"{member.mention} is already in your private channel {channel.mention}.", color=discord.Color.red()))
         members = [overwriteobject for overwriteobject in channel.overwrites if isinstance(overwriteobject, discord.Member) and not overwriteobject.bot]
-        members.remove(ctx.author)
+        if ctx.author in members:
+            members.remove(ctx.author)
         if len(members) >= get_channel_capacity(ctx.author):
             minimum_removal = len(members) - get_channel_capacity(ctx.author) + 1
             return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Failed", description=f"Your private channel {channel.mention} is full.\n\nYou need to remove **{plural(minimum_removal):member}** from your channel via </privchannel remove:1020235323785105418>.\nSee your channel capacity and members via </privchannel view:1020235323785105418>.", color=discord.Color.red()))
