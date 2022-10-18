@@ -1989,7 +1989,7 @@ class giveaways(commands.Cog):
         await ctx.message.delete()
         #elite channel check
         if os.getenv('state') == '0':
-            if ctx.channel.id not in [701771740912549938, 741254464303923220, 630587061665267713, 616007729718231161]:
+            if ctx.channel.id not in [701771740912549938, 741254464303923220, 630587061665267713, 616007729718231161, 803039330310029362]:
                 return await ctx.send("You cannot use this command in this channel! �")
         if text is None:
             text = "Join the Elite giveaway above ♡"
