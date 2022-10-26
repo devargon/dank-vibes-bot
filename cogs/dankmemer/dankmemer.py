@@ -37,7 +37,9 @@ cooldown_messages = ["Spam isn't cool fam",
                      'Too spicy, take a breather'
                      ]
 
-
+def print_dev(message):
+    if os.getenv('state') == '1':
+        print(message)
 async def checkmark(message:discord.Message):
     try:
         await message.add_reaction("<:DVB_checkmark:955345523139805214>")
@@ -770,28 +772,36 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             item_type = None
             item_thumbnail_url = None
             if len(m.embeds) != 1:
+                print_dev(f"Message {m.id} has {len(m.embeds)} embeds, expected 1")
                 return
             embed = m.embeds[0]
             if type(embed.title) != str:
+                print_dev(f"Message {m.id} has an embed with a non-string title")
                 return
             item_name = embed.title
             if type(embed.fields) == list:
                 if embed.footer != discord.Embed.Empty and type(embed.footer.text) == str:
                     item_type = " ".join(embed.footer.text.split(' ')[1:])
                 else:
+                    print_dev(f"Message {m.id} has an embed with a non-string footer")
                     return
-                if embed.fields != None and len(embed.fields) == 2:
+                if embed.fields != None and len(embed.fields) > 0:
                     supposed_market_field = embed.fields[0]
                     if supposed_market_field.name == "Market":
                         item_worth_raw = re.findall(trade_val_re, supposed_market_field.value)
+                        print_dev(item_worth_raw)
                         if len(item_worth_raw) > 0:
                             item_worth = int(item_worth_raw[0].replace(',', ''))
                         else:
+                            print_dev("Trade value regex found no results")
                             return
                     else:
+                        print_dev(f"Message {m.id} has an embed with a non-market field")
                         return
             else:
+                print_dev(f"Message {m.id} has an embed with non-list fields")
                 return
+            print_dev(f"Message {m.id} item_name={item_name}, item_worth={item_worth}, item_type={item_type}")
             if item_name is None or item_worth is None or item_type is None:
                 return
             if type(embed.thumbnail.url) == str:
