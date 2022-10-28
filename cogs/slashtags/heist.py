@@ -9,12 +9,12 @@ from utils.format import human_join, comma_number, plural
 import os
 
 currency = "⏣"
-heistannouncements_channel_id = 1018414186516205608 if os.getenv('state') == '1' else 876827800236064808
-serverheists_channel_id = 1018414206481084477 if os.getenv('state') == '1' else 690125458272288814
+heistannouncements_channel_id = 978563862896967681 if os.getenv('state') == '1' else 760416679989084160
+serverheists_channel_id = 978563862896967681 if os.getenv('state') == '1' else 760416679989084160
 heists_ping_id = 895815773208051763 if os.getenv('state') == '1' else 758174643814793276
 vip_heists_ping_id = 895815546292035625 if os.getenv('state') == '1' else 817459252913635438
 heist_log_channel_id = 977043022082613320 if os.getenv('state') == '1' else 751031637294186566
-dankmemer_id = 270904126974590976
+dankmemer_id = 666152603339718667 if os.getenv('state') == '1' else 270904126974590976
 
 
 class SafeToDismiss(discord.ui.View):
@@ -99,18 +99,18 @@ class HeistTags(commands.Cog):
         server_heists_embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon.with_size(32).url)
         server_heists_embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/969734884039995432.png")
         try:
-            await serverheists_channel.send(embed=server_heists_embed)
+            pass
         except Exception as e:
             return await ctx.respond(f"**Fatal error**\n<:DVB_False:887589731515392000> Failed to send the heist embed in `{serverheists_channel}`.\n```py\n# More details\n{e}```", ephemeral=True)
 
         info_embed = discord.Embed(title=f"{currency} {comma_number(amount)}", description=f"React with <a:dv_iconOwO:837943874973466664> below\nSponsors: {sponsors_str}\nTimer: □□□□□□□□□□", color=self.client.embed_color)
-        info_embed.add_field(name="Requirement", value=f"{requirement_str}", inline=False)
+        #info_embed.add_field(name="Requirement", value=f"{requirement_str}", inline=False)
         info_embed.set_footer(text=ctx.guild.name)
         if requirement is not None:
             extra_str = f"• Grab the Requirement role\n"
         else:
             extra_str = ""
-        info_embed.add_field(name="Make sure to", value=f"{extra_str}• Head over to {serverheists_channel.mention}", inline=False)
+        info_embed.add_field(name="Make sure to", value=f"{extra_str}• Withdraw coins: `/withdraw 2000`\n• Toggle passive: `/settings` >> `Passive` >> `Disable`\n• Press the `JOIN BANKROB` button below", inline=False)
         ping = f"<@&{heists_ping_id}>"
         if amount >= 25000000:
             ping += f"<@&{vip_heists_ping_id}>"
@@ -144,7 +144,7 @@ class HeistTags(commands.Cog):
 
 
         while timer < 10:
-            await asyncio.sleep(3)
+            await asyncio.sleep(5)
             timer_str = "■" * timer + "□" * (10 - timer)
             new_timer_str = "■" * (timer + 1) + "□" * (10 - (timer + 1))
             info_embed.description = info_embed.description.replace(timer_str, new_timer_str)
@@ -163,12 +163,15 @@ class HeistTags(commands.Cog):
             info_message.channel.send(embed=info_embed)
         def check(m: discord.Message):
             if m.channel.id != serverheists_channel_id or m.author.id != dankmemer_id:
+                print(m.channel.id != serverheists_channel_id, m.author.id != dankmemer_id)
                 return False
-            if len(m.embeds) < 0:
+            if len(m.embeds) < 1:
+                print("no embeds")
                 return False
             embed = m.embeds[0]
             if embed.title.endswith("is starting a bank robbery"):
                 return True
+            print("Does not end in bank robbery")
             return False
 
         details = await self.client.fetch_user_info(ctx.author.id)
