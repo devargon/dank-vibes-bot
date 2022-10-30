@@ -144,7 +144,7 @@ class HeistTags(commands.Cog):
 
 
         while timer < 10:
-            await asyncio.sleep(3)
+            await asyncio.sleep(4)
             timer_str = "■" * timer + "□" * (10 - timer)
             new_timer_str = "■" * (timer + 1) + "□" * (10 - (timer + 1))
             info_embed.description = info_embed.description.replace(timer_str, new_timer_str)
