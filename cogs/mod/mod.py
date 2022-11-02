@@ -349,7 +349,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
                 self.result = None
                 self.client = client
                 super().__init__(timeout=timeout)
-                emojis = ["<a:dv_wStarOwO:837787067303198750>", "<a:dv_wHeartsOwO:837787079320666138>", "<a:dv_wSparklesOwO:837782054782632006>", "<a:dv_wpinkHeartOwO:837781949337960467>", "<a:dv_wPencilOwO:837787076543774780>", "<:dv_wPurpleHeartOwO:837711560298070056>"]
+                emojis = ["<a:dv_wStarOwO:837787067303198750>", "<a:dv_wHeartsOwO:837787079320666138>", "<a:dv_wSparklesOwO:837782054782632006>", "<a:dv_wpinkHeartOwO:837781949337960467>", "<a:dv_wPencilOwO:837787076543774780>"] #, "<:dv_wPurpleHeartOwO:837711560298070056>"]
                 rolenames = []
                 for role in roles:
                     rolenames.append(role.name)
