@@ -326,14 +326,15 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         Sends a message showing the 5 self roles which can be obtained via buttons.
         To highlight a role in green, use `--roles the **full names** of the roles` separated in commas. They are not case sensitive.
         """
-        roleids = [846254068434206740, 758174643814793276, 758174224208363560, 680131933778346011]#[895815546292035625, 895815588289581096, 895815773208051763, 895815799812521994, 895815832465190933]
+        roleids = [846254068434206740, 758174643814793276, 758174224208363560, 680131933778346011, 758175760909074432]#[895815546292035625, 895815588289581096, 895815773208051763, 895815799812521994, 895815832465190933]
         role1 = ctx.guild.get_role(roleids[0])
         role2 = ctx.guild.get_role(roleids[1])
         role3 = ctx.guild.get_role(roleids[2])
         role4 = ctx.guild.get_role(roleids[3])
-        if role1 == None or role2 == None or role3 == None or role4 == None:
+        role5 = ctx.guild.get_role(roleids[4])
+        if role1 == None or role2 == None or role3 == None or role4 == None or role5 == None:
             return await ctx.send("1 or more roles in this command is/are declared as invalid, hence the command cannot proceed.")
-        roles = [role1, role2, role3, role4]
+        roles = [role1, role2, role3, role4, role5]
         hlroles = None
         if channel is None:
             channel = ctx.channel
@@ -348,7 +349,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
                 self.result = None
                 self.client = client
                 super().__init__(timeout=timeout)
-                emojis = ["<a:dv_wStarOwO:837787067303198750>", "<a:dv_wHeartsOwO:837787079320666138>", "<a:dv_wSparklesOwO:837782054782632006>", "<a:dv_wpinkHeartOwO:837781949337960467>"]
+                emojis = ["<a:dv_wStarOwO:837787067303198750>", "<a:dv_wHeartsOwO:837787079320666138>", "<a:dv_wSparklesOwO:837782054782632006>", "<a:dv_wpinkHeartOwO:837781949337960467>", "<a:dv_wPencilOwO:837787076543774780>", "<:dv_wPurpleHeartOwO:837711560298070056>"]
                 rolenames = []
                 for role in roles:
                     rolenames.append(role.name)
