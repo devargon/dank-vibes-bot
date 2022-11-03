@@ -783,7 +783,11 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             item_name = embed.title
             if type(embed.fields) == list:
                 if embed.footer != discord.Embed.Empty and type(embed.footer.text) == str:
-                    item_type = " ".join(embed.footer.text.split(' ')[1:])
+                    if "|" in embed.footer.text:
+                        item_type_format = embed.footer.text.split('|')[-1].strip()
+                    else:
+                        item_type_format = embed.footer.text
+                    item_type = " ".join(item_type_format.split(" ")[1:])
                 else:
                     print_dev(f"Message {m.id} has an embed with a non-string footer")
                     return
