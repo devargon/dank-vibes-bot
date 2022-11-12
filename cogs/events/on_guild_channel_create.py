@@ -3,6 +3,7 @@ import asyncio
 import discord
 from discord.ext import commands
 from main import dvvt
+from time import time
 
 class GuildChannelCreate(commands.Cog):
     def __init__(self, client):
@@ -20,4 +21,4 @@ class GuildChannelCreate(commands.Cog):
                     active = True
                 else:
                     active = False
-                await self.client.db.execute("INSERT INTO channels(guild_id, channel_id, owner_id, active) VALUES($1, $2, $3, $4)", channel.guild.id, channel.id, m.mentions[0].id, active)
+                await self.client.db.execute("INSERT INTO channels(guild_id, channel_id, owner_id, active, last_used) VALUES($1, $2, $3, $4, $5)", channel.guild.id, channel.id, m.mentions[0].id, active, round(time()))

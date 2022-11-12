@@ -304,7 +304,7 @@ class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreac
         await ctx.send(embed=embed)
 
     @commands.command(name="checkpvc", aliases = ["privchannel", "pvc"])
-    async def checkoverwrites(self, ctx, channel:discord.TextChannel = None):
+    async def checkoverwrites(self, ctx: DVVTcontext, channel:discord.TextChannel = None):
         """
         Checks the permission overwrites for that channel. Can be used to check who is in a private channel.
         """
@@ -345,6 +345,8 @@ class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreac
         embed.add_field(name="Created at", value=channel.created_at.strftime("%a, %b %d, %Y") if channel.created_at is not None else 'Unknown')
         category = discord.utils.get(ctx.guild.categories, id=channel.category_id)
         embed.add_field(name="Under Category", value=category.name or "Unknown")
+        if discord.utils.get(ctx.author.roles, id=684591962094829569) or ctx.author.guild_permissions.administrator is True:
+            embed.add_field(name="Last used (BETA DO NOT RELY)", value=f"<t:{int(channel_details.get('last_used'))}>")
         await ctx.send(embed=embed)
 
     @checks.not_in_gen()
