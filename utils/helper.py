@@ -20,6 +20,7 @@ import functools
 
 load_dotenv('credentials.env')
 
+
 class BaseEmbed(discord.Embed):
     def __init__(self, color: Union[discord.Color, int] = 0xffcccb, timestamp: datetime.datetime = None,
                  fields: Tuple[Tuple[str, str]] = (), field_inline: Optional[bool] = False, **kwargs):
