@@ -332,7 +332,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         role3 = ctx.guild.get_role(roleids[2])
         role4 = ctx.guild.get_role(roleids[3])
         role5 = ctx.guild.get_role(roleids[4])
-        if role1 == None or role2 == None or role3 == None or role4 == None or role5 == None:
+        if role1 is None or role2 is None or role3 is None or role4 is None or role5 is None:
             return await ctx.send("1 or more roles in this command is/are declared as invalid, hence the command cannot proceed.")
         roles = [role1, role2, role3, role4, role5]
         hlroles = None
@@ -467,9 +467,9 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
             if category is None:
                 await ctx.send(f"I could not find a category for the ID {category}")
             else:
-                categories.append(category) # gets all the categories for channels
+                categories.append(category)  # gets all the categories for channels
         owner_channel_ids = await self.client.db.fetch("SELECT channel_id FROM channels WHERE owner_id = $1", member.id)
-        owner_channels = [owner_channel_id.get('channel_id') for owner_channel_id in owner_channel_ids] # gets all the channel IDs for the owner channels
+        owner_channels = [owner_channel_id.get('channel_id') for owner_channel_id in owner_channel_ids]  # gets all the channel IDs for the owner channels
         accessiblechannels = []
         for category in categories:
             for channel in category.channels:
@@ -477,22 +477,22 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
                     pass
                 else:
                     permissions = channel.permissions_for(member)
-                    if permissions.view_channel == True:
+                    if permissions.view_channel:
                         if channel.id in owner_channels:
                             crown = " 👑"
                         else:
                             crown = ""
-                        accessiblechannels.append(f"{channel.mention}{crown}") # gets all the channels that the user can see in private channels
-        streeng = "" #ignore the spelling
+                        accessiblechannels.append(f"{channel.mention}{crown}")  # gets all the channels that the user can see in private channels
+        streeng = ""  # ignore the spelling
         for channel in accessiblechannels:
             if len(streeng) < 3900:
                 streeng += f"{channel}\n"
             else:
-                embed = discord.Embed(title = f"Channels that {member.name}#{member.discriminator} can access", description=streeng, color = self.client.embed_color)
+                embed = discord.Embed(title=f"Channels that {member.name}#{member.discriminator} can access", description=streeng, color = self.client.embed_color)
                 await ctx.send(embed=embed)
                 streeng = f"{channel}\n"
         embed = discord.Embed(title=f"Channels that {member.name}#{member.discriminator} can access",
-                            description=streeng, color=self.client.embed_color)
+                              description=streeng, color=self.client.embed_color)
         await ctx.send(embed=embed)
 
     async def _complex_cleanup_strategy(self, ctx, search):
