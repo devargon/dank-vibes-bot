@@ -471,21 +471,27 @@ class Admin(Contests, BetterSelfroles, Joining, ServerRule, commands.Cog, name='
             timeuntil = 9223372036854775807
         id = await self.client.db.fetchval("INSERT INTO blacklist(user_id, moderator_id, blacklist_active, reason, time_until) VALUES($1, $2, $3, $4, $5) RETURNING incident_id", user.id, ctx.author.id, True, reason, timeuntil, column='incident_id')
         self.client.blacklist[user.id] = timeuntil
-        embed=discord.Embed(title=f"{user} is now blacklisted.", description=f"**Reason**: {reason}\n**Blacklisted for**: {'Eternity' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}\nBlacklisted until: {'NA' if timeuntil == 9223372036854775807 else f'<t:{timeuntil}:R>'}", color=discord.Color.red())
-        logembed = discord.Embed(title=f"Bot Blacklist: Case {id}", description=f"**Reason:** {reason}\n**Blacklisted for**: {'Eternity' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}\n**Blacklisted until**: {'NA' if timeuntil == 9223372036854775807 else f'<t:{timeuntil}:R>'}\n**Responsible Moderator**: {ctx.author} ({ctx.author.id})", color=discord.Color.red())
-        logembed.set_author(name=f"{user} ({user.id})", icon_url=user.display_avatar.url)
+        embed = discord.Embed(title=f"{user} is now blacklisted.", description=f"**Reason**: {reason}\n**Blacklisted for**: {'Eternity' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}\nBlacklisted until: {'NA' if timeuntil == 9223372036854775807 else f'<t:{timeuntil}:R>'}", color=discord.Color.red())
         embed.set_footer(text="To unblacklist someone, use the `unblacklist` command.")
         embed.set_thumbnail(url=user.display_avatar.url)
+
+        logembed = discord.Embed(title=f"Bot Blacklist: Case {id}", description=f"**Reason:** {reason}\n**Blacklisted for**: {'Eternity' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}\n**Blacklisted until**: {'NA' if timeuntil == 9223372036854775807 else f'<t:{timeuntil}:R>'}\n**Responsible Moderator**: {ctx.author} ({ctx.author.id})", color=discord.Color.red())
+        logembed.set_author(name=f"{user} ({user.id})", icon_url=user.display_avatar.url)
+
         if duration != 9223372036854775807:
-            dm_description=[f"You have been blacklisted from using {self.client.user.name} by the developers or an Admin from Dank Vibes.", '', f"**Reason:** {reason}", f"**Blacklisted for**: {'Permanently' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}"]
+            dm_description=[f"** **\n**Reason:** {reason}", f"**Blacklisted for**: {humanize_timedelta(seconds=duration)}"]
         else:
-            dm_description=[f"You have been **permanently** blacklisted from using {self.client.user.name} by the developers or an Admin from Dank Vibes.", '', f"**Reason:** {reason}"]
-        dm_description.append(f"You will not be able to:\n• run **any** commands\n• Receive highlights\n• Be nickbetted against\n• Infect a user.\n\nYou will however, be reminded to vote and get Dank Memer reminders.")
+            dm_description=[f"** **\n**Reason:** {reason}"]
+        dm_description.append(f"\nYou will not be able to:\n    • Run **any** commands\n    • Receive highlights\n    • Be nickbetted against\n\nYou will still receive existing reminders, including for voting and Dank Memer commands.")
         dm_description.append('')
         if duration != 9223372036854775807:
             dm_description.append(f"Your blacklist will end on <t:{timeuntil}>.\n")
-        dm_description.append("If you think this is a mistake and would like your blacklist to be removed, or need further clarification, please open a ticket in <#870880772985344010>.")
-        dmembed = discord.Embed(title="⚠️ Warning!", description='\n'.join(dm_description), color=discord.Color.red())
+        if duration != 9223372036854775807:
+            title = f"You are blacklisted from using {self.client.user.name} by the developers or a Dank Vibes Staff."
+        else:
+            title = f"You are **permanently** blacklisted from using {self.client.user.name} by the developers or a Dank Vibes Staff."
+        dmembed = discord.Embed(title="⚠️ " + title, description='\n'.join(dm_description), color=discord.Color.red())
+        dmembed.set_footer(text="If you think this is a mistake or need further clarification, open a ticket in Dank Vibes' support channel.")
         try:
             await user.send(embed=dmembed)
         except:
