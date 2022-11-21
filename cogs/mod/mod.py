@@ -19,11 +19,11 @@ from .donations import donations
 
 from utils import checks
 from utils.buttons import *
-from utils.format import text_to_file, ordinal, human_join
+from utils.format import text_to_file, ordinal, human_join, pagify
 from utils.time import humanize_timedelta, short_humanize_timedelta
 from utils.menus import CustomMenu
 from utils.converters import BetterTimeConverter, MemberUserConverter
-from utils.helper import generate_captcha
+from utils.helper import generate_captcha, DynamicUpdater
 
 import os
 from selenium import webdriver
@@ -1297,7 +1297,45 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         embed.add_field(name="Attempts", value=attempts)
         await ctx.send(embed=embed)
 
-
-
-
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name="checkreact")
+    async def checkreact(self, ctx: DVVTcontext, member: discord.Member, message_id: discord.Object, channel: Optional[discord.TextChannel] = None):
+        """
+        Searches for a certain user's reactions in a message's reactions. Only works to reactions of less than 500 members.
+        """
+        if channel is None:
+            channel = ctx.channel
+        try:
+            m = await channel.fetch_message(message_id.id)
+        except discord.NotFound:
+            add = f"Did you forget to specify the channel at the end?\n```\n{ctx.prefix}{ctx.command} {member} {message_id} <channel>\n```" if channel == ctx.channel else ""
+            await ctx.send(f"I could not find a message with the ID {message_id.id} in {channel.mention}. {add}")
+        except discord.Forbidden:
+            await ctx.send(f"I'm not allowed to view the messages for {channel.mention}.")
+        else:
+            upd = DynamicUpdater(ctx.channel, 2)
+            status = "Checking reactions"
+            await upd.update(status)
+            users_reactions = []
+            for react in m.reactions:
+                if react.count > 500:
+                    users_reactions.append(f"I could not check the reactions for {react.emoji} as it has more than 500 users.")
+                else:
+                    users = await react.users().flatten()
+                    for index, user in enumerate(users):
+                        status = f"`[{m.reactions.index(react)+1}/{len(m.reactions)}]` Checking {index}/{react.count} users for the reaction {react.emoji}"
+                        await upd.update(status)
+                        if user.id == member.id:
+                            users_reactions.append(f"**{user}** reacted to {react.emoji}")
+            print("reactions checked")
+            if len(users_reactions) == 0:
+                await upd.update(status + "\n\n**Reactions were checked**, no results were found.", force=True)
+            else:
+                await upd.update(status + "\n\n**Reactions were checked**.", force=True)
+                text_joined = "\n".join(users_reactions)
+                if len(text_joined) > 2000:
+                    for text in pagify(text_joined):
+                        await ctx.send(text)
+                else:
+                    await ctx.send(text_joined)
 
