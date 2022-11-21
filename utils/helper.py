@@ -16,9 +16,49 @@ import typing
 from discord.ext import menus
 from dotenv import load_dotenv
 from captcha.image import ImageCaptcha
+import time
 import functools
 
 load_dotenv('credentials.env')
+
+
+class DynamicUpdater:
+    def __init__(self, channel: discord.TextChannel, update_every: int = 2):
+        self.update_every = update_every
+        self.last_updated = 0
+        self.guild = channel.guild
+        self.channel = channel
+        self.message: discord.Message = None
+
+    async def wait_until_update(self):
+        if time.time() - self.last_updated < self.update_every:
+            await asyncio.sleep(self.update_every - (time.time() - self.last_updated))
+
+    async def update(self, content = None, *, embed = None, view = None, force: Optional[bool] = False):
+        print("updating with content amogus")
+        if time.time() - self.last_updated < self.update_every and force is not True:
+            print("awaiting")
+            pass
+        else:
+            if self.message is None:
+                self.message = await self.channel.send(content=content, embed=embed, view=view)
+                self.last_updated = round(time.time())
+                print("sent new message")
+            else:
+                try:
+                    await self.message.edit(content=content, embed=embed, view=view)
+                except discord.Forbidden:
+                    pass
+                except discord.HTTPException:
+                    try:
+                        new_message = await self.channel.send(content=content, embed=embed, view=view)
+                    except discord.Forbidden:
+                        pass
+                    else:
+                        self.message = new_message
+                        self.last_updated = round(time.time())
+                else:
+                    self.last_updated = round(time.time())
 
 
 class BaseEmbed(discord.Embed):
