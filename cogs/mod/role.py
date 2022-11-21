@@ -1,3 +1,4 @@
+import copy
 import math
 
 import discord
@@ -44,6 +45,24 @@ def get_info(role: discord.Role) -> discord.Embed:
     )
     e.set_footer(text=role.id)
     return e
+
+
+role_names = {
+    847881491426050148: "Highest Donator Role",
+    914387371150176297: "Amari Weekly Winner 1",
+    939756363859521576: "Amari Weekly Winner 2",
+    922382151574487070: "Amari Weekly Winner 3",
+    666514218434166794: "Contest Winner 1",
+    908360574545567754: "Contest Winner 2",
+    831954125675429958: "Weekly Dank Winner 1",
+    935057118493540352: "Weekly Dank Winner 2",
+    677839284211810333: "Weekly Dank Winner 3",
+    931218082163220510: "Grinder T2 Custom Role",
+    931215261950943263: "Top Grinder Custom Role",
+    902413229609857024: "Top Karuta Donor 1",
+    947749191386542100: "Top Karuta Donor 2",
+    936084400221851668: "Karuta Donor Custom Role (GW)"
+}
 
 
 class Role(commands.Cog):
@@ -225,6 +244,47 @@ class Role(commands.Cog):
             else:
                 content = f"<:DVB_True:887589686808309791> **{role.name}**'s color has been changed from **#{old_color}** to **#{((hex(color.value))[2:]).zfill(6)}**."
                 await ctx.send(content, embed=get_info(newrole))
+
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @role_cmd.command(name="reset", aliases=["r"])
+    async def role_reset(self, ctx: DVVTcontext, role: BetterBetterRoles):
+        role: discord.Role = role
+        failembed = discord.Embed(title="Role Reset Failed", color=discord.Color.red())
+        if not ctx.me.guild_permissions.manage_roles:
+            failembed.description = "I don't have permission to edit any roles. Please allow me the `Manage Roles` permission in your server's Role settings."
+            return await ctx.send(embed=failembed)
+        if ctx.me.top_role is not None and role > ctx.me.top_role:
+            failembed.description = "I don't have permission to edit this role as it is above my highest role."
+            return await ctx.send(embed=failembed)
+        else:
+            role_name = role_names.get(role.id, None)
+            if role_name is None:
+                failembed.description = "This role is not recorded as a role that requires a reset.\nContact the developer if you think this is wrong."
+                return await ctx.send(embed=failembed)
+            else:
+                try:
+                    newrole = await role.edit(reason=f"Requested by {ctx.author} ({ctx.author.id})", name=role_name, color=0)
+                except discord.Forbidden as e:
+                    failembed.description = str(e)
+                    return await ctx.send(embed=failembed)
+                except Exception as e:
+                    failembed.description = f"An unexpected error occured: {e}"
+                    return await ctx.send(embed=failembed)
+                else:
+                    content = f"<:DVB_True:887589686808309791> **{role.name}** has been reset."
+                    await ctx.send(content, embed=get_info(newrole))
+                    existing = await self.client.db.fetchrow("SELECT * FROM customroles WHERE guild_id = $1 AND role_id = $2", ctx.guild.id, role.id)
+                    if existing is not None:
+                        c1 = confirm(ctx, self.client, 30.0)
+                        c1.response = await ctx.send("This role is a custom role owned by some users. Would you like to reset its custom role status?", view=c1)
+                        await c1.wait()
+                        if c1.returning_value is True:
+                            message = copy.copy(ctx.message)
+                            message.channel = ctx.channel
+                            message.content = ctx.prefix + "crole remove " + role.mention
+                            new_ctx = await self.client.get_context(message, cls=type(ctx))
+                            await self.client.invoke(new_ctx)
 
 
 
