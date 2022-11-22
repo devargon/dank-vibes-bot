@@ -8,6 +8,7 @@ from .contests import Contests
 from .serverrule import ServerRule
 from .joining import Joining
 from .betterselfroles import BetterSelfroles
+from .subscribe import Subscribe
 from utils import checks
 from utils.buttons import *
 from utils.format import grammarformat, stringtime_duration
@@ -15,6 +16,7 @@ from utils.time import humanize_timedelta
 from utils.menus import CustomMenu
 from time import time
 import os
+from .subscribe_objects import NewsletterManager
 
 verify_role = 911541857807384677
 
@@ -384,7 +386,7 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
 
 
-class Admin(Contests, BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass):
+class Admin(Subscribe, Contests, BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass):
     """
     Server Commands
     """
@@ -392,6 +394,7 @@ class Admin(Contests, BetterSelfroles, Joining, ServerRule, commands.Cog, name='
         self.client: dvvt = client
         self.queue = []
         self.selfroleviews_added = False
+        self.nsl_manager: NewsletterManager = NewsletterManager(self.client)
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="verify")
