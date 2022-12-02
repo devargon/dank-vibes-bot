@@ -1517,11 +1517,11 @@ class giveaways(commands.Cog):
             required_roles.append(required_role2)
         if required_role3 is not None:
             required_roles.append(required_role3)
-        if channel.id == elite_gw_channel:
+        """if channel.id == elite_gw_channel:
             if (voterole := ctx.guild.get_role(voteid)) is not None:
                 if voterole not in required_roles:
                     required_roles.append(voterole)
-                    required_roles_set_by_server = True
+                    required_roles_set_by_server = True"""
         result = await self.client.db.fetchrow("SELECT * FROM giveawayconfig WHERE guild_id = $1 AND channel_id = $2", ctx.guild.id, channel.id)
         g_config = GiveawayConfig(result)
         if g_config.blacklisted_roles is None:
