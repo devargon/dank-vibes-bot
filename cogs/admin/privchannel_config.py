@@ -106,7 +106,11 @@ class PrivchannelConfig(commands.Cog):
             channel_db = await self.client.db.fetchrow("SELECT * FROM channels WHERE owner_id = $1 AND active = TRUE", owner.id)
         if channel_db is None:
             return None
-        owner = channel.guild.get_member(channel_db.get('owner_id'))
+        if owner is None:
+            owner = channel.guild.get_member(channel_db.get('owner_id'))
+        if channel is None:
+            channel = self.client.get_channel(channel_db.get('channel_id'))
+
         return PrivateChannel(owner, channel, channel_db)
 
 
