@@ -1,5 +1,7 @@
 from typing import Any, Union
 
+import discord
+
 
 class Reminder:
     __slots__ = ('time', 'name', 'channel', 'guild', 'message', 'id', 'user', 'created_time', 'repeat', 'interval')
@@ -131,6 +133,24 @@ class UserInfo:
 
     async def update(self, client):
         a = await client.db.execute("UPDATE userinfo SET notify_about_logging=$1, bypass_ban=$2, heists=$3, heistamt=$4 WHERE user_id = $5", self.notify_about_logging, self.bypass_ban, self.heists, self.heistamt, self.user_id)
+
+class PrivateChannel:
+    __slots__ = ('owner', 'channel', 'last_used', 'add_members', 'remove_members', 'edit_name', 'edit_topic', 'ignore_member_limit', 'restriction_reason')
+
+    def __init__(self, owner, channel, record):
+        self.owner: discord.Member = owner
+        self.channel: discord.TextChannel = channel
+        self.last_used: int = record.get('last_used')
+        self.add_members: bool = record.get('add_members')
+        self.remove_members: bool = record.get('remove_members')
+        self.edit_name: bool = record.get('edit_name')
+        self.edit_topic: bool = record.get('edit_topic')
+        self.ignore_member_limit: bool = record.get('ignore_member_limit')
+        self.restriction_reason: Union[str, None] = record.get('restriction_reason')
+
+    async def update(self, client):
+        a = await client.db.execute("UPDATE channels SET last_used = $1, add_members = $2, remove_members = $3, edit_name = $4, edit_topic = $5, ignore_member_limit = $6, restriction_reason = $7 WHERE channel_id = $8",
+                                    self.last_used, self.add_members, self.remove_members, self.edit_name, self.edit_topic, self.ignore_member_limit, self.restriction_reason, self.channel.id)
 
 
 MISSING: Any = _MissingSentinel()

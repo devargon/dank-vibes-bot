@@ -199,7 +199,7 @@ def get_channel_capacity(member: discord.Member):
     if discord.utils.get(member.roles, id=876323897451102328):  # Hidden OwO Donator (50M)
         capacity += 5
     if discord.utils.get(member.roles, id=819998800382132265):  # Donator 5B
-        capacity += 5
+        capacity += 3
     if discord.utils.get(member.roles, id=819998671742959636):  # Donator 3B
         capacity += 2
     return capacity

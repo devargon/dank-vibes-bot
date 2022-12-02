@@ -5,6 +5,7 @@ from main import dvvt
 from utils.converters import BetterInt, BetterTimeConverter
 from utils.specialobjects import ServerConfiguration
 from .contests import Contests
+from .privchannel_config import PrivchannelConfig
 from .serverrule import ServerRule
 from .joining import Joining
 from .betterselfroles import BetterSelfroles
@@ -386,7 +387,7 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
 
 
-class Admin(Subscribe, Contests, BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass):
+class Admin(PrivchannelConfig, Subscribe, Contests, BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass):
     """
     Server Commands
     """
