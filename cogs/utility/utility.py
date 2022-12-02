@@ -399,7 +399,7 @@ class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreac
             for i, entry in enumerate(leaderboard):
                 if i < 100:
                     member = ctx.guild.get_member(entry.get('user_id')) or entry.get('user_id')
-                    value = comma_number(entry.get('value'))
+                    value = comma_number(entry.get('messagecount'))
                     messages.append((f"{i+1}. {member}", value))
             footer = f"{len(leaderboard)} users have sent a total of {comma_number(sum([entry.get('messagecount') for entry in leaderboard]))} messages"
             if len(messages) <= 10:
