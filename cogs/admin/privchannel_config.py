@@ -75,7 +75,7 @@ class PrivatechannelConfigView(discord.ui.View):
         self.add_item(EnableDisable("Remove Members", self.privchannel.remove_members, "remove_members"))
         self.add_item(EnableDisable("Edit Name", self.privchannel.add_members, "edit_name"))
         self.add_item(EnableDisable("Edit Topic", self.privchannel.edit_topic, "edit_topic"))
-        self.add_item(EnableDisable("Ignore Member Limit", self.privchannel.add_members, "add_members"))
+        self.add_item(EnableDisable("Ignore Member Limit", self.privchannel.add_members, "ignore_member_limit"))
         self.add_item(TriggerModalUpdate(style=discord.ButtonStyle.grey, label="Update restriction reason", custom_id="restriction_reason"))
 
     def format_embed(self):
