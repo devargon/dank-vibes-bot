@@ -1,7 +1,7 @@
 from collections import Counter
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, menus
 
 import re
 import os
@@ -28,7 +28,7 @@ from utils.specialobjects import ContestSubmission, Contest
 from utils.time import humanize_timedelta
 from utils.errors import ArgumentBaseError
 from utils.converters import BetterTimeConverter
-from utils.format import ordinal
+from utils.format import ordinal, comma_number
 
 from .l2lvc import L2LVC
 from .whois import Whois
@@ -55,6 +55,20 @@ class GetHeistPing(discord.ui.View):
             await interaction.response.send_message("<:DVB_True:887589686808309791> The <@&758174643814793276> role has been added to you!", ephemeral=True)
         else:
             await interaction.response.send_message("<:DVB_True:887589686808309791> You already have the <@&758174643814793276> role.", ephemeral=True)
+
+
+class MessageLeaderboard(menus.ListPageSource):
+    def __init__(self, entries, title, footer):
+        self.title = title
+        self.footer = footer
+        super().__init__(entries, per_page=10)
+
+    async def format_page(self, menu, entries):
+        embed = discord.Embed(title=self.title, color=menu.ctx.bot.embed_color, timestamp=discord.utils.utcnow()).set_footer(text=self.footer)
+        for entry in entries:
+            embed.add_field(name=f"{entry[0]}", value=f"**{entry[1]}** 💬", inline=False)
+        embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        return embed
 
 class TimerRemindMe(discord.ui.View):
     def __init__(self, timestamp, what_to_remind):
@@ -371,6 +385,32 @@ class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreac
             await ctx.reply(embed=embed)
         except:
             await ctx.send(embed=embed)
+
+    @checks.not_in_gen()
+    @commands.command(name="messageleaderboard", aliases=["mlb"])
+    async def messageleaderboard(self, ctx):
+        query = "SELECT user_id, messagecount FROM messagelog ORDER BY messagecount DESC"
+        leaderboard = await self.client.db.fetch(query)
+        if len(leaderboard) == 0:
+            return await ctx.send("No one has said anything to show up on the message leaderboard.")
+        else:
+            title = f"{ctx.guild.name}'s Message Leaderboard"
+            messages = []
+            for i, entry in enumerate(leaderboard):
+                if i < 100:
+                    member = ctx.guild.get_member(entry.get('user_id')) or entry.get('user_id')
+                    value = comma_number(entry.get('value'))
+                    messages.append((f"{i+1}. {member}", value))
+            footer = f"{len(leaderboard)} users have sent a total of {comma_number(sum([entry.get('messagecount') for entry in leaderboard]))} messages"
+            if len(messages) <= 10:
+                leaderboard_embed = discord.Embed(title=title, color=self.client.embed_color).set_footer(text=footer)
+                for member, value in messages:
+                    leaderboard_embed.add_field(name=member, value=f"**{value}** 💬", inline=False)
+                return await ctx.send(embed=leaderboard_embed)
+            else:
+                pages = CustomMenu(source=MessageLeaderboard(messages, title, footer), clear_reactions_after=True, timeout=60.0)
+                return await pages.start(ctx)
+
 
     @commands.command(name="cooldowns", aliases = ['mycooldowns', 'cds', 'mycds', 'cd'])
     async def cooldowns(self, ctx):
