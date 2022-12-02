@@ -389,7 +389,7 @@ class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreac
     @checks.not_in_gen()
     @commands.command(name="messageleaderboard", aliases=["mlb"])
     async def messageleaderboard(self, ctx):
-        query = "SELECT user_id, messagecount FROM messagelog ORDER BY messagecount DESC"
+        query = "SELECT user_id, messagecount FROM messagelog ORDER BY messagecount DESC LIMIT 5"
         leaderboard = await self.client.db.fetch(query)
         if len(leaderboard) == 0:
             return await ctx.send("No one has said anything to show up on the message leaderboard.")
