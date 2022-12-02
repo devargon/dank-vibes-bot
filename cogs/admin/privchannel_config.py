@@ -78,9 +78,7 @@ class PrivatechannelConfigView(discord.ui.View):
         self.add_item(EnableDisable("Ignore Member Limit", self.privchannel.add_members, "add_members"))
         self.add_item(TriggerModalUpdate(style=discord.ButtonStyle.grey, label="Update restriction reason", custom_id="restriction_reason"))
 
-
-
-    def format_emmbed(self):
+    def format_embed(self):
         embed = discord.Embed(title=f"Configure `{self.privchannel.channel.name}`", description=f"Owned by {self.privchannel.owner}")
         embed.add_field(name="Permissions", value="\u200b", inline=False)
         embed.add_field(name="Add Members", value=truefalse(self.privchannel.add_members))
