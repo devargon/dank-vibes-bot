@@ -60,7 +60,7 @@ class AutoMod(AmariTask, reminders_, polledition, AutoStatus, timer, NameLogging
     def __init__(self, client):
         self.client = client
         self.freezenick.start()
-        #self.amari_task.start()
+        self.amari_task.start()
         self.check_verification.start()
         self.timedrole.start()
         self.unlock.start()
