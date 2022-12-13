@@ -360,7 +360,7 @@ class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreac
         category = discord.utils.get(ctx.guild.categories, id=channel.category_id)
         embed.add_field(name="Under Category", value=category.name or "Unknown")
         if discord.utils.get(ctx.author.roles, id=684591962094829569) or ctx.author.guild_permissions.administrator is True:
-            embed.add_field(name="Last used", value=f"<t:{int(channel_details.get('last_used'))}>")
+            embed.add_field(name="Last used", value=f"<t:{int(channel_details.get('last_used')) if channel_details is not None else 0}>" )
         await ctx.send("From 19 December, `dv.pvc` will be a mod-only command.\nTo check your private channel's details, use </privchannel view:1020235323785105418>.", embed=embed)
 
     @checks.not_in_gen()
