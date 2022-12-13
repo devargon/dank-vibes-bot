@@ -191,6 +191,8 @@ async def generate_captcha():
 
 
 def get_channel_capacity(member: discord.Member):
+    if not type(member) == discord.Member:
+        return 0
     capacity = 5
     if discord.utils.get(member.roles, id=870850266868633640):  # Ace Mod
         capacity += 2
