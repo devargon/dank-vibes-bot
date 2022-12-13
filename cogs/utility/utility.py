@@ -332,6 +332,8 @@ class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreac
             owner = None
         else:
             owner = self.client.get_user(channel_details.get('owner_id'))
+            if owner is not None:
+                owner_member_type = ctx.guild.get_member(owner.id)
         members = [overwriteobject for overwriteobject in channel.overwrites if isinstance(overwriteobject, discord.Member) and not overwriteobject.bot] # gets all members who have some sort of overwrite in that channel
         membersin = []
         for member in members:
