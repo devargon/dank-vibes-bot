@@ -321,7 +321,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="self", aliases=["selfroles"], usage="--roles (role names separated by commas) (optional)")
-    async def selfroles(self, ctx, channel:Optional[discord.TextChannel] = None, *, flags:RoleFlags):
+    async def selfroles(self, ctx, channel:Optional[discord.TextChannel] = None, *, flags: RoleFlags):
         """
         Sends a message showing the 5 self roles which can be obtained via buttons.
         To highlight a role in green, use `--roles the **full names** of the roles` separated in commas. They are not case sensitive.
