@@ -369,46 +369,46 @@ class OnMessage(commands.Cog):
         if message.channel.category_id in [802467427208265728, 763457841133912074, 789195494664306688, 783299769580781588, 805052824185733120, 834696686923284510, 847897065081274409]: # private channels
             def qualify():
                 if message.author.bot:
-                    if message.author.id == 270904126974590976:
-                        if message.interaction is not None:
-                            return "interaction"
-                        elif (
-                                len(message.embeds[0]) > 0 and
-                                message.embeds[0].footer is not discord.Embed.Empty and
-                                message.embeds[0].footer.text is not discord.Embed.Empty and
-                                type(message.embeds[0].footer.text) == str and
-                                "flow" in message.embeds[0].footer.text
-                        ):
-                            return "flow"
+                    if message.interaction is not None:
+                        return "interaction"
+                    elif (
+                        message.author.id == 270904126974590976 and
+                        len(message.embeds[0]) > 0 and
+                        message.embeds[0].footer is not discord.Embed.Empty and
+                        message.embeds[0].footer.text is not discord.Embed.Empty and
+                        type(message.embeds[0].footer.text) == str and
+                        "flow" in message.embeds[0].footer.text
+                    ):
+                        return "flow"
                     else:
                         return None
                 else:
                     return "direct"
-            if message.author.id == 270904126974590976:
-                c = await self.client.db.fetchrow("SELECT * FROM channels WHERE channel_id = $1", message.channel.id)
-                if c is not None:
-                    q = qualify()
-                    if q == "interaction":
-                        owner = message.interaction.user
-                    elif q == "flow":
-                        context = await self.client.get_context(message, cls=DVVTcontext)
-                        str_split = message.embeds[0].footer.text.split("#")
-                        username = str_split[0]
-                        discriminator = str_split[1][:4]
-                        username = f"{username}#{discriminator}"
-                        try:
-                            member = await commands.MemberConverter().convert(context, username)
-                        except Exception as e:
-                            owner = None
-                        else:
-                            owner = member
-                    elif q == "direct":
-                        owner = message.author
-                    else:
+
+            q = qualify()
+            c = await self.client.db.fetchrow("SELECT * FROM channels WHERE channel_id = $1", message.channel.id)
+            if c is not None:
+                if q == "interaction":
+                    owner = message.interaction.user
+                elif q == "flow":
+                    context = await self.client.get_context(message, cls=DVVTcontext)
+                    str_split = message.embeds[0].footer.text.split("#")
+                    username = str_split[0]
+                    discriminator = str_split[1][:4]
+                    username = f"{username}#{discriminator}"
+                    try:
+                        member = await commands.MemberConverter().convert(context, username)
+                    except Exception as e:
                         owner = None
-                    if owner is not None and c.get('owner_id') == owner.id:
-                        now = round(time())
-                        await self.client.db.execute("UPDATE channels SET last_used = $1 WHERE channel_id = $2", now, message.channel.id)
+                    else:
+                        owner = member
+                elif q == "direct":
+                    owner = message.author
+                else:
+                    owner = None
+                if owner is not None and c.get('owner_id') == owner.id:
+                    now = round(time())
+                    await self.client.db.execute("UPDATE channels SET last_used = $1 WHERE channel_id = $2", now, message.channel.id)
 
 
 
