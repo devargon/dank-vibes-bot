@@ -355,7 +355,7 @@ class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreac
         embed.add_field(name="Owner 🧑‍⚖️", value=owner_str, inline=True)
         embed.add_field(name="Members", value=membermsg if len(membermsg) > 0 else "No one is in this channel.", inline=True)
         embed.add_field(name="\u200b", value="\u200b", inline=False)
-        embed.add_field(name="Member Count", value=f"`{len(membersin)}` of **{get_channel_capacity(owner) if owner is not None else 0}**", inline=True)
+        embed.add_field(name="Member Count", value=f"`{len(membersin)}` of **{get_channel_capacity(owner_member_type) if owner is not None else 0}**", inline=True)
         embed.add_field(name="Created at", value=channel.created_at.strftime("%a, %b %d, %Y") if channel.created_at is not None else 'Unknown')
         category = discord.utils.get(ctx.guild.categories, id=channel.category_id)
         embed.add_field(name="Under Category", value=category.name or "Unknown")
