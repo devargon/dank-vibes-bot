@@ -984,7 +984,7 @@ class giveaways(commands.Cog):
                         elif channel.id in [626704430468825089]: #gang
                             winnerdmmsg = ["Dank Memer Direct Giveaway", "Your prize has been directly transferred to you. Congratulations!"]
                         elif channel.id in [741254464303923220, 803039330310029362, 1045478841465974834]: #elite, daily tro, daily crown
-                            winnerdmmsg = ["Dank Memer Normal Giveaway", "Your prize will be paid out shortly! If you have not received your prize past 24 hours, Open a ticket in <#870880772985344010>."]
+                            winnerdmmsg = ["Dank Memer Normal Giveaway", "Your prize will be paid out shortly! If you have not received your prize past 24 hours, open a ticket in <#870880772985344010>."]
                         elif channel.id in [847375661332299786]:
                             winnerdmmsg = ["Karuta", "Please claim your prize by DMing/pinging the host within **24** hours after winning."]
                         elif channel.id in [847830388713586738]:
