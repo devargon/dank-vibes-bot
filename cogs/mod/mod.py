@@ -284,9 +284,6 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         prefs = {"download_restrictions": 3}
         self.op.add_experimental_option("prefs", prefs)
 
-    class RoleFlags(commands.FlagConverter, case_insensitive=True, delimiter=' ', prefix='--'):
-        roles: Optional[str]
-
     @commands.Cog.listener()
     async def on_guild_channel_create(self, channel):
         CatId = 608506105835814933 if channel.guild.id == 595457764935991326 else 925352977890410557
@@ -320,8 +317,8 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
 
 
     @checks.has_permissions_or_role(manage_roles=True)
-    @commands.command(name="self", aliases=["selfroles"], usage="--roles (role names separated by commas) (optional)")
-    async def selfroles(self, ctx, channel:Optional[discord.TextChannel] = None, *, flags: RoleFlags):
+    @commands.command(name="self", aliases=["selfroles"])
+    async def selfroles(self, ctx, channel:Optional[discord.TextChannel] = None):
         """
         Sends a message showing the 5 self roles which can be obtained via buttons.
         To highlight a role in green, use `--roles the **full names** of the roles` separated in commas. They are not case sensitive.
@@ -338,10 +335,6 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         hlroles = None
         if channel is None:
             channel = ctx.channel
-            if flags is not None and flags.roles is not None and len(flags.roles) is not None:
-                hlroles = flags.roles.split(',')
-                for index, role_name in enumerate(hlroles):
-                    hlroles[index] = role_name.lower().strip()
         class selfroles(discord.ui.View):
             def __init__(self, ctx: DVVTcontext, client, timeout):
                 self.context = ctx
@@ -353,7 +346,6 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
                 rolenames = []
                 for role in roles:
                     rolenames.append(role.name)
-
                 class somebutton(discord.ui.Button):
                     async def callback(self, interaction: discord.Interaction):
                         target_role = roles[emojis.index(str(self.emoji))]

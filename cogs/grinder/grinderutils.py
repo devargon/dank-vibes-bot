@@ -30,9 +30,6 @@ webhook_url = 'https://canary.discord.com/api/webhooks/932261660322832415/gSkRlK
 server_coin_donate_re = re.compile(r"> You will donate \*\*\u23e3 ([\d,]*)\*\*")
 server_item_donate_re = re.compile(r"\*\*(.*)\*\*")
 
-class MessageFlag(commands.FlagConverter, case_insensitive = True, delimiter = ' ', prefix='--'):
-    msg : Optional[str]
-
 
 class GrinderLeaderboard(menus.ListPageSource):
     def __init__(self, entries, title):
@@ -338,14 +335,10 @@ class Grinderutils(commands.Cog, name='grinderutils'):
 
     @checks.is_bav_or_mystic()
     @commands.command(name="gdm", brief="Reminds DV Grinders that the requirement has been checked.", description="Reminds DV Grinders that the requirement has been checked.")
-    async def gdm(self, ctx, *, flags:MessageFlag):
+    async def gdm(self, ctx):
         """
         Reminds DV Grinders that the requirement has been checked.
-        Optional flag:
-        `--msg [message]` To add a message when DMing grinders.
         """
-        if flags.msg is not None and len(flags.msg) > 2500:
-            return await ctx.send("You might have included a message, but it's more than 2500 characters so I cannot send it.")
         grinderrole = ctx.guild.get_role(grinder5mID)
         grinder3mrole = ctx.guild.get_role(grinder3mroleID)
         tgrinderrole = ctx.guild.get_role(grinderteamID)
@@ -444,8 +437,6 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                                   color=self.client.embed_color)
             embed.set_thumbnail(url="https://cdn.discordapp.com/icons/595457764935991326/a_58b91a8c9e75742d7b423411b0205b2b.gif")
             embed.set_footer(text="DM/Ping Ari#0005 if you have any queries.", icon_url=ctx.guild.icon.url)
-            if flags.msg is not None and len(flags.msg) != 0:
-                embed.add_field(name=f"Additional Message from {ctx.author}", value=flags.msg, inline=False)
             success = 0  # gets the grinder list again since the earlier one was popped
             faileddms = []
             for grinder in grinders:

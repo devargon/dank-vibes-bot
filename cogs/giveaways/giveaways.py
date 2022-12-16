@@ -1409,16 +1409,6 @@ class giveaways(commands.Cog):
             await self.client.db.execute("DELETE FROM giveawayconfig WHERE guild_id = $1 AND channel_id = $2", ctx.guild.id, channel.id)
             return await ctx.send(f"The giveaway profile for {channel.mention} has been deleted.")
 
-
-
-    class RoleFlags(commands.FlagConverter, case_insensitive=True, delimiter=' ', prefix='--'):
-        channel: typing.Optional[discord.TextChannel]
-        time: typing.Optional[str]
-        prize: typing.Optional[str]
-        winner: typing.Optional[str]
-        msg: typing.Optional[str]
-        noping: typing.Optional[str]
-
     giveaway_group = SlashCommandGroup("giveaway", "Giveaway commands")
 
     @giveaway_group.command(name='start', description="Start a giveaway!")
@@ -1694,7 +1684,7 @@ class giveaways(commands.Cog):
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name='trophy', aliases=['tro'])
-    async def trophy_giveaway(self, ctx, *, flags: RoleFlags):
+    async def trophy_giveaway(self, ctx):
         """
         Starts a trophy giveaway.
 
@@ -1708,31 +1698,15 @@ class giveaways(commands.Cog):
         channel = ctx.channel
         if os.getenv('state') == "0" and channel.id not in [630587061665267713, 803039330310029362, 882280305233383474] and not ctx.author.guild_permissions.manage_roles:
             return await ctx.send("This command can only be used in certain channels.")
-        if flags.time is None:
-            duration = 86400
-        else:
-            duration = stringtime_duration(flags.time)
-            if duration is None:
-                return await ctx.send("You did not provide a valid time.")
-        if flags.prize is None:
-            prize = "<a:dv_iconOwO:837943874973466664> 1 Pepe Trophy"
-        else:
-            prize = flags.prize[:127]
-        if flags.winner is None:
-            winner = 1
-        else:
-            try:
-                winner = int(flags.winner)
-            except ValueError:
-                return await ctx.send("You did not provide a valid number of winners.")
+        duration = 86400
+        prize = "<a:dv_iconOwO:837943874973466664> 1 Pepe Trophy"
+        winner = 1
         if winner < 1:
             return await ctx.send("You must have at least one winner.")
         elif winner > 80:
             return await ctx.send("You cannot have more than 80 winners.")
         if len(prize) > 70:
             return await ctx.send("The prize's name cannot be longer than 70 characters.")
-        if flags.msg is not None and len(flags.msg) > 1000:
-            return await ctx.send("The message that accompanies the ping cannot be longer than 1000 characters.")
         if duration > 2592000:
             return await ctx.send("The giveaway cannot last longer than 30 days.")
         ends_at = round(time()) + duration
@@ -1746,8 +1720,6 @@ class giveaways(commands.Cog):
         giveawayrecord = await self.fetch_giveaway(giveawaymessage.id)
         embed = await self.format_giveaway_embed(giveawayrecord, None)
         await giveawaymessage.edit(embed=embed, view=GiveawayView(self.client, self))
-        if flags.noping is not None:
-            return
         pingrole = 758174135276142593 if os.getenv('state') == '0' else 895815588289581096
         author_said_yes = False
         pingmsg = await ctx.send(f"Do you want to ping <@&{pingrole}>? Say `yes` within **20 seconds** `[0/2]`")
@@ -1767,14 +1739,11 @@ class giveaways(commands.Cog):
             else:
                 await msg.delete()
                 await pingmsg.edit(content=f"Do you want to ping <@&{pingrole}>? Say `yes` within **60 seconds** `[2/2]`", delete_after=2.0)
-                if flags.msg is None:
-                    if prize == "<a:dv_iconOwO:837943874973466664> 1 Pepe Trophy":
-                        additional_message = "Enter the daily trophy giveaway above! <:DVB_Trophy:911244980599804015>"
-                    else:
-                        additional_message = f"Join the giveaway above ♡"
+                if prize == "<a:dv_iconOwO:837943874973466664> 1 Pepe Trophy":
+                    additional_message = "Enter the daily trophy giveaway above! <:DVB_Trophy:911244980599804015>"
                 else:
-                    additional_message = flags.msg
-                await ctx.send(f"<@&{pingrole}> {additional_message}", allowed_mentions=discord.AllowedMentions(everyone=False, roles=True, users=True))
+                    additional_message = f"Join the giveaway above ♡"
+                await ctx.send(f"<@&{pingrole}>", allowed_mentions=discord.AllowedMentions(everyone=False, roles=True, users=True))
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.group(name="giveaway", aliases=['g'], invoke_without_command=True)
