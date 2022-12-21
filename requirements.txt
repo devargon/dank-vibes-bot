@@ -35,7 +35,7 @@ alexflipnote.py
 more-itertools
 googletrans==3.1.0a0
 hyper
-emoji
+emoji==1.7.0
 typing
 stemming
 httpcore==0.9.1
