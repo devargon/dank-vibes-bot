@@ -1174,7 +1174,7 @@ class giveaways(commands.Cog):
             embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/834862725120917544.webp?quality=lossless")
         elif "karen" in title_lower:
             embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/860196324762452028.webp?quality=lossless")
-        elif "credit" in title_lower:
+        elif "credit" in title_lower and entry.channel_id != 853113922272624650:
             embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/892546328406663168.webp?quality=lossless")
         elif "enchanted" in title_lower and "badosz" in title_lower:
             embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/931295850292989973.gif?quality=lossless")
