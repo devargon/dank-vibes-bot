@@ -1,4 +1,6 @@
 from abc import ABC
+from typing import Literal
+
 from discord.ext import menus
 
 from main import dvvt
