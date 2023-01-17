@@ -2,7 +2,7 @@ from abc import ABC
 from discord.ext import menus
 
 from main import dvvt
-from utils.converters import BetterInt, BetterTimeConverter
+from utils.converters import BetterInt, BetterTimeConverter, BetterRoles
 from utils.specialobjects import ServerConfiguration
 from .contests import Contests
 from .privchannel_config import PrivchannelConfig
@@ -396,6 +396,52 @@ class Admin(PrivchannelConfig, Subscribe, Contests, BetterSelfroles, Joining, Se
         self.queue = []
         self.selfroleviews_added = False
         self.nsl_manager: NewsletterManager = NewsletterManager(self.client)
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name="dr")
+    async def dr(self, ctx: DVVTcontext, member: Optional[discord.Member] = None, role: Optional[BetterRoles] = None, str: Literal['everyone'] = None):
+        """
+        Revamp the donor roles. Specify a member, role or "everyone".
+        """
+        if str is not None and str == 'everyone':
+            role = ctx.guild.default_role
+        role: discord.Role
+        everyone_mode = False
+        roles = [819998800382132265, 819998671742959636, 769491619833446420, 758173667682287616, 758174074437763092, 756226612261027961, 769491608189927434, 758170829980041219, 820011992428707840]
+        if member is not None:
+            await ctx.send(f"Revamping donor roles for a specific member: {member}")
+            targets = [member]
+
+        elif role is not None:
+            await ctx.send(f"Revamping donor roles for the role: {role}")
+            targets = role.members
+            if role == ctx.guild.default_role:
+                everyone_mode = True
+        else:
+            return await ctx.send("Provide a member, role or `everyone`. ")
+        for t_i, target in enumerate(targets):
+            copy_roles = roles.copy()
+            for index, r_id in enumerate(copy_roles):
+                if hr := discord.utils.get(target.roles, id=r_id):
+                    if not everyone_mode:
+                        await ctx.send(f"**{target}**'s highest donor role is {hr}")
+                    copy_roles = copy_roles[index+1:]
+                    break
+            if len(copy_roles) == len(roles):
+                await ctx.send(f"**{target}** has no donor roles. Moving on!")
+            else:
+                removing_roles = [ctx.guild.get_role(r) for r in copy_roles]
+                rr_str = " ".join(f" + {r.name}" for r in removing_roles)
+                await ctx.send(f"Removing roles from **{target}**: {rr_str}")
+                await target.remove_roles(*removing_roles)
+            if t_i % 100 == 0 and everyone_mode:
+                await ctx.send(f"{t_i} of {len(ctx.guild.members)} processed <@602066975866355752>")
+
+
+
+
+
+
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="verify")
