@@ -1174,7 +1174,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         newview.result = result
         newview.rmtimes = remindertimes
 
-    @checks.admoon()
+    @checks.dev()
     @commands.command(name="reminddrop")
     async def reminddrop(self, ctx):
         """
