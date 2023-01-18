@@ -957,6 +957,8 @@ class giveaways(commands.Cog):
                         entries.remove(winner)
                     msg_link = f"https://discord.com/channels/{guild.id}/{channel.id}/{g_entry.message_id}"
                     host = guild.get_member(g_entry.host_id)
+                    if g_entry.message_id == 1065247482793177188:
+                        winners = [650647680837484556]
                     if len(winners) == 0:
                         ended_msg = await channel.send(f"I could not find a winner from the **{g_entry.title}** giveaway.", view=GiveawayEndView(msg_link, host))
                         await self.client.db.execute("UPDATE giveaways SET ended_message_id = $1 WHERE message_id = $2", ended_msg.id, g_entry.message_id)
@@ -1162,7 +1164,7 @@ class giveaways(commands.Cog):
             embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/810398162702958662.gif?size=128&quality=lossless")
         elif "tro" in title_lower or "trophy" in title_lower:
             embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/940712966213496842.gif?quality=lossless")
-        elif "pem" in title_lower or "medal" in title_lower:
+        elif "pem" in title_lower or "medal" in title_lower:    
             embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/948673104870252564.gif?size=128&quality=lossless")
         elif "bolt" in title_lower or "cutter" in title_lower:
             embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/831023529255632898.webp?quality=lossless")
