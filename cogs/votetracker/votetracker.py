@@ -406,7 +406,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
             await ctx.send("I do not have permission to send the leaderboard here.")
         return
 
-    @commands.command(name="vote", aliases=["upvote"])
+    @commands.command(name="vote", aliases=["upvote", "v"])
     async def vote(self, ctx):
         """
         Shows you where to vote for Dank Vibes.
