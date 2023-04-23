@@ -25,7 +25,7 @@ class Verification(commands.Cog):
                             if time() - member.joined_at.timestamp() > 86400:
                                 has_not_verified.append(member)
                         elif member.pending == False:
-                            if len(member.roles) == 0 or len(member.roles) > 2:
+                            if len(member.roles) == 0 or (len(member.roles) > 2 and guild.get_role(911541857807384677) in member.roles):
                                 if member.status != discord.Status.offline:
                                     print(f"{member} qualifies.")
 
