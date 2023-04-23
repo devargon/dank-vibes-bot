@@ -548,7 +548,6 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                     check_reminder_enabled_index = result.get('remindertype')
 
                 config = await self.client.db.fetchrow("SELECT member_id, method, daily, weekly, monthly, lottery, work, redeem, hunt, fish, dig, crime, beg, search, snakeeyes, highlow, dailybox, horseshoe, pizza, drop, stream, postmeme, marriage, pet, adventure FROM remindersettings WHERE member_id = $1", result.get('member_id')) # get the user's configuration
-                print(len(config))
                 if config is None: # no config means user doesn't even use this reminder system lol
                     pass
                 elif result.get('remindertype') not in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24, 1001, 1002]: # if the reminder type is not a valid one
