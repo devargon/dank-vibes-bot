@@ -15,7 +15,7 @@ class Verification(commands.Cog):
         await self.client.wait_until_ready()
         try:
             for guild in self.client.guilds:
-                print(f"Checking {guild}")
+                print(f"Checking {guild} with ID {guild.id}")
                 g = await self.client.get_guild_settings(guild.id)
                 if g.verification is True:
                     print(f"{guild} has Verification enabled ")
