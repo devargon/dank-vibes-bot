@@ -552,7 +552,11 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                     pass
                 elif result.get('remindertype') not in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24, 1001, 1002]: # if the reminder type is not a valid one
                     pass
-                elif config[check_reminder_enabled_index] is not True:  # activity specific reminder check
+                try:
+                    a = config[check_reminder_enabled_index]
+                except:
+                    print(check_reminder_enabled_index)
+                if config[check_reminder_enabled_index] is not True:  # activity specific reminder check
                     pass
                 elif config.get('method') == 0:  # chose not to be reminded
                     pass
