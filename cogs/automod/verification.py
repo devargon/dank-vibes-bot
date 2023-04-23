@@ -15,12 +15,14 @@ class Verification(commands.Cog):
         await self.client.wait_until_ready()
         try:
             for guild in self.client.guilds:
+                print(f"Checking {guild}")
                 g = await self.client.get_guild_settings(guild.id)
                 if g.verification is True:
+                    print(f"{guild} has Verification enabled ")
                     has_not_verified = []
                     for member in guild.members:
                         if member.bot:
-                            pass
+                            continue
                         elif member.pending == True:
                             if time() - member.joined_at.timestamp() > 86400:
                                 has_not_verified.append(member)
