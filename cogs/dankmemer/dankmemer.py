@@ -547,7 +547,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 else:
                     check_reminder_enabled_index = result.get('remindertype')
 
-                config = await self.client.db.fetchrow("SELECT member_id, method, daily, weekly, monthly, lottery, work, redeem, hunt, fish, dig, crime, beg, search, snakeeyes, highlow, dailybox, horseshoe, pizza, drop, stream, postmeme, marriage, pet FROM remindersettings WHERE member_id = $1", result.get('member_id')) # get the user's configuration
+                config = await self.client.db.fetchrow("SELECT member_id, method, daily, weekly, monthly, lottery, work, redeem, hunt, fish, dig, crime, beg, search, snakeeyes, highlow, dailybox, horseshoe, pizza, drop, stream, postmeme, marriage, pet, adventure FROM remindersettings WHERE member_id = $1", result.get('member_id')) # get the user's configuration
                 print(len(config))
                 if config is None: # no config means user doesn't even use this reminder system lol
                     pass
