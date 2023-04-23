@@ -28,8 +28,7 @@ class Verification(commands.Cog):
                                 has_not_verified.append(member)
                         elif member.pending == False:
                             if len(member.roles) == 0 or (len(member.roles) > 2 and guild.get_role(911541857807384677) in member.roles):
-                                if member.status != discord.Status.offline:
-                                    print(f"{member} qualifies.")
+                                print(f"{member} {member.id} qualifies.")
 
                                 #roleids = [837591810389442600, 671426678807068683, 671426686100963359, 671426692077584384, 649499248320184320, 758174643814793276, 837594909917708298]
                                 #roles = [a := guild.get_role(roleid) for roleid in roleids if a not in member.roles]
