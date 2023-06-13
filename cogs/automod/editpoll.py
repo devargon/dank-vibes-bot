@@ -78,7 +78,10 @@ class polledition(commands.Cog):
                         for choice in choices:
                             poll_dict[choice] = 0
                         for polled in polldata:
-                            poll_dict[polled.get('choice')] += 1
+                            try:
+                                poll_dict[polled.get('choice')] += 1
+                            except:
+                                print(f"'{polled.get('poll_id')}', '{polled.get('user_id')}', '{poll.get('choice')}'")
                         embed = self.generate_embed(author_name, author_icon, question, poll_dict, anonymous)
 
                         # For some reason I am unable to edit the message if the embed is enclosed in another object, for now this function will be used for embeds only
