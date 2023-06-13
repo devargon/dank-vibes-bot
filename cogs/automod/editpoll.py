@@ -5,7 +5,7 @@ from discord.ext import commands, tasks
 import time
 
 from main import dvvt
-from utils.format import generate_loadbar
+from utils.format import generate_loadbar, print_exception
 from typing import Optional
 
 
@@ -89,4 +89,4 @@ class polledition(commands.Cog):
                         self.client.add_to_edit_queue(partial_message, embed=embed)
                         #print('added item to queue, queue:', self.client.editqueue)
         except Exception as e:
-            print(f"timer task caught a error: {e}")
+            print_exception("Ignoring Exception in EditPoll task", e)
