@@ -1,4 +1,6 @@
 import sys
+import typing
+
 import discord
 import traceback
 from io import BytesIO
@@ -63,6 +65,12 @@ def short_time(duration:int):
     else:
         return f'{math.ceil(duration_in_days)}d'
 
+
+def proper_userf(user: typing.Union[discord.Member, discord.User]):
+    if user.discriminator > 0:
+        return f"{user.name}#{user.discriminator}"
+    else:
+        return f"@{user.name}"
 
 
 def human_join(seq, delim=', ', final='or'):
