@@ -94,7 +94,7 @@ def activity_embed(member: discord.Member):
                 activityembed = discord.Embed(title=f"{member.name} is competing in:", description=activity.name, color=member.color)
             elif activity.type == discord.ActivityType.playing:
                 activityembed = discord.Embed(title=f"{member.name} is playing:", color=member.color)
-                activityembed.set_author(name=fproper_userf(member), icon_url=member.display_avatar.url)
+                activityembed.set_author(name=proper_userf(member), icon_url=member.display_avatar.url)
                 if activity.start:
                     starttime = activity.start
                     duration = today - activity.start
