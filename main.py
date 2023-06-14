@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from discord import client
 from discord.ext import commands, tasks
 from utils.context import DVVTcontext
-from utils.format import print_exception
+from utils.format import print_exception, proper_userf
 from utils.specialobjects import MISSING, ServerConfiguration, AwaitingAmariData, NoAmariData, UserInfo
 from utils.errors import AmariUserNotFound, AmariDataNotFound, AmariError, AmariDeveloperError
 from utils.botlogger import BotLogger
@@ -198,7 +198,7 @@ class dvvt(commands.Bot):
                     "UPDATE blacklist SET blacklist_active = $1 WHERE user_id = $2 and incident_id = $3", False, user, blacklist.get('incident_id'))
                 embed = discord.Embed(title=f"Bot Unblacklist | Case {blacklist.get('incident_id')}", description=f"**Reason**: Blacklist over, automatically rescinded\n**Responsible Moderator**: {self.user.name} ({self.user.id})", color=discord.Color.green())
                 user = await self.fetch_user(user)
-                embed.set_author(name=f"{user} ({user.id})", icon_url=user.display_avatar.url)
+                embed.set_author(name=f"{proper_userf(user)} ({user.id})", icon_url=user.display_avatar.url)
                 if user is not None:
                     try:
                         await user.send("You are no longer blacklisted from using the bot, and can use all functions of the bot.")

@@ -5,7 +5,7 @@ from discord.ext import commands
 from utils import checks
 import asyncio
 from utils.buttons import confirm
-from utils.format import stringtime_duration
+from utils.format import stringtime_duration, proper_userf
 from utils.time import humanize_timedelta
 from time import time
 from utils.errors import NicknameIsManaged
@@ -214,10 +214,10 @@ class games(commands.Cog):
             raise NicknameIsManaged()
         if await self.client.check_blacklisted_user(member):
             ctx.command.reset_cooldown(ctx)
-            return await ctx.send(f"{member} is currently blacklisted from using the bot. You cannot have a nick bet with them.")
+            return await ctx.send(f"{proper_userf(member)} is currently blacklisted from using the bot. You cannot have a nick bet with them.")
         if member.bot:
             ctx.command.reset_cooldown(ctx)
-            return await ctx.send(f"🤖 **{member}**: `no`")
+            return await ctx.send(f"🤖 **{proper_userf(member)}**: `no`")
         if duration is not None:
             duration = stringtime_duration(duration)
             if duration is None:

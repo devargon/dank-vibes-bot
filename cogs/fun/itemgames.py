@@ -5,7 +5,7 @@ import time
 
 from utils.buttons import confirm
 from utils.converters import BetterInt
-from utils.format import comma_number
+from utils.format import comma_number, proper_userf
 import discord
 from discord.ext import commands
 import random
@@ -211,7 +211,7 @@ class ItemGames(commands.Cog):
                         else:
                             invpage += f"{item_emoji} **{item_name}** • {comma_number(item_count)}\n"
         embed = discord.Embed(description=invpage, color=self.client.embed_color)
-        embed.set_author(name=f"{member}'s Inventory", icon_url=member.display_avatar.url)
+        embed.set_author(name=f"{proper_userf(member)}'s Inventory", icon_url=member.display_avatar.url)
         embed.set_footer(text="Use dv.inv info [item] to know more about an item.")
         await ctx.send(embed=embed)
 
@@ -224,7 +224,7 @@ class ItemGames(commands.Cog):
         if member is None:
             return await ctx.send("Specify a member to give items.")
         if item is None:
-            return await ctx.send(f"Specify a item to give {member}.")
+            return await ctx.send(f"Specify a item to give {proper_userf(member)}.")
         itemname = await self.get_item_name(item)
         if itemname is None:
             return await ctx.send(f"There is no item names `{item}`.")
@@ -261,10 +261,10 @@ class ItemGames(commands.Cog):
             return await ctx.send(f"You can't give less than 1 {itemname}.")
         user_itemcount = await self.get_item_count(itemname, ctx.author)
         if user_itemcount < num:
-            return await ctx.send(f"You don't have enough `{itemname}` to share to {member}.")
+            return await ctx.send(f"You don't have enough `{itemname}` to share to {proper_userf(member)}.")
         member_itemcount = await self.get_item_count(itemname, member)
         if member_itemcount + num > 9223372036854775807:
-            return await ctx.send(f"{member} can only hold a maximum of 9,223,372,036,854,775,807 {itemname}.")
+            return await ctx.send(f"{proper_userf(member)} can only hold a maximum of 9,223,372,036,854,775,807 {itemname}.")
         membernewcount = await self.add_item_count(itemname, member, num)
         usernewcount = await self.remove_item_count(itemname, ctx.author, num)
         details = await self.client.db.fetchrow("SELECT image, fullname FROM iteminfo WHERE name=$1", itemname)
@@ -274,7 +274,7 @@ class ItemGames(commands.Cog):
         else:
             item_url = details.get('image')
             name = details.get('fullname')
-        embed = discord.Embed(title=f"You gave {member} {num} of your {name or itemname}!", description=f"You now have `{usernewcount}` {name or itemname}.\n{member} now has `{membernewcount}` {name or itemname}.", color=discord.Color.green(), timestamp=discord.utils.utcnow())
+        embed = discord.Embed(title=f"You gave {proper_userf(member)} {num} of your {name or itemname}!", description=f"You now have `{usernewcount}` {name or itemname}.\n{proper_userf(member)} now has `{membernewcount}` {name or itemname}.", color=discord.Color.green(), timestamp=discord.utils.utcnow())
         if item_url:
             embed.set_thumbnail(url=item_url)
         try:
@@ -292,7 +292,7 @@ class ItemGames(commands.Cog):
         if member is None:
             return await ctx.send("Specify a member to give items.")
         if item is None:
-            return await ctx.send(f"Specify a item to give {member}.")
+            return await ctx.send(f"Specify a item to give {proper_userf(member)}.")
         itemname = await self.get_item_name(item)
         if itemname is None:
             return await ctx.send(f"There is no item named `{item}`.")
@@ -307,7 +307,7 @@ class ItemGames(commands.Cog):
             insquery = ["UPDATE", "INVENTORIES", "SET", itemname, "=", str(count+num), "WHERE", "user_id", "=", str(member.id)]
             modifiedno = count + num
         await self.client.db.execute(' '.join(insquery))
-        return await ctx.send(f"<:DVB_True:887589686808309791> I successfully gave {member} {num} {itemname}s, they now have {modifiedno} {itemname}s.")
+        return await ctx.send(f"<:DVB_True:887589686808309791> I successfully gave {proper_userf(member)} {num} {itemname}s, they now have {modifiedno} {itemname}s.")
 
     @inventory.command(name="items")
     async def items(self, ctx):
@@ -607,5 +607,5 @@ class ItemGames(commands.Cog):
         for i, result in enumerate(finalresult):
             user = result[0]
             count = result[1]
-            embed.add_field(name=f"{i + 1}. {user} {'🥇' if i == 0 else '🥈' if i == 1 else '🥉' if i == 2 else ''}", value=f"{comma_number(count)} {itemname}s", inline=False)
+            embed.add_field(name=f"{i + 1}. {proper_userf(user)} {'🥇' if i == 0 else '🥈' if i == 1 else '🥉' if i == 2 else ''}", value=f"{comma_number(count)} {itemname}s", inline=False)
         await ctx.send(embed=embed)

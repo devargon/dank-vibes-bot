@@ -5,7 +5,7 @@ import discord
 from discord.ext import commands
 from pytz import timezone
 
-from utils.format import durationdisplay
+from utils.format import durationdisplay, proper_userf
 from utils.converters import MemberUserConverter
 from utils.time import humanize_timedelta
 from utils.format import comma_number
@@ -21,7 +21,7 @@ def spotify_embed(member: discord.Member):
             spotify = discord.Embed(title=f"{member.name} is listening to",
                                     description=f"[{artists} - {activity.title}](https://open.spotify.com/track/{activity.track_id})",
                                     color=activity.color)
-            spotify.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member.display_avatar.url)
+            spotify.set_author(name=proper_userf(member), icon_url=member.display_avatar.url)
             spotify.set_footer(text=f"Powered by Spotify®", icon_url="https://i.imgur.com/zNBmzpl.png")
             spotify.set_thumbnail(url=activity.album_cover_url)
             listenduration = today - activity.start
@@ -48,7 +48,7 @@ def activity_embed(member: discord.Member):
     for activity in activitylist:
         if isinstance(activity, discord.Game):
             activityembed = discord.Embed(title=f"{member.name} is playing:", color=member.color)
-            activityembed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member.display_avatar.url)
+            activityembed.set_author(name=f"{proper_userf(member)}", icon_url=member.display_avatar.url)
             if activity.start:
                 starttime = activity.start
                 duration = today - activity.start
@@ -78,7 +78,7 @@ def activity_embed(member: discord.Member):
             activityembed = discord.Embed(title=f"{member.name} is streaming:",
                                           description=f'[{activity.name} on {platform}]({activity.url} "{activity.name} on {activity.platform}") {emoji}',
                                           color=member.color)
-            activityembed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member.display_avatar.url)
+            activityembed.set_author(name=proper_userf(member), icon_url=member.display_avatar.url)
             activityembed.add_field(name="Steam details", value=f"Playing {activity.game}", inline=False)
             return activityembed
         elif isinstance(activity, discord.Activity):
@@ -94,7 +94,7 @@ def activity_embed(member: discord.Member):
                 activityembed = discord.Embed(title=f"{member.name} is competing in:", description=activity.name, color=member.color)
             elif activity.type == discord.ActivityType.playing:
                 activityembed = discord.Embed(title=f"{member.name} is playing:", color=member.color)
-                activityembed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member.display_avatar.url)
+                activityembed.set_author(name=fproper_userf(member), icon_url=member.display_avatar.url)
                 if activity.start:
                     starttime = activity.start
                     duration = today - activity.start
@@ -206,7 +206,7 @@ class Whois(commands.Cog):
                 for nickname in past_nicknames:
                     if nickname.get('nickname'):
                         nicknames.append(nickname.get('nickname'))
-                embed.set_field_at(-2, name="Nicknames", value=f"{', '.join(nicknames) if len(nicknames) > 0 else 'No records; nicknames are only tracked after 9 January 21.'}\n\nRun `nicknames @{user}` to see their other nicknames and the time they were changed.", inline=False)
+                embed.set_field_at(-2, name="Nicknames", value=f"{', '.join(nicknames) if len(nicknames) > 0 else 'No records; nicknames are only tracked after 9 January 21.'}\n\nRun `nicknames @{proper_userf(user, False)}` to see their other nicknames and the time they were changed.", inline=False)
             else:
                 embed.set_field_at(-2, name="Nicknames", value=f"No records; nicknames are only tracked after 9 January 2022.", inline=False)
             past_names = await self.client.db.fetch("SELECT * FROM name_changes WHERE user_id = $1 ORDER BY time DESC LIMIT 20", user.id)
@@ -215,7 +215,7 @@ class Whois(commands.Cog):
                 for name in past_names:
                     if name.get('name'):
                         names.append(name.get('name'))
-                    embed.set_field_at(-1, name="Usernames", value=f"{', '.join(names) if len(names) > 0 else 'No records; usernames are only tracked after 9 January 21.'}\n\nRun `names @{user}` to see their after usernames and the time they were changed.", inline=False)
+                    embed.set_field_at(-1, name="Usernames", value=f"{', '.join(names) if len(names) > 0 else 'No records; usernames are only tracked after 9 January 21.'}\n\nRun `names @{proper_userf(user, False)}` to see their after usernames and the time they were changed.", inline=False)
             else:
                 embed.set_field_at(-1, name="Usernames", value=f"No records; usernames are only tracked after 9 January 2022.", inline=False)
             wiview.base_embed = embed

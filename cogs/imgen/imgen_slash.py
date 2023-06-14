@@ -15,6 +15,7 @@ import numpy as np
 import random
 import os
 
+from utils.format import proper_userf
 from utils.errors import ArgumentBaseError
 
 url_regex = re.compile(
@@ -312,7 +313,7 @@ class ImgenSlash(commands.Cog):
 
             username = member.display_name
             brackets = random.choice(["(LIMITED)", "(SUSSY)", "(SUPER SUSSY)"])
-            name = f"{member} {brackets}"
+            name = f"{proper_userf(member)} {brackets}"
             proper_name = name if len(name) < 28 else name[:25] + '...'
             description = 'Pre-Owned · Sussy · Amogus · Baka'
             number_of_bids = random.choice([0, 0, 0, random.randint(1, 1000000)])

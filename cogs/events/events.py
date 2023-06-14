@@ -13,7 +13,7 @@ from .status_task import StatusTasks
 from .status_utils import *
 from .on_guild_channel_delete import GuildChannelDelete
 
-from utils.format import box
+from utils.format import box, proper_userf
 
 guild_id = 871734809154707467 if os.getenv('state') == '1' else 595457764935991326
 
@@ -114,12 +114,12 @@ class Events(GuildChannelDelete, RawTyping, GuildChannelCreate, MemberJoin, Stat
                                 except Exception as e:
                                     if log_channel is not None:
                                         await log_channel.send(
-                                            f"I was unable to DM {member} ({member.id}) about their auto-ban.")
+                                            f"I was unable to DM {proper_userf(member)} ({member.id}) about their auto-ban.")
                                 try:
                                     await member.ban(reason="Account too young")
                                     return
                                 except Exception as e:
                                     await log_channel.send(
-                                        f"I was unable to ban {member} ({member.id}):\n{box(str(e), lang='py')}")
+                                        f"I was unable to ban {proper_userf(member)} ({member.id}):\n{box(str(e), lang='py')}")
 
 

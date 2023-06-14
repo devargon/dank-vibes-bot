@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from utils.format import get_command_name
+from utils.format import get_command_name, proper_userf
 from time import time
 
 class ReplyModal(discord.ui.Modal):
@@ -23,7 +23,7 @@ class ReplyModal(discord.ui.Modal):
             try:
                 await self.user_message.reply(content=response)
             except Exception as e:
-                result_embed = discord.Embed(title=f"Failed to reply to {self.user}'s message", description=f"```py\n{e}\n```", color=discord.Color.red())
+                result_embed = discord.Embed(title=f"Failed to reply to {proper_userf(self.user)}'s message", description=f"```py\n{e}\n```", color=discord.Color.red())
             else:
                 result_embed = discord.Embed(title="Success!", description=f"Message was sent to {self.user}.", color=discord.Color.green())
             await interaction.response.send_message(embeds=[embed, result_embed], ephemeral=True)

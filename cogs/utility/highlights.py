@@ -8,6 +8,7 @@ import datetime
 from discord.ext import commands
 import copy
 from utils.buttons import confirm
+from utils.format import proper_userf
 from utils import checks
 from main import dvvt
 from utils.errors import ArgumentBaseError
@@ -182,7 +183,7 @@ class Highlight(commands.Cog):
                         obj = chan.mention
                 else:
                     if (member := ctx.guild.get_member(ignore.get('ignore_id'))) is not None:
-                        obj = f"{member.mention} ({member})"
+                        obj = f"{member.mention} ({proper_userf(member)})"
                     else:
                         obj = f"{ignore.get('ignore_id')} (unknown member)"
                 igsn.append(obj)

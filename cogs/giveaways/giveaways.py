@@ -24,7 +24,7 @@ from utils.menus import CustomMenu
 from utils.paginator import SingleMenuPaginator
 from utils.specialobjects import AwaitingAmariData, NoAmariData
 from utils.time import humanize_timedelta
-from utils.format import plural, stringtime_duration, grammarformat, human_join, print_exception
+from utils.format import plural, stringtime_duration, grammarformat, human_join, print_exception, proper_userf
 
 voteid = 874897331252760586 if os.getenv('state') == '1' else 683884762997587998
 elite_gw_channel = 871737332431216661 if os.getenv('state') == '1' else 741254464303923220
@@ -527,7 +527,7 @@ class GiveawayEndView(discord.ui.View):
         self.url = url
         super().__init__(timeout=None)
         if self.user is not None:
-            self.add_item(discord.ui.Button(label=f"View {user}'s Giveaway", url=self.url, disabled=False))
+            self.add_item(discord.ui.Button(label=f"View {proper_userf(user)}'s Giveaway", url=self.url, disabled=False))
         else:
             self.add_item(discord.ui.Button(label=f"View Giveaway", url=self.url, disabled=False))
 
@@ -860,7 +860,7 @@ class GiveawayView(discord.ui.View):
             user_id = user.get('user_id')
             user = self.client.get_user(user_id)
             if user is not None:
-                users_formatted.append(f"**{user}** {user.mention}")
+                users_formatted.append(f"**{proper_userf(user)}** {user.mention}")
             else:
                 users_formatted.append(f"{user_id}")
         page_embeds = []
@@ -1036,8 +1036,8 @@ class giveaways(commands.Cog):
         descriptions = []
         descriptions.append(f"**Host:** {host}")
         if (user := self.client.get_user(entry.donor_id)) is not None:
-            user = f"{user.mention} (`{user}`)"
-            descriptions.append(f"**Donor:** {user}")
+            user = f"{user.mention} (`{proper_userf(user)}`)"
+            descriptions.append(f"**Donor:** {proper_userf(user)}")
         embed.description = "\n".join(descriptions)
         date_and_time = []
         date_and_time.append(f"**Created on:** <t:{entry.end_time - entry.duration}:F>")
@@ -1104,7 +1104,7 @@ class giveaways(commands.Cog):
             descriptions = []
         user = self.client.get_user(entry.host_id)
         user = user.mention if user else entry.host_id
-        descriptions.append(f"**Host:** {user}")
+        descriptions.append(f"**Host:** {proper_userf(user)}")
         if winners is None:
             if entry.active is True:
                 descriptions.append(f"**Duration:** {humanize_timedelta(seconds=entry.duration)}")

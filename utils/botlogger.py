@@ -3,7 +3,7 @@ import discord
 from utils.context import DVVTcontext
 from utils.helper import paste
 from typing import Union, Literal, Optional
-from utils.format import human_join
+from utils.format import human_join, proper_userf
 
 
 def make_embed(user, target, action, details=None):
@@ -23,7 +23,7 @@ def make_embed(user, target, action, details=None):
         color=discord.Color.blue(),
         timestamp=discord.utils.utcnow()
     )
-    embed.set_author(name=f"{user.name}#{user.discriminator}", icon_url=user.display_avatar.url)
+    embed.set_author(name=f"{proper_userf(user)}", icon_url=user.display_avatar.url)
     embed.set_footer(text=str(user.id))
     for i, v in details.items():
         embed.add_field(name=i, value=v if v is not None and len(v) > 0 else "\u200b", inline=False)
@@ -73,7 +73,7 @@ class BotLogger:
             title = "Remove bot/channel(s) from MessageCleanup"
         if type(bot) != list:
             bot = [bot]
-        bots_proper = [f"{_bot.name}#{_bot.discriminator}" for _bot in bot]
+        bots_proper = [proper_userf(_bot) for _bot in bot]
         human_bots = human_join(bots_proper, final="and") if len(bots_proper) is not None else "None"
         if type(channels) != list:
             channels = [channels]

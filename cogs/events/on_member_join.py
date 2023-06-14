@@ -7,7 +7,7 @@ from discord.ext import commands
 import cogs.mod.decancer
 from main import dvvt
 from utils.time import humanize_timedelta
-from utils.format import box
+from utils.format import box, proper_userf
 
 class MemberJoin(commands.Cog):
     def __init__(self, client):
@@ -32,20 +32,20 @@ class MemberJoin(commands.Cog):
                 allow_bypass = await self.client.db.fetchval("SELECT bypass_ban FROM userinfo WHERE user_id = $1", member.id)
                 if allow_bypass is True:
                     if log_channel is not None:
-                        await log_channel.send(f"{member} ({member.id}) was allowed to bypass the Auto-ban and allowed into the server.")
+                        await log_channel.send(f"{proper_userf(member)} ({member.id}) was allowed to bypass the Auto-ban and allowed into the server.")
                 else:
                     msg = f"Welcome to {member.guild.name}, {member.name}!\nAs we do not allow alts in this server, **all new accounts are automatically banned**. \n\nIf you were wrongfully banned, feel free to appeal at this link: https://docs.google.com/forms/d/e/1FAIpQLScfv1HTWkpimqS3Q8MviVG92K0xmHm87T0vBx3dNZ19mXB7VQ/viewform\nAllow a few days for a response."
                     try:
                         await member.send(msg)
                     except Exception as e:
                         if log_channel is not None:
-                            await log_channel.send(f"I was unable to DM {member} ({member.id}) about their auto-ban.")
+                            await log_channel.send(f"I was unable to DM {proper_userf(member)} ({member.id}) about their auto-ban.")
                     try:
                         await member.ban(reason="Account too young")
                         member_is_banned = True
                         return
                     except Exception as e:
-                        await log_channel.send(f"I was unable to ban {member} ({member.id}):\n{box(str(e), lang='py')}")
+                        await log_channel.send(f"I was unable to ban {proper_userf(member)} ({member.id}):\n{box(str(e), lang='py')}")
                         member_is_banned = False
         await asyncio.sleep(5.0)
         if member_is_banned is True:

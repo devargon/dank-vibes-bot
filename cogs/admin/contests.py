@@ -17,7 +17,7 @@ from main import dvvt
 from utils import checks
 from utils.buttons import confirm
 from utils.context import DVVTcontext
-from utils.format import plural, box, ordinal
+from utils.format import plural, box, ordinal, proper_userf
 from utils.paginator import SingleMenuPaginator
 from utils.specialobjects import Contest, ContestSubmission
 
@@ -101,7 +101,7 @@ class DisplayVoteView(discord.ui.View):
                             if user is None:
                                 user = f"{user_id.get('user_id')}"
                             else:
-                                user = f"**{user.name}#{user.discriminator}** ({user.id})"
+                                user = f"**{proper_userf(user)}** ({user.id})"
                             users.append(user)
                         embed.description = "\n".join(users)
                         votepages.append(embed)
@@ -715,7 +715,7 @@ class Contests(commands.Cog):
                         user_id = str(submission.submitter_id)
                         user_avatar = discord.Embed.Empty
                     else:
-                        user_proper = f"{user.name}#{user.discriminator}"
+                        user_proper = proper_userf(user)
                         user_id = f"{user.id}"
                         user_avatar = user.display_avatar.with_size(128).url
                     emoji = emojis.get(index, "🏅")

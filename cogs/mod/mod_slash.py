@@ -6,7 +6,7 @@ import discord
 from discord.ext import commands
 from discord import SlashCommandGroup
 from discord import default_permissions
-from utils.format import stringtime_duration, human_join, comma_number, generate_loadbar, plural
+from utils.format import stringtime_duration, human_join, comma_number, generate_loadbar, plural, proper_userf
 from utils.buttons import confirm
 from utils.time import humanize_timedelta
 from utils import checks
@@ -21,13 +21,13 @@ class ModSlash(commands.Cog):
     #@checks.has_permissions_or_role(manage_roles=True)
     @mod_util.command(name="dm")
     async def mod_dm(self, ctx: discord.ApplicationContext, user: discord.Member, message: discord.Option(str, max_length=2000)):
-        embed = discord.Embed(title=f"You sent to {user}", description=message, color=self.client.embed_color)
+        embed = discord.Embed(title=f"You sent to {proper_userf(user)}", description=message, color=self.client.embed_color)
         user_embed = discord.Embed(title="Message", description=message, color=discord.Color.purple(), timestamp=discord.utils.utcnow())
         try:
             await user.send(f"You have received a message from a Moderator in {ctx.guild.name}.", embed=user_embed)
         except discord.Forbidden:
             confirmview = confirm(ctx, self.client, timeout=30)
-            confirmview.response = await ctx.respond(f"<:DVB_False:887589731515392000> **I was unable to DM {user}.**\nDo you want them to be pinged in <#698462922682138654> with the message instead?", view=confirmview)
+            confirmview.response = await ctx.respond(f"<:DVB_False:887589731515392000> **I was unable to DM {proper_userf(user)}.**\nDo you want them to be pinged in <#698462922682138654> with the message instead?", view=confirmview)
             await confirmview.wait()
             if confirmview.returning_value is True:
                 bot_lounge = discord.utils.get(ctx.guild.channels, name="╭・bot-lounge")
@@ -202,7 +202,7 @@ class ModSlash(commands.Cog):
                     try:
                         await member.ban(reason=reason or f"Massban authorized by {ctx.author.name}")
                     except Exception as e:
-                        await ctx.send(f"<:DVB_False:887589731515392000> Unable to ban {member}:\n{str(e)}")
+                        await ctx.send(f"<:DVB_False:887589731515392000> Unable to ban **{proper_userf(member)}**:\n{str(e)}")
                     if time.time() - time_now > 3:
                         time_now = time.time()
                         status_embed.description = f"`[{index}/{len(qualified_members)}]` {generate_loadbar(index/len(qualified_members), 15)} {round(index/len(qualified_members)*100, 2)}%"
@@ -258,9 +258,9 @@ class ModSlash(commands.Cog):
             return
         if user is not None:
             if user.display_name == user.name:
-                start = f"User found: **{user}** {user.id} {user.mention}\n```dv.wi {user.id}```"
+                start = f"User found: **{proper_userf(user)}** {user.id} {user.mention}\n```dv.wi {user.id}```"
             else:
-                start = f"User found: **{user}** ({user.name}) {user.id} {user.mention}```dv.wi {user.id}```"
+                start = f"User found: **{proper_userf(user)}** ({user.name}) {user.id} {user.mention}```dv.wi {user.id}```"
             results.append(start)
         if role is not None:
             start = f"Role found: **{role.name}** {role.id} {role.mention}```dv.ri {role.id}```"

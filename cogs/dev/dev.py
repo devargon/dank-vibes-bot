@@ -34,7 +34,7 @@ from contextlib import redirect_stdout
 from discord.ext import commands, menus
 from .cog_manager import CogManager
 from utils.buttons import confirm
-from utils.format import pagify, TabularData, plural, text_to_file, get_command_name, comma_number, box
+from utils.format import pagify, TabularData, plural, text_to_file, get_command_name, comma_number, box, proper_userf
 from .maintenance import Maintenance
 from.logging import Logging, ReplyToMessage
 from utils.converters import MemberUserConverter, TrueFalse
@@ -528,7 +528,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
             if result is not None:
                 member = self.client.get_user(result.get('user_id'))
                 embed = discord.Embed(title=f"Suggestion {inquery}", description = result.get('suggestion'), color=self.client.embed_color)
-                embed.add_field(name="Suggested by", value=f"{member} ({member.id})" if member else result.get('user_id'), inline=True)
+                embed.add_field(name="Suggested by", value=f"{proper_userf(member)} ({member.id})" if member else result.get('user_id'), inline=True)
                 embed.add_field(name="Status", value="Closed" if result.get('finish') else "Open", inline=True)
                 if result.get('finish'):
                     response = await self.client.db.fetchrow("SELECT * FROM suggestion_response WHERE suggestion_id = $1", inquery)
@@ -563,7 +563,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
         suggestions = []
         for suggestion in result:
             member = self.client.get_user(suggestion.get('user_id'))
-            name = f"{suggestion.get('suggestion_id')}. {member} ({member.id})" if member is not None else f"{suggestion.get('suggestion_id')}. {suggestion.get('user_id')}"
+            name = f"{suggestion.get('suggestion_id')}. {proper_userf(member)} ({member.id})" if member is not None else f"{suggestion.get('suggestion_id')}. {suggestion.get('user_id')}"
             suggestions.append((name, suggestion.get('suggestion')))
         if len(suggestions) <= 6:
             embed = discord.Embed(title=title, color=self.client.embed_color, timestamp=discord.utils.utcnow())

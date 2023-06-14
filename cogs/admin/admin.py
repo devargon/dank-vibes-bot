@@ -13,7 +13,7 @@ from .joining import Joining
 from .betterselfroles import BetterSelfroles
 from utils import checks
 from utils.buttons import *
-from utils.format import grammarformat, stringtime_duration
+from utils.format import grammarformat, stringtime_duration, proper_userf
 from utils.time import humanize_timedelta
 from utils.menus import CustomMenu
 from time import time
@@ -437,7 +437,7 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
         duration = None
         error = None
         while reason is None:
-            msg = f"What is the reason for blacklisting {user}?"
+            msg = f"What is the reason for blacklisting {proper_userf(user)}?"
             if error:
                 msg = error + '\n' + msg
             await ctx.send(msg)
@@ -474,12 +474,12 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
             timeuntil = 9223372036854775807
         id = await self.client.db.fetchval("INSERT INTO blacklist(user_id, moderator_id, blacklist_active, reason, time_until) VALUES($1, $2, $3, $4, $5) RETURNING incident_id", user.id, ctx.author.id, True, reason, timeuntil, column='incident_id')
         self.client.blacklist[user.id] = timeuntil
-        embed = discord.Embed(title=f"{user} is now blacklisted.", description=f"**Reason**: {reason}\n**Blacklisted for**: {'Eternity' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}\nBlacklisted until: {'NA' if timeuntil == 9223372036854775807 else f'<t:{timeuntil}:R>'}", color=discord.Color.red())
+        embed = discord.Embed(title=f"{proper_userf(user)} is now blacklisted.", description=f"**Reason**: {reason}\n**Blacklisted for**: {'Eternity' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}\nBlacklisted until: {'NA' if timeuntil == 9223372036854775807 else f'<t:{timeuntil}:R>'}", color=discord.Color.red())
         embed.set_footer(text="To unblacklist someone, use the `unblacklist` command.")
         embed.set_thumbnail(url=user.display_avatar.url)
 
         logembed = discord.Embed(title=f"Bot Blacklist: Case {id}", description=f"**Reason:** {reason}\n**Blacklisted for**: {'Eternity' if duration == 9223372036854775807 else humanize_timedelta(seconds=duration)}\n**Blacklisted until**: {'NA' if timeuntil == 9223372036854775807 else f'<t:{timeuntil}:R>'}\n**Responsible Moderator**: {ctx.author} ({ctx.author.id})", color=discord.Color.red())
-        logembed.set_author(name=f"{user} ({user.id})", icon_url=user.display_avatar.url)
+        logembed.set_author(name=f"{proper_userf(user)} ({user.id})", icon_url=user.display_avatar.url)
 
         if duration != 9223372036854775807:
             dm_description=[f"** **\n**Reason:** {reason}", f"**Blacklisted for**: {humanize_timedelta(seconds=duration)}"]
@@ -519,7 +519,7 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
                 return await ctx.send(f"There is no such blacklist with the ID {inquery}.")
             member = ctx.guild.get_member(result.get('user_id'))
             embed = discord.Embed(title=f"Blacklist {inquery}", description=f"__Reason for blacklist__\n{result.get('reason')}", color=discord.Color.red() if result.get('blacklist_active') else discord.Color.green())
-            embed.set_author(icon_url=member.display_avatar.url, name=f"{member} ({member.id})")
+            embed.set_author(icon_url=member.display_avatar.url, name=f"{proper_userf(member)} ({member.id})")
             embed.add_field
             embed.add_field(name="Is blacklist active?", value=result.get('blacklist_active'), inline=True)
             if result.get('blacklist_active'):
@@ -553,7 +553,7 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
         for blacklist in result:
             member = self.client.get_user(blacklist.get('user_id'))
             moderator = self.client.get_user(blacklist.get('moderator_id'))
-            name = f"{blacklist.get('incident_id')}. {member} ({member.id})" if member is not None else f"{blacklist.get('incident_id')}. {blacklist.get('user_id')}"
+            name = f"{blacklist.get('incident_id')}. {proper_userf(member)} ({member.id})" if member is not None else f"{blacklist.get('incident_id')}. {blacklist.get('user_id')}"
             details = f"Reason: {blacklist.get('reason')}\n"
             if blacklist.get('blacklist_active'):
                 details += f"Until: <t:{blacklist.get('time_until')}:R>\n" if blacklist.get('time_until') != 9223372036854775807 else 'Until: Eternity\n'
@@ -579,9 +579,9 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
         if active_blacklist is None:
             return await ctx.send(f"{user.mention} is currently not blacklisted.")
         await self.client.db.execute("UPDATE blacklist SET blacklist_active = $1 WHERE user_id = $2 and incident_id = $3", False, user.id, active_blacklist.get('incident_id'))
-        embed = discord.Embed(title=f"{user} is now unblacklisted.", color=discord.Color.green())
+        embed = discord.Embed(title=f"{proper_userf(user)} is now unblacklisted.", color=discord.Color.green())
         logembed = discord.Embed(title=f"Bot Unblacklist: Case {active_blacklist.get('incident_id')}", description=f"**Reason:** Manually unblacklisted by {ctx.author}\n**Responsible Moderator**: {ctx.author} ({ctx.author.id})", color=discord.Color.green())
-        logembed.set_author(name=f"{user} ({user.id})", icon_url=user.display_avatar.url)
+        logembed.set_author(name=f"{proper_userf(user)} ({user.id})", icon_url=user.display_avatar.url)
         await ctx.send(embed=embed)
         await self.client.get_channel(906433823594668052).send(embed=logembed)
         
@@ -762,13 +762,13 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
         removable = [role for role in staffroles if role in member.roles]
         tupremove = tuple(removable)
         if not tupremove:
-            return await ctx.send(f"There are no roles that I can remove from {member} to demote them.")
+            return await ctx.send(f"There are no roles that I can remove from {proper_userf(member)} to demote them.")
         msg = await ctx.send(f"**Demoting {member.mention}...**")
         async with ctx.typing():
             try:
                 await member.remove_roles(*tupremove, reason=f"Demoted by {ctx.author}")
             except Exception as e:
-                return await msg.edit(content=f"There was an issue with removing roles. I've temporarily stopped demoting {member}. More details: {e}")
+                return await msg.edit(content=f"There was an issue with removing roles. I've temporarily stopped demoting {proper_userf(member)}. More details: {e}")
         lstofrolenames = [role.name for role in tupremove]
         if duration > 300:
             duration = 300
@@ -785,7 +785,7 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
         try:
             await member.add_roles(*tupremove, reason='Demotion reversed automatically')
         except Exception as e:
-            return await ctx.send(f"There was an issue with adding roles. I've temporarily stopped promoting {member}. More details: {e}")
+            return await ctx.send(f"There was an issue with adding roles. I've temporarily stopped promoting {proper_userf(member)}. More details: {e}")
         return await ctx.send(f"{member.mention} congratulations on your promotion to:  **{', '.join(role.name for role in tupremove)}**!")
 
     @checks.has_permissions_or_role(manage_roles=True)
@@ -818,7 +818,7 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
             set = False
         await self.client.db.execute("INSERT INTO userinfo (user_id, bypass_ban) VALUES($1, $2) ON CONFLICT(user_id) DO UPDATE SET bypass_ban = $2", user.id, set)
         if set is True:
-            await ctx.send(f"{user} ({user.id}) will be allowed to bypass the auto ban regardless of their account age.")
+            await ctx.send(f"{proper_userf(user)} ({user.id}) will be allowed to bypass the auto ban regardless of their account age.")
         else:
-            await ctx.send(f"{user} ({user.id}) will NOT be able to bypass the auto ban if their account age is less than the set specified age.")
+            await ctx.send(f"{proper_userf(user)} ({user.id}) will NOT be able to bypass the auto ban if their account age is less than the set specified age.")
 

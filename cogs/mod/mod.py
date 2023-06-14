@@ -19,7 +19,7 @@ from .donations import donations
 
 from utils import checks
 from utils.buttons import *
-from utils.format import text_to_file, ordinal, human_join, pagify
+from utils.format import text_to_file, ordinal, human_join, pagify, proper_userf
 from utils.time import humanize_timedelta, short_humanize_timedelta
 from utils.menus import CustomMenu
 from utils.converters import BetterTimeConverter, MemberUserConverter
@@ -253,12 +253,12 @@ class ModlogPagination:
                     duration = humanize_timedelta(seconds=duration)
                 else:
                     duration = "4 weeks"
-                value = f"Mod: {moderator}\nDuration: **{duration}**\nReason: {entry.get('reason')}"
+                value = f"Mod: {proper_userf(moderator)}\nDuration: **{duration}**\nReason: {entry.get('reason')}"
                 embed.add_field(name=f"#{entry.get('case_id')}: {entry.get('action').capitalize()} (<t:{entry.get('start_time')}:d>)", value=value, inline=False)
             elif entry.get('action') == 'ban':
                 mod_id = entry.get('moderator_id')
                 moderator = self.client.get_user(mod_id) or mod_id
-                value = f"Mod: {moderator}\nReason: {entry.get('reason')}"
+                value = f"Mod: {proper_userf(moderator)}\nReason: {entry.get('reason')}"
                 embed.add_field(name=f"#{entry.get('case_id')}: {entry.get('action').capitalize()} (<t:{entry.get('start_time')}:d>)", value=value, inline=False)
         return embed
 
@@ -480,10 +480,10 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
             if len(streeng) < 3900:
                 streeng += f"{channel}\n"
             else:
-                embed = discord.Embed(title=f"Channels that {member.name}#{member.discriminator} can access", description=streeng, color = self.client.embed_color)
+                embed = discord.Embed(title=f"Channels that {proper_userf(member)} can access", description=streeng, color = self.client.embed_color)
                 await ctx.send(embed=embed)
                 streeng = f"{channel}\n"
-        embed = discord.Embed(title=f"Channels that {member.name}#{member.discriminator} can access",
+        embed = discord.Embed(title=f"Channels that {proper_userf(member)} can access",
                               description=streeng, color=self.client.embed_color)
         await ctx.send(embed=embed)
 
@@ -534,7 +534,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
             old_nick = member.display_name
             await member.edit(nick=nickname)
         except:
-            return await ctx.send(f"I encountered an error while trying to freeze {member}'s nickname. It could be due to role hierachy or missing permissions.")
+            return await ctx.send(f"I encountered an error while trying to freeze {proper_userf(member)}'s nickname. It could be due to role hierachy or missing permissions.")
         else:
             timetounfreeze = 9223372036854775807
             await self.client.db.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", member.id, ctx.guild.id, nickname, old_nick, timetounfreeze, f"Invoked via freezenick command", ctx.author.id)
@@ -551,7 +551,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         frozennicknames = []
         for entry in result:
             member = self.client.get_user(entry.get('user_id'))
-            name = f"{entry.get('id')}. {member} ({member.id})" if member is not None else f"{entry.get('id')}. {entry.get('user_id')}"
+            name = f"{entry.get('id')}. {proper_userf(member)} ({member.id})" if member is not None else f"{entry.get('id')}. {entry.get('user_id')}"
             details = f"**Frozen nickname:** {entry.get('nickname')}\n"
             details += f"**Reason:** {entry.get('reason')}\n"
             details += f"**Unfrozen:** <t:{entry.get('time')}:R>\n" if entry.get('time') != 9223372036854775807 else 'Until: Eternity\n'
@@ -579,16 +579,16 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         existing = await self.client.db.fetchrow("SELECT * FROM freezenick WHERE user_id = $1 and guild_id = $2",
                                                       member.id, ctx.guild.id)
         if existing is None:
-            return await ctx.send(f"{member}'s nickname is currently not frozen.")
+            return await ctx.send(f"{proper_userf(member)}'s nickname is currently not frozen.")
         moderator = ctx.guild.get_member(existing.get('responsible_moderator'))
         if moderator is not None:
             if moderator != ctx.guild.owner:
                 if moderator.top_role > ctx.author.top_role:
-                    return await ctx.send(f"You cannot unfreezenick **{member}**'s nickname, as their nickname was frozen by **{moderator}**, whose highest role is the same as or above your own role.")
+                    return await ctx.send(f"You cannot unfreezenick **{proper_userf(member)}**'s nickname, as their nickname was frozen by **{moderator}**, whose highest role is the same as or above your own role.")
         try:
             await member.edit(nick=existing.get('old_nickname'))
         except:
-            return await ctx.send(f"I encountered an error while trying to unfreeze {member}'s nickname. It could be due to role hierachy or missing permissions.")
+            return await ctx.send(f"I encountered an error while trying to unfreeze **{proper_userf(member)}**'s nickname. It could be due to role hierachy or missing permissions.")
         else:
             await self.client.db.execute("DELETE FROM freezenick WHERE id = $1", existing.get('id'))
             return await ctx.send(f"{member.mention}'s nickname is now unfrozen.")
@@ -619,7 +619,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         if member is None:
             return await ctx.send("You need to tell me who you want to timeout.")
         if member.top_role >= ctx.me.top_role:
-            return await ctx.send(f"I cannot put **{member}** on a time-out as their highest role is higher than or the same as **my** highest role.")
+            return await ctx.send(f"I cannot put **{proper_userf(member)}** on a time-out as their highest role is higher than or the same as **my** highest role.")
         if member.top_role >= ctx.author.top_role:
             return await ctx.send("You **cannot** timeout a user that has a higher role than you.")
         if duration is None:
@@ -634,15 +634,15 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         td_obj = timedelta(seconds=duration)
         try:
             if reason is None:
-                auditreason = f"Requested by {ctx.author.name}#{ctx.author.discriminator} ({ctx.author.id}"
+                auditreason = f"Requested by {proper_userf(ctx.author)} ({ctx.author.id}"
             else:
-                auditreason = reason + f" | Requested by {ctx.author.name}#{ctx.author.discriminator} ({ctx.author.id}"
+                auditreason = reason + f" | Requested by {proper_userf(ctx.author)} ({ctx.author.id}"
             await member.timeout_for(duration=td_obj, reason=auditreason)
         except discord.Forbidden:
-            return await ctx.send(f"I do not have permission to put {member} on a timeout.")
+            return await ctx.send(f"I do not have permission to put **{proper_userf(member)}** on a timeout.")
         else:
             case_id = await self.client.db.fetchval("INSERT INTO modlog (guild_id, moderator_id, offender_id, action, reason, start_time, duration, end_time) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING case_id", ctx.guild.id, ctx.author.id, member.id, "timeout", reason, now, duration, ending, column='case_id')
-            msg = f"**{ctx.author}** has put **{member}** on a timeout for {humanize_timedelta(seconds=duration)}, until <t:{ending}>."
+            msg = f"**{ctx.author}** has put **{proper_userf(member)}** on a timeout for {humanize_timedelta(seconds=duration)}, until <t:{ending}>."
             if reason is not None:
                 msg += f"\nReason: {reason}"
             await ctx.send(msg)
@@ -676,11 +676,11 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
             if member.top_role >= ctx.author.top_role:
                 return await ctx.send("You **cannot** ban a user that has a higher role than you.")
             if member.top_role >= ctx.me.top_role:
-                return await ctx.send(f"I cannot ban **{member}** as their highest role is higher than or the same as **my** highest role.")
+                return await ctx.send(f"I cannot ban **{proper_userf(member)}** as their highest role is higher than or the same as **my** highest role.")
         if reason is None:
-            auditreason = f"Requested by {ctx.author.name}#{ctx.author.discriminator} ({ctx.author.id}"
+            auditreason = f"Requested by {proper_userf(ctx.author)} ({ctx.author.id}"
         else:
-            auditreason = reason + f" | Requested by {ctx.author.name}#{ctx.author.discriminator} ({ctx.author.id}"
+            auditreason = reason + f" | Requested by {proper_userf(ctx.author)} ({ctx.author.id}"
         if isinstance(member, discord.Member):
             embed = discord.Embed(title="You were banned by a Karuta Senpai!", description=f"Reason: **{reason}**\n\n> If you would like to appeal against your ban, submit an appeal [here](https://kable.lol/DankVibesAppeals/). Specify that you were banned by a Karuta Senpai in the `Other` question.", timestamp=discord.utils.utcnow(), color=discord.Color.red()).set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url, url="https://discord.gg/dankmemer")
             try:
@@ -694,7 +694,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         else:
             now = round(time.time())
             await self.client.db.execute("INSERT INTO modlog (guild_id, moderator_id, offender_id, action, reason, start_time) VALUES ($1, $2, $3, $4, $5, $6)", ctx.guild.id, ctx.author.id, member.id, "ban", reason, now)
-            msg = f"**{ctx.author}** has banned **{member}**."
+            msg = f"**{ctx.author}** has banned **{proper_userf(member)}**."
             if reason is not None:
                 msg += f"\nReason: {reason}"
             await ctx.send(msg)
@@ -709,15 +709,15 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         if member is None:
             return await ctx.send("You need to tell me who you want to untimeout.")
         if member.communication_disabled_until is None or member.communication_disabled_until < discord.utils.utcnow():
-            return await ctx.send(f"{member} is not currently on a timeout.")
+            return await ctx.send(f"{proper_userf(member)} is not currently on a timeout.")
         try:
             if reason is None:
-                auditreason = f"Requested by {ctx.author.name}#{ctx.author.discriminator} ({ctx.author.id}"
+                auditreason = f"Requested by {proper_userf(ctx.author)} ({ctx.author.id}"
             else:
-                auditreason = reason + f" | Requested by {ctx.author.name}#{ctx.author.discriminator} ({ctx.author.id}"
+                auditreason = reason + f" | Requested by {proper_userf(ctx.author)} ({ctx.author.id}"
             await member.timeout(until=None, reason=auditreason)
         except discord.Forbidden:
-            return await ctx.send(f"I do not have permission to remove {member}'s timeout.")
+            return await ctx.send(f"I do not have permission to remove {proper_userf(member)}'s timeout.")
         else:
             await ctx.send(f"{member.name}'s timeout successfully removed.")
 
@@ -731,7 +731,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
             return await ctx.send("Whose modlog are you checking??")
         modlog = await self.client.db.fetch("SELECT * FROM modlog WHERE offender_id = $1 ORDER BY case_id DESC", user.id)
         if len(modlog) < 1:
-            embed = discord.Embed(title="Mod Log", description="Nothing to see here, move along 👋").set_author(icon_url=user.display_avatar.url, name=f"{user} ({user.id}")
+            embed = discord.Embed(title="Mod Log", description="Nothing to see here, move along 👋").set_author(icon_url=user.display_avatar.url, name=f"{proper_userf(user)} ({user.id}")
             return await ctx.send(embed=embed)
         else:
             pag = SingleMenuPaginator(pages=ModlogPagination(modlog, user, 10, self.client).get_pages())
@@ -831,7 +831,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
             return await ctx.send("You need to specify a user.")
         names = await self.client.db.fetch("SELECT * FROM name_changes WHERE user_id = $1", member.id)
         if len(names) == 0:
-            return await ctx.send(f"There has been no name changes recorded for {member}.\nName changes are only recorded starting from 9 Jan 2022.")
+            return await ctx.send(f"There has been no name changes recorded for {proper_userf(member)}.\nName changes are only recorded starting from 9 Jan 2022.")
         buffer = []
         for nameentry in names:
             name = nameentry.get('name')
@@ -850,7 +850,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
             return await ctx.send("You need to specify a user.")
         nicknames = await self.client.db.fetch("SELECT * FROM nickname_changes WHERE member_id = $1", member.id)
         if len(nicknames) == 0:
-            return await ctx.send(f"There has been no nickname changes recorded for {member}.\nNickname changes are only recorded starting from 9 Jan 2022.")
+            return await ctx.send(f"There has been no nickname changes recorded for {proper_userf(member)}.\nNickname changes are only recorded starting from 9 Jan 2022.")
         buffer = []
         for nicknameentry in nicknames:
             nickname = nicknameentry.get('nickname')
@@ -920,10 +920,10 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         embed = discord.Embed(title=f"{ctx.author.name}'s watchlist", description = "", color = self.client.embed_color)
         for user in buffer:
             if len(embed.description) < 3900:
-                embed.description += f"{user}\n"
+                embed.description += f"{proper_userf(user)}\n"
             else:
                 va = len(buffer) - len(embed.description.split("\n"))
-                embed.description += f"{user}\n**and {va} more users...**"
+                embed.description += f"{proper_userf(user)}\n**and {va} more users...**"
                 break
         embed.set_footer(text=f"There are {len(buffer)} users on your watchlist.")
         ChangeNotifyView = ChangeWatchlistNotify(self.client, user_notify_method if user_notify_method is not None else 0, ctx.author)
@@ -1247,7 +1247,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
                 mainview.stop()
             else:
                 if time_until_expiry - time.time() > 60:
-                    ping_user = f"{user}"
+                    ping_user = f"{proper_userf(user)}"
                 else:
                     ping_user = f"{user.mention}"
                 content = f"⚠️**{ping_user}, read this message**."
@@ -1269,7 +1269,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
             color=discord.Color.green() if mainview.user_completed_captcha is True else discord.Color.red(),
             timestamp=discord.utils.utcnow()
         )
-        embed.set_author(name=f"{user} ({user.id})", icon_url=user.display_avatar.url)
+        embed.set_author(name=f"{proper_userf(user)} ({user.id})", icon_url=user.display_avatar.url)
         embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon.url)
         if mainview.user_completed_captcha is True:
             descriptions = [
@@ -1300,7 +1300,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         try:
             m = await channel.fetch_message(message_id.id)
         except discord.NotFound:
-            add = f"Did you forget to specify the channel at the end?\n```\n{ctx.prefix}{ctx.command} {member} {message_id} <channel>\n```" if channel == ctx.channel else ""
+            add = f"Did you forget to specify the channel at the end?\n```\n{ctx.prefix}{ctx.command} {proper_userf(member)} {message_id} <channel>\n```" if channel == ctx.channel else ""
             await ctx.send(f"I could not find a message with the ID {message_id.id} in {channel.mention}. {add}")
         except discord.Forbidden:
             await ctx.send(f"I'm not allowed to view the messages for {channel.mention}.")
@@ -1318,7 +1318,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
                         status = f"`[{m.reactions.index(react)+1}/{len(m.reactions)}]` Checking {index}/{react.count} users for the reaction {react.emoji}"
                         await upd.update(status)
                         if user.id == member.id:
-                            users_reactions.append(f"**{user}** reacted to {react.emoji}")
+                            users_reactions.append(f"**{proper_userf(user)}** reacted to {react.emoji}")
             print("reactions checked")
             if len(users_reactions) == 0:
                 await upd.update(status + "\n\n**Reactions were checked**, no results were found.", force=True)

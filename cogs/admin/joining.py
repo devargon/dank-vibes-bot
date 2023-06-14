@@ -3,14 +3,14 @@ import asyncio
 import discord
 from utils import checks
 from discord.ext import commands
-from utils.format import get_command_name
+from utils.format import get_command_name, proper_userf
 from utils.converters import BetterRoles, AllowDeny
 import json
 from utils.format import ordinal
 from utils.buttons import confirm
 
 def format_custom(text: str, member: discord.Member):
-    text = text.replace('{member}', f"{member.name}#{member.discriminator}")
+    text = text.replace('{member}', f"{proper_userf(member)}")
     text = text.replace('{member_mention}', member.mention)
     text = text.replace('{count}', ordinal(member.guild.member_count))
     return text

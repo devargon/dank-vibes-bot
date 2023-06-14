@@ -9,6 +9,7 @@ from main import dvvt
 from utils import checks
 from utils.buttons import confirm
 from utils.context import DVVTcontext
+from utils.format import proper_userf
 
 accepted_lottery_types = ['dank', 'karuta', 'owo', 'ckaruta']
 
@@ -139,9 +140,9 @@ class Lottery(commands.Cog):
     async def check_non_hoster_consent(self, ctx: DVVTcontext, lottery_hoster: int):
         if ctx.author.id != lottery_hoster:
             us = self.client.get_user(lottery_hoster)
-            us = f"{us}" if us else str(lottery_hoster)
+            us = f"{proper_userf(us)}" if us else str(lottery_hoster)
             confirmview = confirm(ctx, self.client, 30.0)
-            confirmembed = discord.Embed(title="You are not the host of this lottery.", description=f"{us} is the host of this lottery, are you sure you want to continue?", color=discord.Color.orange())
+            confirmembed = discord.Embed(title="You are not the host of this lottery.", description=f"{proper_userf(us)} is the host of this lottery, are you sure you want to continue?", color=discord.Color.orange())
             confirmview.response = await ctx.send(embed=confirmembed, view=confirmview)
             await confirmview.wait()
             if confirmview.returning_value is not True:
@@ -195,7 +196,7 @@ class Lottery(commands.Cog):
                 to_commit.append((lottery_id, next_lottery_number, reserved_entry.get('lottery_user')))
                 us = self.client.get_user(reserved_entry.get('lottery_user'))
                 us = str(us) if us is not None else reserved_entry.get('lottery_user')
-                summary.append(f"<:DVB_True:887589686808309791> **{us}** entered as `{next_lottery_number}` (reserved)")
+                summary.append(f"<:DVB_True:887589686808309791> **{proper_userf(us)}** entered as `{next_lottery_number}` (reserved)")
                 last_lottery_number = next_lottery_number
                 next_lottery_number += 1
             else:
@@ -224,8 +225,8 @@ class Lottery(commands.Cog):
         if (chan := ctx.guild.get_channel(lottery_chan_id)) is not None:
             for lottery_id, lottery_number, lottery_user_id in to_commit:
                 us = self.client.get_user(lottery_user_id)
-                us = f"{us.mention} (`{us}`)" if us is not None else lottery_user_id
-                em = discord.Embed(description=f"{lottery_number}. {us}", color=discord.Color.random())
+                us = f"{us.mention} (`{proper_userf(us)}`)" if us is not None else lottery_user_id
+                em = discord.Embed(description=f"{lottery_number}. {proper_userf(us)}", color=discord.Color.random())
                 await chan.send(embed=em)
 
 
@@ -329,7 +330,7 @@ class Lottery(commands.Cog):
             entries_str = []
             for entry in await self.client.db.fetch("SELECT * FROM lottery_reserved_entries WHERE lottery_id=$1", lottery_id):
                 if (us := self.client.get_user(entry.get('lottery_user'))) is not None:
-                    us_placement = f"{us.name}#{us.discriminator}"
+                    us_placement = proper_userf(us)
                 else:
                     us_placement = f"{entry.get('lottery_user')}"
                 entries_str.append(f"{us_placement}: `{entry.get('lottery_number')}`")
@@ -343,13 +344,13 @@ class Lottery(commands.Cog):
             if (num_reserved_entry := await self.client.db.fetchrow("SELECT * FROM lottery_reserved_entries WHERE lottery_id=$1 AND lottery_number = $2", lottery_id, lottery_number)) is not None:
                 if num_reserved_entry.get('lottery_user') != user.id:
                     us = self.client.get_user(num_reserved_entry.get('lottery_user'))
-                    us = f"{us} ({us.id})" if us is not None else num_reserved_entry.get('lottery_user')
-                    return await ctx.send(f"The lottery number `{lottery_number}` is already reserved for **{us}**.")
+                    us = f"{proper_userf(us)} ({us.id})" if us is not None else num_reserved_entry.get('lottery_user')
+                    return await ctx.send(f"The lottery number `{lottery_number}` is already reserved for **{proper_userf(us)}**.")
                 await self.client.db.execute("DELETE FROM lottery_reserved_entries WHERE lottery_id=$1 AND lottery_user=$2 AND lottery_number = $3", lottery_id, user.id, lottery_number)
-                return await ctx.send(f"Removed **{user}**'s `{lottery_number}` entry from the lottery's reserved entries.")
+                return await ctx.send(f"Removed **{proper_userf(user)}**'s `{lottery_number}` entry from the lottery's reserved entries.")
             else:
                 await self.client.db.execute("INSERT INTO lottery_reserved_entries(lottery_id, lottery_user, lottery_number) VALUES($1, $2, $3)", lottery_id, user.id, lottery_number)
-                return await ctx.send(f"Added **{user}**'s `{lottery_number}` entry to the lottery's reserved entries.")
+                return await ctx.send(f"Added **{proper_userf(user)}**'s `{lottery_number}` entry to the lottery's reserved entries.")
 
 
     @checks.has_permissions_or_role(manage_roles=True)
@@ -415,8 +416,8 @@ class Lottery(commands.Cog):
                         lottery_chan_id = get_lotto_channel(ctx.guild.id, type_of_lottery)
                         if (chan := ctx.guild.get_channel(lottery_chan_id)) is not None:
                             us = self.client.get_user(reserved_entry.get('lottery_user'))
-                            us = f"{us.mention} (`{us}`)" if us is not None else reserved_entry.get('lottery_user')
-                            em = discord.Embed(description=f"{max_lotto_no}. {us}", color=discord.Color.random())
+                            us = f"{us.mention} (`{proper_userf(us)}`)" if us is not None else reserved_entry.get('lottery_user')
+                            em = discord.Embed(description=f"{max_lotto_no}. {proper_userf(us)}", color=discord.Color.random())
                             await chan.send(embed=em)
                         await ctx.send(f"User `{reserved_entry.get('lottery_user')}` has been added to the back of the lottery since they have a reserved number.")
                 if max_lotto_no < 1:

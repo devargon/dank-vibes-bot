@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from utils.converters import BetterBetterRoles, BetterColor
+from utils.format import proper_userf
 from utils.buttons import confirm
 from utils.paginator import SingleMenuPaginator
 from typing import Union, Optional
@@ -35,7 +36,7 @@ class CustomRoleManagement(commands.Cog):
                     role = ctx.guild.get_role(role_db.get('role_id'))
                     if role is not None:
                         member = self.client.get_user(role_db.get('user_id'))
-                        member_disp = f"{member} {member.mention}" if member is not None else f"{role_db.get('user_id')} (unknown)"
+                        member_disp = f"{proper_userf(member)} {member.mention}" if member is not None else f"{role_db.get('user_id')} (unknown)"
                         embed.add_field(name=role.name, value=member_disp, inline=True)
                         if len(embed) > 6000:
                             embed.remove_field(-1)
@@ -58,13 +59,13 @@ class CustomRoleManagement(commands.Cog):
                 member = member_or_role
                 role_db = await self.client.db.fetchrow("SELECT role_id FROM customroles WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, member.id)
                 if role_db is None:
-                    await ctx.send(f"**{member}** does not own a custom role.")
+                    await ctx.send(f"**{proper_userf(member)}** does not own a custom role.")
                 else:
                     role = ctx.guild.get_role(role_db.get('role_id'))
                     if role is None:
-                        await ctx.send(f"**{member}** does not own a custom role.")
+                        await ctx.send(f"**{proper_userf(member)}** does not own a custom role.")
                     else:
-                        embed = discord.Embed(title=f"{member} owns the custom role", description=role.mention, color=self.client.embed_color)
+                        embed = discord.Embed(title=f"{proper_userf(member)} owns the custom role", description=role.mention, color=self.client.embed_color)
                         await ctx.send(embed=embed)
             elif isinstance(member_or_role, discord.Role) or isinstance(member_or_role, BetterBetterRoles):
                 role = member_or_role
@@ -76,7 +77,7 @@ class CustomRoleManagement(commands.Cog):
                     for role_db in roles_db:
                         user = self.client.get_user(role_db.get('user_id'))
                         if user is not None:
-                            roles_disp.append(f"• **{user}** ({user.mention})")
+                            roles_disp.append(f"• **{proper_userf(user)}** ({user.mention})")
                     embed = discord.Embed(title=f"{role} is owned by these users:", description="\n".join(roles_disp), color=self.client.embed_color)
                     await ctx.send(embed=embed)
             else:
@@ -102,7 +103,7 @@ class CustomRoleManagement(commands.Cog):
         existing = await self.client.db.fetchrow("SELECT * FROM customroles WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, member.id)
         if existing is not None:
             confirmview = confirm(ctx, self.client, 30)
-            embed = discord.Embed(title=f"Are you sure you want to change {member}'s custom role?", description=f"**{member}** currently owns the custom role <@&{existing.get('role_id')}>.", color=discord.Color.yellow())
+            embed = discord.Embed(title=f"Are you sure you want to change {proper_userf(member)}'s custom role?", description=f"**{proper_userf(member)}** currently owns the custom role <@&{existing.get('role_id')}>.", color=discord.Color.yellow())
             confirmview.response = await ctx.send(embed=embed, view=confirmview)
             await confirmview.wait()
             if confirmview.returning_value is not True:
@@ -135,9 +136,9 @@ class CustomRoleManagement(commands.Cog):
                 else:
                     formatted_existing_owners.append(f"{existing_user}")
 
-        finalmsg = [f"**{member}** now owns the custom role **{role.name}**."]
+        finalmsg = [f"**{proper_userf(member)}** now owns the custom role **{role.name}**."]
         if added_role:
-            finalmsg.append(f"It has been automatically added to **{member}**'s roles.")
+            finalmsg.append(f"It has been automatically added to **{proper_userf(member)}**'s roles.")
         if len(formatted_existing_owners) > 0:
             finalmsg.append(f"⚠️ **{', '.join(formatted_existing_owners)} also own this role.**")
         if not can_handle:
@@ -157,14 +158,14 @@ class CustomRoleManagement(commands.Cog):
             member = member_or_role
             existing = await self.client.db.fetchrow("SELECT * FROM customroles WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, member.id)
             if existing is None:
-                await ctx.send(f"**{member}** does not own a custom role.")
+                await ctx.send(f"**{proper_userf(member)}** does not own a custom role.")
             else:
                 role_id = existing.get('role_id')
                 role = ctx.guild.get_role(role_id)
                 if role is not None and role < ctx.me.top_role:
                     await member.remove_roles(role, reason=f"Custom Role Removed by {ctx.author} ({ctx.author.id})")
                 await self.client.db.execute("DELETE FROM customroles WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, member.id)
-                await ctx.send(f"**{member}** no longer owns the custom role **{role.name if role is not None else role_id}**.")
+                await ctx.send(f"**{proper_userf(member)}** no longer owns the custom role **{role.name if role is not None else role_id}**.")
         else:
             role: discord.Role = member_or_role
             existing = await self.client.db.fetch("SELECT * FROM customroles WHERE guild_id = $1 AND role_id = $2", ctx.guild.id, role.id)

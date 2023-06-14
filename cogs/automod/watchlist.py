@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from utils.format import proper_userf
 
 from main import dvvt
 
@@ -20,7 +21,7 @@ class WatchList(commands.Cog):
             for row in result:
                 remarks = row.get('remarks')
                 remarks = "" if remarks is None else f"\n**Remarks:** {remarks}"
-                msg = f"{member.mention} **{member}** ({member.id}) has joined **{member.guild.name}**. {remarks}"
+                msg = f"{member.mention} **{proper_userf(member)}** ({member.id}) has joined **{member.guild.name}**. {remarks}"
 
                 user_id = row['user_id']
                 if (notifier := member.guild.get_member(user_id)) is not None:

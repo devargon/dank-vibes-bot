@@ -1,17 +1,15 @@
 import sys
-import typing
 
 import discord
 import traceback
 from io import BytesIO
-from typing import Sequence, Iterator, Literal
+from typing import Sequence, Iterator, Literal, Optional, Union
 from discord.ext import commands
 import inflect
 import math
 from expr import evaluate
 import aiohttp
 from utils.errors import ArgumentBaseError
-from typing import Optional, Union
 
 p = inflect.engine()
 
@@ -66,9 +64,12 @@ def short_time(duration:int):
         return f'{math.ceil(duration_in_days)}d'
 
 
-def proper_userf(user: typing.Union[discord.Member, discord.User]):
-    if user.discriminator > 0:
-        return f"{user.name}#{user.discriminator}"
+def proper_userf(user: Union[discord.Member, discord.User], show_at_symbol: Optional[bool] = True):
+    if user.discriminator is not None:
+        if user.discriminator.isnumeric and int(user.discriminator) > 0:
+            return f"{user.name}#{user.discriminator}"
+        else:
+            return f"@{user.name}"
     else:
         return f"@{user.name}"
 

@@ -10,7 +10,7 @@ from discord.ext import commands, menus
 from utils import checks
 import re
 import time
-from utils.format import comma_number, stringnum_toint
+from utils.format import comma_number, stringnum_toint, proper_userf
 from utils.buttons import confirm
 from utils.converters import BetterInt
 from datetime import datetime, timedelta
@@ -167,7 +167,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                 result.get('today') + number, result.get('past_week') + number, result.get('last_week'),
                 result.get('past_month') + number, result.get('all_time') + number, round(time.time()),
                 ctx.message.jump_url, member.id, column='today')
-        await ctx.send(f"<:DVB_checkmark:955345523139805214> `⏣ {comma_number(number)}` successfully logged for **{member}** ({member.id})!\nNew value: `⏣ {comma_number(today)}`")
+        await ctx.send(f"<:DVB_checkmark:955345523139805214> `⏣ {comma_number(number)}` successfully logged for **{proper_userf(member)}** ({member.id})!\nNew value: `⏣ {comma_number(today)}`")
         add_donations_cmd = self.client.get_command('adddonations')
         ctx = await self.client.get_context(ctx.message)
         ctx.author = ctx.guild.get_member(264019387009204224)
@@ -185,7 +185,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         if number is None:
             return await ctx.send("There was a problem converting your requested sum to a number. You might have input an incorrect number.")
         confirmview = confirm(ctx, self.client, 10.0)
-        embed = discord.Embed(title="Action awaiting confirmation", description=f"Do you want this amount to be added to {member}'s daily, weekly and monthly stats? Otherwise, it will only be added in 'all time'.", color=self.client.embed_color)
+        embed = discord.Embed(title="Action awaiting confirmation", description=f"Do you want this amount to be added to {proper_userf(member)}'s daily, weekly and monthly stats? Otherwise, it will only be added in 'all time'.", color=self.client.embed_color)
         message = await ctx.send(embed=embed, view=confirmview)
         confirmview.response = message
         await confirmview.wait()
@@ -194,14 +194,14 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             return await message.edit(embed=embed)
         result = await self.client.db.fetchrow("SELECT * FROM grinderdata WHERE user_id = $1", member.id)
         if confirmview.returning_value == False:
-            embed.color, embed.description = discord.Color.green(), f"{member}'s grinder statistics has been updated for **all time**. "
+            embed.color, embed.description = discord.Color.green(), f"{proper_userf(member)}'s grinder statistics has been updated for **all time**. "
             if result is None:
                 await self.client.db.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)", member.id, 0, 0, 0, 0, number, round(time.time()), ctx.message.jump_url)
             else:
                 await self.client.db.execute("UPDATE grinderdata SET all_time = $1, last_dono_time = $2, last_dono_msg = $3 WHERE user_id = $4", result.get('all_time') + number, round(time.time()), ctx.message.jump_url, member.id)
             await message.edit(embed=embed)
         elif confirmview.returning_value == True:
-            embed.color, embed.description = discord.Color.green(), f"All of {member}'s grinder statistics has been updated."
+            embed.color, embed.description = discord.Color.green(), f"All of {proper_userf(member)}'s grinder statistics has been updated."
             if result is None:
                 await self.client.db.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)", member.id, number, number, 0, number, number, round(time.time()), ctx.message.jump_url)
             else:
@@ -223,7 +223,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         if number is None:
             return await ctx.send("There was a problem converting your requested sum to a number. You might have input an incorrect number.")
         confirmview = confirm(ctx, self.client, 10.0)
-        embed = discord.Embed(title="Action awaiting confirmation", description=f"Do you want {member}'s all time coins donated to be `⏣ {comma_number(number)}`? This will not change their daily, weekly and monthly statistics (to ensure consistency accross the data).", color=self.client.embed_color)
+        embed = discord.Embed(title="Action awaiting confirmation", description=f"Do you want {proper_userf(member)}'s all time coins donated to be `⏣ {comma_number(number)}`? This will not change their daily, weekly and monthly statistics (to ensure consistency accross the data).", color=self.client.embed_color)
         message = await ctx.send(embed=embed, view=confirmview)
         confirmview.response = message
         await confirmview.wait()
@@ -235,7 +235,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             embed.color, embed.description = discord.Color.red(), f"Action cancelled."
             return await message.edit(embed=embed)
         elif confirmview.returning_value == True:
-            embed.color, embed.description = discord.Color.green(), f"All of {member}'s grinder statistics has been updated. BTW, I did not automatically add them to the Dank Memer weekly donation leaderboard."
+            embed.color, embed.description = discord.Color.green(), f"All of {proper_userf(member)}'s grinder statistics has been updated. BTW, I did not automatically add them to the Dank Memer weekly donation leaderboard."
             if result is None:
                 await self.client.db.execute("INSERT INTO grinderdata VALUES($1, $2, $3, $4, $5, $6, $7, $8)", member.id, 0, 0, 0, 0, number, round(time.time()), ctx.message.jump_url)
             else:
@@ -298,7 +298,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                     total = await self.client.db.fetchrow("SELECT SUM(all_time) FROM grinderdata")
                     logembed = discord.Embed(description=f"**Grinder**: {member.mention}\n**Amount**: `⏣ {comma_number(amt)}`\nClick [here]({message.jump_url}) to view.\n`⏣ {comma_number(int(total.get('sum')))}` total grinded by grinders!", color=self.client.embed_color, timestamp=discord.utils.utcnow())
                     logembed.set_footer(text=f"{message.guild.name} Grinder Log", icon_url=message.guild.icon.url)
-                    await self.client.get_channel(grinderlogID).send(f"A grinder transaction by `{member} ({member.id})` has been logged.", embed=logembed)
+                    await self.client.get_channel(grinderlogID).send(f"A grinder transaction by `{proper_userf(member)} ({member.id})` has been logged.", embed=logembed)
                     chan_msgs = [f"{member.mention}, your donation of **⏣ {comma_number(amt)}** has been logged. Thank you for your contributions to Dank Vibes!"]
                     add_donations_cmd = self.client.get_command('adddonations')
                     ctx = await self.client.get_context(message)
@@ -556,5 +556,5 @@ Done! Note: People who **did not** complete the req won't be told they didn't co
             old_amt = current.get('advance_amt') or 0
             new_amt = old_amt + amount
             await self.client.db.execute("UPDATE grinderdata SET advance_amt = $1 WHERE user_id = $2", new_amt, member.id)
-        embed = discord.Embed(title=f"Summary for {member}'s In Advance statistics", description=f"Old Amount: `⏣ {comma_number(old_amt)}`\nNew Amount: `⏣ {comma_number(new_amt)}` (+ ⏣ {comma_number(amount)})", color=discord.Color.green())
+        embed = discord.Embed(title=f"Summary for {proper_userf(member)}'s In Advance statistics", description=f"Old Amount: `⏣ {comma_number(old_amt)}`\nNew Amount: `⏣ {comma_number(new_amt)}` (+ ⏣ {comma_number(amount)})", color=discord.Color.green())
         await ctx.send(embed=embed)

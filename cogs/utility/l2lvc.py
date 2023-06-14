@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from utils.format import proper_userf
 
 class L2LVC(commands.Cog):
     def __init__(self, client):
@@ -16,8 +17,8 @@ class L2LVC(commands.Cog):
             return
         if after.channel is not None:
             if after.channel.id == 838437334553985045:
-                await member.add_roles(l2lrole, reason=f"{member} joined the Last to Leave VC") # if member joined (from anywhere)
+                await member.add_roles(l2lrole, reason=f"{proper_userf(member)} joined the Last to Leave VC") # if member joined (from anywhere)
             elif before.channel is not None and before.channel.id == 838437334553985045:
-                await member.remove_roles(l2lrole, reason=f"{member} left the Last to Leave VC") # if member left L2L vc to another vc
+                await member.remove_roles(l2lrole, reason=f"{proper_userf(member)} left the Last to Leave VC") # if member left L2L vc to another vc
         elif before.channel is not None and before.channel.id == 838437334553985045:
-            await member.remove_roles(l2lrole, reason=f"{member} left the Last to Leave VC") # if member left L2L VC
+            await member.remove_roles(l2lrole, reason=f"{proper_userf(member)} left the Last to Leave VC") # if member left L2L VC

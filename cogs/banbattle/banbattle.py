@@ -6,7 +6,7 @@ import contextlib
 
 import typing
 from utils.time import humanize_timedelta
-
+from utils.format import proper_userf
 from utils import checks
 from utils.buttons import *
 from discord.ext import commands
@@ -99,20 +99,20 @@ class BanBattle(commands.Cog, name='banbattle'):
         available_shield_role = ctx.guild.get_role(AVAILABLE_SHIELD)
         spectator_role = ctx.guild.get_role(SPECTATOR)
         if active_shield_role in member.roles:
-            return await ctx.send(f"{'You already have' if ctx.author == member else f'**{member}** already has'} an active shield.")
+            return await ctx.send(f"{'You already have' if ctx.author == member else f'**{proper_userf(member)}** already has'} an active shield.")
         if available_shield_role in ctx.author.roles:
             if spectator_role in member.roles:
                 if member == ctx.author:
                     return await ctx.send("You can't use your banshield on yourself as you're already eliminated.")
                 else:
-                    return await ctx.send(f"You can't use your banshield on **{member}** as they're already eliminated.")
+                    return await ctx.send(f"You can't use your banshield on **{proper_userf(member)}** as they're already eliminated.")
             else:
                 duration = random.randint(5, 20)
                 await ctx.send(f"Banshield activated for {humanize_timedelta(seconds=duration)}!", delete_after=3.0)
                 descriptions = []
                 descriptions.append(f"Activated by: `{ctx.author}` {ctx.author.mention} (`{ctx.author.id}`)")
                 if ctx.author != member:
-                    descriptions.append(f"Used on: `{member}` {member.mention} (`{member.id}`)")
+                    descriptions.append(f"Used on: `{proper_userf(member)}` {member.mention} (`{member.id}`)")
                 descriptions.append(f"Duration: **{humanize_timedelta(seconds=duration)}**")
                 embed = discord.Embed(title="Banshield activated!", description="\n".join(descriptions), color=self.client.embed_color)
                 await ctx.guild.get_channel(BANSHIELD_LOGS).send(embed=embed)
@@ -120,7 +120,7 @@ class BanBattle(commands.Cog, name='banbattle'):
                     await ctx.author.remove_roles(available_shield_role)
                 with contextlib.suppress(discord.HTTPException):
                     await member.add_roles(active_shield_role)
-                descriptions = f"User: `{member}` {member.mention}\nID: `{member.id}`\nDuration: **{humanize_timedelta(seconds=duration)}**"
+                descriptions = f"User: `{proper_userf(member)}` {member.mention}\nID: `{member.id}`\nDuration: **{humanize_timedelta(seconds=duration)}**"
                 dm_embed = discord.Embed(title="Banshield Activated!", description=descriptions, color=self.client.embed_color)
                 with contextlib.suppress(discord.Forbidden):
                     await ctx.author.send("Your banshield has been activated!", embed=dm_embed)

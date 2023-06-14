@@ -11,6 +11,7 @@ import discord
 from discord.ext import commands
 
 from utils import checks
+from utils.format import proper_userf
 
 
 class Decancer(commands.Cog):
@@ -67,10 +68,10 @@ class Decancer(commands.Cog):
             return
         color = self.client.embed_color
         description = [
-            f"**Offender:** {member} {member.mention}",
+            f"**Offender:** {proper_userf(member)} {member.mention}",
             f"**Reason:** Remove cancerous characters from previous name",
             f"**New Nickname:** {new_nick}",
-            f"**Responsible Moderator:** {moderator} {moderator.mention}",
+            f"**Responsible Moderator:** {proper_userf(moderator)} {moderator.mention}",
         ]
         embed = discord.Embed(
             color=discord.Color(color),
@@ -98,7 +99,7 @@ class Decancer(commands.Cog):
         new_cool_nick = await self.nick_maker(ctx.guild, m_nick)
         if m_nick != new_cool_nick:
             await user.edit(reason=f"Old name ({m_nick}): contained special characters", nick=new_cool_nick)
-            await ctx.send(f"<:DVB_True:887589686808309791> {user}'s name **{m_nick}** was changed to **{new_cool_nick}**.")
+            await ctx.send(f"<:DVB_True:887589686808309791> {proper_userf(user)}'s name **{m_nick}** was changed to **{new_cool_nick}**.")
             guild = ctx.guild
             await self.decancer_log(guild, user, ctx.author, m_nick, new_cool_nick, "Manual Decancer 👷‍♂️")
             try:

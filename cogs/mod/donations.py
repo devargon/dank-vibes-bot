@@ -4,7 +4,7 @@ from discord.ext import commands, menus
 from utils.buttons import confirm
 from utils.errors import ArgumentBaseError
 from utils.menus import CustomMenu
-from utils.format import comma_number
+from utils.format import comma_number, proper_userf
 from utils.converters import BetterInt
 from utils import checks
 from time import time
@@ -173,7 +173,7 @@ class donations(commands.Cog):
                         if i < users:
                             member = ctx.guild.get_member(entry.get('user_id')) or entry.get('user_id')
                             value = comma_number(entry.get('value'))
-                            donations.append((f"{i+1}. {member}", value))
+                            donations.append((f"{i+1}. {proper_userf(member)}", value))
                     footer = f"{len(leaderboard)} users have donated, amounting to a total {comma_number(sum([entry.get('value') for entry in leaderboard]))} donated"
                     if len(donations) <= 10:
                         leaderboard_embed = discord.Embed(title=title, color=self.client.embed_color).set_footer(text=footer)
@@ -277,16 +277,16 @@ class donations(commands.Cog):
         if notify_about_logging is not True:
             if ctx.channel.id == 652729093649072168:
                 structure = f"/d log [user,amount]"
-                commandname = f"/d option: log args: @{member},amount"
+                commandname = f"/d option: log args: @{proper_userf(member, False)},amount"
             elif ctx.channel.id == 847395046301892628:
                 structure = f"/log karuta [user,amount]"
-                commandname = f"/log option: karuta args: @{member},amount"
+                commandname = f"/log option: karuta args: @{proper_userf(member, False)},amount"
             elif ctx.channel.id == 847457835913576508:
                 structure = f"/log owo [user,amount]"
-                commandname = f"/log option: owo args: @{member},amount"
+                commandname = f"/log option: owo args: @{proper_userf(member, False)},amount"
             elif ctx.channel.id == 878857174099562506:
                 structure = f"/log poke [user,amount]"
-                commandname = f"/log option: poke args: @{member},amount"
+                commandname = f"/log option: poke args: @{proper_userf(member, False)},amount"
             else:
                 return
             msg = f"**{ctx.author.display_name}**, remember to start logging your donations!\n\nSlash command: `{structure}`\nExample: `{commandname}`"
@@ -364,7 +364,7 @@ class donations(commands.Cog):
             for index, entry in enumerate(results):
                 member = ctx.guild.get_member(entry.get('user_id')) or entry.get('user_id')
                 value = comma_number(entry.get('value'))
-                um.append((f"{hm[index]} **{member}** [[{value}]](https://www.youtube.com/watch?v=dQw4w9WgXcQ)"))
+                um.append((f"{hm[index]} **{proper_userf(member)}** [[{value}]](https://www.youtube.com/watch?v=dQw4w9WgXcQ)"))
             embed = discord.Embed(title="Weekly Dank Memer Donations!", description="\n".join(um), color=self.client.embed_color).set_thumbnail(url="https://media.discordapp.net/attachments/767148393839329290/898670660174376960/DORY_STINKY_16.png")
             embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
             return await ctx.send(embed=embed)

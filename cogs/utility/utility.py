@@ -28,7 +28,7 @@ from utils.specialobjects import ContestSubmission, Contest
 from utils.time import humanize_timedelta
 from utils.errors import ArgumentBaseError
 from utils.converters import BetterTimeConverter
-from utils.format import ordinal, comma_number
+from utils.format import ordinal, comma_number, proper_userf
 
 from .l2lvc import L2LVC
 from .whois import Whois
@@ -342,7 +342,7 @@ class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreac
                     continue
             permissions = channel.permissions_for(member)
             if permissions.view_channel == True:
-                membersin.append(f"**{member}** {member.mention}")
+                membersin.append(f"**{proper_userf(member)}** {member.mention}")
         if owner is not None:
             owner_str = f"**{owner}** {owner.mention}"
             if owner not in channel.overwrites:
@@ -403,7 +403,7 @@ class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreac
                 if i < 100:
                     member = ctx.guild.get_member(entry.get('user_id')) or entry.get('user_id')
                     value = comma_number(entry.get('messagecount'))
-                    messages.append((f"{i+1}. {member}", value))
+                    messages.append((f"{i+1}. {proper_userf(member)}", value))
             footer = f"{len(leaderboard)} users have sent a total of {comma_number(sum([entry.get('messagecount') for entry in leaderboard]))} messages"
             if len(messages) <= 10:
                 leaderboard_embed = discord.Embed(title=title, color=self.client.embed_color).set_footer(text=footer)
@@ -511,7 +511,7 @@ class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreac
         else:
             return
         def generate_embed(user, name, url):
-            embed = discord.Embed(title=f"{user}'s {name}", color=self.client.embed_color)
+            embed = discord.Embed(title=f"{proper_userf(user)}'s {name}", color=self.client.embed_color)
             embed.set_image(url=url)
             return embed
         class AvatarView(discord.ui.View):
@@ -657,7 +657,7 @@ class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreac
                     user_id = str(submission.submitter_id)
                     user_avatar = discord.Embed.Empty
                 else:
-                    user_proper = f"{user.name}#{user.discriminator}"
+                    user_proper = proper_userf(user)
                     user_id = f"{user.id}"
                     user_avatar = user.display_avatar.with_size(128).url
                 emoji = emojis.get(index, "🏅") if index < 5 else ""

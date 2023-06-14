@@ -22,7 +22,7 @@ from itertools import islice
 from utils import checks
 from utils.time import humanize_timedelta
 from utils.errors import ArgumentBaseError, NicknameIsManaged
-from utils.format import generate_loadbar
+from utils.format import generate_loadbar, proper_userf
 
 from .dm import dm
 from .snipe import snipe
@@ -173,19 +173,19 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, n
             if target_has_shield_potion is not None:
                 if author_has_shield_potion == target_has_shield_potion:
                     doesauthorwin = random.choice([True, False])
-                    extra_info = f"Both {ctx.author} and {member} have drank a dumbfight shield potion, so the result was randomly decided."
+                    extra_info = f"Both {proper_userf(ctx.author)} and {proper_userf(member)} have drank a dumbfight shield potion, so the result was randomly decided."
                 else:
                     if target_has_shield_potion is True:
-                        extra_info = f"{member} has drank a dumbfight shield potion to make them win."
+                        extra_info = f"{proper_userf(member)} has drank a dumbfight shield potion to make them win."
                         doesauthorwin = False
                     elif author_has_shield_potion is False:
-                        extra_info = f"{ctx.author} has drank a dumbfight shield potion to make them lose."
+                        extra_info = f"{proper_userf(ctx.author)} has drank a dumbfight shield potion to make them lose."
                         doesauthorwin = False
                     elif target_has_shield_potion is False:
-                        extra_info = f"{member} has drank a dumbfight shield potion to make them lose."
+                        extra_info = f"{proper_userf(member)} has drank a dumbfight shield potion to make them lose."
                         doesauthorwin = True
                     elif author_has_shield_potion is True:
-                        extra_info = f"{ctx.author} has drank a dumbfight shield potion to make them win."
+                        extra_info = f"{proper_userf(ctx.author)} has drank a dumbfight shield potion to make them win."
                         doesauthorwin = True
             else:
                 if author_has_shield_potion is True:
@@ -197,10 +197,10 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, n
         else:
             if target_has_shield_potion is not None:
                 if target_has_shield_potion is True:
-                    extra_info = f"{member} has drank a dumbfight shield potion to make them win."
+                    extra_info = f"{proper_userf(member)} has drank a dumbfight shield potion to make them win."
                     doesauthorwin = False
                 else:
-                    extra_info = f"{member} has drank a dumbfight shield potion to make them lose."
+                    extra_info = f"{proper_userf(member)} has drank a dumbfight shield potion to make them lose."
                     doesauthorwin = True
 
             if ctx.author.id == 650647680837484556 and ctx.message.content.lower().endswith('win'):
@@ -354,8 +354,8 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, n
                 text += f"{member.mention} was dumbfoughted by <@{entry.get('invoker_id')}> and lost to them.\n"
             for entry in non_invoked_losses[:3]:
                 text += f"{member.mention} was dumbfoughted by <@{entry.get('invoker_id')}> and won to them.\n"
-            embed=discord.Embed(title=f"Dumbfight statistics for {member}", description=f"Number of dumbfights won: {len(won_dumbfights)}\nNumber of dumbfights lost: {len(lost_dumbfights)}\n\nNumber of wins from non-self-invoked dumbfights: {len(non_invoked_wins)}\nNumber of losses from non-self-invoked dumbfights: {len(non_invoked_losses)}\n\n**Total** number of **wins**: {len(won_dumbfights) + len(non_invoked_wins)}\n**Total** number of **losses**: {len(lost_dumbfights) + len(non_invoked_losses)}",color = 0x1E90FF if ctx.author.id == 650647680837484556 else 0xffcccb)
-            message = await ctx.send(f"React with 🥺 to view more information about **{member}**'s dumbfight statistics.", embed=embed)
+            embed=discord.Embed(title=f"Dumbfight statistics for {proper_userf(member)}", description=f"Number of dumbfights won: {len(won_dumbfights)}\nNumber of dumbfights lost: {len(lost_dumbfights)}\n\nNumber of wins from non-self-invoked dumbfights: {len(non_invoked_wins)}\nNumber of losses from non-self-invoked dumbfights: {len(non_invoked_losses)}\n\n**Total** number of **wins**: {len(won_dumbfights) + len(non_invoked_wins)}\n**Total** number of **losses**: {len(lost_dumbfights) + len(non_invoked_losses)}",color = 0x1E90FF if ctx.author.id == 650647680837484556 else 0xffcccb)
+            message = await ctx.send(f"React with 🥺 to view more information about **{proper_userf(member)}**'s dumbfight statistics.", embed=embed)
             await message.add_reaction("🥺")
             def check(payload):
                 return str(payload.emoji == "🥺") and payload.user_id == ctx.author.id  and payload.message_id == message.id
@@ -365,7 +365,7 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, n
                 await message.clear_reactions()
             else:
                 await message.clear_reactions()
-                embed.add_field(name=f"Last few wins and losses for {member}", value=text)
+                embed.add_field(name=f"Last few wins and losses for {proper_userf(member)}", value=text)
                 await message.edit(content="🥺", embed=embed)
 
     @checks.perm_insensitive_roles()
@@ -404,7 +404,7 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, n
             webhook = Webhook.from_url('https://canary.discord.com/api/webhooks/883563427455438858/GsF8ZPIemw6D-x6TIp7wO88ySQizKePKCS5zRA-EBtNfHRC15e9koti7-02GKBuoZ_Yi', session=session)
             embed=discord.Embed(title=f"Hideping command invoked with {ctx.me}", color=discord.Color.green())
             embed.add_field(name="Author", value=f"**{ctx.author}** ({ctx.author.id})", inline=True)
-            embed.add_field(name="Target", value=f"**{member}** ({member.id})", inline=True)
+            embed.add_field(name="Target", value=f"**{proper_userf(member)}** ({member.id})", inline=True)
             embed.add_field(name="Message", value=message or "No message", inline=True)
             await webhook.send(embed=embed, username=f"{self.client.user.name} Logs")
 
@@ -443,7 +443,7 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, n
         await self.client.db.execute("INSERT INTO cooldowns VALUES($1, $2, $3)", ctx.command.name, ctx.author.id, timenow + 10800)
         try:
             await genchat.set_permissions(ctx.author, overwrite=authornewoverwrite, reason=f"{ctx.author} invoked a lockdown with the lockgen command") # allows author to talk
-            await genchat.set_permissions(ctx.guild.default_role, overwrite = newoverwrite, reason = f"5 second lockdown initiated by {ctx.author.name}#{ctx.author.discriminator}") # does not allow anyone else to talk
+            await genchat.set_permissions(ctx.guild.default_role, overwrite = newoverwrite, reason = f"5 second lockdown initiated by {proper_userf(ctx.author)}") # does not allow anyone else to talk
         except discord.Forbidden:
             ctx.command.reset_cooldown(ctx)
             self.gen_is_muted = False
@@ -511,7 +511,7 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, n
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("Sorry! I am unable to change that user's name, probably due to role hierachy or missing permissions.")
         await self.client.db.execute("INSERT INTO freezenick(user_id, guild_id, nickname, old_nickname, time, reason, responsible_moderator) VALUES($1, $2, $3, $4, $5, $6, $7)", member.id, ctx.guild.id, new_name, member_name, round(time.time()) + 180, f"[Scrambled nickname]({ctx.message.jump_url})", ctx.author.id)
-        await ctx.send(f"{member}'s name is now {new_name}!\n{member.mention}, your nickname/username has been scrambled by **{ctx.author.name}** and it is frozen for 3 minutes. It will automatically revert to your previous nickname/username after. ")
+        await ctx.send(f"{proper_userf(member)}'s name is now {new_name}!\n{member.mention}, your nickname/username has been scrambled by **{ctx.author.name}** and it is frozen for 3 minutes. It will automatically revert to your previous nickname/username after. ")
 
     @commands.cooldown(10, 1, commands.BucketType.user)
     @commands.command(name="firstmessage", aliases=['fm'])
@@ -595,9 +595,12 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, n
                     pass
                 else:
                     if len(member.name) > 15:
-                        name = f"{member.name[0:15]}...#{member.discriminator}"
+                        if member.discriminator != 0:
+                            name = f"{member.name[0:15]}...#{member.discriminator}"
+                        else:
+                            name = f"@{member.name[0:15]}..."
                     else:
-                        name = f"{member.name}#{member.discriminator}"
+                        name = f"@{member.name}"
                     labels.append(name)
             sizes.append(entry[1])
         if len(labels) == 0:

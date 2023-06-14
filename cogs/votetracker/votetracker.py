@@ -8,7 +8,7 @@ from PIL import ImageFont, Image, ImageDraw
 from discord.ext import commands, tasks
 
 from main import dvvt
-from utils.format import print_exception, ordinal, plural, short_time
+from utils.format import print_exception, ordinal, plural, short_time, proper_userf
 from io import BytesIO
 from utils.buttons import *
 from utils import checks
@@ -207,7 +207,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
             guild = self.client.get_guild(guildid)
             member = guild.get_member(userid)
             if member is None or votingchannel is None or guild is None:
-                print(f"Some variables not found:\nMember: {member}\nVoting Channel: {votingchannel}\nGuild: {guild}")
+                print(f"Some variables not found:\nMember: {proper_userf(member)}\nVoting Channel: {votingchannel}\nGuild: {guild}")
                 return
             vdankster = guild.get_role(vdanksterid)
             rolesummary = "\u200b"  # If no roles are added, this will be in the section where the roles added are displayed.
@@ -250,7 +250,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
                 await self.add_item_count('snipepill', member, 1)
                 rolesummary += f"\nYou've received **1 <:DVB_SnipePill:983244179213783050> Snipe Pill** for every 2 votes!"
             embed = discord.Embed(title=f"Thank you for voting for {guild.name}, {member.name}!", description=f"You've voted **{plural(votecount):time}** so far.\n[You can vote for Dank Vibes on top.gg here!](https://top.gg/servers/595457764935991326/vote)", timestamp=discord.utils.utcnow(), color=self.client.embed_color)
-            embed.set_author(name=f"{member.name}#{member.discriminator} ({member.id})", icon_url=member.display_avatar.url)
+            embed.set_author(name=f"{proper_userf(member)} ({member.id})", icon_url=member.display_avatar.url)
             embed.set_footer(text=guild.name, icon_url=guild.icon.url)
             qbemojis = ["https://cdn.discordapp.com/emojis/869579459420913715.gif?v=1", "https://cdn.discordapp.com/emojis/869579448708653066.gif?v=1", "https://cdn.discordapp.com/emojis/869579493776457838.gif?v=1", "https://cdn.discordapp.com/emojis/869579480509841428.gif?v=1", "https://cdn.discordapp.com/emojis/873643650607894548.gif?v=1", "https://cdn.discordapp.com/emojis/871970548576559155.gif?v=1", "https://cdn.discordapp.com/emojis/872470665607909417.gif?v=1", "https://cdn.discordapp.com/emojis/830920902019514408.gif?v=1"]
             embed.set_thumbnail(url=random.choice(qbemojis))

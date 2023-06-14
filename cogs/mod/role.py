@@ -16,7 +16,7 @@ import re
 
 from utils.buttons import confirm
 from utils.converters import BetterColor, BetterBetterRoles
-from utils.format import generate_loadbar
+from utils.format import generate_loadbar, proper_userf
 from utils.time import humanize_timedelta
 
 regex = re.compile(
@@ -78,25 +78,25 @@ class Role(commands.Cog):
         if member is None:
             return await ctx.send("You need to specify a member to add a role.")
         if role is None:
-            return await ctx.send(f"You need to specify a role to add to {member}.")
+            return await ctx.send(f"You need to specify a role to add to **{proper_userf(member)}**.")
         if not role.is_assignable():
             return await ctx.send(
-                f"You cannot add **{role.name}** to **{member}**; this may be as the role is an integration, the role of another bot, guild default roles (like `@everyone`, Booster role), or that the role is higher than my highest role.")
+                f"You cannot add **{role.name}** to **{proper_userf(member)}**; this may be as the role is an integration, the role of another bot, guild default roles (like `@everyone`, Booster role), or that the role is higher than my highest role.")
         if role >= ctx.author.top_role:
             return await ctx.send(
-                f"You cannot add **{role.name}** to **{member}** as the role is higher than or the same as your own highest role.")
+                f"You cannot add **{role.name}** to **{proper_userf(member)}** as the role is higher than or the same as your own highest role.")
         if role in member.roles:
             try:
                 await member.remove_roles(role, reason=f"Requested by {ctx.author} ({ctx.author.id})")
             except discord.Forbidden:
-                return await ctx.send(f"I don't have permission to remove **{role.name}** from **{member}**.")
-            await ctx.send(f"Removed **{role.name}** from **{member}**.")
+                return await ctx.send(f"I don't have permission to remove **{role.name}** from **{proper_userf(member)}**.")
+            await ctx.send(f"Removed **{role.name}** from **{proper_userf(member)}**.")
         else:
             try:
                 await member.add_roles(role, reason=f"Requested by {ctx.author} ({ctx.author.id})")
             except discord.Forbidden:
-                return await ctx.send(f"I don't have permission to add **{role.name}** to **{member}**.")
-            await ctx.send(f"Added **{role.name}** to **{member}**.")
+                return await ctx.send(f"I don't have permission to add **{role.name}** to **{proper_userf(member)}**.")
+            await ctx.send(f"Added **{role.name}** to **{proper_userf(member)}**.")
 
     @checks.has_permissions_or_role(manage_roles=True)
     @role_cmd.command(name='icon')
@@ -335,7 +335,7 @@ class Role(commands.Cog):
         if len(failed) > 0:
             str_list = []
             for member, error in failed.items():
-                str_list.append(f"{member} ({member.id}): {error}")
+                str_list.append(f"{proper_userf(member)} ({member.id}): {error}")
             embed = discord.Embed(title=f"I couldn't remove the role from {len(failed)} people:", description="\n".join(str_list), color=discord.Color.red())
         else:
             embed = None

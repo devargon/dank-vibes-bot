@@ -3,6 +3,8 @@ import discord
 from datetime import datetime
 from discord.ext import commands
 from utils import checks
+from utils.format import proper_userf
+
 emojis = ["<:DVB_checkmark:955345523139805214>", "<:DVB_crossmark:955345521151737896>"]
 
 class DMPersistentView(discord.ui.View):
@@ -19,7 +21,7 @@ class DMPersistentView(discord.ui.View):
         if dmrequester is None:
             authordetails = dm_request.get('member_id')
         else:
-            authordetails = f"{dmrequester} ({dmrequester.id})"
+            authordetails = f"{proper_userf(dmrequester)} ({dmrequester.id})"
         dmtarget = interaction.guild.get_member(dm_request.get('target_id'))
         ID = dm_request.get('id')
         dmcontent = dm_request.get('dmcontent')
@@ -41,7 +43,7 @@ class DMPersistentView(discord.ui.View):
         await self.client.db.execute("INSERT INTO dmrequestslog values($1, $2, $3, $4, $5, $6)", ID, dmrequester.id if dmrequester else dm_request.get('member_id'), dmtarget.id if dmtarget else dm_request.get('target_id'), interaction.user.id, dmcontent, output[0]) # 0 : Denied, 1: Failed, 2 : Approved
         embed = discord.Embed(title="DM Request", description = dmcontent, color=discord.Color.green() if output[0] == 2 else discord.Color.red(), timestamp=discord.utils.utcnow())
         embed.set_author(name=authordetails)
-        dmtargetdetails = f"{dmtarget} {dmtarget.mention}" if dmtarget is not None else dmtarget
+        dmtargetdetails = f"{proper_userf(dmtarget)} {dmtarget.mention}" if dmtarget is not None else dmtarget
         embed.add_field(name="DM Target", value=f"{dmtargetdetails}")
         embed.add_field(name="Status", value=output[1], inline=True)
         if dmrequester is not None:
@@ -56,11 +58,11 @@ class DMPersistentView(discord.ui.View):
             elif output[1] == "Failed: Targetted user to DM has left the server":
                 msgcontent = "The user who you attempted to send an anonymous DM has left the server. Sorry about that!"
             elif output[1] == "Failed: Unable to DM user":
-                msgcontent = f"I am unable to DM {dmtarget}. Sorry about that!"
+                msgcontent = f"I am unable to DM {proper_userf(dmtarget)}. Sorry about that!"
             else:
                 msgcontent = None
         elif output[0] == 2:
-            msgcontent = f"Your message was successfully sent to {dmtarget}!"
+            msgcontent = f"Your message was successfully sent to {proper_userf(dmtarget)}!"
         else:
             msgcontent = f"Your DM request was denied."
         if msgcontent is not None and dmrequester is not None:
@@ -80,7 +82,7 @@ class DMPersistentView(discord.ui.View):
         if dmrequester is None:
             authordetails = dm_request.get('member_id')
         else:
-            authordetails = f"{dmrequester} ({dmrequester.id})"
+            authordetails = f"{proper_userf(dmrequester)} ({dmrequester.id})"
         dmtarget = interaction.guild.get_member(dm_request.get('target_id'))
         ID = dm_request.get('id')
         dmcontent = dm_request.get('dmcontent')
@@ -95,8 +97,8 @@ class DMPersistentView(discord.ui.View):
         await self.client.db.execute("INSERT INTO dmrequestslog values($1, $2, $3, $4, $5, $6)", ID, dmrequester.id if dmrequester else dm_request.get('member_id'), dmtarget.id if dmtarget else dm_request.get('target_id'), interaction.user.id, dmcontent, output[0]) # 0 : Denied, 1: Failed, 2 : Approved
         embed = discord.Embed(title="DM Request", description = dmcontent, color=discord.Color.green() if output[0] == 2 else discord.Color.red(), timestamp=discord.utils.utcnow())
         embed.set_author(name=authordetails)
-        dmtargetdetails = f"{dmtarget} {dmtarget.mention}" if dmtarget is not None else dmtarget
-        embed.add_field(name="DM Target", value=f"{dmtargetdetails}")
+        dmtargetdetails = f"{proper_userf(dmtarget)} {dmtarget.mention}" if dmtarget is not None else dmtarget
+        embed.add_field(name="DM Target", value=f"{proper_userf(dmtargetdetails)}")
         embed.add_field(name="Status", value=output[1], inline=True)
         if dmrequester is not None:
             embed.set_thumbnail(url=dmrequester.display_avatar.url)
@@ -144,7 +146,7 @@ class dm(commands.Cog):
         if member == ctx.me:
             return await ctx.send("Just DM me already... Do you not know how to DM me??\nhttps://cdn.nogra.xyz/core/how_to_dm_a_bot.gif")
         if member.bot:
-            return await ctx.send(f"🤖 **{member}**: `Do not speak to me, you inferior human being.`")
+            return await ctx.send(f"🤖 **{proper_userf(member)}**: `Do not speak to me, you inferior human being.`")
         if not message:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("I'm not sending a blank message, write something meaningful and try again.")
@@ -171,7 +173,7 @@ class dm(commands.Cog):
 
         embed = discord.Embed(title="DM Request", description = message, color=self.client.embed_color, timestamp=discord.utils.utcnow())
         embed.set_author(name=f"{ctx.author} ({ctx.author.id})")
-        embed.add_field(name="DM Target", value=f"{member} {member.mention}")
+        embed.add_field(name="DM Target", value=f"{proper_userf(member)} {member.mention}")
         embed.add_field(name="Status", value="Not approved", inline=True)
         embed.set_thumbnail(url=ctx.author.display_avatar.url)
         embed.set_footer(text=f"Request ID: {ID}", icon_url=ctx.guild.icon.url)
@@ -181,7 +183,7 @@ class dm(commands.Cog):
         authorembed = discord.Embed(title="Your DM request has been submitted!", description="I will notify you on the status of your DM request.", color=self.client.embed_color, timestamp=discord.utils.utcnow())
         authorembed.set_author(icon_url=ctx.guild.icon.url, name=ctx.guild.name)
         authorembed.add_field(name="Message", value=(message[:1020] + '...') if len(message) > 1024 else message, inline=False)
-        authorembed.add_field(name="DM Target", value=f"{member} {member.mention}", inline=True)
+        authorembed.add_field(name="DM Target", value=f"{proper_userf(member)} {member.mention}", inline=True)
         authorembed.add_field(name="Request ID", value=str(ID), inline=True)
         authorembed.set_footer(text="Your DM request will be denied if it breaks server rules.")
         await ctx.message.delete()

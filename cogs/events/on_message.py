@@ -7,7 +7,7 @@ import asyncio
 import re
 
 import typing
-from utils.format import human_join, durationdisplay
+from utils.format import human_join, durationdisplay, proper_userf
 
 from main import dvvt
 import discord
@@ -434,7 +434,7 @@ class OnMessage(commands.Cog):
                                 user = self.client.get_user(user_id) or user_id
                                 user_death = game_details.deaths.get(user_id, "")
                                 user_death = f"({user_death})" if user_death != "" else ""
-                                message_count.append(f"**{user}**: {m_count} messages {user_death}")
+                                message_count.append(f"**{proper_userf(user)}**: {m_count} messages {user_death}")
                             message_count = "\n".join(message_count)
                             duration = discord.utils.utcnow() - channel.created_at
                             duration = duration.total_seconds()

@@ -5,7 +5,7 @@ from typing import Union
 from main import dvvt
 import asyncio
 
-from utils.format import plural
+from utils.format import plural, proper_userf
 from utils.helper import get_channel_capacity
 from utils.specialobjects import PrivateChannel
 
@@ -106,7 +106,7 @@ class PrivChannelTags(commands.Cog):
                     continue
             permissions = channel.channel.permissions_for(member)
             if permissions.view_channel == True:
-                membersin.append(f"**{member}** {member.mention}")
+                membersin.append(f"**{proper_userf(member)}** {member.mention}")
         if owner is not None:
             owner_str = f"**{owner}** {owner.mention}"
             if not (channel.channel.permissions_for(owner).send_messages and channel.channel.permissions_for(owner).view_channel):

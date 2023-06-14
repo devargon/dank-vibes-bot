@@ -3,6 +3,7 @@ import contextlib
 import os
 import discord
 from discord.ext import commands
+from utils.format import proper_userf
 
 class CommandCleanup(commands.Cog):
     def __init__(self, client):
@@ -25,7 +26,7 @@ class CommandCleanup(commands.Cog):
                 if self.limit.get(user.id, 0) > 5:
                     if modchannel is not None:
                         em = discord.Embed(description = f"**{user.id}** {user.mention} has exceeded the threshold for running **{message.author}**'s commands (5 commands in a minute).", color = discord.Color.red(), timestamp = discord.utils.utcnow())
-                        em.set_author(name=f"{user}", icon_url=user.display_avatar.url)
+                        em.set_author(name=f"{proper_userf(user)}", icon_url=user.display_avatar.url)
                         em.set_footer(text=f"{user.id}")
                         await modchannel.send(embed=em)
                     self.limit[user.id] = 0
