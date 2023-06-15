@@ -1036,8 +1036,7 @@ class giveaways(commands.Cog):
         descriptions = []
         descriptions.append(f"**Host:** {host}")
         if (user := self.client.get_user(entry.donor_id)) is not None:
-            user = f"{user.mention} (`{proper_userf(user)}`)"
-            descriptions.append(f"**Donor:** {proper_userf(user)}")
+            descriptions.append(f"**Donor:** {user.mention} (`{proper_userf(user)}`)")
         embed.description = "\n".join(descriptions)
         date_and_time = []
         date_and_time.append(f"**Created on:** <t:{entry.end_time - entry.duration}:F>")
@@ -1103,8 +1102,8 @@ class giveaways(commands.Cog):
         else:
             descriptions = []
         user = self.client.get_user(entry.host_id)
-        user = user.mention if user else entry.host_id
-        descriptions.append(f"**Host:** {proper_userf(user)}")
+        user_str = user.mention if user else entry.host_id
+        descriptions.append(f"**Host:** {user_str}")
         if winners is None:
             if entry.active is True:
                 descriptions.append(f"**Duration:** {humanize_timedelta(seconds=entry.duration)}")
