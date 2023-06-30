@@ -1161,6 +1161,8 @@ class giveaways(commands.Cog):
             embed.set_thumbnail(url="https://emoji.discord.st/emojis/c340b8cc-587c-4c39-a162-52c4499a3ee1.gif")
         elif "nitro" in title_lower:
             embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/810398162702958662.gif?size=128&quality=lossless")
+        if "odd" in title_lower and "eye" in title_lower:
+            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/1058460091113816165.gif")
         elif "tro" in title_lower or "trophy" in title_lower:
             embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/940712966213496842.gif?quality=lossless")
         elif "pem" in title_lower or "medal" in title_lower:    
