@@ -317,6 +317,7 @@ class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreac
         embed.timestamp = discord.utils.utcnow()
         await ctx.send(embed=embed)
 
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="checkpvc", aliases = ["privchannel", "pvc"])
     async def checkoverwrites(self, ctx: DVVTcontext, channel:discord.TextChannel = None):
         """
