@@ -9,7 +9,6 @@ from utils.context import DVVTcontext
 from utils.format import human_join
 from .amari_task import AmariTask
 from .freezenick import Freezenick
-from .verification import Verification
 from .timedrole import timedrole
 from .timedunlock import TimedUnlock
 from .namelog import NameLogging
@@ -22,28 +21,8 @@ from .watchlist import WatchList
 from abc import ABC
 import os
 
-verify_role = 911541857807384677
 level_50_role = 944519459580821524 if os.getenv('state') == '0' else 943883516565942352
 
-class verifyView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @discord.ui.button(emoji="✅", label="Verify", style=discord.ButtonStyle.blurple, custom_id='dv:verify')
-    async def verifybutton(self, button: discord.ui.Button, interaction: discord.Interaction):
-        await interaction.response.defer()
-        await interaction.followup.send("<a:DVB_Loading:909997219644604447> Verifying you...", ephemeral=True)
-        verifyrole = interaction.guild.get_role(verify_role)
-        if verifyrole:
-            await interaction.user.remove_roles(verifyrole)
-        roleids = [905980110954455070, 905980110157541446, 905980109268324402, 905980108148461599, 905980107435442186] \
-            if os.getenv('state') == '1' else \
-            [837591810389442600, 671426678807068683, 671426686100963359, 671426692077584384, 649499248320184320]
-        roles = [interaction.guild.get_role(roleid) for roleid in roleids]
-        for role in roles:
-            if role not in interaction.user.roles:
-                await interaction.user.add_roles(role, reason="User completed manual verification")
-        await interaction.  followup.send("You've been verified! You should now be able to talk.", ephemeral=True)
 
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     """
@@ -53,7 +32,7 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
 
 
-class AutoMod(AmariTask, reminders_, polledition, AutoStatus, timer, NameLogging, timedrole, TimedUnlock, Verification, Freezenick, CommandCleanup, WatchList, commands.Cog):
+class AutoMod(AmariTask, reminders_, polledition, AutoStatus, timer, NameLogging, timedrole, TimedUnlock, Freezenick, CommandCleanup, WatchList, commands.Cog):
     """
     This file is just a placeholder for the various automod functions/modules.
     """
@@ -61,7 +40,6 @@ class AutoMod(AmariTask, reminders_, polledition, AutoStatus, timer, NameLogging
         self.client = client
         self.freezenick.start()
         self.amari_task.start()
-        self.check_verification.start()
         self.timedrole.start()
         self.unlock.start()
         self.timer_loop.start()
@@ -69,7 +47,6 @@ class AutoMod(AmariTask, reminders_, polledition, AutoStatus, timer, NameLogging
         self.edit_polls.start()
         self.reminder_check.start()
         self.daily_potion_reset.start()
-        self.verifyview = False
         self.status = None
         self.received_daily_potion = []
         self.limit = {} # for commandcleanup
@@ -149,13 +126,10 @@ class AutoMod(AmariTask, reminders_, polledition, AutoStatus, timer, NameLogging
 
     @commands.Cog.listener()
     async def on_ready(self):
-        if not self.verifyview == True:
-            self.client.add_view(verifyView())
-            self.verifyview = True
+        pass
 
     def cog_unload(self):
         self.freezenick.stop()
-        self.check_verification.stop()
         self.timedrole.stop()
         self.unlock.start()
         self.timer_loop.stop()
