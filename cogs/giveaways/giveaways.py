@@ -632,17 +632,21 @@ class GiveawayView(discord.ui.View):
                             else:
                                 return False
 
-                        def gen_chat_active():
+                        def msg_250():
                             if str(899185283881381889) in desc and len(missing_roles) == 1:
-                                return True
-                            else:
-                                return False
+                                return True, 899185283881381889, 250
+
+                        def msg_500():
+                            if str(1134925296395616297) in desc and len(missing_roles) == 1:
+                                return True, 1134925296395616297, 500
+
+                        def msg_1000():
+                            if str(1134925331560669357) in desc and len(missing_roles) == 1:
+                                return True, 1134925331560669357, 1000
 
                         def gway_only_requires_voting() -> bool:
                             if str(voteid) in desc and len(missing_roles) == 1:
                                 return True
-                            else:
-                                return False
 
                         if gway_only_requires_voting():
                             remarks.append(f"You can get <@&{voteid}> by voting for Dank Vibes!")
@@ -658,12 +662,12 @@ class GiveawayView(discord.ui.View):
                             remarks.append(f"You can get <@&944519459580821524> by chatting in Dank Vibes and levelling up to **Level 50** in **AmariBot**, our message XP bot.**.")
                         elif donator100m():
                             remarks.append(f"You can get <@&769491608189927434> by donating **⏣ 100,000,000** worth of Dank Memer items/coins in <#652729093649072168>, <#786944439360290826>, or <#722874833540481054>.")
-                        elif gen_chat_active():
-                            remarks.append(f"You can get <@&899185283881381889> by chatting in <#608498967474601995> and reaching **1,500 messages sent** in `dv.mymessages`.")
+                        elif (req := msg_250() or msg_1000() or msg_500()):
+                            remarks.append(f"You can get <@&{req[1]}> by chatting in <#608498967474601995> and reaching **{req[2]} messages sent** in `dv.mymessages`.")
                         elif elite_giveaway_ping():
                             remarks.append(f"You can get <@&758174135276142593> by running `-rank elite giveaway ping` in <#698462922682138654>, or selecting the **Elite Giveaway Ping** role under **Dank Pings** in <#782586550486695936>.")
                         if gway_only_requires_voting():
-                            final_desc = f"To join this giveaway, vote for Dank Vibes on Top.gg!\n\nIt doesn't take longer than 30 seconds, and we really appreciate it!"
+                            final_desc = f"To join this giveaway, vote for Dank Vibes on Top.gg!\n\nIt doesn't take longer than 30 seconds, and we appreciate your votes :)"
                         else:
                             final_desc = desc + "\n\n" + "\n".join(remarks)
 
