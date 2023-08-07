@@ -348,7 +348,7 @@ class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreac
             owner_str = f"**{owner}** {owner.mention}"
             if owner not in channel.overwrites:
                 owner_member_type = ctx.guild.get_member(owner)
-                await ctx.send(owner_member_type)
+                await ctx.send(f"{owner_member_type}, {type(owner_member_type)}, {owner}, {owner.id}")
                 if not (channel.permissions_for(owner_member_type).send_messages and channel.permissions_for(owner_member_type).view_channel):
                     owner_str += "\n⚠️ Not in channel"
         else:
