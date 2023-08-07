@@ -362,9 +362,10 @@ class donations(commands.Cog):
             hm = ['🥇', '🥈', '🥉', '🏅', '🏅', '🏅', '🏅', '🏅', '🏅', '🏅']
             um = []
             for index, entry in enumerate(results):
-                member = ctx.guild.get_member(entry.get('user_id')) or entry.get('user_id')
+                member = ctx.guild.get_member(entry.get('user_id'))
+                member = proper_userf(member) if member is not None else entry.get('user_id')
                 value = comma_number(entry.get('value'))
-                um.append((f"{hm[index]} **{proper_userf(member)}** [[{value}]](https://www.youtube.com/watch?v=dQw4w9WgXcQ)"))
+                um.append((f"{hm[index]} **{member}** [[{value}]](https://www.youtube.com/watch?v=dQw4w9WgXcQ)"))
             embed = discord.Embed(title="Weekly Dank Memer Donations!", description="\n".join(um), color=self.client.embed_color).set_thumbnail(url="https://media.discordapp.net/attachments/767148393839329290/898670660174376960/DORY_STINKY_16.png")
             embed.set_footer(icon_url=ctx.guild.icon.url, text=ctx.guild.name)
             return await ctx.send(embed=embed)
