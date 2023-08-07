@@ -171,9 +171,9 @@ class donations(commands.Cog):
                     donations = []
                     for i, entry in enumerate(leaderboard):
                         if i < users:
-                            member = ctx.guild.get_member(entry.get('user_id')) or entry.get('user_id')
+                            member = proper_userf(ctx.guild.get_member(entry.get('user_id'))) if ctx.guild.get_member(entry.get('user_id')) is not None else entry.get('user_id')
                             value = comma_number(entry.get('value'))
-                            donations.append((f"{i+1}. {proper_userf(member)}", value))
+                            donations.append((f"{i+1}. {member}", value))
                     footer = f"{len(leaderboard)} users have donated, amounting to a total {comma_number(sum([entry.get('value') for entry in leaderboard]))} donated"
                     if len(donations) <= 10:
                         leaderboard_embed = discord.Embed(title=title, color=self.client.embed_color).set_footer(text=footer)
