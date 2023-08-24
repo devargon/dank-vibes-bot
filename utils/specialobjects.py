@@ -120,16 +120,17 @@ class ServerConfiguration:
         client.serverconfig[self.guild_id] = self
 
 class UserInfo:
-    __slots__ = ('user_id', 'notify_about_logging', 'bypass_ban', 'heists', 'heistamt')
+    __slots__ = ('user_id', 'notify_about_logging', 'bypass_ban', 'heists', 'heistamt', 'timezone')
     def __init__(self, record):
         self.user_id: int = record.get('user_id')
         self.notify_about_logging: bool = record.get('notify_about_logging')
         self.bypass_ban: bool = record.get('bypass_ban')
         self.heists: int = record.get('heists')
         self.heistamt: int = record.get('heistamt')
+        self.timezone: str = record.get("timezone")
 
     def __repr__(self) -> str:
-        return f"<UserInfo user_id={self.user_id} notify_about_logging={self.notify_about_logging} bypass_ban={self.bypass_ban} heists={self.heists} heistamt={self.heistamt}>"
+        return f"<UserInfo user_id={self.user_id} notify_about_logging={self.notify_about_logging} bypass_ban={self.bypass_ban} heists={self.heists} heistamt={self.heistamt}> timezone={self.timezone}"
 
     async def update(self, client):
         a = await client.db.execute("UPDATE userinfo SET notify_about_logging=$1, bypass_ban=$2, heists=$3, heistamt=$4 WHERE user_id = $5", self.notify_about_logging, self.bypass_ban, self.heists, self.heistamt, self.user_id)

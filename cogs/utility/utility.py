@@ -31,6 +31,7 @@ from utils.converters import BetterTimeConverter
 from utils.format import ordinal, comma_number, proper_userf
 
 from .l2lvc import L2LVC
+from .time import UserTime
 from .whois import Whois
 from .teleport import Teleport
 from .nicknames import nicknames
@@ -109,7 +110,7 @@ LANGUAGE_CODES = [l for l in googletrans.LANGUAGES.keys()]
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
 
-class Utility(CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreaction, polls, Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name='utility', metaclass=CompositeMetaClass):
+class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreaction, polls, Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name='utility', metaclass=CompositeMetaClass):
     """
     Utility commands
     """

@@ -437,6 +437,12 @@ CREATE SCHEMA IF NOT EXISTS donations""")
             userinfo = await self.db.fetchrow("SELECT * FROM userinfo WHERE user_id=$1", user_id)
         return UserInfo(userinfo)
 
+    async def update_user_info(self, userinfo: UserInfo):
+        q = "UPDATE userinfo SET notify_about_logging = $1, bypass_ban = $2, heists = $3, heistamt = $4, timezone = $5 WHERE user_id = $6"
+        values = (userinfo.notify_about_logging, userinfo.bypass_ban, userinfo.heists, userinfo.heistamt, userinfo.timezone, userinfo.user_id)
+        await self.db.execute(q, *values)
+        return
+
     async def get_all_blacklisted_users(self):
         blacklist_dict = {}
         blacklist = await self.db.fetch("SELECT * FROM blacklist WHERE blacklist_active = $1", True)
