@@ -77,7 +77,7 @@ class UserTime(commands.Cog):
 
         if ctx_user_timezone is None:
             if selected_member is None:
-                return "You have not set a timezone. Run the `settimezone` command to set it."
+                return "You have not set a timezone. Run </time set:1144153317593854023> to set it."
             else:
                 if tgt_user_timezone is None:
                     return f"Both you and **{selected_member.name}** have not set a timezone."
