@@ -321,9 +321,9 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                         has_completed_5m = False
                     if has_completed_3m == True:
                         if has_completed_5m is not True:
-                            msg = f"<:DVB_True:887589686808309791> **You have qualified for the 3M Grinder Tier!**\nThe **3M Grinder Tier role** has been assigned to you. You can now enjoy your perks! <3\n\nYou can still qualify for the **5M Grinder Tier** by donating another **⏣ {comma_number(35000000 - old - amt)}**."
+                            msg = f"<:DVB_True:887589686808309791> **You have qualified for the 3M Grinder Tier!**\nThe **3M Grinder Tier role** will be assigned to you by a staff soon. You can now enjoy your perks! <3\n\nYou can still qualify for the **5M Grinder Tier** by donating another **⏣ {comma_number(35000000 - old - amt)}**."
                         else:
-                            msg = f"<:DVB_True:887589686808309791> **You have qualified for both the 3M and 5M Grinder Tier!**\nBoth the **3M Grinder Tier** and **5M Grinder Tier** role has been assigned to you. You can now enjoy your perks! <3"
+                            msg = f"<:DVB_True:887589686808309791> **You have qualified for both the 3M and 5M Grinder Tier!**\nBoth the **3M Grinder Tier** and **5M Grinder Tier** roles will be assigned to you by a staff soon. You can now enjoy your perks! <3"
                         try:
                             await member.send(msg)
                         except:
@@ -427,8 +427,8 @@ class Grinderutils(commands.Cog, name='grinderutils'):
 <:DVB_middle_complete:895172800627769444> Updating statistics
 <:DVB_end_incomplete:895172799923109919> <a:DVB_typing:955345484648710154> **Notifying grinders and sending a summary**""")
             now = discord.utils.utcnow()
-            thursday = now + timedelta(days=3 - now.weekday())
-            thursday = thursday.replace(hour=7, minute=0, second=0)
+            thursday = now + timedelta(days=5 - now.weekday())
+            thursday = thursday.replace(hour=16, minute=0, second=0)
             if thursday < now:
                 thursday += timedelta(weeks=1)
             timestamp = f"<t:{round(thursday.timestamp())}>"
@@ -436,7 +436,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                                   description=f"<a:dv_pointArrowOwO:837656328482062336> The weekly grinder requirement has been checked.\n<a:dv_pointArrowOwO:837656328482062336> <#862574856846704661> is now unlocked and you may send the cash (21M/35M) or 1 Trophy to `{ctx.author}`.\n<a:dv_pointArrowOwO:837656328482062336> The next requirement check will take place at {timestamp}.",
                                   color=self.client.embed_color)
             embed.set_thumbnail(url="https://cdn.discordapp.com/icons/595457764935991326/a_58b91a8c9e75742d7b423411b0205b2b.gif")
-            embed.set_footer(text="DM/Ping Ari#0005 if you have any queries.", icon_url=ctx.guild.icon.url)
+            embed.set_footer(text="DM/Ping @jennifer01 if you have any queries.", icon_url=ctx.guild.icon.url)
             success = 0  # gets the grinder list again since the earlier one was popped
             faileddms = []
             for grinder in grinders:
