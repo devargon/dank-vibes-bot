@@ -403,9 +403,9 @@ class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight
             messages = []
             for i, entry in enumerate(leaderboard):
                 if i < 100:
-                    member = ctx.guild.get_member(entry.get('user_id')) or entry.get('user_id')
+                    member = proper_userf(ctx.guild.get_member(entry.get('user_id'))) or entry.get('user_id')
                     value = comma_number(entry.get('messagecount'))
-                    messages.append((f"{i+1}. {proper_userf(member)}", value))
+                    messages.append((f"{i+1}. {member}", value))
             footer = f"{len(leaderboard)} users have sent a total of {comma_number(sum([entry.get('messagecount') for entry in leaderboard]))} messages"
             if len(messages) <= 10:
                 leaderboard_embed = discord.Embed(title=title, color=self.client.embed_color).set_footer(text=footer)
