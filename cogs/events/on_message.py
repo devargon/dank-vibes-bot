@@ -224,7 +224,7 @@ class OnMessage(commands.Cog):
                         await message.reply(offender_msg)
                     except Exception as e:
                         await message.channel.send(offender_msg)
-        if (message.content.lower().startswith('m.setup') or message.content.lower().startswith('m.prep')) and not message.author.bot and self.mafia_wait is not True:
+        if message.interaction.name == "setup" and self.mafia_wait is not True:
             lounge_category = 595457764935991327 if message.guild.id == 595457764935991326 else 875316745416617984
             if message.channel.id == 711377990113820924 or discord.utils.get(message.author.roles, id=735417263968223234) or discord.utils.get(message.author.roles, id=724971657143255170) or message.author.guild_permissions.manage_roles:
                 #         it will treat it as a to be monitored game if it's in events, or user is a modm+/event hoster or event sponsor
