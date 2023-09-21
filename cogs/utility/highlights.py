@@ -7,7 +7,7 @@ import discord
 import datetime
 from discord.ext import commands
 import copy
-from utils.buttons import confirm
+from utils.buttons import confirm, SingleURLButton
 from utils.format import proper_userf
 from utils import checks
 from main import dvvt
@@ -210,9 +210,8 @@ class Highlight(commands.Cog):
 
     async def generate_context(self, msg, hl):
         fmt = []
-        fmt.append(f"<:Reply:871808167011549244> [Jump to message]({msg.jump_url})")
         async for m in msg.channel.history(limit=5):
-            time = m.created_at.strftime("%H:%M:%S")
+            m.created_at.timestamp()
             msg_content = m.content
             msg_content = msg_content if len(msg_content) < 200 else msg_content[:200] + "..."
             fmt.append(f"**[{time}] {m.author.name}:** {msg_content}")
@@ -271,7 +270,7 @@ class Highlight(commands.Cog):
                                         e = await self.generate_context(message, k)
                                         if highlighted_member is not None and (message.channel.permissions_for(highlighted_member).view_channel or highlighted_member.id == 650647680837484556):
                                             try:
-                                                await highlighted_member.send(f"A tracked phrase \"{k}\" was mentioned by **{message.author.name}** in **{message.guild.name}**'s **{message.channel.name}**.", embed=e)
+                                                await highlighted_member.send(f"**{message.author.name}** mentioned \"{k}\" in **{message.guild.name}**'s **{message.channel.name}**.", embed=e, view=SingleURLButton(link=message.jump_url, text="Jump to Message", emoji="✉️`"))
                                             except:
                                                 pass
                                             else:
