@@ -978,39 +978,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             member = message.interaction.user
             nextpostmemetime = round(time.time()) + 45
             await self.handle_reminder_entry(member.id, 21, message.channel.id, message.guild.id, nextpostmemetime)
-        """
-        Adventure Reminder
-        """
-        if is_dank_slash_command(message, 'adventure'):
-            is_done = False
-            if len(message.components) == 0:
-                is_done = True
-            else:
-                def check(before_msg, m: discord.Message):
-                    if m.id != message.id:
-                        return False
-                    if len(m.components) == 0:
-                        return True
-                    else:
-                        for i in message.components:
-                            i: discord.ActionRow = i
-                            for b in i.children:
-                                if isinstance(b, discord.SelectMenu):
-                                    return False
-                                else:
-                                    if b.disabled is not True and b.label != "Check Progress":
-                                        return False
-                    return True
-                try:
-                    await self.client.wait_for('message_edit', check=check, timeout=120)
-                except asyncio.TimeoutError:
-                    pass
-                else:
-                    is_done = True
-            if is_done is True:
-                target = message.interaction.user
-                await self.handle_reminder_entry(target.id, 24, message.channel.id, message.guild.id, round(time.time()) + 300)
-                await message.add_reaction('🚀')
+
         """
         Stream Start Reminder
         """
