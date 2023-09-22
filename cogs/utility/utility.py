@@ -1,5 +1,6 @@
 from collections import Counter
 
+import alexflipnote
 import discord
 from discord.ext import commands, menus
 
@@ -122,6 +123,7 @@ class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight
         self.last_seen = {}
         self.regex_pattern = re.compile('([^\s\w]|_)+')
         self.website_regex = re.compile("https?:\/\/[^\s]*")
+        self.alex_api = alexflipnote.Client()
         self.blacklist = []
 
     async def get_donation_count(self, member: discord.Member, category: str):

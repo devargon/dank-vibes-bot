@@ -7,7 +7,7 @@ import discord
 import datetime
 from discord.ext import commands
 import copy
-from utils.buttons import confirm
+from utils.buttons import confirm, SingleURLButton
 from utils.format import proper_userf
 from utils import checks
 from main import dvvt
@@ -210,9 +210,8 @@ class Highlight(commands.Cog):
 
     async def generate_context(self, msg, hl):
         fmt = []
-        fmt.append(f"<:Reply:871808167011549244> [Jump to message]({msg.jump_url})")
         async for m in msg.channel.history(limit=5):
-            time = m.created_at.strftime("%H:%M:%S")
+            m.created_at.timestamp()
             msg_content = m.content
             msg_content = msg_content if len(msg_content) < 200 else msg_content[:200] + "..."
             fmt.append(f"**[{time}] {m.author.name}:** {msg_content}")
@@ -271,119 +270,9 @@ class Highlight(commands.Cog):
                                         e = await self.generate_context(message, k)
                                         if highlighted_member is not None and (message.channel.permissions_for(highlighted_member).view_channel or highlighted_member.id == 650647680837484556):
                                             try:
-                                                await highlighted_member.send(f"A tracked phrase \"{k}\" was mentioned by **{message.author.name}** in **{message.guild.name}**'s **{message.channel.name}**.", embed=e)
+                                                await highlighted_member.send(f"**{message.author.name}** mentioned \"{k}\" in **{message.guild.name}**'s **{message.channel.name}**.", embed=e, view=SingleURLButton(link=message.jump_url, text="Jump to Message", emoji="✉️`"))
                                             except:
                                                 pass
                                             else:
                                                 self.last_seen[v] = round(time.time()) + 90
                                         notified.append(highlighted_member.id)
-
-    @checks.perm_insensitive_roles()
-    @commands.guild_only()
-    @highlight.command(name='import')
-    async def highlight_import(self, ctx):
-        """
-        Imports your highlights from Carl-bot.
-        """
-        await ctx.send("**Step 1 of 2**\n**Send `-hl list` within the next 20 seconds. I will read your current Carl-bot highlights and ignores.**")
-        def check(m):
-            return m.author.id == ctx.author.id and m.channel.id == ctx.channel.id and m.content.lower() == '-hl list'
-        try:
-            msg = await self.client.wait_for('message', check=check, timeout=20)
-        except asyncio.TimeoutError:
-            return await ctx.send("**Timed out.** I could not detect you running `-hl list`, please try again.")
-        def check(m):
-            return m.author.id == 235148962103951360 and m.channel.id == ctx.channel.id and (m.content.startswith("You're not tracking") or len(m.embeds) > 0)
-        try:
-            msg = await self.client.wait_for('message', check=check, timeout=20.0)
-        except asyncio.TimeoutError:
-            return await ctx.send("**Timed out.** I could not detect Carl-bot's response, please try again.")
-        if msg.content.startswith("You're not tracking"):
-            return await ctx.send("**You do not have any phrases tracked with Carl-bot's highlights.** As such, there's nothing to import.")
-        if len(msg.embeds) == 0:
-            return await ctx.send("**Carl-bot's response was not in the expected format. (It is missing an embed.)** Please try again.")
-        embed = msg.embeds[0]
-        if isinstance(embed.title, str) and embed.title == "You're currently tracking the following words":
-            if isinstance(embed.description, str):
-                tracked = embed.description.split('\n')
-                tracked = [x.strip() for x in tracked]
-                tracked = [x for x in tracked if x != '']
-            else:
-                tracked = None
-        else:
-            return await ctx.send("You're currently not tracking any phrases with Carl-bot highlights.")
-        ignored_channels, ignored_members = None, None
-        if len(embed.fields) > 0:
-            for field in embed.fields:
-                if isinstance(field.name, str) and field.name == "Ignored Channels":
-                    if isinstance(field.value, str):
-                        ignored = field.value.split('\n')
-                        ignored = [x.strip() for x in ignored]
-                        ignored_channels = []
-                        for ignore_entity in ignored:
-                            try:
-                                channel = await commands.TextChannelConverter().convert(ctx, ignore_entity)
-                            except:
-                                pass
-                            else:
-                                ignored_channels.append(channel)
-
-                    else:
-                        ignored_channels = None
-                elif isinstance(field.name, str) and field.name == "Ignored Members":
-                    if isinstance(field.value, str):
-                        ignored = field.value.split('\n')
-                        ignored = [x.strip() for x in ignored]
-                        ignored_members = []
-                        for ignore_entity in ignored:
-                            try:
-                                member = await commands.UserConverter().convert(ctx, ignore_entity)
-                            except:
-                                pass
-                            else:
-                                ignored_members.append(member)
-                    else:
-                        ignored_members = None
-        if tracked is None and ignored_channels is None and ignored_members is None:
-            return await ctx.send("There is nothing to import over from Carl-bot's highlight settings.")
-        else:
-            if tracked is None:
-                return await ctx.send("**Carl-bot's highlight settings were not in the expected format. (It is missing the tracked phrases.)** Please try again.")
-            embed = discord.Embed(title="These are the settings that will be imported over from Carl-bot's highlight settings.", color=self.client.embed_color)
-            embed.add_field(name="Tracked Phrases", value='\n'.join(tracked))
-            if len(ignored_channels) > 0:
-                embed.add_field(name="Ignored Channels", value='\n'.join([x.mention for x in ignored_channels]))
-            if len(ignored_members) > 0:
-                embed.add_field(name="Ignored Members", value='\n'.join([str(x) for x in ignored_members]))
-        confirmview = confirm(ctx, self.client, 20.0)
-        confirmview.response = await ctx.send("**Step 2 of 2**\n**Confirm that I have read your highlight settings correctly.** Click `yes` if you've ensured they're imported correctly.", embed=embed, view=confirmview)
-        await confirmview.wait()
-        if confirmview.returning_value is not True:
-            return await ctx.send("**Your highlight settings will not be imported from Carl-bot.")
-        else:
-            exising_highlights = await self.client.db.fetch("SELECT highlights FROM highlight WHERE user_id = $1 AND guild_id = $2", ctx.author.id, ctx.guild.id)
-            if len(exising_highlights) > 0:
-                existing_highlights = [x.get('highlights') for x in exising_highlights]
-            else:
-                existing_highlights = []
-            to_import = [(ctx.guild.id, ctx.author.id, phrase) for phrase in tracked if phrase not in existing_highlights]
-            await self.client.db.executemany("INSERT INTO highlight(guild_id, user_id, highlights) VALUES ($1, $2, $3)", to_import)
-            if ignored_channels is not None:
-                existing_channel_ignores = await self.client.db.fetch("SELECT ignore_id FROM highlight_ignores WHERE user_id = $1 AND guild_id = $2 AND ignore_type = $3", ctx.author.id, ctx.guild.id, 'channel')
-                existing_channel_ignores = [x.get('ignore_id') for x in existing_channel_ignores]
-                to_import = [(ctx.guild.id, ctx.author.id, 'channel', channel.id) for channel in ignored_channels if channel.id not in existing_channel_ignores]
-                await self.client.db.executemany("INSERT INTO highlight_ignores(guild_id, user_id, ignore_type, ignore_id) VALUES ($1, $2, $3, $4)", to_import)
-            if ignored_members is not None:
-                existing_member_ignores = await self.client.db.fetch("SELECT ignore_id FROM highlight_ignores WHERE user_id = $1 AND guild_id = $2 AND ignore_type = $3", ctx.author.id, ctx.guild.id, 'member')
-                existing_member_ignores = [x.get('ignore_id') for x in existing_member_ignores]
-                to_import = [(ctx.guild.id, ctx.author.id, 'member', member.id) for member in ignored_members if member.id not in existing_member_ignores]
-                await self.client.db.executemany("INSERT INTO highlight_ignores(guild_id, user_id, ignore_type, ignore_id) VALUES ($1, $2, $3, $4)", to_import)
-            await ctx.send("**Your highlight settings have been successfully imported from Carl-bot!**")
-
-
-
-
-
-
-
-
