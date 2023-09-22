@@ -115,11 +115,11 @@ class PrivChannelTags(commands.Cog):
             owner_str = "Unknown"
 
         membermsg = "".join(f"`{count}.` {i}\n" for count, i in enumerate(membersin, start=1))
-        embed = discord.Embed(title=f"Private Channel Details of #{channel.channel.name}", color=self.client.embed_color, timestamp=discord.utils.utcnow())
+        embed = discord.Embed(title=f"Private Channel #{channel.channel.name}", color=self.client.embed_color, timestamp=discord.utils.utcnow())
         embed.add_field(name="Owner 🧑‍⚖️", value=owner_str, inline=True)
         embed.add_field(name="Members", value=membermsg if len(membermsg) > 0 else "No one is in this channel.", inline=True)
         embed.add_field(name="\u200b", value="\u200b", inline=False)
-        embed.add_field(name="Member Count", value=f"`{len(membersin)}` of **{get_channel_capacity(ctx.author)}**", inline=True)
+        embed.add_field(name="\u200b", value=f"`{len(membersin)}` of **{get_channel_capacity(ctx.author)}** members", inline=True)
         embed.add_field(name="Created at", value=channel.channel.created_at.strftime("%a, %b %d, %Y") if channel.channel.created_at is not None else 'Unknown')
         category = discord.utils.get(ctx.guild.categories, id=channel.channel.category_id)
         embed.add_field(name="Under Category", value=category.name or "Unknown")
