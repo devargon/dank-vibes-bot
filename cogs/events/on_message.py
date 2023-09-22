@@ -224,7 +224,7 @@ class OnMessage(commands.Cog):
                         await message.reply(offender_msg)
                     except Exception as e:
                         await message.channel.send(offender_msg)
-        if message.interaction.name == "setup" and self.mafia_wait is not True:
+        if message.interaction is not None and message.interaction.name == "setup" and self.mafia_wait is not True:
             lounge_category = 595457764935991327 if message.guild.id == 595457764935991326 else 875316745416617984
             if message.channel.id == 711377990113820924 or discord.utils.get(message.author.roles, id=735417263968223234) or discord.utils.get(message.author.roles, id=724971657143255170) or message.author.guild_permissions.manage_roles:
                 #         it will treat it as a to be monitored game if it's in events, or user is a modm+/event hoster or event sponsor
@@ -392,10 +392,8 @@ class OnMessage(commands.Cog):
                     owner = message.interaction.user
                 elif q == "flow":
                     context = await self.client.get_context(message, cls=DVVTcontext)
-                    str_split = message.embeds[0].footer.text.split("#")
+                    str_split = message.embeds[0].footer.text.split(" is running a ")
                     username = str_split[0]
-                    discriminator = str_split[1][:4]
-                    username = f"{username}#{discriminator}"
                     try:
                         member = await commands.MemberConverter().convert(context, username)
                     except Exception as e:
