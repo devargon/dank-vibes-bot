@@ -418,6 +418,7 @@ class OnMessage(commands.Cog):
     async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel):
         print("Sanity check 1")
         if isinstance(channel, discord.TextChannel):
+            await self.client.db.execute("UPDATE channels SET active = False WHERE channel_id = $1", channel.id)
             print("Sanity check 2")
             if channel.name == 'mafia':
                 print("Sanity check 3")
