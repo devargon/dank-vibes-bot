@@ -8,6 +8,7 @@ import pytz
 from discord import SlashCommandGroup
 from discord.ext import commands
 from pytz import timezone
+from typing import Optional
 
 from utils.format import durationdisplay, proper_userf
 from utils.converters import MemberUserConverter
@@ -82,12 +83,17 @@ class UserTime(commands.Cog):
             return f"{date_str}, **{time_str}** ({offset_str})"
 
         async def generate_time_embed(timezone, user: discord.Member):
-            local_time = discord.utils.utcnow().astimezone(pytz.timezone(timezone))
-
-
-            embed = discord.Embed(title=generate_time_disp(timezone), color=get_time_color(local_time.hour))
-            embed.set_footer(text=timezone)
-            embed.set_thumbnail(url=f"attachment://{user.id}.png")
+            if timezone is None:
+                if ctx.author == user:
+                    description = "Use </time set:1144153317593854023> to set a timezone."
+                else:
+                    description = f"Tell {user.mention} to set a timezone with </time set:1144153317593854023>."
+                embed = discord.Embed(title="No timezone set", description=description, colour=2829627)
+            else:
+                local_time = discord.utils.utcnow().astimezone(pytz.timezone(timezone))
+                embed = discord.Embed(title=generate_time_disp(timezone), color=get_time_color(local_time.hour))
+                embed.set_footer(text=timezone)
+                embed.set_thumbnail(url=f"attachment://{user.id}.png")
             embed.set_author(name=proper_userf(user), icon_url=user.display_avatar)
             return embed
 
@@ -101,6 +107,9 @@ class UserTime(commands.Cog):
             img = await self.alex_api.clock_by_datetime(ctx_user_time)
             img_bytes = await img.read()
             files.append(discord.File(fp=img_bytes, filename=f"{ctx.author.id}.png"))
+        embeds.append(await generate_time_embed(ctx_user_timezone, ctx.author))
+
+
 
         tgt_user_timezone = None
         if selected_member is not None:
@@ -111,44 +120,24 @@ class UserTime(commands.Cog):
                 img = await self.alex_api.clock_by_datetime(tgt_user_time)
                 img_bytes = await img.read()
                 files.append(discord.File(fp=img_bytes, filename=f"{selected_member.id}.png"))
+            embeds.append(await generate_time_embed(tgt_user_timezone,selected_member))
 
+        if ctx_user_timezone is not None and tgt_user_timezone is not None:
 
+            tgt_offset_seconds = tgt_user_time.utcoffset().total_seconds()
+            ctx_offset_seconds = ctx_user_time.utcoffset().total_seconds()
 
+            # Find the difference in hours
+            time_difference = (tgt_offset_seconds - ctx_offset_seconds) / 3600
 
-
-        if ctx_user_timezone is None:
-            if selected_member is None:
-                content = "You have not set a timezone. Run </time set:1144153317593854023> to set it."
+            if time_difference > 0:
+                diff_str = f"**{selected_member.name}** is **{int(time_difference)}** hours ahead of you."
+            elif time_difference < 0:
+                diff_str = f"**{selected_member.name}** is **{int(-time_difference)}** hours behind you."
             else:
-                if tgt_user_timezone is None:
-                    content = f"Both you and **{selected_member.name}** have not set a timezone."
-                else:
-                    embeds.append(await generate_time_embed(tgt_user_timezone, selected_member))
+                diff_str = f"You and **{selected_member.name}** are in the same timezone."
 
-        if ctx_user_timezone is not None:
-            embeds.append(await generate_time_embed(ctx_user_timezone, ctx.author))
-            if selected_member is not None:
-                if tgt_user_timezone is not None:
-                    embeds.append(await generate_time_embed(tgt_user_timezone, selected_member))
-
-
-                    tgt_offset_seconds = tgt_user_time.utcoffset().total_seconds()
-                    ctx_offset_seconds = ctx_user_time.utcoffset().total_seconds()
-
-                    # Find the difference in hours
-                    time_difference = (tgt_offset_seconds - ctx_offset_seconds) / 3600
-
-                    if time_difference > 0:
-                        diff_str = f"**{selected_member.name}** is **{int(time_difference)}** hours ahead of you."
-                    elif time_difference < 0:
-                        diff_str = f"**{selected_member.name}** is **{int(-time_difference)}** hours behind you."
-                    else:
-                        diff_str = f"You and **{selected_member.name}** are in the same timezone."
-
-                    embeds.append(discord.Embed(description=diff_str, color=2829627))
-                else:
-                    content = f"**{selected_member.name}** has not set a timezone."
-        print("what")
+            embeds.append(discord.Embed(description=diff_str, color=2829627))
         return content, embeds, files
 
     @commands.guild_only()
