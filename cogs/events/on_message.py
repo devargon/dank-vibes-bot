@@ -311,7 +311,7 @@ class OnMessage(commands.Cog):
                                     if a in message.mentions:
                                         sponsors_in_game.append(f"**{a}** {a.mention}")
                                 if len(sponsors_in_game) > 0:
-                                    rules = f"**NOTE**:\n{human_join(sponsors_in_game, final='and')} are sponsors of this game. **__Do not__** target them on the first night." + rules
+                                    rules = f"**NOTE**:\n{human_join(sponsors_in_game, final='and')} are sponsors of this game. **__Do not__** target them on the first night.\n\n" + rules
                         mentions = '\n'.join([b.mention for b in message.mentions])
                         rules = f"{mentions}\n\n" + rules
                         await message.channel.send(rules)
@@ -416,31 +416,57 @@ class OnMessage(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel):
+        print("Sanity check 1")
         if isinstance(channel, discord.TextChannel):
+            print("Sanity check 2")
             if channel.name == 'mafia':
+                print("Sanity check 3")
                 if channel.id in self.client.mafia_channels.keys():
+                    print("Sanity check 4")
                     log_channel_id = self.client.mafia_channels[channel.id]
+                    print("Sanity check 5")
                     mafia_log_channel = channel.guild.get_channel(log_channel_id)
+                    print("Sanity check 6")
                     if mafia_log_channel is not None:
+                        print("Sanity check 7")
                         webh = await self.client.get_webhook(mafia_log_channel)
+                        print("Sanity check 8")
                         del self.client.mafia_channels[channel.id]
+                        print("Sanity check 9")
                         message_count = []
+                        print("Sanity check 10")
                         game_details: MafiaGameDetails = self.client.mafia_game_details.pop(channel.id, None)
+                        print("Sanity check 11")
                         if game_details is not None:
+                            print("Sanity check 12")
                             a = sorted(game_details.message_count.items(), key=operator.itemgetter(1), reverse=True)
+                            print("Sanity check 13")
                             for user_id, m_count in a:
+                                print("Sanity check 14")
                                 user = self.client.get_user(user_id) or user_id
+                                print("Sanity check 15")
                                 user_death = game_details.deaths.get(user_id, "")
+                                print("Sanity check 16")
                                 user_death = f"({user_death})" if user_death != "" else ""
+                                print("Sanity check 17")
                                 message_count.append(f"**{proper_userf(user)}**: {m_count} messages {user_death}")
+                                print("Sanity check 18")
                             message_count = "\n".join(message_count)
+                            print("Sanity check 19")
                             duration = discord.utils.utcnow() - channel.created_at
+                            print("Sanity check 20")
                             duration = duration.total_seconds()
+                            print("Sanity check 21")
                             summary_embed = discord.Embed(title=f"{durationdisplay(duration)} - {discord.utils.format_dt(channel.created_at, style='D')}{discord.utils.format_dt(channel.created_at, style='t')} to {discord.utils.format_dt(discord.utils.utcnow(), style='t')}", color=self.client.embed_color)
+                            print("Sanity check 22")
                             summary_embed.description = message_count
+                            print("Sanity check 23")
                         else:
+                            print("Sanity check 24")
                             summary_embed = discord.Embed(title="No summary to display.")
+                            print("Sanity check 25")
                         await webh.send(username="Game Summary", embed=summary_embed, view=DeleteChannel())
+                        print("Sanity check 26")
 
 
 
