@@ -1,3 +1,4 @@
+import math
 from collections import Counter
 
 import alexflipnote
@@ -29,7 +30,7 @@ from utils.specialobjects import ContestSubmission, Contest
 from utils.time import humanize_timedelta
 from utils.errors import ArgumentBaseError
 from utils.converters import BetterTimeConverter
-from utils.format import ordinal, comma_number, proper_userf
+from utils.format import ordinal, comma_number, proper_userf, box
 
 from .l2lvc import L2LVC
 from .time import UserTime
@@ -44,6 +45,168 @@ from .reminders import reminders
 from .utility_slash import UtilitySlash
 from .customrole import CustomRoleManagement
 from ..mod.donations import UserDonations, format_donation
+
+class NitroLinkModal(discord.ui.Modal):
+    def __init__(self):
+        self.answer = None
+        self.interaction = None
+        super().__init__(
+            discord.ui.InputText(style=discord.InputTextStyle.long, label="Your Nitro Gift Link", placeholder="It should start with \"https://discord.gift/...\"", min_length=13, required=True),
+            title=f"Verify your Nitro gift",
+            timeout=None
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        nitro_link = self.children[0].value
+        self.interaction = interaction
+        self.answer = nitro_link
+        self.stop()
+
+
+async def check_code(code):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"https://discord.com/api/v10/entitlements/gift-codes/{code}") as r:
+            data = await r.json()
+            if r.status > 400:
+                if data.get("code") == 10038:
+                    return False, None
+                else:
+                    return False, data
+            elif r.status == 200:
+                return True, data
+            else:
+                return False, data
+
+
+class RequestForNitroLink(discord.ui.View):
+    def __init__(self, target):
+        self.target: discord.Member = target
+        super().__init__(timeout=60.0, disable_on_timeout=True)
+
+    @discord.ui.button(label="Provide the Nitro Gift link here", style=discord.ButtonStyle.blurple, emoji=discord.PartialEmoji.from_str("<:DVB_click:1010590546252804187>"))
+    async def callback(self, button: discord.ui.Button, interaction: discord.Interaction):
+        modal = NitroLinkModal()
+        await interaction.response.send_modal(modal)
+        button.style = discord.ButtonStyle.grey
+        button.emoji = discord.PartialEmoji.from_str("<a:DVB_CLoad1:994913315442663475>")
+        button.label = "Waiting for link..."
+        await interaction.edit_original_response(view=self)
+        await modal.wait()
+        result_embed = discord.Embed(title="Gift Link Details")
+        result_embed.set_author(name=proper_userf(interaction.user), icon_url=interaction.user.display_avatar)
+
+        if modal.answer is None:
+            button.style = discord.ButtonStyle.red
+            button.emoji = None
+            button.label = "No nitro link provided"
+            await interaction.edit_original_response(view=self)
+
+        else:
+            match = re.match(r"https?://discord\.gift/([a-zA-Z0-9]+)", modal.answer)
+
+            if not match: # Valid discord.gift link
+                button.style = discord.ButtonStyle.red
+                button.emoji = discord.PartialEmoji.from_str("<:DVB_click:1010590546252804187>")
+                button.label = "Invalid Nitro gift link, try again"
+                #button.disabled = True
+                return await modal.interaction.response.edit_message(view=self)
+            code = match.group(1)
+            masked_length = math.ceil(len(code)/5)
+            masked_code = code[:masked_length] + "*" * (len(code) - masked_length)
+            masked_link = modal.answer.replace(code, masked_code)
+            button.emoji = discord.PartialEmoji.from_str("<a:DVB_CLoad2:994913353388527668>")
+            button.label = "Verifying gift..."
+            button.disabled = True
+            await modal.interaction.response.edit_message(view=self)
+            # await interaction.edit_original_response(view=self)
+            result_embed.set_footer(text=masked_link.replace("\\", ""))
+            is_valid, response = await check_code(code)
+            if not is_valid:
+                result_embed.color = discord.Color.red()
+                result_embed.description = f"<:DVB_False:887589731515392000> Valid Nitro gift: **No**"
+                if response is not None:
+                    result_embed.add_field(name="More details", value=box(response))
+            else:
+                result_embed.color = discord.Color.green()
+                store_listing_data = response.get("store_listing")
+                sku_data = store_listing_data.get("sku")
+                result_embed.title = result_embed.title + ": " + sku_data.get("name")
+
+                nitro_ids = {
+                    "511651880837840896": "Nitro Boost (1 Month)",
+                    "511651885459963904": "Nitro Boost (1 Year)",
+                    "511651871736201216": "Nitro Classic (1 Month)",
+                    "1024422698568122368": "Nitro Basic (1 Year)",
+                    "978380692553465866": "Nitro Basic (1 Month)",
+                }
+
+                result_embed.description = f"Gift ID: `{masked_code}`\n"
+
+                if response.get("subscription_plan_id", None) in nitro_ids.keys():
+                    result_embed.description += f"<:DVB_True:887589686808309791> Valid Nitro gift: **Yes**\n"
+                    gift_type = nitro_ids.get(response.get("subscription_plan_id"))
+                    result_embed.description += f"🎁 Gift type: **{gift_type}**\n"
+                else:
+                    result_embed.description += f"<:DVB_False:887589731515392000> Valid Nitro gift: **No**\n"
+                    if sku_data.get("slug") == "no-nitro":
+                        result_embed.description += f"🎁 Gift type: **Non-Nitro**\n"
+
+                expires_at_dt = None
+                if (expires_at_str := response.get("expires_at", None)) is not None:
+                    expires_at_dt = datetime.fromisoformat(expires_at_str)
+                if expires_at_dt is not None:
+                    result_embed.description += f"🕙 Expires at: <t:{math.floor(expires_at_dt.timestamp())}>\n"
+
+                user_data = response.get("user")
+                if user_data is not None:
+                    gift_owner = await interaction.client.get_or_fetch_user(user_data.get("id"))
+                    if gift_owner is None:
+                        result_embed.description += f"🧑 Owner: **Unknown** ({user_data.get('id')})\n"
+                    else:
+                        result_embed.description += f"🧑 Owner: {gift_owner.mention}\n"
+
+
+                uses, max_uses = response.get("uses"), response.get("max_uses")
+                if uses >= max_uses:
+                    result_embed.color = discord.Color.red()
+                    result_embed.description += f"⚠️ Gift link is **fully redeemed** (Used `{uses}`/`{max_uses}` times)"
+                else:
+                    result_embed.description += f"<:DVB_True:887589686808309791> Gift link is **ready for use** (Used `{uses}`/`{max_uses}` times)"
+                if (thumbnail_data := store_listing_data.get("thumbnail", None)) is not None:
+                    file_ext = thumbnail_data.get("mime_type").split("/")[-1]
+                    result_embed.set_image(url=f"https://cdn.discordapp.com/app-assets/{response.get('application_id')}/store/{thumbnail_data.get('id')}.{file_ext}")
+            await modal.interaction.followup.send(embed=result_embed)
+            button.style = discord.ButtonStyle.green
+            button.label = "Verification Complete"
+            button.emoji = None
+            await modal.interaction.edit_original_response(view=self)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if self.target is not None and interaction.user != self.target:
+            await interaction.response.send_message("This button is not for you!")
+            return False
+        return True
+
 
 
 class GetHeistPing(discord.ui.View):
@@ -716,3 +879,14 @@ class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight
                     pages = CustomMenu(source=UserDonations(donations, title, member), clear_reactions_after=True,
                                        timeout=60)
                     return await pages.start(ctx)
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name="nitro")
+    async def nitro_check(self, ctx: DVVTcontext, member: typing.Optional[discord.Member] = None):
+        """
+        Verifies the validity of a nitro link.
+        """
+        embed = discord.Embed(title="You are being requested to verify a Nitro gift as you are donating it in Dank Vibes.", description=f"To do so, press the button below and paste your Nitro gift link in the popup.\n\nDo NOT provide it to a staff member unless requested by a Mod Manager or Admin.", colour=discord.Color.blurple())
+        embed.set_author(name="Nitro Gift Verification")
+        embed.set_footer(text="Your Nitro gift link is safe when you share it within the button below, and won't be seen by anyone else at all.", icon_url="")
+        await ctx.send(member.mention if member is not None else None, embed=embed, view=RequestForNitroLink(member))
