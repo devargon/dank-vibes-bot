@@ -8,7 +8,7 @@ import datetime
 from discord.ext import commands
 import copy
 from utils.buttons import confirm, SingleURLButton
-from utils.format import proper_userf
+from utils.format import proper_userf, print_exception
 from utils import checks
 from main import dvvt
 from utils.errors import ArgumentBaseError
@@ -211,16 +211,16 @@ class Highlight(commands.Cog):
     async def generate_context(self, msg, hl):
         fmt = []
         async for m in msg.channel.history(limit=5):
-            m.created_at.timestamp()
+            time_disp = discord.utils.format_dt(m.created_at, style="T")
             msg_content = m.content
             msg_content = msg_content if len(msg_content) < 200 else msg_content[:200] + "..."
-            fmt.append(f"**[{time}] {m.author.name}:** {msg_content}")
+            fmt.append(f"{time_disp} - **{m.author.name}**: {msg_content}")
         e = discord.Embed(title=f"**{hl}**", description='\n'.join(fmt[::-1]), color=0xb47eb3, timestamp=discord.utils.utcnow())
         return e
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        self.last_seen[message.author.id] = round(time.time()) # Logs the user's last seen timing
+        self.last_seen[message.author.id] = 0 # Logs the user's last seen timing
         if message.guild is None:
             return
         if message.author.bot:
@@ -270,9 +270,9 @@ class Highlight(commands.Cog):
                                         e = await self.generate_context(message, k)
                                         if highlighted_member is not None and (message.channel.permissions_for(highlighted_member).view_channel or highlighted_member.id == 650647680837484556):
                                             try:
-                                                await highlighted_member.send(f"**{message.author.name}** mentioned \"{k}\" in **{message.guild.name}**'s **{message.channel.name}**.", embed=e, view=SingleURLButton(link=message.jump_url, text="Jump to Message", emoji="✉️`"))
-                                            except:
-                                                pass
+                                                await highlighted_member.send(f"**{message.author.name}** mentioned \"{k}\" in **{message.guild.name}**'s **{message.channel.name}**.", embed=e, view=SingleURLButton(link=message.jump_url, text="Jump to Message", emoji="✉️"))
+                                            except Exception as e:
+                                                print_exception("among us", e)
                                             else:
                                                 self.last_seen[v] = round(time.time()) + 90
                                         notified.append(highlighted_member.id)
