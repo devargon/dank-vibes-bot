@@ -80,8 +80,9 @@ async def check_code(code):
 
 class RequestForNitroLink(discord.ui.View):
     def __init__(self, target):
+        self.request_message = None
         self.target: discord.Member = target
-        super().__init__(timeout=60.0, disable_on_timeout=True)
+        super().__init__(timeout=30.0)
 
     @discord.ui.button(label="Provide the Nitro Gift link here", style=discord.ButtonStyle.blurple, emoji=discord.PartialEmoji.from_str("<:DVB_click:1010590546252804187>"))
     async def callback(self, button: discord.ui.Button, interaction: discord.Interaction):
@@ -181,25 +182,14 @@ class RequestForNitroLink(discord.ui.View):
             button.emoji = None
             await modal.interaction.edit_original_response(view=self)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    async def on_timeout(self):
+        self.children[0].style = discord.ButtonStyle.red
+        self.children[0].label = "No Nitro link provided"
+        self.children[0].emoji = discord.PartialEmoji.from_str("<:DVB_False:887589731515392000>")
+        self.children[0].disabled = True
+        if self.message is not None:
+            await self.message.edit(view=self)
+            self.stop()
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if self.target is not None and interaction.user != self.target:
