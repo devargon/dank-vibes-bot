@@ -24,7 +24,7 @@ class PrivChannelTags(commands.Cog):
         return PrivateChannel(owner, channel, channel_db)
 
 
-    pvcGroup = discord.SlashCommandGroup(name="privchannel", description="Manage your private channel.", default_member_permissions=discord.Permissions(administrator=True))
+    pvcGroup = discord.SlashCommandGroup(name="privchannel", description="Manage your private channel.")
 
     @pvcGroup.command(name="rename")
     @commands.cooldown(2, 600, commands.BucketType.user)
