@@ -270,7 +270,7 @@ class Highlight(commands.Cog):
                                         e = await self.generate_context(message, k)
                                         if highlighted_member is not None and (message.channel.permissions_for(highlighted_member).view_channel or highlighted_member.id == 650647680837484556):
                                             try:
-                                                await highlighted_member.send(f"**{message.author.name}** mentioned \"{k}\" in **{message.guild.name}**'s **{message.channel.name}**.", embed=e, view=SingleURLButton(link=message.jump_url, text="Jump to Message", emoji="✉️`"))
+                                                await highlighted_member.send(f"**{message.author.name}** mentioned \"{k}\" in **{message.guild.name}**'s **{message.channel.name}**.", embed=e, view=SingleURLButton(link=message.jump_url, text="Jump to Message", emoji="✉️"))
                                             except Exception as e:
                                                 print_exception("among us", e)
                                             else:
