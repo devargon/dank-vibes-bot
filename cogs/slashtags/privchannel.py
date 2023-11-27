@@ -38,7 +38,24 @@ class PrivChannelTags(commands.Cog):
         if channel.edit_name is not True:
             return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Channel rename failed", description="You are not allowed to rename your private channel. For more information, open a ticket in <#870880772985344010>.", color=discord.Color.red()))
         old_channel_name = channel.channel.name
-        await channel.channel.edit(name=channel_name)
+        try:
+            await channel.channel.edit(name=channel_name)
+        except discord.HTTPException as e:
+            if "In name: Contains words not allowed for servers in Server Discovery." in e.text:
+                await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Channel rename failed",
+                                                         description="Your new channel name contains words not allowed under Discord's Server Discovery Guidelines. Please choose another channel name.",
+                                                         color=discord.Color.red()))
+                await ctx.send(e.text)
+                await ctx.send(e.code)
+                await ctx.send(e.status)
+                await ctx.send(e.response)
+            else:
+                await ctx.send(e.text)
+                await ctx.send(e.code)
+                await ctx.send(e.status)
+                await ctx.send(e.response)
+
+                raise(e)
         await ctx.respond(embed=discord.Embed(title="<:DVB_True:887589686808309791> Channel renamed", description=f"Your private channel has been renamed from **{old_channel_name}** to {channel.channel.mention}.", color=discord.Color.green()))
 
     @pvcGroup.command(name="add")
