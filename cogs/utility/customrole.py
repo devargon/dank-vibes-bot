@@ -11,7 +11,7 @@ from main import dvvt
 
 
 class RoleList(discord.Embed):
-    def __init__(self, client, guild, description=discord.Embed.Empty):
+    def __init__(self, client, guild, description=None):
         super().__init__(title=f"Custom Roles for {guild.name}", color=client.embed_color, description=description)
 
 class CustomRoleManagement(commands.Cog):

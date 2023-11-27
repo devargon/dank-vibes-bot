@@ -1330,4 +1330,3 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
                         await ctx.send(text)
                 else:
                     await ctx.send(text_joined)
-

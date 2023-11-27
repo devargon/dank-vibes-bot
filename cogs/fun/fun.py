@@ -748,7 +748,7 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, n
             result = await self.cap_change(search_msg.content)
             result += f"\n\n[Mocking Message]({search_msg.jump_url})"
             if result == "" and len(search_msg.embeds) != 0:
-                if search_msg.embeds[0].description != discord.Embed.Empty:
+                if search_msg.embeds[0].description is not None:
                     result = await self.cap_change(search_msg.embeds[0].description)
         time = ctx.message.created_at
         embed = discord.Embed(description=result, timestamp=time)

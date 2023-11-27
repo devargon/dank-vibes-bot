@@ -374,8 +374,8 @@ class OnMessage(commands.Cog):
                     elif (
                         message.author.id == 270904126974590976 and
                         len(message.embeds[0]) > 0 and
-                        message.embeds[0].footer is not discord.Embed.Empty and
-                        message.embeds[0].footer.text is not discord.Embed.Empty and
+                        message.embeds[0].footer is not None and
+                        message.embeds[0].footer.text is not None and
                         type(message.embeds[0].footer.text) == str and
                         "flow" in message.embeds[0].footer.text
                     ):
