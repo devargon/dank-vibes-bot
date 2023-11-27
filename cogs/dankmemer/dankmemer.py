@@ -779,7 +779,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 return
             item_name = embed.title
             if type(embed.fields) == list:
-                if embed.footer != discord.Embed.Empty and type(embed.footer.text) == str:
+                if embed.footer is not None and type(embed.footer.text) == str:
                     if "|" in embed.footer.text:
                         item_type_format = embed.footer.text.split('|')[-1].strip()
                     else:

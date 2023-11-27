@@ -131,7 +131,7 @@ class color(commands.Cog):
                 messagecontents.append((f"HEX: `{hexcode}`\nRGB: `{color}`\nINT: `{int(hex_int)}`", f"https://argon-alexflipnote-api.herokuapp.com/color?color={hexcode}", int(hex_int)))
         title = f"{argument.name}'s Profile Picture Color" if isinstance(argument, discord.Member) else "Your Color" if isinstance(argument, discord.Color) else "Image dominant colors"
         raw_entries = [messagecontents] if type(messagecontents) == tuple else messagecontents
-        embed_pages = format_pages(raw_entries, argument.display_avatar.url if isinstance(argument, discord.Member) else f"https://argon-alexflipnote-api.herokuapp.com/color?color={hexcode}?size=1000" if isinstance(argument, discord.Colour) else argument if isinstance(argument, str) else discord.Embed.Empty, title)
+        embed_pages = format_pages(raw_entries, argument.display_avatar.url if isinstance(argument, discord.Member) else f"https://argon-alexflipnote-api.herokuapp.com/color?color={hexcode}?size=1000" if isinstance(argument, discord.Colour) else argument if isinstance(argument, str) else None, title)
         if (users_role := await self.client.db.fetchval("SELECT role_id FROM customroles WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, ctx.author.id)) is not None:
             paginator = pages.Paginator(embed_pages, show_disabled=True, custom_view=SetRoleColor(self.client, ctx))
         else:

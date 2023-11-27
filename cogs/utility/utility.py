@@ -812,7 +812,7 @@ class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight
                 if user is None:
                     user_proper = str(submission.submitter_id)
                     user_id = str(submission.submitter_id)
-                    user_avatar = discord.Embed.Empty
+                    user_avatar = None
                 else:
                     user_proper = proper_userf(user)
                     user_id = f"{user.id}"

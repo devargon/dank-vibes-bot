@@ -4,7 +4,7 @@ import discord
 from datetime import datetime
 from utils.time import humanize_timedelta
 from discord.ext import commands
-from utils.format import print_exception
+from utils.format import print_exception, proper_userf
 from utils.errors import ArgumentBaseError
 import requests
 import json
@@ -16,6 +16,7 @@ dir = os.path.join(os.getcwd(), 'main.py')
 bugsnag.configure(
     api_key=os.getenv('bugsnap_key'),
     project_root=dir,
+    asynchronous=True
 )
 
 class ErrorHandler(commands.Cog):
@@ -91,7 +92,8 @@ class ErrorHandler(commands.Cog):
             if os.getenv('state') == '1':
                 await ctx.send(embed=discord.Embed(description=f"```py\n{traceback_error}\n```", color=0x1E90FF))
             else:
-
+                bugsnag.notify(error, user={"id": str(ctx.author.id), "name": proper_userf(ctx.author)},
+                               metadata={"command": ctx.command.name, "jump_url": ctx.channel.jump_url})
                 embed = discord.Embed(title="⚠️ Oh no!",
                                       description="Something terribly went wrong when this command was used.\n\nThe developers have been notified and it'll fixed soon.",
                                       color=discord.Color.red())
@@ -173,7 +175,7 @@ class ErrorHandler(commands.Cog):
             if os.getenv('state') == '1':
                 await ctx.send(embed=discord.Embed(description=f"```py\n{traceback_error}\n```", color=0x1E90FF))
             else:
-                bugsnag.notify(error)
+                bugsnag.notify(error, user={"id": str(ctx.author.id), "name": proper_userf(ctx.author)}, metadata={"command": ctx.message.content, "msg_url": ctx.message.jump_url})
                 embed = discord.Embed(title="⚠️ Oh no!", description="Something terribly went wrong when this command was used.\n\nThe developers have been notified and it'll fixed soon.", color=discord.Color.red())
                 if ctx.author.id in [650647680837484556, 321892489470410763]:
                     embed.add_field(name="Error", value=f"```prolog\n{error}\n```\n<#871737028105109574>")
