@@ -897,37 +897,52 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.group(name='watchlist', invoke_without_command=True)
-    async def watchlist(self, ctx):
+    async def watchlist(self, ctx, target: MemberUserConverter = None, *, remarks: str = None):
         """
         Watchlists are a new feature on Dank Vibes Bot. It will notify you if someone on your watchlist joins the server.
         This command will show all users who are on your watchlist, and toggle how/if you want to be notified when a user joins.
         """
-        watchlist = await self.client.db.fetch("SELECT * FROM watchlist WHERE guild_id = $1 and user_id = $2", ctx.guild.id, ctx.author.id)
-        user_notify_method = await self.client.db.fetchval("SELECT watchlist_notify FROM userconfig WHERE user_id = $1", ctx.author.id)
-        if len(watchlist) == 0:
-            return await ctx.send("You don't have any users on your watchlist.")
-        buffer = []
-        for watchlist_entry in watchlist:
-            target_id = watchlist_entry.get('target_id')
-            target = self.client.get_user(watchlist_entry.get('target_id'))
-            if target is None:
-                target_disp = str(target_id)
-            else:
-                target_disp = f"{target} ({target_id})"
-                if watchlist_entry.get('remarks'):
-                    target_disp += f": {watchlist_entry.get('remarks')}"
-            buffer.append(target_disp)
-        embed = discord.Embed(title=f"{ctx.author.name}'s watchlist", description = "", color = self.client.embed_color)
-        for user in buffer:
-            if len(embed.description) < 3900:
-                embed.description += f"{proper_userf(user)}\n"
-            else:
-                va = len(buffer) - len(embed.description.split("\n"))
-                embed.description += f"{proper_userf(user)}\n**and {va} more users...**"
-                break
-        embed.set_footer(text=f"There are {len(buffer)} users on your watchlist.")
-        ChangeNotifyView = ChangeWatchlistNotify(self.client, user_notify_method if user_notify_method is not None else 0, ctx.author)
-        ChangeNotifyView.response = await ctx.send(embed=embed, view=ChangeNotifyView)
+        if target is None:
+            watchlist = await self.client.db.fetch("SELECT * FROM watchlist WHERE guild_id = $1 and user_id = $2",
+                                                   ctx.guild.id, ctx.author.id)
+            user_notify_method = await self.client.db.fetchval(
+                "SELECT watchlist_notify FROM userconfig WHERE user_id = $1", ctx.author.id)
+            if len(watchlist) == 0:
+                return await ctx.send("You don't have any users on your watchlist.")
+            buffer = []
+            for watchlist_entry in watchlist:
+                target_id = watchlist_entry.get('target_id')
+                target = self.client.get_user(watchlist_entry.get('target_id'))
+                if target is None:
+                    target_disp = str(target_id)
+                else:
+                    target_disp = f"{proper_userf(target)} ({target_id})"
+                    if watchlist_entry.get('remarks'):
+                        target_disp += f": {watchlist_entry.get('remarks')}"
+                buffer.append(target_disp)
+            embed = discord.Embed(title=f"{ctx.author.name}'s watchlist", description="", color=self.client.embed_color)
+            for user in buffer:
+                if len(embed.description) < 3900:
+                    embed.description += f"{user}\n"
+                else:
+                    va = len(buffer) - len(embed.description.split("\n"))
+                    embed.description += f"{user}\n**and {va} more users...**"
+                    break
+            embed.set_footer(text=f"There are {len(buffer)} users on your watchlist.")
+            ChangeNotifyView = ChangeWatchlistNotify(self.client,
+                                                     user_notify_method if user_notify_method is not None else 0,
+                                                     ctx.author)
+            ChangeNotifyView.response = await ctx.send(embed=embed, view=ChangeNotifyView)
+            return
+        target: Union[discord.Member, discord.User] = target
+        if remarks is not None:
+            if len(remarks) > 1000:
+                return await ctx.send("Remarks cannot be longer than 1000 characters.")
+        if await self.client.db.fetchrow("SELECT * FROM watchlist WHERE guild_id = $1 and user_id = $2 and target_id = $3", ctx.guild.id, ctx.author.id, target.id) is not None:
+            return await ctx.send(f"**{target}** is already on your watchlist.")
+        await self.client.db.execute("INSERT INTO watchlist (guild_id, user_id, target_id, remarks) VALUES ($1, $2, $3, $4)", ctx.guild.id, ctx.author.id, target.id, remarks)
+        await ctx.send(f"<:DVB_True:887589686808309791> Added **{target}** to your watchlist.")
+
 
 
 
