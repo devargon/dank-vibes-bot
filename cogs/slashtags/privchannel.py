@@ -42,19 +42,10 @@ class PrivChannelTags(commands.Cog):
             await channel.channel.edit(name=channel_name)
         except discord.HTTPException as e:
             if "In name: Contains words not allowed for servers in Server Discovery." in e.text:
-                await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Channel rename failed",
+                return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Channel rename failed",
                                                          description="Your new channel name contains words not allowed under Discord's Server Discovery Guidelines. Please choose another channel name.",
                                                          color=discord.Color.red()))
-                await ctx.send(e.text)
-                await ctx.send(e.code)
-                await ctx.send(e.status)
-                await ctx.send(e.response)
             else:
-                await ctx.send(e.text)
-                await ctx.send(e.code)
-                await ctx.send(e.status)
-                await ctx.send(e.response)
-
                 raise(e)
         await ctx.respond(embed=discord.Embed(title="<:DVB_True:887589686808309791> Channel renamed", description=f"Your private channel has been renamed from **{old_channel_name}** to {channel.channel.mention}.", color=discord.Color.green()))
 
