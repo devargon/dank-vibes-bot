@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 
 import amari
@@ -11,6 +12,26 @@ from utils.time import humanize_timedelta
 from utils.format import comma_number
 from time import time
 from main import dvvt
+
+
+def transform_external_url(original_url):
+    # Check if 'mp:external' is in the URL and split accordingly
+    if 'mp:external' in original_url:
+        parts = original_url.split('mp:external/')
+        identifier_and_external_link = parts[1]
+    else:
+        return original_url
+
+    # Construct the new base URL
+    new_base_url = "https://media.discordapp.net/external/"
+    new_url = f"{new_base_url}{identifier_and_external_link}"
+
+    # Regex to find a primary image extension followed by an additional extension
+    pattern = r'\.(jpg|jpeg|png|gif)\.\w+$'
+    new_url = re.sub(pattern, r'.\1', new_url)  # Replace the match with just the primary image extension
+
+    return new_url
+
 
 def spotify_embed(member: discord.Member):
     today = discord.utils.utcnow()
@@ -106,7 +127,7 @@ def activity_embed(member: discord.Member):
                     starttime = activity.end
                     duration = activity.end - today
                     duration = duration.total_seconds()
-                    stop = f"\nWill stop playing at <t{round(starttime.timestamp())}>\n<:Reply:871808167011549244> {humanize_timedelta(seconds=duration)} later"
+                    stop = f"\nWill stop playing at <t:{round(starttime.timestamp())}>\n<:Reply:871808167011549244> {humanize_timedelta(seconds=duration)} later"
                 else:
                     stop = ""
                 keydetails = ""
@@ -118,7 +139,12 @@ def activity_embed(member: discord.Member):
                 if output:
                     keydetails += output
                 if activity.large_image_url:
-                    activityembed.set_thumbnail(url=activity.large_image_url)
+                    activityembed.set_thumbnail(url=transform_external_url(activity.large_image_url))
+                    if activity.small_image_url:
+                        activityembed.set_footer(text=activity.small_image_text, icon_url=transform_external_url(activity.small_image_url))
+                elif activity.small_image_url:
+                    activityembed.set_thumbnail(url=transform_external_url(activity.small_image_url))
+
                 activityembed.add_field(name=activity.name, value=keydetails, inline=False)
             else:
                 activityembed = None
