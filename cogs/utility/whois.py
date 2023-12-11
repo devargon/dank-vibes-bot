@@ -127,7 +127,7 @@ def activity_embed(member: discord.Member):
                     starttime = activity.end
                     duration = activity.end - today
                     duration = duration.total_seconds()
-                    stop = f"\nWill stop playing at <t{round(starttime.timestamp())}>\n<:Reply:871808167011549244> {humanize_timedelta(seconds=duration)} later"
+                    stop = f"\nWill stop playing at <t:{round(starttime.timestamp())}>\n<:Reply:871808167011549244> {humanize_timedelta(seconds=duration)} later"
                 else:
                     stop = ""
                 keydetails = ""
