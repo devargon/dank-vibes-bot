@@ -198,7 +198,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
 
     @commands.Cog.listener()
     async def on_dsl_vote(self, data):
-        print(data)
+        print(f"raw vote data detected {data}")
         try:
             timenow = round(time.time())
             timetoremove = timenow + 86400
