@@ -87,7 +87,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         self.client.topgg_webhook = topgg.WebhookManager(client).dsl_webhook("/webhook", "ABCDE")
         self.client.topgg_webhook.run(5000)
         print(f"{datetime.datetime.utcnow().strftime(self.client.logstrf)} | Topgg Webhook loaded")
-        self.client.topgg_webhook = topgg.WebhookManager(client).dsl_webhook("/webhook", "KPmcFTMadfHBHo3hWm5MqzxDTArZHYeC")
+        self.client.topgg_webhook = topgg.WebhookManager(client).dsl_webhook("/webhook", "Basic KPmcFTMadfHBHo3hWm5MqzxDTArZHYeC")
         self.client.topgg_webhook.run(5001)
         print(f"{datetime.datetime.utcnow().strftime(self.client.logstrf)} | Disurl Webhook loaded")
 
