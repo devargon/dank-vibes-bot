@@ -23,12 +23,12 @@ class VoteSetting(discord.ui.Select):
         self.response = response
         self.context = context
         self.voter = voter
-        labels = ["None", "DM", "Ping"]
-        descriptions = [f"{self.client.user.name} will not remind you to vote for the server.", f"{self.client.user.name} will DM you after 12 hours to vote for the server.", f"{self.client.user.name} will ping you after 12 hours to vote for the server."]
-        emojis = [discord.PartialEmoji.from_str("<:DVB_None:884743780027219989>"), discord.PartialEmoji.from_str("<:DVB_Letter:884743813166407701>"), discord.PartialEmoji.from_str("<:DVB_Ping:883744614295674950>")]
-        options = []
-        for index, label in enumerate(labels):
-            options.append(discord.SelectOption(label=label, description=descriptions[labels.index(label)], emoji=emojis[labels.index(label)], default=True if index == self.voter.rmtype and label != "None" else False))
+        options = [
+            discord.SelectOption(label="None", description="You might miss out on reward if you don't vote!", emoji=discord.PartialEmoji.from_str("<:DVB_None:884743780027219989>")),
+            discord.SelectOption(label="Direct Message (DM)", description="I'll DM you after 12 hours to vote for Dank Vibes.", emoji=discord.PartialEmoji.from_str("<:DVB_Letter:884743813166407701>")),
+            discord.SelectOption(label="Ping in this server", description="I'll ping you in our voting channel!", emoji=discord.PartialEmoji.from_str("<:DVB_Ping:883744614295674950>"))
+        ]
+        options[voter.rmtype].default = True
         super().__init__(placeholder='Choose your type of vote reminder...', min_values=1, max_values=1, options=options)
 
     async def callback(self, interaction: discord.Interaction):
@@ -40,7 +40,7 @@ class VoteSetting(discord.ui.Select):
         if self.values[0] == "None":
             self.voter.rmtype, now = 0, "You will **not be reminded** to vote for Dank Vibes.\nYou will lose out on some vote perks if you don't vote regularly!"
         await self.cog.votedb.update_voter(self.voter)
-        await interaction.response.send_message(f"Your reminder settings have been changed. {now}")
+        await interaction.response.send_message(f"Updated successfully; {now}")
 
 
 class VoteSettingView(discord.ui.View):
@@ -86,7 +86,11 @@ async def generate_leaderboard(voters: List[Voter], guild, channel):
         name = member.display_name.replace("[AFK] ", "") if member is not None else str(voter.member_id)
         name = (name[:12] + '...') if len(name) > 15 else name  # shortens the nickname if it's too long
         leaderboard.append((name, voter.count))  # this is the final list of leaderboard people
-    font_name = "assets/Gagalin.ttf"
+    font_name = "assets/fonts/Fredoka-Medium.ttf"
+
+    cover1to5 = Image.open("assets/1to5votecover.png").convert("RGBA")
+    cover6to10 = Image.open("assets/6to10votecover.png").convert("RGBA")
+
     lbpositions = [(204, 240), (204, 390), (204, 550), (204, 710), (204, 870), (1150, 240), (1150, 390),
                    (1150, 550), (1150, 710),
                    (1150, 870)]  # these are the positions for the nicknames in the leaderboard
@@ -96,11 +100,23 @@ async def generate_leaderboard(voters: List[Voter], guild, channel):
     ima = Image.open("assets/lbbg.png")  # opens leaderboard background
     ima = ima.convert("RGB")  # Convert into RGB instead of RGBA so that it can be saved as a jpeg
     draw = ImageDraw.Draw(ima)  # starts the drawing process
+    # Draw the names and vote counts for all
+    for voter in leaderboard[:5]:
+        draw.text(lbpositions[leaderboard.index(voter)], voter[0], font=font, fill=(255, 255, 255))  # White color for text
+
+    ima.paste(cover1to5, (0, 0), cover1to5)
+
+    if len(leaderboard) > 5:
+        for voter in leaderboard[5:]:
+            draw.text(lbpositions[leaderboard.index(voter)], voter[0], font=font,
+                      fill=(255, 255, 255))  # White color for text
+        ima.paste(cover6to10, (0, 0), cover6to10)
+
+
+    # Redraw the vote counts to ensure they are on top of the overlays
+    draw = ImageDraw.Draw(ima)  # Refresh the drawing context
     for voter in leaderboard:
-        draw.text(lbpositions[leaderboard.index(voter)], voter[0], font=font,
-                  align="middle left")  # Adds a user's nickname
-        draw.text(countpositions[leaderboard.index(voter)], str(voter[1]), font=font,
-                  align="right")  # adds a user's vote count
+        draw.text(countpositions[leaderboard.index(voter)], str(voter[1]), font=font, fill=(255, 255, 255))  # White color for text
     b = BytesIO()
     b.seek(0)
     ima.save(b, format="jpeg", optimize=True, quality=50)  # saves the file under a temporary name
@@ -174,7 +190,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
                 if row.rmtype == 1: # DM
                     message = "You can now vote for Dank Vibes again!"
                     if row.count < 1:
-                        message += " By voting for Dank Vibes **multiple times**, you can get **special perks**! Run `-voterperks` in a channel to find out more.\n\nTip: You can turn off reminders or be pinged for voting by selecting the respective option in `dv.myvotes`. Use this in a server channel though."
+                        message += "\nYou can get **special perks** by voting multiple times for Dank Vibes! Run `-voterperks` in a channel to find out more.\n\n*If you do not wish to receive reminders, run `dv.myvotes` in a channel in Dank Vibes.*"
                     try:
                         await member.send(message, view=VoteLink())
                     except discord.Forbidden:
@@ -246,8 +262,8 @@ class VoteTracker(commands.Cog, name='votetracker'):
                     await self.client.get_channel(871737028105109574).send(str(e))
                 else:
                     try:
-                        await member.add_roles(vdankster, reason="Voted for the server")
-                        rolesummary = f"You've received the role {vdankster.mention} for 24 hours."
+                        await member.add_roles(vdankster, reason=f"Voted for {guild.name}")
+                        rolesummary = f"You've received {vdankster.mention} for 24 hours."
                     except discord.Forbidden:
                         pass
                     existing_reminder = await self.votedb.get_voter(member)
@@ -265,14 +281,14 @@ class VoteTracker(commands.Cog, name='votetracker'):
                                     and role not in member.roles
                             ):
                                 try:
-                                    await member.add_roles(role, reason=f"Milestone reached for user")
-                                    rolesummary += f"\n**You've also gotten the role {role.mention} for voting {milestone[0]} times!** 🥳"
+                                    await member.add_roles(role, reason=f"Vote Milestone reached for user")
+                                    rolesummary += f"\n**You've also received {role.mention} for voting {milestone[0]} times!** 🥳"
                                 except discord.Forbidden:
                                     pass
                     if discord.utils.get(member.roles, id=level_10_role) is not None and votecount.count % 2 == 0:
                         await self.add_item_count('snipepill', member, 1)
                         rolesummary += f"\nYou've received **1 <:DVB_SnipePill:983244179213783050> Snipe Pill** for every 2 votes!"
-                    embed.description = f"You've voted **{plural(votecount.count):time}** so far.\n[You can vote for Dank Vibes on top.gg here!](https://top.gg/servers/595457764935991326/vote)"
+                    embed.description = f"You've voted **{plural(votecount.count):time}** so far.\n[Vote for Dank Vibes on top.gg here!](https://top.gg/servers/595457764935991326/vote)"
             embed.set_author(name=f"{proper_userf(member)} ({member.id})", icon_url=member.display_avatar.url)
             embed.set_footer(text=guild.name, icon_url=guild.icon.url)
             qbemojis = ["https://cdn.discordapp.com/emojis/869579459420913715.gif?v=1",
@@ -415,7 +431,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
             voter = await self.votedb.get_voter(ctx.author)
             position = await self.client.db.fetchval("SELECT COUNT(*) + 1 AS rank FROM voters WHERE count > (SELECT count FROM voters WHERE member_id = $1)", ctx.author.id)
             if voter.count < 1:
-                message = "You're not on the leaderboard yet. Vote for Dank Vibes for a chance to be on the leaderboard! <https://top.gg/servers/595457764935991326/vote>"
+                message = "You're not on the leaderboard yet. Vote for Dank Vibes for a chance to be on it! <https://top.gg/servers/595457764935991326/vote>"
             else:
                 message = f"You're ranked **{position}** out of {leaderboard_len} members on the vote leaderboard. {'🏆' if position < 11 else ''}"
         try:
@@ -429,7 +445,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         """
         Shows you where to vote for Dank Vibes.
         """
-        embed = discord.Embed(title="Show Your Support!", description="If you like what you're seeing from Dank Vibes, feel free to upvote the server [here](https://top.gg/servers/595457764935991326/vote). You can upvote the server every 12 hours! <a:dv_qbThumbsupOwO:837666232811257907>\n\n**__Voter Perks__** \n<a:dv_pointArrowOwO:837656328482062336> Obtain the <@&683884762997587998> role\n<a:dv_pointArrowOwO:837656328482062336> Access to <#753577021950656583> ~ **2x** multi \n<a:dv_pointArrowOwO:837656328482062336> Access to <#751740855269851236> ~ **2x** multi\n\n⭐ View the additional perks for voting by running `-voterperks`\n\n**TIP**: Set reminders to vote using `dv.votereminder`\n**NOTE**: Perks are limited to 1 day | Revote to obtain the perks again", timestamp=discord.utils.utcnow(), color=0xB8D5FF)
+        embed = discord.Embed(title="Show Your Support!", description="If you like what you're seeing from Dank Vibes, feel free to upvote the server [here](https://top.gg/servers/595457764935991326/vote). You can upvote the server every 12 hours! <a:dv_qbThumbsupOwO:837666232811257907>\n\n**__Voter Perks__** \n<a:dv_wpointArrowOwO:837656328482062336> Obtain the <@&683884762997587998> role\n<a:dv_wpointArrowOwO:837656328482062336> Access to <#753577021950656583> ~ **2x** multi \n<a:dv_wpointArrowOwO:837656328482062336> Access to <#751740855269851236> ~ **2x** multi\n\n⭐ View the additional perks for voting by running `-voterperks`\n\n**TIP**: Set reminders to vote using `dv.votereminder`\n**NOTE**: Perks are limited to 1 day | Revote to obtain the perks again", timestamp=discord.utils.utcnow(), color=0xB8D5FF)
         embed.set_thumbnail(url="https://i.imgur.com/kLVa5dD.gif")
         embed.set_footer(text="Dank Vibes | Thank you for all your support ♡", icon_url="https://cdn.discordapp.com/icons/595457764935991326/a_58b91a8c9e75742d7b423411b0205b2b.png?size=1024")
 
@@ -452,22 +468,22 @@ class VoteTracker(commands.Cog, name='votetracker'):
         # result = await self.client.db.fetchrow("SELECT * FROM roleremove WHERE member_id = $1 and rmtime > $2", ctx.author.id, timenow)
         nextmilestone = await self.client.db.fetchval("SELECT votecount FROM milestones WHERE votecount > $1 LIMIT 1", user_voter.count)
         if user_voter.rmtime is not None:
-            desc = f"You can vote <t:{user_voter.rmtime}:R>!"
+            desc = f"Vote again in <t:{user_voter.rmtime}:R>!"
         else:
             desc = f"You can vote now!"
-        embed = discord.Embed(title=f"You have voted for Dank Vibes **__{plural(user_voter.count):__**time}.", description=desc, timestamp=discord.utils.utcnow(), url="https://top.gg/servers/595457764935991326/vote")
+        embed = discord.Embed(title=f"You've voted for Dank Vibes **__{plural(user_voter.count):__**time}.", description=desc, url="https://top.gg/servers/595457764935991326/vote")
         embed.set_author(name=ctx.author.name, icon_url=ctx.author.display_avatar.url)
         if user_voter.rmtype == 0:
-            footer_msg = "You are currently not reminded to vote for Dank Vibes. You can be reminded to vote for Dank Vibes by choosing DMs or pings on the dropdown menu below!"
+            footer_msg = "You're currently not reminded to vote. Choose how you'd like to be reminded below (DMs or Pings)!"
         elif user_voter.rmtype == 1:
-            footer_msg = "You can change your reminder preference below!"
+            footer_msg = None
         elif user_voter.rmtype == 2:
-            footer_msg = "You can change your reminder preference below!"
+            footer_msg = None
         else:
             footer_msg = None
         if nextmilestone is not None:
             count_to_next = nextmilestone - user_voter.count
-            embed.add_field(name="Milestones 🏁", value=f"You are **{plural(count_to_next):** vote} away from reaching **{nextmilestone} votes**!", inline=False)
+            embed.add_field(name="Milestones 🎯 ", value=f"**{plural(count_to_next):** vote} votes away from **{nextmilestone} votes**!", inline=False)
         if footer_msg is not None:
             embed.set_footer(text=footer_msg)
         embed.set_thumbnail(url=ctx.guild.icon.url)
