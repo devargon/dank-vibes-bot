@@ -305,7 +305,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
 
                         embed = discord.Embed(title=f"Hey, we noticed you recently voted for {guild.name} on __Top.gg__.",
                                               description="We thank you for your support!\n\nWith immediate effect, **only** votes made on <:DVB_disurl:1193480008128274504> **[Disurl](https://disurl.me/]) (https://disurl.me)** will count towards your vote count.", color=self.client.embed_color)
-                        embed.add_field(name="What does this mean for me?", value="To continue receiving the **DV Voter** role and other benefits, head over to [Dank Vibes' <:DVB_disurl:1193480008128274504> Disurl page](https://disurl.me/server/595457764935991326/vote) and vote for us there!\nNothing else is required from your part.")
+                        embed.add_field(name="What does this mean for me?", value="To continue receiving the **DV Voter** role and other benefits, head over to [Dank Vibes' <:DVB_disurl:1193480008128274504> Disurl page](https://disurl.me/server/595457764935991326/vote) and vote for us there!\n__Your existing vote count is unaffected.__")
                         embed.add_field(name="Can I continue voting on Top.gg?", value="Sure! Again, we thank you for your unwavering support 🫡", inline=False)
                         embed.set_author(name=guild.name, icon_url=guild.icon.with_size(64).url)
                         try:
