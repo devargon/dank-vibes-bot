@@ -211,15 +211,22 @@ class VoteTracker(commands.Cog, name='votetracker'):
 
     @tasks.loop(hours=24.0)
     async def leaderboardloop(self):
+        print("Task started")
         await self.client.wait_until_ready()
+        await self.prepare_votedb()
         if (await self.client.get_guild_settings(guildid)).votelb is True:
+            print("Vote leaderboard enabled")
             try:
-                voters = await self.votedb.get_voters(expiring=False, limit=10)
+                voters = await self.votedb.get_voters(expiring=False, limit=None)
+                print(f"Fetched leaderboard, {len(voters)} voters fetched")
                 guild = self.client.get_guild(guildid)
                 channel = guild.get_channel(channelid)
+                print("Got Guild and Channel")
                 if channel is None:
+                    print("Voting channel is none")
                     return
                 leaderboard_len, file = await generate_leaderboard(voters, guild, channel)
+                print("Leaderboard generated")
                 try:
                     await channel.send("This is the vote leaderboard for **Dank Vibes**!" if leaderboard_len != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://top.gg/servers/595457764935991326/vote !", file=file)
                 except discord.Forbidden:
