@@ -244,34 +244,35 @@ class VoteTracker(commands.Cog, name='votetracker'):
                 except Exception as e:
                     print_exception("Error while updating votecount", e)
                     await self.client.get_channel(871737028105109574).send(str(e))
-                try:
-                    await member.add_roles(vdankster, reason="Voted for the server")
-                    rolesummary = f"You've received the role {vdankster.mention} for 24 hours."
-                except discord.Forbidden:
-                    pass
-                existing_reminder = await self.votedb.get_voter(member)
-                existing_reminder.rmtime = timetoremind
-                await self.votedb.update_voter(existing_reminder)
-                await self.client.db.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4) ON CONFLICT (member_id, role_id) DO UPDATE SET time = EXCLUDED.time", userid, guildid, vdanksterid, timetoremove)
+                else:
+                    try:
+                        await member.add_roles(vdankster, reason="Voted for the server")
+                        rolesummary = f"You've received the role {vdankster.mention} for 24 hours."
+                    except discord.Forbidden:
+                        pass
+                    existing_reminder = await self.votedb.get_voter(member)
+                    existing_reminder.rmtime = timetoremind
+                    await self.votedb.update_voter(existing_reminder)
+                    await self.client.db.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4) ON CONFLICT (member_id, role_id) DO UPDATE SET time = EXCLUDED.time", userid, guildid, vdanksterid, timetoremove)
 
-                milestones = await self.client.db.fetch("SELECT * FROM milestones")
-                if len(milestones) != 0:
-                    for milestone in milestones:
-                        role = guild.get_role(milestone.get('roleid'))
-                        if (
-                                role is not None
-                                and votecount.count >= milestone.get('votecount')
-                                and role not in member.roles
-                        ):
-                            try:
-                                await member.add_roles(role, reason=f"Milestone reached for user")
-                                rolesummary += f"\n**You've also gotten the role {role.mention} for voting {milestone[0]} times!** 🥳"
-                            except discord.Forbidden:
-                                pass
-                if discord.utils.get(member.roles, id=level_10_role) is not None and votecount % 2 == 0:
-                    await self.add_item_count('snipepill', member, 1)
-                    rolesummary += f"\nYou've received **1 <:DVB_SnipePill:983244179213783050> Snipe Pill** for every 2 votes!"
-                embed.description = f"You've voted **{plural(votecount.count):time}** so far.\n[You can vote for Dank Vibes on top.gg here!](https://top.gg/servers/595457764935991326/vote)"
+                    milestones = await self.client.db.fetch("SELECT * FROM milestones")
+                    if len(milestones) != 0:
+                        for milestone in milestones:
+                            role = guild.get_role(milestone.get('roleid'))
+                            if (
+                                    role is not None
+                                    and votecount.count >= milestone.get('votecount')
+                                    and role not in member.roles
+                            ):
+                                try:
+                                    await member.add_roles(role, reason=f"Milestone reached for user")
+                                    rolesummary += f"\n**You've also gotten the role {role.mention} for voting {milestone[0]} times!** 🥳"
+                                except discord.Forbidden:
+                                    pass
+                    if discord.utils.get(member.roles, id=level_10_role) is not None and votecount.count % 2 == 0:
+                        await self.add_item_count('snipepill', member, 1)
+                        rolesummary += f"\nYou've received **1 <:DVB_SnipePill:983244179213783050> Snipe Pill** for every 2 votes!"
+                    embed.description = f"You've voted **{plural(votecount.count):time}** so far.\n[You can vote for Dank Vibes on top.gg here!](https://top.gg/servers/595457764935991326/vote)"
             embed.set_author(name=f"{proper_userf(member)} ({member.id})", icon_url=member.display_avatar.url)
             embed.set_footer(text=guild.name, icon_url=guild.icon.url)
             qbemojis = ["https://cdn.discordapp.com/emojis/869579459420913715.gif?v=1",
