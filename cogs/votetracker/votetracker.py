@@ -213,17 +213,21 @@ class VoteTracker(commands.Cog, name='votetracker'):
     async def leaderboardloop(self):
         await self.client.wait_until_ready()
         if (await self.client.get_guild_settings(guildid)).votelb is True:
-            voters = await self.votedb.get_voters(expiring=False, limit=10)
-            guild = self.client.get_guild(guildid)
-            channel = guild.get_channel(channelid)
-            if channel is None:
-                return
-            leaderboard_len, file = await generate_leaderboard(voters, guild, channel)
             try:
-                await channel.send("This is the vote leaderboard for **Dank Vibes**!" if leaderboard_len != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://top.gg/servers/595457764935991326/vote !", file=file)
-            except discord.Forbidden:
-                await channel.send("I do not have permission to send the leaderboard here.")
-            return
+                voters = await self.votedb.get_voters(expiring=False, limit=10)
+                guild = self.client.get_guild(guildid)
+                channel = guild.get_channel(channelid)
+                if channel is None:
+                    return
+                leaderboard_len, file = await generate_leaderboard(voters, guild, channel)
+                try:
+                    await channel.send("This is the vote leaderboard for **Dank Vibes**!" if leaderboard_len != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://top.gg/servers/595457764935991326/vote !", file=file)
+                except discord.Forbidden:
+                    await channel.send("I do not have permission to send the leaderboard here.")
+                return
+            except Exception as e:
+                a = print_exception("Error in generating leaderboard for task", e)
+
 
     @commands.Cog.listener()
     async def on_dsl_vote(self, data):
