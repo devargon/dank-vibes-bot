@@ -11,6 +11,7 @@ class Voter:
         self.count: int = record.get('count')
         self.rmtype: int = record.get('rmtype')
         self.rmtime: int = record.get('rmtime')
+        self.topgg_deprecation: bool = record.get('topgg_deprecation')
         self.member: discord.Member = member
 
 
@@ -39,7 +40,7 @@ class VoteDB:
         return arr
 
     async def update_voter(self, voter: Voter):
-        await self.db.execute("UPDATE voters SET count = $1, rmtype = $2, rmtime = $3 WHERE member_id = $4", voter.count, voter.rmtype, voter.rmtime, voter.member.id if voter.member is not None else voter.member_id)
+        await self.db.execute("UPDATE voters SET count = $1, rmtype = $2, rmtime = $3, topgg_deprecation = $4 WHERE member_id = $5", voter.count, voter.rmtype, voter.rmtime, voter.topgg_deprecation, voter.member.id if voter.member is not None else voter.member_id)
         return voter
 
     async def add_one_votecount(self, member: discord.Member) -> Union[bool, Voter]:

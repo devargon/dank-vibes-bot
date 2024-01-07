@@ -40,7 +40,7 @@ class VoteSetting(discord.ui.Select):
         if self.values[0] == "None":
             self.voter.rmtype, now = 0, "You will **not be reminded** to vote for Dank Vibes.\nYou will lose out on some vote perks if you don't vote regularly!"
         await self.cog.votedb.update_voter(self.voter)
-        await interaction.response.send_message(f"Updated successfully; {now}")
+        await interaction.response.send_message(f"Updated successfully; {now}", ephemeral=True)
 
 
 class VoteSettingView(discord.ui.View):
@@ -54,16 +54,16 @@ class VoteSettingView(discord.ui.View):
         super().__init__(timeout=timeout)
         self.add_item(VoteSetting(client=self.client, cog=self.cog, context=self.context, response=self.response, voter=self.voter))
         if timetovote > 0:
-            label = f"Vote at top.gg - {short_time(timetovote)}"
+            label = f"Vote at Disurl - {short_time(timetovote)}"
         else:
-            label = f"Vote at top.gg"
-        self.add_item(discord.ui.Button(label=label, url="https://top.gg/servers/595457764935991326/vote", emoji=discord.PartialEmoji.from_str('<a:dv_iconOwO:837943874973466664>'), disabled=True if timetovote > 0 else False))
+            label = f"Vote at Disurl"
+        self.add_item(discord.ui.Button(label=label, url="https://disurl.me/server/595457764935991326/vote", emoji=discord.PartialEmoji.from_str('<a:dv_iconOwO:837943874973466664>'), disabled=True if timetovote > 0 else False))
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         ctx = self.context
         author = ctx.author
         if interaction.user != author:
-            await interaction.response.send_message("These are not your vote reminders. You can choose to be reminded for voting for the server by sending `dv.votereminder` yourself!", ephemeral=True)
+            await interaction.response.send_message("To update your own vote reminders, send `dv.myvotes`!", ephemeral=True)
             return False
         return True
 
@@ -180,10 +180,8 @@ class VoteTracker(commands.Cog, name='votetracker'):
                 await self.votedb.update_voter(row)
                 channel = self.client.get_channel(channelid)
 
-                class VoteLink(discord.ui.View):
-                    def __init__(self):
-                        super().__init__()
-                        self.add_item(discord.ui.Button(label='Vote for Dank Vibes at Top.gg', url="https://top.gg/servers/595457764935991326/vote", emoji=discord.PartialEmoji.from_str('<a:dv_iconOwO:837943874973466664>')))
+                thing = SingleURLButton(link="https://disurl.me/server/595457764935991326/vote", text="Vote for Dank Vibes", emoji=discord.PartialEmoji.from_str('<a:dv_iconOwO:837943874973466664>'))
+
                 if member is None:
                     return
                 if row.rmtype == 1: # DM
@@ -191,11 +189,11 @@ class VoteTracker(commands.Cog, name='votetracker'):
                     if row.count < 1:
                         message += "\nYou can get **special perks** by voting multiple times for Dank Vibes! Run `-voterperks` in a channel to find out more.\n\n*If you do not wish to receive reminders, run `dv.myvotes` in a channel in Dank Vibes.*"
                     try:
-                        await member.send(message, view=VoteLink())
+                        await member.send(message, view=thing)
                     except discord.Forbidden:
-                        await channel.send(f"{member.mention} You can now vote for Dank Vibes again!", view=VoteLink(), delete_after=5.0)  # uses ping instead if the bot cannot DM this user
+                        await channel.send(f"{member.mention} You can now vote for Dank Vibes again!", view=thing, delete_after=5.0)  # uses ping instead if the bot cannot DM this user
                 elif row.rmtype == 2:
-                    await channel.send(f"{member.mention} You can now vote for Dank Vibes again!", view=VoteLink(), delete_after=5.0)  # self-explainable
+                    await channel.send(f"{member.mention} You can now vote for Dank Vibes again!", view=thing, delete_after=5.0)  # self-explainable
                 elif row.rmtype not in [0, 1, 2]:  # somehow this guy doesn't have "dm" "ping or "none" in his setting so i'll update it to show that
                     row.rmtype = 0
                     await self.votedb.update_voter(row)
@@ -229,7 +227,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
                 leaderboard_len, file = await generate_leaderboard(voters, guild, channel)
                 print("Leaderboard generated")
                 try:
-                    await channel.send("This is the vote leaderboard for **Dank Vibes**!" if leaderboard_len != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://top.gg/servers/595457764935991326/vote !", file=file)
+                    await channel.send("This is the vote leaderboard for **Dank Vibes**!" if leaderboard_len != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://disurl.me/server/595457764935991326/vote !", file=file)
                 except discord.Forbidden:
                     await channel.send("I do not have permission to send the leaderboard here.")
                 return
@@ -259,48 +257,67 @@ class VoteTracker(commands.Cog, name='votetracker'):
             rolesummary = "\u200b"  # If no roles are added, this will be in the section where the roles added are displayed.
 
             embed = discord.Embed(title=f"Thank you for voting for {guild.name}, {member.name}!",
-                                  description=f"This was a test vote. \n[You can vote for Dank Vibes on top.gg here!](https://top.gg/servers/595457764935991326/vote)",
+                                  description=f"This was a test vote. \n[You can vote for Dank Vibes on Disurl here!](https://disurl.me/server/595457764935991326/vote)",
                                   timestamp=discord.utils.utcnow(), color=self.client.embed_color) # In case it is a test upvote
-
             if data.get('type', None) in ['upvote', 'vote']:
-                rolesummary = ""
-                try:
-                    votecount = await self.votedb.add_one_votecount(member)
-                    if votecount is False:
-                        rolesummary += "⚠️ An error occred and I could not add this vote count.\n"
-
-                except Exception as e:
-                    print_exception("Error while updating votecount", e)
-                    await self.client.get_channel(871737028105109574).send(str(e))
-                else:
+                if data.get('type', None) == 'vote': # Disurl Voting
+                    rolesummary = ""
                     try:
-                        await member.add_roles(vdankster, reason=f"Voted for {guild.name}")
-                        rolesummary = f"You've received {vdankster.mention} for 24 hours."
-                    except discord.Forbidden:
-                        pass
-                    existing_reminder = await self.votedb.get_voter(member)
-                    existing_reminder.rmtime = timetoremind
-                    await self.votedb.update_voter(existing_reminder)
-                    await self.client.db.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4) ON CONFLICT (member_id, role_id) DO UPDATE SET time = EXCLUDED.time", userid, guildid, vdanksterid, timetoremove)
+                        votecount = await self.votedb.add_one_votecount(member)
+                        if votecount is False:
+                            rolesummary += "⚠️ An error occred and I could not add this vote count.\n"
 
-                    milestones = await self.client.db.fetch("SELECT * FROM milestones")
-                    if len(milestones) != 0:
-                        for milestone in milestones:
-                            role = guild.get_role(milestone.get('roleid'))
-                            if (
-                                    role is not None
-                                    and votecount.count >= milestone.get('votecount')
-                                    and role not in member.roles
-                            ):
-                                try:
-                                    await member.add_roles(role, reason=f"Vote Milestone reached for user")
-                                    rolesummary += f"\n**You've also received {role.mention} for voting {milestone[0]} times!** 🥳"
-                                except discord.Forbidden:
-                                    pass
-                    if discord.utils.get(member.roles, id=level_10_role) is not None and votecount.count % 2 == 0:
-                        await self.add_item_count('snipepill', member, 1)
-                        rolesummary += f"\nYou've received **1 <:DVB_SnipePill:983244179213783050> Snipe Pill** for every 2 votes!"
-                    embed.description = f"You've voted **{plural(votecount.count):time}** so far.\n[Vote for Dank Vibes on top.gg here!](https://top.gg/servers/595457764935991326/vote)"
+                    except Exception as e:
+                        print_exception("Error while updating votecount", e)
+                        await self.client.get_channel(871737028105109574).send(str(e))
+                    else:
+                        try:
+                            await member.add_roles(vdankster, reason=f"Voted for {guild.name}")
+                            rolesummary = f"You've received {vdankster.mention} for 24 hours."
+                        except discord.Forbidden:
+                            pass
+                        existing_reminder = await self.votedb.get_voter(member)
+                        existing_reminder.rmtime = timetoremind
+                        await self.votedb.update_voter(existing_reminder)
+                        await self.client.db.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4) ON CONFLICT (member_id, role_id) DO UPDATE SET time = EXCLUDED.time", userid, guildid, vdanksterid, timetoremove)
+
+                        milestones = await self.client.db.fetch("SELECT * FROM milestones")
+                        if len(milestones) != 0:
+                            for milestone in milestones:
+                                role = guild.get_role(milestone.get('roleid'))
+                                if (
+                                        role is not None
+                                        and votecount.count >= milestone.get('votecount')
+                                        and role not in member.roles
+                                ):
+                                    try:
+                                        await member.add_roles(role, reason=f"Vote Milestone reached for user")
+                                        rolesummary += f"\n**You've also received {role.mention} for voting {milestone[0]} times!** 🥳"
+                                    except discord.Forbidden:
+                                        pass
+                        if discord.utils.get(member.roles, id=level_10_role) is not None and votecount.count % 2 == 0:
+                            await self.add_item_count('snipepill', member, 1)
+                            rolesummary += f"\nYou've received **1 <:DVB_SnipePill:983244179213783050> Snipe Pill** for every 2 votes!"
+                        embed.description = f"You've voted **{plural(votecount.count):time}** so far.\n[Vote for Dank Vibes on Disurl here!](https://disurl.me/server/595457764935991326/vote)"
+                else: # Topgg voting
+                    voter = await self.votedb.get_voter(member)
+                    if voter.topgg_deprecation is not True:
+
+                        embed = discord.Embed(title=f"Hey, we noticed you recently voted for {guild.name} on __Disurl__.",
+                                              description="We thank you for your support!\n\nWith immediate effect, **only** votes made on <:DVB_disurl:1193480008128274504> **[Disurl](https://disurl.me/]) (https://disurl.me)** will count towards your vote count.", color=self.client.embed_color)
+                        embed.add_field(name="What does this mean for you?", value="To continue receiving the **DV Voter** role and other benefits, head over to [Dank Vibes' <:DVB_disurl:1193480008128274504> Disurl page](https://disurl.me/server/595457764935991326/vote) and vote for us there!\nNothing else is required from your part.")
+                        embed.add_field(name="Can I continue voting on Disurl", value="Sure! Again, we thank you for your unwavering support 🫡", inline=False)
+                        embed.set_author(name=guild.name, icon_url=guild.icon.with_size(64).url)
+                        try:
+                            await member.send(embed=embed, view=SingleURLButton(link="https://disurl.me/server/595457764935991326/vote", text="Vote for Dank Vibes on Disurl", emoji=discord.PartialEmoji.from_str('<a:dv_iconOwO:837943874973466664>')))
+                        except discord.Forbidden:
+                            await votingchannel.send(member.mention, embed=embed, view=SingleURLButton(link="https://disurl.me/server/595457764935991326/vote", text="Vote for Dank Vibes on Disurl", emoji=discord.PartialEmoji.from_str('<a:dv_iconOwO:837943874973466664>')))
+                        voter.topgg_deprecation = True
+                        await self.votedb.update_voter(voter)
+                        return
+
+
+
             embed.set_author(name=f"{proper_userf(member)} ({member.id})", icon_url=member.display_avatar.url)
             embed.set_footer(text=guild.name, icon_url=guild.icon.url)
             qbemojis = ["https://cdn.discordapp.com/emojis/869579459420913715.gif?v=1",
@@ -443,11 +460,11 @@ class VoteTracker(commands.Cog, name='votetracker'):
             voter = await self.votedb.get_voter(ctx.author)
             position = await self.client.db.fetchval("SELECT COUNT(*) + 1 AS rank FROM voters WHERE count > (SELECT count FROM voters WHERE member_id = $1)", ctx.author.id)
             if voter.count < 1:
-                message = "You're not on the leaderboard yet. Vote for Dank Vibes for a chance to be on it! <https://top.gg/servers/595457764935991326/vote>"
+                message = "You're not on the leaderboard yet. Vote for Dank Vibes for a chance to be on it! <https://disurl.me/server/595457764935991326/vote>"
             else:
                 message = f"You're ranked **{position}** out of {leaderboard_len} members on the vote leaderboard. {'🏆' if position < 11 else ''}"
         try:
-            await ctx.send(f"This is the vote leaderboard for Dank Vibes! {message}" if leaderboard_len != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://top.gg/servers/595457764935991326/vote !", file=file)
+            await ctx.send(f"This is the vote leaderboard for Dank Vibes! {message}" if leaderboard_len != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://disurl.me/server/595457764935991326/vote !", file=file)
         except discord.Forbidden:
             await ctx.send("I do not have permission to send the leaderboard here.")
         return
@@ -457,16 +474,11 @@ class VoteTracker(commands.Cog, name='votetracker'):
         """
         Shows you where to vote for Dank Vibes.
         """
-        embed = discord.Embed(title="Show Your Support!", description="If you like what you're seeing from Dank Vibes, feel free to upvote the server [here](https://top.gg/servers/595457764935991326/vote). You can upvote the server every 12 hours! <a:dv_qbThumbsupOwO:837666232811257907>\n\n**__Voter Perks__** \n<a:dv_wpointArrowOwO:837656328482062336> Obtain the <@&683884762997587998> role\n<a:dv_wpointArrowOwO:837656328482062336> Access to <#753577021950656583> ~ **2x** multi \n<a:dv_wpointArrowOwO:837656328482062336> Access to <#751740855269851236> ~ **2x** multi\n\n⭐ View the additional perks for voting by running `-voterperks`\n\n**TIP**: Set reminders to vote using `dv.votereminder`\n**NOTE**: Perks are limited to 1 day | Revote to obtain the perks again", timestamp=discord.utils.utcnow(), color=0xB8D5FF)
+        embed = discord.Embed(title="Show Your Support!", description="If you like what you're seeing from Dank Vibes, feel free to upvote the server [here](https://disurl.me/server/595457764935991326/vote). You can upvote the server every 12 hours! <a:dv_qbThumbsupOwO:837666232811257907>\n\n**__Voter Perks__** \n<a:dv_wpointArrowOwO:837656328482062336> Obtain the <@&683884762997587998> role\n<a:dv_wpointArrowOwO:837656328482062336> Access to <#753577021950656583> ~ **2x** multi \n<a:dv_wpointArrowOwO:837656328482062336> Access to <#751740855269851236> ~ **2x** multi\n\n⭐ View the additional perks for voting by running `-voterperks`\n\n**TIP**: Set reminders to vote using `dv.votereminder`\n**NOTE**: Perks are limited to 1 day | Revote to obtain the perks again", timestamp=discord.utils.utcnow(), color=0xB8D5FF)
         embed.set_thumbnail(url="https://i.imgur.com/kLVa5dD.gif")
         embed.set_footer(text="Dank Vibes | Thank you for all your support ♡", icon_url="https://cdn.discordapp.com/icons/595457764935991326/a_58b91a8c9e75742d7b423411b0205b2b.png?size=1024")
-
-        class Vote(discord.ui.View):
-            def __init__(self):
-                super().__init__()
-                self.add_item(discord.ui.Button(label='Vote for Dank Vibes', url="https://top.gg/servers/595457764935991326/vote", emoji=discord.PartialEmoji.from_str('<a:dv_iconOwO:837943874973466664>')))
-
-        await ctx.send(embed=embed, view=Vote())
+        thing = SingleURLButton(link="https://disurl.me/server/595457764935991326/vote", text="Vote for Dank Vibes", emoji=discord.PartialEmoji.from_str('<a:dv_iconOwO:837943874973466664>'))
+        await ctx.send(embed=embed, view=thing)
 
     @commands.command(name="myvotes", aliases=["myv", "myvote", "votes"])
     @checks.not_in_gen()
@@ -476,14 +488,12 @@ class VoteTracker(commands.Cog, name='votetracker'):
         """
         timenow = round(time.time())
         user_voter = await self.votedb.get_voter(ctx.author)
-        # count = await self.client.db.fetchval("SELECT count FROM votecount where member_id = $1", ctx.author.id) or 0
-        # result = await self.client.db.fetchrow("SELECT * FROM roleremove WHERE member_id = $1 and rmtime > $2", ctx.author.id, timenow)
         nextmilestone = await self.client.db.fetchval("SELECT votecount FROM milestones WHERE votecount > $1 LIMIT 1", user_voter.count)
         if user_voter.rmtime is not None:
             desc = f"Vote again in <t:{user_voter.rmtime}:R>!"
         else:
             desc = f"You can vote now!"
-        embed = discord.Embed(title=f"You've voted for Dank Vibes **__{plural(user_voter.count):__**time}.", description=desc, url="https://top.gg/servers/595457764935991326/vote")
+        embed = discord.Embed(title=f"You've voted for Dank Vibes **__{plural(user_voter.count):__**time}.", description=desc, url="https://disurl.me/server/595457764935991326/vote")
         embed.set_author(name=ctx.author.name, icon_url=ctx.author.display_avatar.url)
         if user_voter.rmtype == 0:
             footer_msg = "You're currently not reminded to vote. Choose how you'd like to be reminded below (DMs or Pings)!"
