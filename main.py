@@ -279,8 +279,8 @@ class dvvt(commands.Bot):
                       'remindersettings', 'inventories', 'iteminfo', 'tempweekly', 'rules', 'serverconfig',
                       'owocurrent', 'owopast', 'temp', 'stickymessages', 'maintenance', 'teleport',
                       'suggestion_response', 'suggestions', 'lockdownprofiles', 'grinderdata', 'messagemilestones',
-                      'viprolemessages', 'karutaeventconfig', 'autoreactions', 'owocount', 'milestones', 'rmpreference',
-                      'roleremove', 'votecount', 'cooldowns', 'selfrolemessages', 'devmode', 'blacklisted_words',
+                      'viprolemessages', 'karutaeventconfig', 'autoreactions', 'owocount', 'milestones', 'votereminder',
+                      'voters', 'cooldowns', 'selfrolemessages', 'devmode', 'blacklisted_words',
                       'blacklist', 'freezenick', 'autorole', 'giveaways', 'giveawayentrants', 'dankdrops', 'autorole',
                       'donation_categories', 'christmaseventconfig', 'commandaccess', 'ignoredchristmascat',
                       'ignoredchristmaschan', 'perkremoval', 'commandlog', 'timedunlock', 'nickname_changes',
@@ -339,8 +339,6 @@ CREATE TABLE IF NOT EXISTS owopast(member_id bigint PRIMARY KEY, yesterday integ
 CREATE TABLE IF NOT EXISTS perkremoval(member_id bigint, perk text, until bigint);
 CREATE TABLE IF NOT EXISTS prefixes(guild_id bigint PRIMARY KEY, prefix text);
 CREATE TABLE IF NOT EXISTS remindersettings(member_id bigint PRIMARY KEY, method integer, daily bigint, lottery bigint, work bigint, lifesaver bigint, apple integer, redeem integer, weekly integer, monthly integer, hunt integer, fish integer, dig integer, highlow integer, snakeeyes integer, search integer, crime integer, beg integer, dailybox integer, horseshoe integer, pizza integer, drop integer);
-CREATE TABLE IF NOT EXISTS rmpreference(member_id bigint PRIMARY KEY, rmtype integer);
-CREATE TABLE IF NOT EXISTS roleremove(member_id bigint PRIMARY KEY);
 CREATE TABLE IF NOT EXISTS rules(guild_id bigint, command text, role_id bigint, whitelist boolean);
 CREATE TABLE IF NOT EXISTS selfrolemessages(guild_id bigint, age bigint, gender bigint, location bigint, minigames bigint, event_pings bigint, dank_pings bigint, server_pings bigint, bot_roles bigint, random_color bigint, colors bigint, specialcolors bigint, boostping bigint, vipheist bigint);
 CREATE TABLE IF NOT EXISTS serverconfig(guild_id bigint PRIMARY KEY NOT NULL, owodailylb bool NOT NULL DEFAULT FALSE, verification bool NOT NULL DEFAULT TRUE, censor bool NOT NULL DEFAULT FALSE, owoweeklylb bool NOT NULL DEFAULT TRUE, votelb bool NOT NULL DEFAULT TRUE, timeoutlog bool NOT NULL DEFAULT FALSE, statusrole bool NOT NULL DEFAULT FALSE, statusroleid bigint NOT NULL DEFAULT 0, statustext text NOT NULL DEFAULT 'lorem ipsum');

@@ -6,7 +6,9 @@ import discord
 import random
 from PIL import ImageFont, Image, ImageDraw
 from discord.ext import commands, tasks
+from typing import List
 
+from cogs.votetracker.votedb import VoteDB, Voter
 from main import dvvt
 from utils.format import print_exception, ordinal, plural, short_time, proper_userf
 from io import BytesIO
@@ -15,40 +17,42 @@ from utils import checks
 
 
 class VoteSetting(discord.ui.Select):
-    def __init__(self, client, context, response, currentsetting):
+    def __init__(self, client, cog, context, response, voter):
         self.client = client
+        self.cog = cog
         self.response = response
         self.context = context
-        self.currentsetting = currentsetting
+        self.voter = voter
         labels = ["None", "DM", "Ping"]
         descriptions = [f"{self.client.user.name} will not remind you to vote for the server.", f"{self.client.user.name} will DM you after 12 hours to vote for the server.", f"{self.client.user.name} will ping you after 12 hours to vote for the server."]
         emojis = [discord.PartialEmoji.from_str("<:DVB_None:884743780027219989>"), discord.PartialEmoji.from_str("<:DVB_Letter:884743813166407701>"), discord.PartialEmoji.from_str("<:DVB_Ping:883744614295674950>")]
         options = []
         for index, label in enumerate(labels):
-            options.append(discord.SelectOption(label=label, description=descriptions[labels.index(label)], emoji=emojis[labels.index(label)], default=True if index == self.currentsetting and label != "None" else False))
+            options.append(discord.SelectOption(label=label, description=descriptions[labels.index(label)], emoji=emojis[labels.index(label)], default=True if index == self.voter.rmtype and label != "None" else False))
         super().__init__(placeholder='Choose your type of vote reminder...', min_values=1, max_values=1, options=options)
 
     async def callback(self, interaction: discord.Interaction):
+        now = ""
         if self.values[0] == "DM":
-            await self.client.db.execute("UPDATE rmpreference SET rmtype = $1 WHERE member_id = $2", 1, self.context.author.id)
-            await interaction.response.send_message("Your reminder settings have been changed. You will **now be DMed** to vote for Dank Vibes.", ephemeral=True)
+            self.voter.rmtype, now = 1, "You will **now be DMed** to vote for Dank Vibes."
         if self.values[0] == "Ping":
-            await self.client.db.execute("UPDATE rmpreference SET rmtype = $1 WHERE member_id = $2", 2, self.context.author.id)
-            await interaction.response.send_message("Your reminder settings have been changed. You will **now be pinged** to vote for Dank Vibes.", ephemeral=True)
+            self.voter.rmtype, now = 2, "You will **now be pinged** to vote for Dank Vibes."
         if self.values[0] == "None":
-            await self.client.db.execute("UPDATE rmpreference SET rmtype = $1 WHERE member_id = $2", 0, self.context.author.id)
-            await interaction.response.send_message("Your reminder settings have been changed. You will **not be reminded** to vote for Dank Vibes.\nYou will lose out on some vote perks if you don't vote regularly!", ephemeral=True)
+            self.voter.rmtype, now = 0, "You will **not be reminded** to vote for Dank Vibes.\nYou will lose out on some vote perks if you don't vote regularly!"
+        await self.cog.votedb.update_voter(self.voter)
+        await interaction.response.send_message(f"Your reminder settings have been changed. {now}")
 
 
 class VoteSettingView(discord.ui.View):
-    def __init__(self, client, ctx, timeout, currentsetting, timetovote):
+    def __init__(self, client, cog, ctx, timeout, voter, timetovote):
         self.client = client
         self.timeout = timeout
         self.response = None
+        self.cog = cog
         self.context = ctx
-        self.currentsetting = currentsetting
+        self.voter = voter
         super().__init__(timeout=timeout)
-        self.add_item(VoteSetting(client=self.client, context=self.context, response=self.response, currentsetting=self.currentsetting))
+        self.add_item(VoteSetting(client=self.client, cog=self.cog, context=self.context, response=self.response, voter=self.voter))
         if timetovote > 0:
             label = f"Vote at top.gg - {short_time(timetovote)}"
         else:
@@ -75,6 +79,35 @@ channelid = 977043022082613320 if os.getenv('state') == '1' else 754725833540894
 level_10_role = 905980110954455070 if os.getenv('state') == '1' else 758172014439301150
 
 
+async def generate_leaderboard(voters: List[Voter], guild, channel):
+    leaderboard = []
+    for voter in voters[:10]:
+        member = guild.get_member(voter.member_id)
+        name = member.display_name.replace("[AFK] ", "") if member is not None else str(voter.member_id)
+        name = (name[:12] + '...') if len(name) > 15 else name  # shortens the nickname if it's too long
+        leaderboard.append((name, voter.count))  # this is the final list of leaderboard people
+    font_name = "assets/Gagalin.ttf"
+    lbpositions = [(204, 240), (204, 390), (204, 550), (204, 710), (204, 870), (1150, 240), (1150, 390),
+                   (1150, 550), (1150, 710),
+                   (1150, 870)]  # these are the positions for the nicknames in the leaderboard
+    countpositions = [(780, 240), (780, 390), (780, 550), (780, 710), (780, 870), (1730, 240), (1730, 390),
+                      (1730, 550), (1730, 710), (1730, 870)]  # these are the positions for the number of votes
+    font = ImageFont.truetype(font_name, 60)  # opens the font
+    ima = Image.open("assets/lbbg.png")  # opens leaderboard background
+    ima = ima.convert("RGB")  # Convert into RGB instead of RGBA so that it can be saved as a jpeg
+    draw = ImageDraw.Draw(ima)  # starts the drawing process
+    for voter in leaderboard:
+        draw.text(lbpositions[leaderboard.index(voter)], voter[0], font=font,
+                  align="middle left")  # Adds a user's nickname
+        draw.text(countpositions[leaderboard.index(voter)], str(voter[1]), font=font,
+                  align="right")  # adds a user's vote count
+    b = BytesIO()
+    b.seek(0)
+    ima.save(b, format="jpeg", optimize=True, quality=50)  # saves the file under a temporary name
+    b.seek(0)
+    return len(voters), discord.File(fp=b, filename="leaderboard.jpg")
+
+
 class VoteTracker(commands.Cog, name='votetracker'):
     """
     Vote tracker commands
@@ -89,8 +122,12 @@ class VoteTracker(commands.Cog, name='votetracker'):
         print(f"{datetime.datetime.utcnow().strftime(self.client.logstrf)} | Topgg Webhook loaded")
         self.client.topgg_webhook = topgg.WebhookManager(client).dsl_webhook("/webhook", "Basic KPmcFTMadfHBHo3hWm5MqzxDTArZHYeC")
         self.client.topgg_webhook.run(5001)
+        self.votedb = None
         print(f"{datetime.datetime.utcnow().strftime(self.client.logstrf)} | Disurl Webhook loaded")
 
+    async def prepare_votedb(self):
+        if self.votedb is None:
+            self.votedb = VoteDB(self.client.db)
     async def add_item_count(self, item, user, amount):
         does_inventory_exist = await self.client.db.fetchrow("SELECT * FROM inventories WHERE user_id = $1",
                                                                   user.id)
@@ -109,25 +146,23 @@ class VoteTracker(commands.Cog, name='votetracker'):
         self.reminders.stop()
         self.leaderboardloop.stop()
         self.client.topgg_webhook.close()
+        self.client.disurl_webhook.close()
 
     @tasks.loop(seconds=5.0)  # this is the looping task that will remind people to vote in 12 hours.
     async def reminders(self):
         try:
             await self.client.wait_until_ready()
-            timenow = round(time.time())
-            result = await self.client.db.fetch("SELECT * FROM roleremove WHERE rmtime < $1", timenow)
-            first_time = False
+            await self.prepare_votedb()
+            result = await self.votedb.get_voters(True)
             if len(result) == 0:
                 return
             for row in result:  # iterate through the list of members who have reminders.
-                memberid = row.get('member_id')
-                await self.client.db.execute('DELETE FROM roleremove WHERE rmtime = $1 AND member_id = $2', row.get('rmtime'), memberid)
-                preferences = await self.client.db.fetchrow("SELECT rmtype FROM rmpreference WHERE member_id = $1", memberid)
-                if preferences is None:  # somehow there is no preference for this user, so i'll create an entry to prevent it from breaking
-                    await self.client.db.execute("INSERT INTO rmpreference(member_id, rmtype) VALUES($1, $2)", memberid, 1)
-                    preferences = await self.client.db.fetchrow("SELECT rmtype FROM rmpreference WHERE member_id = $1", memberid)  # refetch the configuration for this user after it has been added
-                    first_time = True
+                row: Voter = row
+                memberid = row.member_id
                 member = self.client.get_user(memberid)
+                remindertime = row.rmtime
+                row.rmtime = None
+                await self.votedb.update_voter(row)
                 channel = self.client.get_channel(channelid)
 
                 class VoteLink(discord.ui.View):
@@ -136,18 +171,19 @@ class VoteTracker(commands.Cog, name='votetracker'):
                         self.add_item(discord.ui.Button(label='Vote for Dank Vibes at Top.gg', url="https://top.gg/servers/595457764935991326/vote", emoji=discord.PartialEmoji.from_str('<a:dv_iconOwO:837943874973466664>')))
                 if member is None:
                     return
-                if preferences.get('rmtype') == 1:
+                if row.rmtype == 1: # DM
                     message = "You can now vote for Dank Vibes again!"
-                    if first_time:
+                    if row.count < 1:
                         message += " By voting for Dank Vibes **multiple times**, you can get **special perks**! Run `-voterperks` in a channel to find out more.\n\nTip: You can turn off reminders or be pinged for voting by selecting the respective option in `dv.myvotes`. Use this in a server channel though."
                     try:
                         await member.send(message, view=VoteLink())
                     except discord.Forbidden:
                         await channel.send(f"{member.mention} You can now vote for Dank Vibes again!", view=VoteLink(), delete_after=5.0)  # uses ping instead if the bot cannot DM this user
-                elif preferences.get('rmtype') == 2:
+                elif row.rmtype == 2:
                     await channel.send(f"{member.mention} You can now vote for Dank Vibes again!", view=VoteLink(), delete_after=5.0)  # self-explainable
-                elif preferences.get('rmtype') not in [0, 1, 2]:  # somehow this guy doesn't have "dm" "ping or "none" in his setting so i'll update it to show that
-                    await self.client.db.execute('UPDATE rmpreference set rmtype = $1 where member_id = $2', 0, memberid)  # changes his setting to none
+                elif row.rmtype not in [0, 1, 2]:  # somehow this guy doesn't have "dm" "ping or "none" in his setting so i'll update it to show that
+                    row.rmtype = 0
+                    await self.votedb.update_voter(row)
                     return
         except Exception as error:
             traceback_error = print_exception(f'Ignoring exception in Reminder task', error)
@@ -161,43 +197,22 @@ class VoteTracker(commands.Cog, name='votetracker'):
     async def leaderboardloop(self):
         await self.client.wait_until_ready()
         if (await self.client.get_guild_settings(guildid)).votelb is True:
-            votecount = await self.client.db.fetch("SELECT * FROM votecount ORDER BY count DESC LIMIT 10")  # gets top 10 voters
-            leaderboard = []
+            voters = await self.votedb.get_voters(expiring=False, limit=10)
             guild = self.client.get_guild(guildid)
             channel = guild.get_channel(channelid)
             if channel is None:
                 return
-            for voter in votecount:
-                member = guild.get_member(voter.get('member_id'))
-                name = member.display_name.replace("[AFK] ", "") if member is not None else str(voter.get('member_id'))  # shows user id if the user left the server
-                name = (name[:12] + '...') if len(name) > 15 else name  # shortens the nickname if it's too long
-                leaderboard.append((name, voter[1]))  # this is the final list of leaderboard people
-            font_name = "assets/Gagalin.ttf"
-            lbpositions = [(204, 240), (204, 390), (204, 550), (204, 710), (204, 870), (1150, 240), (1150, 390),
-                        (1150, 550), (1150, 710),
-                        (1150, 870)]  # these are the positions for the nicknames in the leaderboard
-            countpositions = [(780, 240), (780, 390), (780, 550), (780, 710), (780, 870), (1730, 240), (1730, 390),
-                            (1730, 550), (1730, 710), (1730, 870)]  # these are the positions for the number of votes
-            font = ImageFont.truetype(font_name, 60)  # opens the font
-            ima = Image.open("assets/lbbg.png")  # opens leaderboard background
-            ima = ima.convert("RGB")  # Convert into RGB instead of RGBA so that it can be saved as a jpeg
-            draw = ImageDraw.Draw(ima)  # starts the drawing process
-            for voter in leaderboard:
-                draw.text(lbpositions[leaderboard.index(voter)], voter[0], font=font, align="middle left")  # Adds a user's nickname
-                draw.text(countpositions[leaderboard.index(voter)], str(voter[1]), font=font, align="right")  # adds a user's vote count
-            b = BytesIO()
-            b.seek(0)
-            ima.save(b, format="jpeg", optimize=True, quality=50)  # saves the file under a temporary name
-            b.seek(0)
-            file = discord.File(fp=b, filename="leaderboard.jpg")
+            leaderboard_len, file = await generate_leaderboard(voters, guild, channel)
             try:
-                await channel.send("This is the vote leaderboard for **Dank Vibes**!" if len(leaderboard) != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://top.gg/servers/595457764935991326/vote !", file=file)
+                await channel.send("This is the vote leaderboard for **Dank Vibes**!" if leaderboard_len != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://top.gg/servers/595457764935991326/vote !", file=file)
             except discord.Forbidden:
                 await channel.send("I do not have permission to send the leaderboard here.")
             return
 
     @commands.Cog.listener()
     async def on_dsl_vote(self, data):
+        await self.client.wait_until_ready()
+        await self.prepare_votedb()
         print(f"raw vote data detected {data}")
         try:
             timenow = round(time.time())
@@ -210,7 +225,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
             member = guild.get_member(userid)
             if member is None or votingchannel is None or guild is None:
                 print(
-                    f"Some variables not found:\nMember: {proper_userf(member)}\nVoting Channel: {votingchannel}\nGuild: {guild}")
+                    f"Some variables not found:\nMember: {member}\nVoting Channel: {votingchannel}\nGuild: {guild}")
                 return
             vdankster = guild.get_role(vdanksterid)
             rolesummary = "\u200b"  # If no roles are added, this will be in the section where the roles added are displayed.
@@ -220,39 +235,32 @@ class VoteTracker(commands.Cog, name='votetracker'):
                                   timestamp=discord.utils.utcnow(), color=self.client.embed_color) # In case it is a test upvote
 
             if data.get('type', None) in ['upvote', 'vote']:
-                result = await self.client.db.fetchrow("SELECT count FROM votecount WHERE member_id = $1", userid)
-                votecount = 1 if result is None else result.get('count') + 1
-                if result is None:
-                    await self.client.db.execute("INSERT INTO votecount VALUES($1, $2)", userid, votecount)
-                else:
-                    await self.client.db.execute("UPDATE votecount SET count = $1 where member_id = $2", votecount, userid)
+                rolesummary = ""
+                try:
+                    votecount = await self.votedb.add_one_votecount(member)
+                    if votecount is False:
+                        rolesummary += "⚠️ An error occred and I could not add this vote count.\n"
+
+                except Exception as e:
+                    print_exception("Error while updating votecount", e)
+                    await self.client.get_channel(871737028105109574).send(str(e))
                 try:
                     await member.add_roles(vdankster, reason="Voted for the server")
                     rolesummary = f"You've received the role {vdankster.mention} for 24 hours."
                 except discord.Forbidden:
                     pass
-                existing_remind = await self.client.db.fetchrow("SELECT * from roleremove where member_id = $1", userid)
-                if existing_remind is None:
-                    await self.client.db.execute("INSERT INTO roleremove VALUES($1, $2, $3)", userid, timetoremind,
-                                                 timetoremove)
-                else:
-                    await self.client.db.execute("UPDATE roleremove SET rmtime = $1, roletime = $2 WHERE member_id = $3",
-                                                 timetoremind, timetoremove, userid)
-                existing_remove = await self.client.db.fetchrow(
-                    "SELECT * FROM autorole WHERE member_id = $1 and role_id = $2", userid, vdanksterid)
-                if existing_remove is None:
-                    await self.client.db.execute("INSERT INTO autorole VALUES($1, $2, $3, $4)", userid, guildid,
-                                                 vdanksterid, timetoremove)
-                else:
-                    await self.client.db.execute("UPDATE autorole SET time = $1 WHERE member_id = $2 and role_id = $3",
-                                                 timetoremove, userid, vdanksterid)
+                existing_reminder = await self.votedb.get_voter(member)
+                existing_reminder.rmtime = timetoremind
+                await self.votedb.update_voter(existing_reminder)
+                await self.client.db.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4) ON CONFLICT (member_id, role_id) DO UPDATE SET time = EXCLUDED.time", userid, guildid, vdanksterid, timetoremove)
+
                 milestones = await self.client.db.fetch("SELECT * FROM milestones")
                 if len(milestones) != 0:
                     for milestone in milestones:
                         role = guild.get_role(milestone.get('roleid'))
                         if (
                                 role is not None
-                                and votecount >= milestone.get('votecount')
+                                and votecount.count >= milestone.get('votecount')
                                 and role not in member.roles
                         ):
                             try:
@@ -263,7 +271,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
                 if discord.utils.get(member.roles, id=level_10_role) is not None and votecount % 2 == 0:
                     await self.add_item_count('snipepill', member, 1)
                     rolesummary += f"\nYou've received **1 <:DVB_SnipePill:983244179213783050> Snipe Pill** for every 2 votes!"
-                embed.description = f"You've voted **{plural(votecount):time}** so far.\n[You can vote for Dank Vibes on top.gg here!](https://top.gg/servers/595457764935991326/vote)"
+                embed.description = f"You've voted **{plural(votecount.count):time}** so far.\n[You can vote for Dank Vibes on top.gg here!](https://top.gg/servers/595457764935991326/vote)"
             embed.set_author(name=f"{proper_userf(member)} ({member.id})", icon_url=member.display_avatar.url)
             embed.set_footer(text=guild.name, icon_url=guild.icon.url)
             qbemojis = ["https://cdn.discordapp.com/emojis/869579459420913715.gif?v=1",
@@ -283,7 +291,9 @@ class VoteTracker(commands.Cog, name='votetracker'):
         except Exception as e:
             await self.client.get_user(650647680837484556).send(
                 f"Error in DSL Vote: ```py\n{e}\n```\nData: ```json\n{data}\n```")
+            print_exception("Error in Vote", e)
             raise(e)
+
     @commands.group(invoke_without_command=True, name="voteroles")
     @commands.has_guild_permissions(manage_roles=True)
     async def voteroles(self, ctx):
@@ -380,11 +390,11 @@ class VoteTracker(commands.Cog, name='votetracker'):
         if confirmview.returning_value is None:
             embed.description, embed.color = "No response.", discord.Color.red()
             return await message.edit(embed=embed)
-        elif confirmview.returning_value == False:
+        elif not confirmview.returning_value:
             embed.description, embed.color = "Command stopped.", discord.Color.red()
             return await message.edit(embed=embed)
-        elif confirmview.returning_value == True:
-            await self.client.db.execute("DELETE FROM votecount")
+        elif confirmview.returning_value:
+            await self.client.db.execute("UPDATE voters SET count = 0 WHERE count > 0")
             return await message.edit(embed=discord.Embed(title="Database pending removal", description="All vote counts have been reset, and all entries in the database has been deleted.", color = discord.Color.green()))
 
     @commands.command(name="voteleaderboard", aliases = ["vlb", "votelb"])
@@ -394,36 +404,21 @@ class VoteTracker(commands.Cog, name='votetracker'):
         You can also view your rank on the vote leaderboard.
         """
         with ctx.typing():
-            votecount = await self.client.db.fetch("SELECT * FROM votecount ORDER BY count DESC")
-            leaderboard = []
-            for voter in votecount[:10]:
-                member = ctx.guild.get_member(voter.get('member_id'))
-                name = member.display_name.replace("[AFK] ", "") if member is not None else str(voter.get('member_id'))
-                name = (name[:15] + '...') if len(name) > 18 else name
-                leaderboard.append((name, voter[1]))
-            font_name = "assets/Gagalin.ttf"
-            lbpositions = [(204, 240), (204, 390), (204, 550), (204, 710), (204, 870), (1150, 240), (1150, 390), (1150, 550), (1150, 710), (1150, 870)]
-            countpositions = [(780, 240), (780, 390), (780, 550), (780, 710), (780, 870), (1730, 240), (1730, 390), (1730, 550), (1730, 710), (1730, 870)]
-            font = ImageFont.truetype(font_name, 60)
-            ima = Image.open("assets/lbbg.png")
-            ima = ima.convert("RGB")
-            draw = ImageDraw.Draw(ima)
-            for voter in leaderboard:
-                draw.text(lbpositions[leaderboard.index(voter)], voter[0], font=font, align="middle left")
-                draw.text(countpositions[leaderboard.index(voter)], str(voter[1]), font=font, align="right")
-            b = BytesIO()
-            b.seek(0)
-            ima.save(b, format="jpeg", optimize=True, quality=50)
-            b.seek(0)
-            file = discord.File(fp=b, filename="leaderboard.jpg")
-            uservotecount = await self.client.db.fetchrow("SELECT * FROM votecount where member_id = $1", ctx.author.id)
-            if uservotecount is None:
+            # votecount =
+            voters = await self.votedb.get_voters(expiring=False, limit=None)
+            guild = self.client.get_guild(guildid)
+            channel = guild.get_channel(channelid)
+            if channel is None:
+                return
+            leaderboard_len, file = await generate_leaderboard(voters, guild, channel)
+            voter = await self.votedb.get_voter(ctx.author)
+            position = await self.client.db.fetchval("SELECT COUNT(*) + 1 AS rank FROM voters WHERE count > (SELECT count FROM voters WHERE member_id = $1)", ctx.author.id)
+            if voter.count < 1:
                 message = "You're not on the leaderboard yet. Vote for Dank Vibes for a chance to be on the leaderboard! <https://top.gg/servers/595457764935991326/vote>"
             else:
-                position = ordinal(votecount.index(uservotecount)+1)
-                message = f"You're ranked **{position}** out of {len(votecount)} members on the vote leaderboard. {'🏆' if votecount.index(uservotecount) < 10 else ''}"
+                message = f"You're ranked **{position}** out of {leaderboard_len} members on the vote leaderboard. {'🏆' if position < 11 else ''}"
         try:
-            await ctx.send(f"This is the vote leaderboard for Dank Vibes! {message}" if len(leaderboard) != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://top.gg/servers/595457764935991326/vote !", file=file)
+            await ctx.send(f"This is the vote leaderboard for Dank Vibes! {message}" if leaderboard_len != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://top.gg/servers/595457764935991326/vote !", file=file)
         except discord.Forbidden:
             await ctx.send("I do not have permission to send the leaderboard here.")
         return
@@ -451,37 +446,35 @@ class VoteTracker(commands.Cog, name='votetracker'):
         See how many times you have voted for Dank Vibes.
         """
         timenow = round(time.time())
-        count = await self.client.db.fetchval("SELECT count FROM votecount where member_id = $1", ctx.author.id) or 0
-        result = await self.client.db.fetchrow("SELECT * FROM roleremove WHERE member_id = $1 and rmtime > $2", ctx.author.id, timenow)
-        nextmilestone = await self.client.db.fetchval("SELECT votecount FROM milestones WHERE votecount > $1 LIMIT 1", count)
-        if result is not None and result.get('rmtime') != 9223372036854775807:
-            desc = f"You can vote <t:{result.get('rmtime')}:R>!"
+        user_voter = await self.votedb.get_voter(ctx.author)
+        # count = await self.client.db.fetchval("SELECT count FROM votecount where member_id = $1", ctx.author.id) or 0
+        # result = await self.client.db.fetchrow("SELECT * FROM roleremove WHERE member_id = $1 and rmtime > $2", ctx.author.id, timenow)
+        nextmilestone = await self.client.db.fetchval("SELECT votecount FROM milestones WHERE votecount > $1 LIMIT 1", user_voter.count)
+        if user_voter.rmtime is not None:
+            desc = f"You can vote <t:{user_voter.rmtime}:R>!"
         else:
             desc = f"You can vote now!"
-        embed = discord.Embed(title=f"You have voted for Dank Vibes **__{plural(count):__**time}.", description=desc, timestamp=discord.utils.utcnow(), url="https://top.gg/servers/595457764935991326/vote")
+        embed = discord.Embed(title=f"You have voted for Dank Vibes **__{plural(user_voter.count):__**time}.", description=desc, timestamp=discord.utils.utcnow(), url="https://top.gg/servers/595457764935991326/vote")
         embed.set_author(name=ctx.author.name, icon_url=ctx.author.display_avatar.url)
-        preferences = await self.client.db.fetchval("SELECT rmtype FROM rmpreference WHERE member_id = $1", ctx.author.id)
-        if preferences is None:  # if it's the first time for the user to invoke the command, it will create an entry automatically with the default setting "none".
-            preferences = await self.client.db.fetchval("INSERT INTO rmpreference VALUES($1, $2) RETURNING rmtype", ctx.author.id, 0, column='rmtype')  # fetches the new settings after the user's entry containing the 'none' setting has been created
-        if preferences == 0:
+        if user_voter.rmtype == 0:
             footer_msg = "You are currently not reminded to vote for Dank Vibes. You can be reminded to vote for Dank Vibes by choosing DMs or pings on the dropdown menu below!"
-        elif preferences == 1:
+        elif user_voter.rmtype == 1:
             footer_msg = "You can change your reminder preference below!"
-        elif preferences == 2:
+        elif user_voter.rmtype == 2:
             footer_msg = "You can change your reminder preference below!"
         else:
             footer_msg = None
         if nextmilestone is not None:
-            count_to_next = nextmilestone - count
+            count_to_next = nextmilestone - user_voter.count
             embed.add_field(name="Milestones 🏁", value=f"You are **{plural(count_to_next):** vote} away from reaching **{nextmilestone} votes**!", inline=False)
         if footer_msg is not None:
             embed.set_footer(text=footer_msg)
         embed.set_thumbnail(url=ctx.guild.icon.url)
-        if result is None or result.get('rmtime') == 9223372036854775807:
+        if user_voter.rmtime is None:
             duration = 0
         else:
-            duration = result.get('rmtime') - timenow
-        view = VoteSettingView(client=self.client, ctx=ctx, timeout=30.0, currentsetting=preferences, timetovote=duration)
+            duration = user_voter.rmtime - timenow
+        view = VoteSettingView(client=self.client, cog=self, ctx=ctx, timeout=30.0, voter=user_voter, timetovote=duration)
         message = await ctx.send(embed=embed, view=view)
         view.response = message
         await view.wait()
