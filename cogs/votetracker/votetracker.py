@@ -139,6 +139,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         self.client.topgg_webhook = topgg.WebhookManager(client).dsl_webhook("/webhook", "Basic KPmcFTMadfHBHo3hWm5MqzxDTArZHYeC")
         self.client.topgg_webhook.run(5001)
         self.votedb = None
+        self.lbtimes = 0
         print(f"{datetime.datetime.utcnow().strftime(self.client.logstrf)} | Disurl Webhook loaded")
 
     async def prepare_votedb(self):
@@ -219,9 +220,11 @@ class VoteTracker(commands.Cog, name='votetracker'):
             try:
                 voters = await self.votedb.get_voters(expiring=False, limit=None)
                 print(f"Fetched leaderboard, {len(voters)} voters fetched")
+                if self.lbtimes == 0:
+                    await asyncio.sleep(10)
                 guild = self.client.get_guild(guildid)
                 channel = guild.get_channel(channelid)
-                print("Got Guild and Channel")
+                print(f"Got {guild} and {channel}")
                 if channel is None:
                     print("Voting channel is none")
                     return
