@@ -84,7 +84,6 @@ async def generate_leaderboard(voters: List[Voter], guild, channel):
     for voter in voters[:10]:
         member = guild.get_member(voter.member_id)
         name = member.display_name.replace("[AFK] ", "") if member is not None else str(voter.member_id)
-        name = (name[:12] + '...') if len(name) > 15 else name  # shortens the nickname if it's too long
         leaderboard.append((name, voter.count))  # this is the final list of leaderboard people
     font_name = "assets/fonts/Fredoka-Medium.ttf"
 
@@ -97,9 +96,8 @@ async def generate_leaderboard(voters: List[Voter], guild, channel):
     countpositions = [(780, 240), (780, 390), (780, 550), (780, 710), (780, 870), (1730, 240), (1730, 390),
                       (1730, 550), (1730, 710), (1730, 870)]  # these are the positions for the number of votes
     font = ImageFont.truetype(font_name, 60)  # opens the font
-    ima = Image.open("assets/lbbg.png")  # opens leaderboard background
-    ima = ima.convert("RGB")  # Convert into RGB instead of RGBA so that it can be saved as a jpeg
-    draw = ImageDraw.Draw(ima)  # starts the drawing process
+    ima = Image.open("assets/lbbg.png").convert("RGB")  # leaderboard bg
+    draw = ImageDraw.Draw(ima)
     # Draw the names and vote counts for all
     for voter in leaderboard[:5]:
         draw.text(lbpositions[leaderboard.index(voter)], voter[0], font=font, fill=(255, 255, 255))  # White color for text
