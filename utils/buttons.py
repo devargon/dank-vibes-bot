@@ -13,9 +13,9 @@ from utils.menus import ListPageInteractionBase, MenuViewInteractionBase
 from utils.helper import BaseEmbed
 
 class SingleURLButton(discord.ui.View):
-    def __init__(self, link: str, text: str, emoji=None, timeout=None):
+    def __init__(self, link: str, text: str, emoji=None, timeout=None, disabled=False):
         super().__init__(timeout=timeout, disable_on_timeout=True)
-        self.add_item(discord.ui.Button(label=text, url=link, emoji=emoji))
+        self.add_item(discord.ui.Button(label=text, url=link, emoji=emoji, disabled=disabled))
 
 class confirm(discord.ui.View):
     def __init__(self, ctx: Union[DVVTcontext, discord.ApplicationContext], client, timeout):
