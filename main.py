@@ -53,6 +53,7 @@ AVAILABLE_EXTENSIONS = [
     'cogs.imgen',
     'cogs.disboard',
     'cogs.slashtags',
+    'cogs.banappeal',
 ]
 
 load_dotenv('credentials.env')
