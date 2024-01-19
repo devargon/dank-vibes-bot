@@ -17,6 +17,17 @@ DONATOR_25M_ID = 820011992428707840 if os.getenv('state') == '0' else 9438834556
 LEVEL_30_ID = 944519382577586196 if os.getenv('state') == '0' else 958285021175754793
 LEVEL_50_ID = 944519459580821524 if os.getenv('state') == '0' else 943883516565942352
 LEVEL_100_ID = 717120742512394323 if os.getenv('state') == '0' else 943883531573157889
+# Define the role IDs
+DONATOR_25M_ID = 820011992428707840
+DONATOR_50M_ID = 758170829980041219
+DONATOR_100M_ID = 769491608189927434
+DONATOR_300M_ID = 756226612261027961
+DONATOR_500M_ID = 758174074437763092
+DONATOR_750M_ID = 758173667682287616
+DONATOR_1B_ID = 769491619833446420
+DONATOR_3B_ID = 819998671742959636
+DONATOR_5B_ID = 819998800382132265
+HIGHEST_DONATOR_ID = 758175713983201300
 
 
 class ChannelOrMember(commands.Converter):
@@ -47,14 +58,26 @@ class Highlight(commands.Cog):
         When you don't talk after a minute, you will be DMed if someone highlights you with said phrase.
         """
         def get_highlight_limit():
-            donator_25 = ctx.guild.get_role(DONATOR_25M_ID)
+            donator_25m = ctx.guild.get_role(DONATOR_25M_ID)
+            donator_50m = ctx.guild.get_role(DONATOR_50M_ID)
+            donator_100m = ctx.guild.get_role(DONATOR_100M_ID)
+            donator_300m = ctx.guild.get_role(DONATOR_300M_ID)
+            donator_500m = ctx.guild.get_role(DONATOR_500M_ID)
+            donator_750m = ctx.guild.get_role(DONATOR_750M_ID)
+            donator_1b = ctx.guild.get_role(DONATOR_1B_ID)
+            donator_3b = ctx.guild.get_role(DONATOR_3B_ID)
+            donator_5b = ctx.guild.get_role(DONATOR_5B_ID)
+            highest_donator = ctx.guild.get_role(HIGHEST_DONATOR_ID)
             level_30 = ctx.guild.get_role(LEVEL_30_ID)
             level_50 = ctx.guild.get_role(LEVEL_50_ID)
             level_100 = ctx.guild.get_role(LEVEL_100_ID)
+
             hl_limit = 0
-            if donator_25 is None:
-                raise ArgumentBaseError(message=f"{DONATOR_25M_ID} is not a valid role ID for donator_25")
-            elif donator_25 in ctx.author.roles:
+            list_of_donor_roles = [donator_25m, donator_50m, donator_100m, donator_300m, donator_500m, donator_750m,
+                                   donator_1b, donator_3b, donator_5b, highest_donator]
+            if None in list_of_donor_roles:
+                raise ArgumentBaseError(message=f"A donator role ID is potentially invalid.")
+            elif any(dr in ctx.author.roles for dr in list_of_donor_roles):
                 hl_limit += 1
             if level_30 is None:
                 raise ArgumentBaseError(message=f"{LEVEL_30_ID} is not a valid role ID for level_30")
@@ -82,6 +105,7 @@ class Highlight(commands.Cog):
             level_30 = ctx.guild.get_role(LEVEL_30_ID)
             level_50 = ctx.guild.get_role(LEVEL_50_ID)
             level_100 = ctx.guild.get_role(LEVEL_100_ID)
+
             desc = []
             if donator_25 not in ctx.author.roles:
                 desc.append(f"` - ` You can get `1` highlight by being a **{donator_25.name}**.")
