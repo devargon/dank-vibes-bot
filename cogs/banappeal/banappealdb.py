@@ -4,6 +4,8 @@ import asyncpg
 import discord
 from typing import Optional, Union, List
 
+from utils.format import print_exception
+
 
 class BanAppeal:
     def __init__(self, record: asyncpg.Record):
@@ -20,6 +22,12 @@ class BanAppeal:
         self.reviewer_id: int = record.get('reviewer_id')
         self.reviewer_response: str = record.get('reviewer_response')
         self.version: int = record.get('version')
+        self.guild_id: int = record.get('guild_id')
+        self.channel_id: int = record.get('channel_id')
+        self.message_id: int = record.get('message_id')
+
+    def __repr__(self):
+        return f"BanAppeal(appeal_id={self.appeal_id}, user_id={self.user_id}, appeal_timestamp={self.appeal_timestamp}, ban_reason='{self.ban_reason}', appeal_answer1='{self.appeal_answer1}', appeal_answer2='{self.appeal_answer2}', appeal_answer3='{self.appeal_answer3}', email='{self.email}', appeal_status={self.appeal_status}, reviewed_timestamp={self.reviewed_timestamp}, reviewer_id={self.reviewer_id}, reviewer_response='{self.reviewer_response}', version={self.version}, guild_id={self.guild_id}, channel_id={self.channel_id}, message_id={self.message_id})"
 
     @staticmethod
     def datetime_to_iso(dt: datetime) -> str:
@@ -31,20 +39,22 @@ class BanAppeal:
             questions = [
                 {
                     "q": "Do you understand why you were banned/what do you think led to your ban?",
-                    "d": "Lorem Ipsum",
+                    "d": "Explain your understanding of the ban reasons and your actions leading up to it.",
                     "a": self.appeal_answer1
                 },
                 {
                     "q": "How will you change to be a positive member of the community?",
-                    "d": "Lorem Ipsum",
+                    "d": "Detail your plan to improve and positively engage with the community.",
                     "a": self.appeal_answer2
                 },
                 {
                     "q": "Is there any other information you would like to provide?",
-                    "d": "Lorem Ipsum",
+                    "d": "Add any extra information or context about your ban and appeal that you think might be useful for us to know.",
                     "a": self.appeal_answer3
                 },
             ]
+        else:
+            questions = []
         return {
             'appeal_id': self.appeal_id,
             'user_id': self.user_id,
@@ -52,6 +62,7 @@ class BanAppeal:
             'ban_reason': self.ban_reason,
             'email': self.email,
             'appeal_status': self.appeal_status,
+            'reviewed_timestamp': self.datetime_to_iso(self.reviewed_timestamp),
             'reviewer_response': self.reviewer_response,
             'version': self.version,
             'questions': questions
@@ -70,6 +81,7 @@ class BanAppeal:
             'appeal_answer3': self.appeal_answer3,
             'email': self.email,
             'appeal_status': self.appeal_status,
+            "reviewed_timestamp": self.datetime_to_iso(self.reviewed_timestamp),
             'reviewer_response': self.reviewer_response,
             'version': self.version,
         }
@@ -89,7 +101,10 @@ class BanAppeal:
             'reviewed_timestamp': self.datetime_to_iso(self.reviewed_timestamp),
             'reviewer_id': self.reviewer_id,
             'reviewer_response': self.reviewer_response,
-            'version': self.version
+            'version': self.version,
+            'guild_id': self.guild_id,
+            'channel_id': self.channel_id,
+            'message_id': self.message_id
         }
 
 
@@ -131,12 +146,13 @@ class BanAppealDB:
             appeal.reviewed_timestamp, appeal.reviewer_id, appeal.reviewer_response, appeal.appeal_id)
 
     async def add_new_ban_appeal(self, user_id: int, ban_reason: str, appeal_answer1: str,
-                                 appeal_answer2: str, appeal_answer3: str) -> bool:
+                                 appeal_answer2: str, appeal_answer3: str) -> Optional[int]:
         try:
-            await self.db.execute(
-                "INSERT INTO BanAppeals (user_id, appeal_timestamp, ban_reason, appeal_answer1, appeal_answer2, appeal_answer3) VALUES ($1, $2, $3, $4, $5, $6)",
+            appeal_id = await self.db.fetchval(
+                "INSERT INTO BanAppeals (user_id, appeal_timestamp, ban_reason, appeal_answer1, appeal_answer2, appeal_answer3) "
+                "VALUES ($1, $2, $3, $4, $5, $6) RETURNING appeal_id",
                 user_id, discord.utils.utcnow(), ban_reason, appeal_answer1, appeal_answer2, appeal_answer3)
-            return True
+            return appeal_id
         except Exception as e:
-            print(f"Failed to add new ban appeal: {e}")
-            return False
+            print_exception(f"Failed to add new ban appeal: {e}")
+            return None
