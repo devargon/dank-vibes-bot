@@ -48,7 +48,7 @@ class BanAppeal:
                     "a": self.appeal_answer2
                 },
                 {
-                    "q": "Is there any other information you would like to provide?",
+                                    "q": "Is there any other information you would like to provide?",
                     "d": "Add any extra information or context about your ban and appeal that you think might be useful for us to know.",
                     "a": self.appeal_answer3
                 },
