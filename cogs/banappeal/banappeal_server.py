@@ -1,6 +1,7 @@
 import html
 
 import discord
+
 from .banappealdb import BanAppealDB, BanAppeal
 from datetime import datetime, timedelta
 import asyncio
@@ -39,9 +40,11 @@ class BanAppealServer(commands.Cog):
         await self.client.wait_until_ready()
         print("Starting custom Web Server for port 5003")
         await self.server.start()
+
     @server.add_route(path="/api/user", method="GET", cog="BanAppeal")
     async def get_user_details(self: dvvt, request: web.Request):
         print(ban_cache)
+        print(self.get_cog('banappeal').discordBanAppealPostQueue)
         banappealdb = BanAppealDB(self.db)
         user_id = request.query.get("id")
         if user_id is None:
@@ -203,6 +206,9 @@ class BanAppealServer(commands.Cog):
         new_appeal_id = await banappealdb.add_new_ban_appeal(user_id, ban_reason, appeal_answer1, appeal_answer2,
                                                              appeal_answer3)
         if new_appeal_id:
+            new_appeal = await banappealdb.get_ban_appeal_by_appeal_id(new_appeal_id)
+            cog: BanAppealCog = self.get_cog('banappeal')
+            cog.discordBanAppealPostQueue.append(new_appeal)
             return web.json_response(data={"appeal_id": new_appeal_id},
                                      status=200)  # on frontend, I want a query thing showing if it's newly posted if EJS can't provide that functionality
         else:
@@ -213,3 +219,12 @@ class BanAppealServer(commands.Cog):
         print(dir(self))
         print(type(self.user.name))
         return web.json_response(status=404)
+
+    @server.add_route(path="/check-queue", method="GET", cog="BanAppeal")
+    async def check_queue(self: dvvt, request):
+        cog = self.get_cog('banappeal')
+        data = {
+            "post_queue": [i.to_full_format() for i in cog.discordBanAppealPostQueue],
+            "update_queue": [i.to_full_format() for i in cog.discordBanAppealUpdateQueue]
+        }
+        return web.json_response(data=data, status=200)

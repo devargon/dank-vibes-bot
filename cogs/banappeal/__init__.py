@@ -1,3 +1,3 @@
-from .banappeal import BanAppeal
+from .banappealcog import BanAppealCog
 def setup(client):
-    client.add_cog(BanAppeal(client))
+    client.add_cog(BanAppealCog(client))

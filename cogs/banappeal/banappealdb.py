@@ -24,15 +24,57 @@ class BanAppeal:
         self.version: int = record.get('version')
         self.guild_id: int = record.get('guild_id')
         self.channel_id: int = record.get('channel_id')
+        self.updated: bool = record.get('updated')
+        self.posted: bool = record.get('posted')
         self.message_id: int = record.get('message_id')
 
     def __repr__(self):
-        return f"BanAppeal(appeal_id={self.appeal_id}, user_id={self.user_id}, appeal_timestamp={self.appeal_timestamp}, ban_reason='{self.ban_reason}', appeal_answer1='{self.appeal_answer1}', appeal_answer2='{self.appeal_answer2}', appeal_answer3='{self.appeal_answer3}', email='{self.email}', appeal_status={self.appeal_status}, reviewed_timestamp={self.reviewed_timestamp}, reviewer_id={self.reviewer_id}, reviewer_response='{self.reviewer_response}', version={self.version}, guild_id={self.guild_id}, channel_id={self.channel_id}, message_id={self.message_id})"
+        return f"BanAppeal(appeal_id={self.appeal_id}, user_id={self.user_id}, appeal_timestamp={self.appeal_timestamp}, ban_reason='{self.ban_reason}', appeal_answer1='{self.appeal_answer1}', appeal_answer2='{self.appeal_answer2}', appeal_answer3='{self.appeal_answer3}', email='{self.email}', appeal_status={self.appeal_status}, reviewed_timestamp={self.reviewed_timestamp}, reviewer_id={self.reviewer_id}, reviewer_response='{self.reviewer_response}', version={self.version}, guild_id={self.guild_id}, channel_id={self.channel_id}, message_id={self.message_id}, updated={self.updated}, posted={self.posted})"
 
     @staticmethod
     def datetime_to_iso(dt: datetime) -> str:
         """Convert a datetime object to an ISO 8601 formatted string."""
         return dt.isoformat() if dt else None
+
+    def to_full_format(self):
+        if self.version == 1:
+            questions = [
+                {
+                    "q": "Do you understand why you were banned/what do you think led to your ban?",
+                    "d": "Explain your understanding of the ban reasons and your actions leading up to it.",
+                    "a": self.appeal_answer1
+                },
+                {
+                    "q": "How will you change to be a positive member of the community?",
+                    "d": "Detail your plan to improve and positively engage with the community.",
+                    "a": self.appeal_answer2
+                },
+                {
+                                    "q": "Is there any other information you would like to provide?",
+                    "d": "Add any extra information or context about your ban and appeal that you think might be useful for us to know.",
+                    "a": self.appeal_answer3
+                },
+            ]
+        else:
+            questions = []
+        return {
+            "appeal_id": self.appeal_id,
+            "user_id": self.user_id,
+            "appeal_timestamp": self.datetime_to_iso(self.appeal_timestamp),
+            "ban_reason": self.ban_reason,
+            "questions": questions,
+            "email": self.email,
+            "appeal_status": self.appeal_status,
+            "reviewed_timestamp": self.datetime_to_iso(self.reviewed_timestamp),
+            "reviewer_id": self.reviewer_id,
+            "reviewer_response": self.reviewer_response,
+            "version": self.version,
+            "guild_id": self.guild_id,
+            "channel_id": self.channel_id,
+            "updated": self.updated,
+            "posted": self.posted,
+            "message_id": self.message_id
+        }
 
     def to_presentable_format(self):
         if self.version == 1:
@@ -139,11 +181,20 @@ class BanAppealDB:
             raw = await self.db.fetch("SELECT * FROM BanAppeals ORDER BY appeal_timestamp DESC")
         return [BanAppeal(record) for record in raw]
 
+    async def get_ban_appeals_awaiting_update(self) -> List[BanAppeal]:
+        raw = await self.db.fetch("SELECT * FROM BanAppeals WHERE updated = FALSE")
+        return [BanAppeal(record) for record in raw]
+
+    async def get_ban_appeals_awaiting_post(self) -> List[BanAppeal]:
+        raw = await self.db.fetch("SELECT * FROM BanAppeals WHERE posted = FALSE")
+        return [BanAppeal(record) for record in raw]
+
+
     async def update_ban_appeal(self, appeal: BanAppeal):
         await self.db.execute(
-            "UPDATE BanAppeals SET appeal_answer1 = $1, appeal_answer2 = $2, appeal_answer3 = $3, email = $4, appeal_status = $5, reviewed_timestamp = $6, reviewer_id = $7, reviewer_response = $8 WHERE appeal_id = $9",
+            "UPDATE BanAppeals SET appeal_answer1 = $1, appeal_answer2 = $2, appeal_answer3 = $3, email = $4, appeal_status = $5, reviewed_timestamp = $6, reviewer_id = $7, reviewer_response = $8, guild_id = $9, channel_id = $10, message_id = $11, updated = $12, posted = $13 WHERE appeal_id = $14",
             appeal.appeal_answer1, appeal.appeal_answer2, appeal.appeal_answer3, appeal.email, appeal.appeal_status,
-            appeal.reviewed_timestamp, appeal.reviewer_id, appeal.reviewer_response, appeal.appeal_id)
+            appeal.reviewed_timestamp, appeal.reviewer_id, appeal.reviewer_response, appeal.guild_id, appeal.channel_id, appeal.message_id, appeal.updated, appeal.posted, appeal.appeal_id)
 
     async def add_new_ban_appeal(self, user_id: int, ban_reason: str, appeal_answer1: str,
                                  appeal_answer2: str, appeal_answer3: str) -> Optional[int]:
