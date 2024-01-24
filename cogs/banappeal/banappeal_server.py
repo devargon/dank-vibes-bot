@@ -1,4 +1,5 @@
 import html
+import os
 
 import discord
 
@@ -43,8 +44,9 @@ class BanAppealServer(commands.Cog):
 
     @server.add_route(path="/api/user", method="GET", cog="BanAppeal")
     async def get_user_details(self: dvvt, request: web.Request):
-        print(ban_cache)
-        print(self.get_cog('banappeal').discordBanAppealPostQueue)
+        if request.headers.get("authorization") != os.getenv("APPEALS_SHARED_SECRET"):
+            return web.json_response(data={"error": "Unauthorized request"}, status=401)
+
         banappealdb = BanAppealDB(self.db)
         user_id = request.query.get("id")
         if user_id is None:
@@ -91,6 +93,9 @@ class BanAppealServer(commands.Cog):
 
     @server.add_route(path="/api/appeals/{user_id:\d+}/{appeal_id:\d+}", method="GET", cog="BanAppeal")
     async def get_an_appeal(self: dvvt, request: web.Request):
+        if request.headers.get("authorization") != os.getenv("APPEALS_SHARED_SECRET"):
+            return web.json_response(data={"error": "Unauthorized request"}, status=401)
+
         user_id = request.match_info['user_id']
         appeal_id = request.match_info['appeal_id']
         if user_id is None or appeal_id is None:
@@ -107,6 +112,9 @@ class BanAppealServer(commands.Cog):
 
     @server.add_route(path="/api/appeal/{appeal_id:\d+}", method="PUT", cog="BanAppeal")
     async def update_appeal(self: dvvt, request: web.Request):
+        if request.headers.get("authorization") != os.getenv("APPEALS_SHARED_SECRET"):
+            return web.json_response(data={"error": "Unauthorized request"}, status=401)
+
         appeal_id = request.match_info['appeal_id']
         if appeal_id is None:
             return status_400({"error": "Invalid parameters provided"})
@@ -158,6 +166,9 @@ class BanAppealServer(commands.Cog):
 
     @server.add_route(path="/api/appeal", method="POST", cog="BanAppeal")
     async def post_appeal(self: dvvt, request: web.Request):
+        if request.headers.get("authorization") != os.getenv("APPEALS_SHARED_SECRET"):
+            return web.json_response(data={"error": "Unauthorized request"}, status=401)
+
         if request.content_type == 'application/json':
             data = await request.json()
         elif request.content_type == 'application/x-www-form-urlencoded' or request.content_type == 'multipart/form-data':
@@ -216,12 +227,18 @@ class BanAppealServer(commands.Cog):
 
     @server.add_route(path="/", method="GET", cog="BanAppeal")
     async def home(self: dvvt, request):
+        if request.headers.get("authorization") != os.getenv("APPEALS_SHARED_SECRET"):
+            return web.json_response(data={"error": "Unauthorized request"}, status=401)
+
         print(dir(self))
         print(type(self.user.name))
         return web.json_response(status=404)
 
     @server.add_route(path="/check-queue", method="GET", cog="BanAppeal")
     async def check_queue(self: dvvt, request):
+        if request.headers.get("authorization") != os.getenv("APPEALS_SHARED_SECRET"):
+            return web.json_response(data={"error": "Unauthorized request"}, status=401)
+
         cog = self.get_cog('banappeal')
         data = {
             "post_queue": [i.to_full_format() for i in cog.discordBanAppealPostQueue],

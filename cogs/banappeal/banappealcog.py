@@ -1,4 +1,5 @@
 import html
+import os
 import random
 import re
 from datetime import timedelta, datetime
@@ -10,7 +11,7 @@ import contextlib
 import typing
 
 import server
-from aiohttp import web
+from aiohttp import web, ClientSession
 
 from .banappealdb import BanAppealDB, BanAppeal
 from main import dvvt
@@ -50,9 +51,8 @@ class BanAppealReasonModal(discord.ui.Modal):
             label=("Approved" if selected_appeal_status == 2 else "Denied" if selected_appeal_status == 1 else "???") + " Remarks",
             placeholder="It will be seen by the user, leave this field blank if you're not adding one.",
             style=discord.InputTextStyle.paragraph,
-            min_length=1,
             max_length=512,
-            required=True
+            required=False
         )
         self.add_item(self.remark)
 
@@ -76,7 +76,7 @@ class BanAppealReasonModal(discord.ui.Modal):
             result_embed.description = f"This ban appeal was already " + ("**Denied**" if banappeal.appeal_status == 1 else "**Approved**") + " by " + ("Unknown" if reviewer == discord.NotFound else f"{reviewer.mention} ({reviewer.id})" if reviewer is not None else str(banappeal.reviewer_id) + ".")
             return await interaction.response.send_message(embed=result_embed, ephemeral=True)
         appealer = await interaction.client.get_or_fetch_user(banappeal.user_id)
-        appealer = f"**{proper_userf(appealer)}** ({appealer.id})" if appealer is not None else str(banappeal.user_id)
+        appealer_text = f"**{proper_userf(appealer)}** ({appealer.id})" if appealer is not None else str(banappeal.user_id)
 
         banappeal.appeal_status = self.selected_appeal_status
         banappeal.reviewer_id = interaction.user.id
@@ -89,12 +89,31 @@ class BanAppealReasonModal(discord.ui.Modal):
         result_embed.color = discord.Color.green()
         result_embed.set_footer(text=proper_userf(interaction.user), icon_url=interaction.user.display_avatar.with_size(32).url)
         result_embed.title = f"You've updated appeal #{self.appeal_id}"
-        result_embed.description = "You " + ("**denied**" if banappeal.appeal_status == 2 else "**approved**") + f" {appealer}'s appeal"
+        result_embed.description = "You " + ("**denied**" if banappeal.appeal_status == 1 else "**approved**") + f" {appealer_text}'s appeal"
         if banappeal.reviewer_response is not None:
-            result_embed.description += f" with the remarks: \n\n> ${banappeal.reviewer_response}"
+            result_embed.description += f" with the remarks: \n\n> {banappeal.reviewer_response}"
         else:
             result_embed.description += f" with no remarks."
-        return await interaction.response.send_message(embed=result_embed, ephemeral=True)
+        await interaction.response.send_message(embed=result_embed, ephemeral=True)
+        if banappeal.email is not None:
+            print(f"Appeal #{banappeal.appeal_id} has an email associated, will attempt to request the server to send an email.")
+            middleman_server = os.getenv("APPEALS_SERVER_HOST")
+            if not middleman_server:
+                print(f"Middleman server env, APPEALS_SERVER_HOST has not been set.")
+            else:
+                try:
+                    async with ClientSession(headers={"authorization": os.getenv("APPEALS_SHARED_SECRET")}) as session:
+                        print(f"Sending Appeal #{banappeal.appeal_id} data to notify endpoint")
+                        data = banappeal.to_public_dict()
+                        if appealer:
+                            data['username'] = appealer.display_name
+                        a = await session.post(f"{middleman_server}/api/notify-update", json=data)
+                        print(f"#{banappeal.appeal_id} data has been sent. Response: {a.status}")
+                        await session.close()
+                except Exception as e:
+                    print_exception(f"Error while sending appeal #{banappeal.appeal_id} data to endpoint:", e)
+        return
+
 
 
 # noinspection PyMethodMayBeStatic
@@ -241,7 +260,6 @@ class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banapp
                     appeal.channel_id = m.channel.id
                     appeal.message_id = m.id
                     await banappealdb.update_ban_appeal(appeal)
-
         except Exception as e:
             a = print_exception("Error in Appeal Post Queue", e)
             await self.client.error_channel.send(embed=discord.Embed(title="Error in Appeal Post Queue", description=a))
@@ -259,7 +277,6 @@ class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banapp
                         raise ValueError(f"Appeal update queue: Channel not found for {appeal.channel_id}")
                     try:
                         m = await channel.fetch_message(appeal.message_id)
-
                     except discord.Forbidden:
                         appeal.updated = True
                         await banappealdb.update_ban_appeal(appeal)
@@ -273,6 +290,7 @@ class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banapp
                         await m.edit(embed=embed, view=BanAppealView(appeal))
                         appeal.updated = True
                         await banappealdb.update_ban_appeal(appeal)
+                    self.discordBanAppealUpdateQueue.remove(appeal)
 
         except Exception as e:
             a = print_exception("Error in Appeal Update Queue", e)
