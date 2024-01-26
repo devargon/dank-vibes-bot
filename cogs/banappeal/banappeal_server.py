@@ -1,6 +1,7 @@
 import html
 import os
 
+import bleach
 import discord
 
 from .banappealdb import BanAppealDB, BanAppeal
@@ -82,6 +83,8 @@ class BanAppealServer(commands.Cog):
                 ban_cache[guild.id][user_id] = (ban_details, current_time)
             except discord.NotFound:
                 # User not banned, update cache accordingly
+                if guild.id not in ban_cache:
+                    ban_cache[guild.id] = {}
                 ban_cache[guild.id][user_id] = ({"is_banned": False}, current_time)
                 data = {"ban": {"is_banned": False}}
 
@@ -211,9 +214,9 @@ class BanAppealServer(commands.Cog):
         print(appeal_answer1, appeal_answer2, appeal_answer3)
         if appeal_answer1 is None or appeal_answer2 is None or appeal_answer1 is None:
             return status_400(data={"error": "One or more of your answers are invalid."})
-        appeal_answer1 = html.escape(appeal_answer1)[:1024]
-        appeal_answer2 = html.escape(appeal_answer2)[:1024]
-        appeal_answer3 = html.escape(appeal_answer3)[:1024]
+        appeal_answer1 = bleach.clean(appeal_answer1, strip=True)[:1024]
+        appeal_answer2 = bleach.clean(appeal_answer2, strip=True)[:1024]
+        appeal_answer3 = bleach.clean(appeal_answer3, strip=True)[:1024]
         new_appeal_id = await banappealdb.add_new_ban_appeal(user_id, ban_reason, appeal_answer1, appeal_answer2,
                                                              appeal_answer3)
         if new_appeal_id:
