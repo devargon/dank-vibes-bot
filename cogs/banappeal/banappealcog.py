@@ -78,7 +78,7 @@ class BanAppealReasonModal(discord.ui.Modal):
         if self.selected_appeal_status == 2:
             if appealer is not None:
                 try:
-                    await banned_guild.unban(appealer, reason=f"Ban appeal #{banappeal.appeal_id} was approved by {proper_userf(interaction.user)}  ({interaction.user.id}")
+                    await banned_guild.unban(appealer, reason=f"Ban appeal #{banappeal.appeal_id} was approved by {proper_userf(interaction.user)}  ({interaction.user.id})")
                 except discord.Forbidden:  # No permission to unban
                     err = "I'm unable to unban the user because I lack the necessary permissions. Ensure I have the \"Ban Members\" permission."
                 except discord.HTTPException as e:
