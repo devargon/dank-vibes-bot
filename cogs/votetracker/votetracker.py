@@ -242,7 +242,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
         print(f"raw vote data detected {data}")
         try:
             timenow = round(time.time())
-            timetoremove = timenow + 86400
+            #timetoremove = timenow + 86400
             timetoremind = timenow + 43200
             userid = int(data.get('user', None) or data.get('userId', None) or data.get('user_id', None))
             guildid = int(data.get('guild', None) or data.get('guildId', None) or data.get('guild_id', None))
@@ -273,13 +273,13 @@ class VoteTracker(commands.Cog, name='votetracker'):
                     else:
                         try:
                             await member.add_roles(vdankster, reason=f"Voted for {guild.name}")
-                            rolesummary = f"You've received {vdankster.mention} for 24 hours."
+                            rolesummary = f"You've received {vdankster.mention} for 12 hours."
                         except discord.Forbidden:
                             pass
                         existing_reminder = await self.votedb.get_voter(member)
                         existing_reminder.rmtime = timetoremind
                         await self.votedb.update_voter(existing_reminder)
-                        await self.client.db.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4) ON CONFLICT (member_id, role_id) DO UPDATE SET time = EXCLUDED.time", userid, guildid, vdanksterid, timetoremove)
+                        await self.client.db.execute("INSERT INTO autorole (member_id, guild_id, role_id, time) VALUES ($1, $2, $3, $4) ON CONFLICT (member_id, role_id) DO UPDATE SET time = EXCLUDED.time", userid, guildid, vdanksterid, timetoremind)
 
                         milestones = await self.client.db.fetch("SELECT * FROM milestones")
                         if len(milestones) != 0:
