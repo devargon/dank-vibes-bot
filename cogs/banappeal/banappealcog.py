@@ -9,7 +9,7 @@ import contextlib
 import typing
 
 import server
-from aiohttp import web, ClientSession
+from aiohttp import ClientSession
 
 from .banappealdb import BanAppealDB, BanAppeal
 from main import dvvt
@@ -192,6 +192,9 @@ class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banapp
         self.client.loop.create_task(self._start_server())
         self.discordBanAppealPostQueue: typing.List[BanAppeal] = []
         self.discordBanAppealUpdateQueue: typing.List[BanAppeal] = []
+        self.notifyUpdateQueueStarted = False
+        self.notifyPostQueueStarted = False
+        self.notifyDeadlineAppealsStarted = False
 
     async def _start_server(self):
         await self.client.wait_until_ready()
@@ -273,6 +276,9 @@ class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banapp
 
     @tasks.loop(seconds=5)
     async def check_unposted_appeals(self):
+        if not self.notifyPostQueueStarted:
+            self.notifyPostQueueStarted = True
+            print("Appeal Post Queue Check started")
         try:
             if len(self.discordBanAppealPostQueue) > 0:
                 banappealdb = BanAppealDB(self.client.db)
@@ -295,6 +301,10 @@ class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banapp
 
     @tasks.loop(seconds=5)
     async def check_unupdated_appeals(self):
+        await self.client.wait_until_ready()
+        if not self.notifyUpdateQueueStarted:
+            self.notifyUpdateQueueStarted = True
+            print("Appeal Update Queue Check started")
         print("Task for checking unupdated appeals started.")
         try:
             if len(self.discordBanAppealUpdateQueue) > 0:
@@ -329,6 +339,9 @@ class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banapp
     @tasks.loop(seconds=10)
     async def check_appeal_deadlines(self):
         await self.client.wait_until_ready()
+        if not self.notifyDeadlineAppealsStarted:
+            self.notifyDeadlineAppealsStarted = True
+            print("Appeal Deadlines Check started")
         try:
             banappealdb = BanAppealDB(self.client.db)
             appeals = await banappealdb.get_all_awaiting_ban_appeals()
@@ -340,14 +353,22 @@ class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banapp
 
                 if discord.utils.utcnow() >= day_6 and appeal.last_reminder is not True:  # Time to remind
                     if channel is not None:
+                        pmessage = channel.get_partial_message(appeal.message_id)
                         msg = f"<@&> <@&> Appeal #{appeal.appeal_id} has not been responded to yet.\nPlease make a decision <t:{round(day_7.timestamp())}:R>, otherwise it'll be automatically denied.\nhttps://discord.com/channels/{appeal.guild_id}/{appeal.channel_id}/{appeal.message_id}"
                         try:
-                            await channel.send(msg)
+                            await pmessage.reply(msg)
                             appeal.last_reminder = True
                         except discord.Forbidden:  # no permission to send messages in ban appeal channel
                             appeal.last_reminder = True
                         except discord.HTTPException:
-                            continue
+                            try:
+                                await channel.send(msg)
+                                appeal.last_reminder = True
+                            except discord.Forbidden:  # no permission to send messages in ban appeal channel
+                                appeal.last_reminder = True
+                            except discord.HTTPException:
+                                continue
+
                         appeal.updated = False
                         await banappealdb.update_ban_appeal(appeal)
                         self.discordBanAppealUpdateQueue.append(appeal)
@@ -386,14 +407,9 @@ class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banapp
 
 
     @checks.dev()
-    @commands.command(name="uaq")
+    @commands.command(name="updateappealqueue", aliases=["uaq"])
     async def update_appeal_queue(self, ctx):
         banappealdb = BanAppealDB(self.client.db)
         self.discordBanAppealPostQueue = await banappealdb.get_ban_appeals_awaiting_post()
         self.discordBanAppealUpdateQueue = await banappealdb.get_ban_appeals_awaiting_update()
         await ctx.message.add_reaction("👍")
-
-    @checks.is_dvbm()
-    @commands.command(name='bbon')
-    async def bbon(self, ctx, member: discord.Member = None):
-        await ctx.send("An unexpected error occurred.", delete_after=5)
