@@ -1,8 +1,6 @@
-import html
 import os
-import random
 import re
-from datetime import timedelta, datetime
+from datetime import timedelta
 
 import discord
 import asyncio
@@ -15,12 +13,10 @@ from aiohttp import web, ClientSession
 
 from .banappealdb import BanAppealDB, BanAppeal
 from main import dvvt
-from utils.time import humanize_timedelta
 from utils.format import proper_userf, print_exception
 from utils import checks
 from utils.buttons import *
 from discord.ext import commands, tasks
-from time import perf_counter
 from .banappeal_discord import BanAppealDiscord
 from .banappeal_server import BanAppealServer
 
@@ -77,15 +73,32 @@ class BanAppealReasonModal(discord.ui.Modal):
             return await interaction.response.send_message(embed=result_embed, ephemeral=True)
         appealer = await interaction.client.get_or_fetch_user(banappeal.user_id)
         appealer_text = f"**{proper_userf(appealer)}** ({appealer.id})" if appealer is not None else str(banappeal.user_id)
+        banned_guild = interaction.client.get_guild(banappeal.guild_id)
+        err = None
+        if self.selected_appeal_status == 2:
+            if appealer is not None:
+                try:
+                    await banned_guild.unban(appealer, reason=f"Ban appeal #{banappeal.appeal_id} was approved by {proper_userf(interaction.user)}  ({interaction.user.id}")
+                except discord.Forbidden:  # No permission to unban
+                    err = "I'm unable to unban the user because I lack the necessary permissions. Ensure I have the \"Ban Members\" permission."
+                except discord.HTTPException as e:
+                    err = f"I'm unable to unban the user: {str(e)}"
+            else:
+                err = f"I'm unable to ban the user as I can't find them through their ID (`{banappeal.user_id}`)"
+            if err:
+                result_embed.description = err
+                return await interaction.response.send_message(embed=result_embed, ephemeral=True)
 
         banappeal.appeal_status = self.selected_appeal_status
         banappeal.reviewer_id = interaction.user.id
         banappeal.reviewer_response = user_remark if user_remark is not None and len(user_remark) > 0 else None
         banappeal.reviewed_timestamp = discord.utils.utcnow()
         banappeal.updated = False
+
         await banappealdb.update_ban_appeal(banappeal)
         cog = interaction.client.get_cog('banappeal')
         cog.discordBanAppealUpdateQueue.append(banappeal)
+
         result_embed.color = discord.Color.green()
         result_embed.set_footer(text=proper_userf(interaction.user), icon_url=interaction.user.display_avatar.with_size(32).url)
         result_embed.title = f"You've updated appeal #{self.appeal_id}"
@@ -95,6 +108,7 @@ class BanAppealReasonModal(discord.ui.Modal):
         else:
             result_embed.description += f" with no remarks."
         await interaction.response.send_message(embed=result_embed, ephemeral=True)
+
         if banappeal.email is not None:
             print(f"Appeal #{banappeal.appeal_id} has an email associated, will attempt to request the server to send an email.")
             middleman_server = os.getenv("APPEALS_SERVER_HOST")
@@ -197,7 +211,8 @@ class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banapp
         descriptions.append("")
         if appeal.appeal_status == 0:
             descriptions.append("Pending, **awaiting review**")
-            embed.set_footer(text="Pending") # Add a loading graphic?
+            embed.set_footer(text="Pending, review this appeal BEFORE") # Add a loading graphic?
+            embed.timestamp = appeal.appeal_timestamp + timedelta(days=7)
         elif appeal.appeal_status in [1, 2]:
             status_str = "Denied" if appeal.appeal_status == 1 else "Approved"
             embed.set_footer(text=status_str)
@@ -220,16 +235,29 @@ class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banapp
         descriptions.append("** **")
         descriptions.append(f"Appeal responses")
         embed.description = "\n".join(descriptions)
+
+        def add_prefix_to_lines(multiline_string):
+            lines = multiline_string.split('\n')
+            lines_with_prefix = [f"> {line}" for line in lines]
+            return '\n'.join(lines_with_prefix)
+
         if appeal.version == 1:
             qn_1 = "Do you understand why you were banned/what do you think led to your ban?"
+            ans_1 = appeal.appeal_answer1.strip()
+            ans_1 = add_prefix_to_lines(ans_1) if type(ans_1) == str and len(ans_1.strip()) > 0 else "_ _"
+            ans_2 = appeal.appeal_answer2.strip()
+            ans_2 = add_prefix_to_lines(ans_2) if type(ans_2) == str and len(ans_2.strip()) > 0 else "_ _"
+            ans_3 = appeal.appeal_answer3.strip()
+            ans_3 = add_prefix_to_lines(ans_3) if type(ans_3) == str and len(ans_3.strip()) > 0 else "_ _"
+
             qn_2 = "How will you change to be a positive member of the community?"
             qn_3 = "Is there any other information you would like to provide?"
             qn_id = 1
-            embed.add_field(name=f"_{qn_id}. {qn_1}_", value=appeal.appeal_answer1 or "_ _", inline=False)
+            embed.add_field(name=f"_{qn_id}. {qn_1}_", value=ans_1, inline=False)
             qn_id += 1
-            embed.add_field(name=f"_{qn_id}. {qn_2}_", value=appeal.appeal_answer2 or "_ _", inline=False)
+            embed.add_field(name=f"_{qn_id}. {qn_2}_", value=ans_2, inline=False)
             qn_id += 1
-            embed.add_field(name=f"_{qn_id}. {qn_3}_", value=appeal.appeal_answer3 or "_ _", inline=False)
+            embed.add_field(name=f"_{qn_id}. {qn_3}_", value=ans_3, inline=False)
         return embed
 
     @commands.Cog.listener()
@@ -240,6 +268,7 @@ class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banapp
         self.discordBanAppealUpdateQueue = await banappealdb.get_ban_appeals_awaiting_update()
         self.check_unposted_appeals.start()
         self.check_unupdated_appeals.start()
+        self.check_appeal_deadlines.start()
         self.client.add_view(view=BanAppealView())
 
     @tasks.loop(seconds=5)
@@ -266,6 +295,7 @@ class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banapp
 
     @tasks.loop(seconds=5)
     async def check_unupdated_appeals(self):
+        print("Task for checking unupdated appeals started.")
         try:
             if len(self.discordBanAppealUpdateQueue) > 0:
                 banappealdb = BanAppealDB(self.client.db)
@@ -295,6 +325,64 @@ class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banapp
         except Exception as e:
             a = print_exception("Error in Appeal Update Queue", e)
             await self.client.error_channel.send(embed=discord.Embed(title="Error in Appeal Update Queue", description=a))
+
+    @tasks.loop(seconds=10)
+    async def check_appeal_deadlines(self):
+        await self.client.wait_until_ready()
+        try:
+            banappealdb = BanAppealDB(self.client.db)
+            appeals = await banappealdb.get_all_awaiting_ban_appeals()
+            print(f"There are {len(appeals)} appeals awaiting response.")
+            for appeal in appeals:
+                day_6 = appeal.appeal_timestamp + timedelta(days=6)
+                day_7 = appeal.appeal_timestamp + timedelta(days=7)
+                channel = self.client.get_channel(appeal.channel_id)
+
+                if discord.utils.utcnow() >= day_6 and appeal.last_reminder is not True:  # Time to remind
+                    if channel is not None:
+                        msg = f"<@&> <@&> Appeal #{appeal.appeal_id} has not been responded to yet.\nPlease make a decision <t:{round(day_7.timestamp())}:R>, otherwise it'll be automatically denied.\nhttps://discord.com/channels/{appeal.guild_id}/{appeal.channel_id}/{appeal.message_id}"
+                        try:
+                            await channel.send(msg)
+                            appeal.last_reminder = True
+                        except discord.Forbidden:  # no permission to send messages in ban appeal channel
+                            appeal.last_reminder = True
+                        except discord.HTTPException:
+                            continue
+                        appeal.updated = False
+                        await banappealdb.update_ban_appeal(appeal)
+                        self.discordBanAppealUpdateQueue.append(appeal)
+                elif discord.utils.utcnow() >= day_7: # automatically deny appeal
+                    appeal.reviewer_id = self.client.user.id
+                    appeal.appeal_status = 1
+                    appeal.reviewed_timestamp = discord.utils.utcnow()
+                    appeal.updated = False
+                    appealer = await self.client.get_or_fetch_user(appeal.user_id)
+                    await banappealdb.update_ban_appeal(appeal)
+                    self.discordBanAppealUpdateQueue.append(appeal)
+                    if appeal.email is not None:
+                        print(
+                            f"Appeal #{appeal.appeal_id} has an email associated, will attempt to request the server to send an email.")
+                        middleman_server = os.getenv("APPEALS_SERVER_HOST")
+                        if not middleman_server:
+                            print(f"Middleman server env, APPEALS_SERVER_HOST has not been set.")
+                        else:
+                            try:
+                                async with ClientSession(headers={"authorization": os.getenv("APPEALS_SHARED_SECRET")}) as session:
+                                    print(f"Sending Appeal #{appeal.appeal_id} data to notify endpoint")
+                                    data = appeal.to_public_dict()
+                                    if appealer:
+                                        data['username'] = appealer.display_name
+                                    a = await session.post(f"{middleman_server}/api/notify-update", json=data)
+                                    print(f"#{appeal.appeal_id} data has been sent. Response: {a.status}")
+                                    await session.close()
+                            except Exception as e:
+                                print_exception(f"Error while sending appeal #{appeal.appeal_id} data to endpoint:", e)
+
+
+        except Exception as e:
+            a = print_exception("Error in Appeal Update Queue", e)
+            await self.client.error_channel.send(
+                embed=discord.Embed(title="Error in Appeal Update Queue", description=a))
 
 
     @checks.dev()
