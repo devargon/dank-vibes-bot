@@ -27,9 +27,10 @@ class BanAppeal:
         self.updated: bool = record.get('updated')
         self.posted: bool = record.get('posted')
         self.message_id: int = record.get('message_id')
+        self.last_reminder: bool = record.get('last_reminder')
 
     def __repr__(self):
-        return f"BanAppeal(appeal_id={self.appeal_id}, user_id={self.user_id}, appeal_timestamp={self.appeal_timestamp}, ban_reason='{self.ban_reason}', appeal_answer1='{self.appeal_answer1}', appeal_answer2='{self.appeal_answer2}', appeal_answer3='{self.appeal_answer3}', email='{self.email}', appeal_status={self.appeal_status}, reviewed_timestamp={self.reviewed_timestamp}, reviewer_id={self.reviewer_id}, reviewer_response='{self.reviewer_response}', version={self.version}, guild_id={self.guild_id}, channel_id={self.channel_id}, message_id={self.message_id}, updated={self.updated}, posted={self.posted})"
+        return f"BanAppeal(appeal_id={self.appeal_id}, user_id={self.user_id}, appeal_timestamp={self.appeal_timestamp}, ban_reason='{self.ban_reason}', appeal_answer1='{self.appeal_answer1}', appeal_answer2='{self.appeal_answer2}', appeal_answer3='{self.appeal_answer3}', email='{self.email}', appeal_status={self.appeal_status}, reviewed_timestamp={self.reviewed_timestamp}, reviewer_id={self.reviewer_id}, reviewer_response='{self.reviewer_response}', version={self.version}, guild_id={self.guild_id}, channel_id={self.channel_id}, message_id={self.message_id}, updated={self.updated}, posted={self.posted}, last_reminder={self.last_reminder})"
 
     @staticmethod
     def datetime_to_iso(dt: datetime) -> str:
@@ -167,6 +168,13 @@ class BanAppealDB:
             return BanAppeal(result)
         return None
 
+    async def get_all_awaiting_ban_appeals(self) -> List[BanAppeal]:
+        result = await self.db.fetch("SELECT * FROM banappeals WHERE appeal_status = 0 ORDER BY appeal_timestamp")
+        results = []
+        for i in result:
+            results.append(BanAppeal(i))
+        return results
+
     async def get_user_all_ban_appeals(self, user_id: int) -> List[BanAppeal]:
         result = await self.db.fetch("SELECT * FROM BanAppeals WHERE user_id = $1 ORDER BY appeal_id DESC", user_id)
         results = []
@@ -192,9 +200,9 @@ class BanAppealDB:
 
     async def update_ban_appeal(self, appeal: BanAppeal):
         await self.db.execute(
-            "UPDATE BanAppeals SET appeal_answer1 = $1, appeal_answer2 = $2, appeal_answer3 = $3, email = $4, appeal_status = $5, reviewed_timestamp = $6, reviewer_id = $7, reviewer_response = $8, guild_id = $9, channel_id = $10, message_id = $11, updated = $12, posted = $13 WHERE appeal_id = $14",
+            "UPDATE BanAppeals SET appeal_answer1 = $1, appeal_answer2 = $2, appeal_answer3 = $3, email = $4, appeal_status = $5, reviewed_timestamp = $6, reviewer_id = $7, reviewer_response = $8, guild_id = $9, channel_id = $10, message_id = $11, updated = $12, posted = $13, last_reminder = $14 WHERE appeal_id = $15",
             appeal.appeal_answer1, appeal.appeal_answer2, appeal.appeal_answer3, appeal.email, appeal.appeal_status,
-            appeal.reviewed_timestamp, appeal.reviewer_id, appeal.reviewer_response, appeal.guild_id, appeal.channel_id, appeal.message_id, appeal.updated, appeal.posted, appeal.appeal_id)
+            appeal.reviewed_timestamp, appeal.reviewer_id, appeal.reviewer_response, appeal.guild_id, appeal.channel_id, appeal.message_id, appeal.updated, appeal.posted, appeal.last_reminder, appeal.appeal_id)
 
     async def add_new_ban_appeal(self, user_id: int, ban_reason: str, appeal_answer1: str,
                                  appeal_answer2: str, appeal_answer3: str) -> Optional[int]:
