@@ -21,8 +21,8 @@ from discord.ext import commands, tasks
 from .banappeal_discord import BanAppealDiscord
 from .banappeal_server import BanAppealServer
 
-server_id = 871734809154707467
-banappeal_chn_id = 1194673636196491396
+server_id = 1200400184748802168
+banappeal_chn_id = 1200705116857176135
 
 class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banappeal'):
     """

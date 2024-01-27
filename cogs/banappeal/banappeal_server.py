@@ -15,8 +15,8 @@ from aiohttp import web
 
 from utils.format import print_exception
 
-server_id = 871734809154707467
-banappeal_chn_id = 1194673636196491396
+server_id = 1200400184748802168
+banappeal_chn_id = 1200705116857176135
 
 def status_400(data: dict):
     return web.json_response(data=data, status=400)
