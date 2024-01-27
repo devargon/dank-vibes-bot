@@ -197,6 +197,33 @@ class BanAppealDB:
         raw = await self.db.fetch("SELECT * FROM BanAppeals WHERE posted = FALSE")
         return [BanAppeal(record) for record in raw]
 
+    async def search_ban_appeals(self, order_asc: bool, status: Optional[int] = None, appeal_id: Optional[int] = None,
+                                 user_id: Optional[int] = None) -> List[BanAppeal]:
+        sql = "SELECT * FROM banappeals"
+        params = []
+        conditions = []
+
+        if status is not None:
+            conditions.append("appeal_status = $1")
+            params.append(status)
+        if appeal_id is not None:
+            conditions.append("appeal_id = ${}".format(len(params) + 1))
+            params.append(appeal_id)
+        if user_id is not None:
+            conditions.append("user_id = ${}".format(len(params) + 1))
+            params.append(user_id)
+
+        if conditions:
+            sql += " WHERE " + " AND ".join(conditions)
+
+        if order_asc:
+            sql += " ORDER BY appeal_id ASC"
+        else:
+            sql += " ORDER BY appeal_id DESC"
+
+        records = await self.db.fetch(sql, *params)
+        ban_appeals = [BanAppeal(record) for record in records]
+        return ban_appeals
 
     async def update_ban_appeal(self, appeal: BanAppeal):
         await self.db.execute(
