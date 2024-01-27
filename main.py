@@ -36,22 +36,10 @@ AVAILABLE_EXTENSIONS = [
     'cogs.dev',
     'cogs.errors',
     'cogs.admin',
-    'cogs.autoreaction',
-    'cogs.banbattle',
-    'cogs.fun',
     'cogs.help',
     'cogs.mod',
-    'cogs.owo',
     'cogs.utility',
-    'cogs.votetracker',
-    'cogs.messagetracking',
-    'cogs.grinder',
-    'cogs.automod',
-    'cogs.giveaways',
-    'cogs.dankmemer',
     'cogs.events',
-    'cogs.imgen',
-    'cogs.disboard',
     'cogs.slashtags',
     'cogs.banappeal',
 ]
@@ -301,6 +289,7 @@ class dvvt(commands.Bot):
             if len(missing_tables) == 0:
                 pass
             else:
+                print(missing_tables)
                 print(f"Some databases do not exist, creating them now...")
                 await self.db.execute("""CREATE TABLE IF NOT EXISTS autoreactions(guild_id bigint, trigger text, response text);
 CREATE TABLE IF NOT EXISTS autorole(member_id bigint, guild_id bigint, role_id bigint, time bigint);
