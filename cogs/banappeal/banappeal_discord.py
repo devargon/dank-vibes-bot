@@ -1,4 +1,5 @@
 import copy
+import random
 
 import discord
 from discord import default_permissions, Option
@@ -6,8 +7,9 @@ from discord.ext import pages
 from typing import List
 
 from utils import checks
+from utils.context import DVVTcontext
 from utils.format import proper_userf
-from .banappeal_views import BanAppealView
+from .banappeal_views import BanAppealView, GetBannedView
 from .banappealdb import BanAppealDB, BanAppeal
 from datetime import datetime, timedelta
 import asyncio
@@ -89,6 +91,25 @@ class BanAppealDiscord(commands.Cog):
             pg = pages.Page(embeds=[embed_copy], custom_view=AppealSelector(chunk, self))
             pag_pages.append(pg)
         return pag_pages
+
+    @checks.dev()
+    @commands.command(name="idk")
+    async def idk(self, ctx: DVVTcontext):
+        embed = discord.Embed(title="Welcome!", description="You're invited to participate in the preproduction test for Dank Vibes Bot's Ban Appeal feature. Read below before continuing:", color=self.client.embed_color)
+        embed.add_field(name="What is this", value="This activity will simulate making an appeal through DV Bot's newest platform, a customized online ban appeal portal, after getting banned.", inline=False)
+        embed2 = discord.Embed(title="How is it conducted?", description="1. Click the button below. You'll receive a DM from this bot - like how you'd get banned with Carl-bot - and subsequently be banned from this server.\n2. The DM sent to you will include a link to the ban appeal platform. Click on it.\n3. From then on, no guidance is provided. Just use the website like you would, if you wanted to make an appeal to be unbanned.", color=self.client.embed_color)
+        embed3 = discord.Embed(title="⚠️ IMPORTANT!", description="**This ban appeal platform includes email notifications for when your ban appeal gets updated by a Moderator.**\nIt's not compulsory to use this feature, but I **highly recommend** you **DO** use it, to help me ensure that it works as intended. \nI'd also like to get your opinion/feedback on this feature, such as __whether the emails ended up in your Junk folder__.", color=discord.Color.yellow())
+        embed4 = discord.Embed(title="What happens after?", description="Regardless of whether your ban gets accepted or denied, I'll probably come around asking for feedback from you. You can also provide me feedback as soon as you've submitted your appeal.", color=self.client.embed_color)
+        embed4.set_footer(text="Thank you so much for participating!")
+        embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/801435251951403048.gif")
+        embed2.set_thumbnail(url="https://cdn.discordapp.com/emojis/825271478958030868.gif")
+        embed3.set_thumbnail(url="https://cdn.discordapp.com/emojis/762334206449549362.gif")
+        embed4.set_thumbnail(url="https://cdn.discordapp.com/emojis/832623591812104202.webp")
+        await ctx.send(embeds=[embed, embed2, embed3, embed4], view=GetBannedView())
+
+
+
+
 
     @default_permissions(manage_roles=True)
     @checks.has_permissions_or_role(manage_roles=True)

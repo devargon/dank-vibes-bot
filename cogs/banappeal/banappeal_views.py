@@ -1,4 +1,6 @@
+import asyncio
 import os
+import random
 import re
 
 import discord
@@ -161,3 +163,42 @@ class BanAppealView(discord.ui.View):
         self.add_item(self.green_button)
         self.add_item(self.red_button)
         self.add_item(self.grey_button)
+
+
+class BanButton(discord.ui.Button):
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        reasons = ["Having a Twitter account", "Spammed dv.rc", "Just felt like banning you", "Pressed a button to get banned", "Delulu is not the solulu", "Being a lem", f"Your behaviour has resulted in a ban due to being toxic towards members within {interaction.guild.name}", f"Your actions regarding NSFW content is prohibited in {interaction.guild.name}"]
+        reason = f"Reason: {random.choice(reasons)}\nYou can go for an [Appeal here](https://preproduction.banappeal.dankvibes.nogra.xyz) if you think you've been banned unfairly. Allow a few hours for a response."
+        dm_embed = discord.Embed(title="You were banned!", description=f"**{reason}**", color=discord.Color.brand_red())
+        dm_embed.set_author(name=interaction.guild.name)
+        try:
+            await interaction.user.send(embed=dm_embed)
+        except Exception as e:
+            await interaction.followup.send(f"❌ Failed: I could not send you a DM. Open your DMs? {str(e)}", ephemeral=True)
+        else:
+            await interaction.followup.send(f"✅ Your ban message has been sent. You'll be banned momentarily.", ephemeral=True)
+            await asyncio.sleep(5)
+            try:
+                await interaction.guild.ban(interaction.user, reason=reason)
+            except Exception as e:
+                await interaction.followup.send(f"❌ Failed: I could not ban you. {str(e)}", ephemeral=True)
+
+
+class GetBannedView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+        self.add_item(BanButton(label="get banned nub", style=discord.ButtonStyle.green, emoji=discord.PartialEmoji.from_str("<a:banHammer:660000159832211486>"), custom_id="ban1"))
+        self.add_item(
+            BanButton(label="get banned nub", style=discord.ButtonStyle.green, emoji=discord.PartialEmoji.from_str("<a:dv_pepeBannedOwO:837726632453865534>"),
+                      custom_id="ban2"))
+        self.add_item(
+            BanButton(label="get banned nub", style=discord.ButtonStyle.green, emoji=discord.PartialEmoji.from_str("<a:blobcatban:622740495612903424>"),
+                      custom_id="ban3"))
+        self.add_item(
+            BanButton(label="get banned nub", style=discord.ButtonStyle.green, emoji=discord.PartialEmoji.from_str("<:blobthinkban:812905997034061834>"),
+                      custom_id="ban4"))
+        self.add_item(
+            BanButton(label="get banned nub", style=discord.ButtonStyle.green, emoji=discord.PartialEmoji.from_str("<:blobban:759935431847968788>"),
+                      custom_id="ban5"))
