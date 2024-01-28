@@ -240,5 +240,5 @@ class BanAppealDB:
                 user_id, discord.utils.utcnow(), ban_reason, appeal_answer1, appeal_answer2, appeal_answer3)
             return appeal_id
         except Exception as e:
-            print_exception(f"Failed to add new ban appeal: {e}")
+            print_exception(f"Failed to add new ban appeal:", e)
             return None

@@ -225,7 +225,7 @@ class BanAppealServer(commands.Cog):
             ban = await guild.fetch_ban(obj)
         except discord.NotFound:
             return status_400(data={"error": "You are currently not banned."})
-        ban_reason = ban.reason
+        ban_reason = ban.reason or "Not specified"
         print(data)
         appeal_answer1 = data.get('appeal_answer1')
         appeal_answer2 = data.get('appeal_answer2')
@@ -240,7 +240,7 @@ class BanAppealServer(commands.Cog):
                                                              appeal_answer3)
         if new_appeal_id:
             new_appeal = await banappealdb.get_ban_appeal_by_appeal_id(new_appeal_id)
-            cog: BanAppealCog = self.get_cog('banappeal')
+            cog = self.get_cog('banappeal')
             cog.discordBanAppealPostQueue.append(new_appeal)
             return web.json_response(data={"appeal_id": new_appeal_id},
                                      status=200)  # on frontend, I want a query thing showing if it's newly posted if EJS can't provide that functionality
