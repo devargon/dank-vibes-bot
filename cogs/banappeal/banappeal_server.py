@@ -15,8 +15,9 @@ from aiohttp import web
 
 from utils.format import print_exception
 
-server_id = 1200400184748802168
-banappeal_chn_id = 1200705116857176135
+server_id = 1200400184748802168 if "preproduction" in os.getenv("APPEALS_SERVER_HOST") else 595457764935991326 if "banappeal." in os.getenv("APPEALS_SERVER_HOST") else 871734809154707467
+banappeal_chn_id = 1200705116857176135 if "preproduction" in os.getenv("APPEALS_SERVER_HOST") else 679122147553312778 if "banappeal." in os.getenv("APPEALS_SERVER_HOST") else 1194673636196491396
+modlog_chn_id = 1200707746622869535 if "preproduction" in os.getenv("APPEALS_SERVER_HOST") else 640029959213285387 if "banappeal." in os.getenv("APPEALS_SERVER_HOST") else 999661054067998720
 
 def status_400(data: dict):
     return web.json_response(data=data, status=400)
@@ -39,13 +40,15 @@ class BanAppealServer(commands.Cog):
         self.client.loop.create_task(self._start_server())
 
     @commands.Cog.listener()
-    async def on_member_unban(self, guild: discord.Guild, user: discord.User):
+    async def on_member_ban(self, guild: discord.Guild, user: discord.User):
         print("Caught a ban!")
         current_time = datetime.now()
 
         if guild.id not in ban_cache:
             ban_cache[guild.id] = {}
-        ban_cache[guild.id][user.id] = ({"is_banned": False}, current_time)
+        ban_obj = await guild.fetch_ban(user)
+
+        ban_cache[guild.id][user.id] = ({"is_banned": True, "ban_reason": ban_obj.reason}, current_time)
 
     @commands.Cog.listener()
     async def on_member_unban(self, guild: discord.Guild, user: discord.User):
@@ -54,7 +57,7 @@ class BanAppealServer(commands.Cog):
 
         if guild.id not in ban_cache:
             ban_cache[guild.id] = {}
-        ban_cache[guild.id][user.id] = ({"is_banned": True}, current_time)
+        ban_cache[guild.id][user.id] = ({"is_banned": False}, current_time)
 
 
     async def _start_server(self):

@@ -11,6 +11,9 @@ from aiohttp import ClientSession
 from cogs.banappeal.banappealdb import BanAppealDB, BanAppeal
 from utils.format import proper_userf, print_exception
 
+server_id = 1200400184748802168 if "preproduction" in os.getenv("APPEALS_SERVER_HOST") else 595457764935991326 if "banappeal." in os.getenv("APPEALS_SERVER_HOST") else 871734809154707467
+banappeal_chn_id = 1200705116857176135 if "preproduction" in os.getenv("APPEALS_SERVER_HOST") else 679122147553312778 if "banappeal." in os.getenv("APPEALS_SERVER_HOST") else 1194673636196491396
+modlog_chn_id = 1200707746622869535 if "preproduction" in os.getenv("APPEALS_SERVER_HOST") else 640029959213285387 if "banappeal." in os.getenv("APPEALS_SERVER_HOST") else 999661054067998720
 
 def get_appeal_no_from_embed(embed):
     appeal_match = re.match("Ban Appeal #(\d+)", embed.title)
@@ -66,6 +69,7 @@ class BanAppealReasonModal(discord.ui.Modal):
             if appealer is not None:
                 try:
                     await banned_guild.unban(appealer, reason=f"Ban appeal #{banappeal.appeal_id} was approved by {proper_userf(interaction.user)}  ({interaction.user.id})")
+                    asyncio.create_task(self.handle_carlbot_logging(banappeal, interaction))
                 except discord.Forbidden:  # No permission to unban
                     err = "I'm unable to unban the user because I lack the necessary permissions. Ensure I have the \"Ban Members\" permission."
                 except discord.HTTPException as e:
@@ -86,34 +90,93 @@ class BanAppealReasonModal(discord.ui.Modal):
         cog = interaction.client.get_cog('banappeal')
         cog.discordBanAppealUpdateQueue.append(banappeal)
 
+        await self.send_result(banappeal, interaction, result_embed, appealer_text)
+
+        if banappeal.email is not None:
+            asyncio.create_task(self.handle_email_sending(banappeal, appealer))
+        return
+
+    async def handle_email_sending(self, banappeal, appealer):
+        print(
+            f"Appeal #{banappeal.appeal_id} has an email associated, will attempt to request the server to send an email.")
+        middleman_server = os.getenv("APPEALS_SERVER_HOST")
+        if not middleman_server:
+            print(f"Middleman server env, APPEALS_SERVER_HOST has not been set.")
+        else:
+            try:
+                async with ClientSession(headers={"authorization": os.getenv("APPEALS_SHARED_SECRET")}) as session:
+                    print(f"Sending Appeal #{banappeal.appeal_id} data to notify endpoint")
+                    data = banappeal.to_public_dict()
+                    if appealer:
+                        data['username'] = appealer.display_name
+                    a = await session.post(f"{middleman_server}/api/notify-update", json=data)
+                    print(f"#{banappeal.appeal_id} data has been sent. Response: {a.status}")
+                    await session.close()
+            except Exception as e:
+                print_exception(f"Error while sending appeal #{banappeal.appeal_id} data to endpoint:", e)
+
+    async def send_result(self, banappeal, interaction, result_embed, appealer_text):
         result_embed.color = discord.Color.green()
-        result_embed.set_footer(text=proper_userf(interaction.user), icon_url=interaction.user.display_avatar.with_size(32).url)
+        result_embed.set_footer(text=proper_userf(interaction.user),
+                                icon_url=interaction.user.display_avatar.with_size(32).url)
         result_embed.title = f"You've updated appeal #{self.appeal_id}"
-        result_embed.description = "You " + ("**denied**" if banappeal.appeal_status == 1 else "**approved**") + f" {appealer_text}'s appeal"
+        result_embed.description = "You " + (
+            "**denied**" if banappeal.appeal_status == 1 else "**approved**") + f" {appealer_text}'s appeal"
         if banappeal.reviewer_response is not None:
             result_embed.description += f" with the remarks: \n\n> {banappeal.reviewer_response}"
         else:
             result_embed.description += f" with no remarks."
-        await interaction.response.send_message(embed=result_embed, ephemeral=True)
 
-        if banappeal.email is not None:
-            print(f"Appeal #{banappeal.appeal_id} has an email associated, will attempt to request the server to send an email.")
-            middleman_server = os.getenv("APPEALS_SERVER_HOST")
-            if not middleman_server:
-                print(f"Middleman server env, APPEALS_SERVER_HOST has not been set.")
-            else:
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=result_embed, ephemeral=True)
+        else:
+            await interaction.response.send_message(embed=result_embed, ephemeral=True)
+
+    async def handle_carlbot_logging(self, banappeal, interaction):
+        # ONLY USE APPEAL ID AND APPEALER ID IN THIS FUCNTION, IT USES AN OUTDATED BANAPPEAL OBJECT FOR FASTERICITY
+        def check_carlbot_unban_message(m: discord.Message):
+            if m.channel.id == modlog_chn_id and m.author.id == 235148962103951360 and len(m.embeds) > 0:
+                embed = m.embeds[0]
+                if embed.title.startswith("unban") and str(banappeal.user_id) in embed.description:
+                    return True
+            return False
+
+        try:
+            message = await interaction.client.wait_for("message", check=check_carlbot_unban_message, timeout=10.0)
+            case_match = re.match("unban \| case (\d+)", message.embeds[0].title)
+            case_number = int(case_match.group(1))
+            cmd = f"!reason {case_number} Ban appeal #{banappeal.appeal_id} was approved by \`{proper_userf(interaction.user, show_at_symbol=False)}\`  ({interaction.user.id})"
+            alt_cmd = f"!reason {case_number} Ban appeal #{banappeal.appeal_id} was approved by `{proper_userf(interaction.user, show_at_symbol=False)}`  ({interaction.user.id})"
+            msg_to_send = f"{interaction.user.mention} **copy the message below and send it**, to add this unban to Carl-bot's modlog.\n(Carl-bot tracks unbans in the modlog but does not include the reason.)"
+            user_sent_msg = None
+            while user_sent_msg is None:
                 try:
-                    async with ClientSession(headers={"authorization": os.getenv("APPEALS_SHARED_SECRET")}) as session:
-                        print(f"Sending Appeal #{banappeal.appeal_id} data to notify endpoint")
-                        data = banappeal.to_public_dict()
-                        if appealer:
-                            data['username'] = appealer.display_name
-                        a = await session.post(f"{middleman_server}/api/notify-update", json=data)
-                        print(f"#{banappeal.appeal_id} data has been sent. Response: {a.status}")
-                        await session.close()
+                    a = await interaction.channel.send(msg_to_send)
+                    b = await interaction.channel.send(cmd)
                 except Exception as e:
-                    print_exception(f"Error while sending appeal #{banappeal.appeal_id} data to endpoint:", e)
-        return
+                    print_exception("Exception while sending ping message", e)
+                    return
+
+                def check_user_sent_reason(m: discord.Message):
+                    return m.author.id == interaction.user.id and (m.content == cmd or m.content == alt_cmd)
+                try:
+                    user_sent_msg = await interaction.client.wait_for("message", check=check_user_sent_reason, timeout=30)
+                except asyncio.TimeoutError:
+                    try:
+                        await a.delete()
+                        await b.delete()
+                    except Exception as e:
+                        print_exception("Exception while deleting ping message", e)
+                else:
+                    try:
+                        await a.add_reaction("<:DVB_True:887589686808309791>")
+                        await b.add_reaction("<:DVB_True:887589686808309791>")
+                    except Exception as e:
+                        print_exception("Exception while sending ping message", e)
+        except asyncio.TimeoutError:
+            pass
+
+
 
 
 
