@@ -4,8 +4,9 @@ asyncpg
 colorthief
 cycler==0.10.0
 discord-ext-menus @ git+https://github.com/Rapptz/discord-ext-menus@fbb8803779373357e274e1540b368365fd9d8074
-py-cord==2.2.0
+py-cord==2.4.0
 alexflipnote.py @ git+https://github.com/argo0n/forked_alexflipnote.py
+dpy-http-server @ git+https://github.com/argo0n/dpy-http-server
 expr.py
 thefuzz[speed]
 humanize
@@ -55,3 +56,5 @@ captcha
 stringcase==1.2.0
 unidecode==1.3.4
 Wand==0.6.8
+bleach
+pydantic==1.10.2

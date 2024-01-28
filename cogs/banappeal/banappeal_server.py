@@ -38,6 +38,25 @@ class BanAppealServer(commands.Cog):
         )
         self.client.loop.create_task(self._start_server())
 
+    @commands.Cog.listener()
+    async def on_member_unban(self, guild: discord.Guild, user: discord.User):
+        print("Caught a ban!")
+        current_time = datetime.now()
+
+        if guild.id not in ban_cache:
+            ban_cache[guild.id] = {}
+        ban_cache[guild.id][user.id] = ({"is_banned": False}, current_time)
+
+    @commands.Cog.listener()
+    async def on_member_unban(self, guild: discord.Guild, user: discord.User):
+        print("Caught an unban!")
+        current_time = datetime.now()
+
+        if guild.id not in ban_cache:
+            ban_cache[guild.id] = {}
+        ban_cache[guild.id][user.id] = ({"is_banned": True}, current_time)
+
+
     async def _start_server(self):
         await self.client.wait_until_ready()
         print("Starting custom Web Server for port 5003")
@@ -64,7 +83,7 @@ class BanAppealServer(commands.Cog):
             web.json_response(data={"error": "INTERNAL SERVER ERROR"}, status=500)
             raise ValueError("Guild could not be fetched for /api/user")
 
-        cache_validity = timedelta(minutes=15)
+        cache_validity = timedelta(minutes=7)
         current_time = datetime.now()
         cached_ban = ban_cache.get(guild.id, {}).get(user_id)
 
