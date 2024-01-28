@@ -66,7 +66,7 @@ password = os.getenv('dbPASSWORD')
 amari_key = os.getenv('AMARI_KEY')
 
 
-intents = discord.Intents(guilds=True, members=True, presences=True, messages=True, reactions=True, emojis=True, invites=True, voice_states=True, message_content=True, typing=True)
+intents = discord.Intents(guilds=True, members=True, presences=True, messages=True, reactions=True, emojis=True, invites=True, voice_states=True, message_content=True, typing=True, moderation=True)
 allowed_mentions = discord.AllowedMentions(everyone=False, roles=False)
 
 
