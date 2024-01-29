@@ -32,8 +32,18 @@ from utils.errors import ArgumentBaseError
 from utils.converters import BetterTimeConverter
 from utils.format import ordinal, comma_number, proper_userf, box
 
+from .l2lvc import L2LVC
+from .time import UserTime
 from .whois import Whois
+from .teleport import Teleport
+from .nicknames import nicknames
+from .suggestion import Suggestion
+from .polls import polls
+from .autoreactor import Autoreaction
+from .highlights import Highlight
+from .reminders import reminders
 from .utility_slash import UtilitySlash
+from .customrole import CustomRoleManagement
 from ..mod.donations import UserDonations, format_donation
 
 class NitroLinkModal(discord.ui.Modal):
@@ -254,7 +264,7 @@ LANGUAGE_CODES = [l for l in googletrans.LANGUAGES.keys()]
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
 
-class Utility(UtilitySlash, Whois, commands.Cog, name='utility', metaclass=CompositeMetaClass):
+class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight, Autoreaction, polls, Whois, L2LVC, nicknames, Suggestion, Teleport, commands.Cog, name='utility', metaclass=CompositeMetaClass):
     """
     Utility commands
     """

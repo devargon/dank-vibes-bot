@@ -35,12 +35,8 @@ strfformat = "%d-%m-%y %H:%M:%S"
 AVAILABLE_EXTENSIONS = [
     'cogs.dev',
     'cogs.errors',
-    'cogs.admin',
     'cogs.help',
-    'cogs.mod',
     'cogs.utility',
-    'cogs.events',
-    'cogs.slashtags',
     'cogs.banappeal',
 ]
 
