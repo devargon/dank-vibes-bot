@@ -280,7 +280,7 @@ class dvvt(commands.Bot):
                       'remindersettings', 'inventories', 'iteminfo', 'tempweekly', 'rules', 'serverconfig',
                       'owocurrent', 'owopast', 'temp', 'stickymessages', 'maintenance', 'teleport',
                       'suggestion_response', 'suggestions', 'lockdownprofiles', 'grinderdata', 'messagemilestones',
-                      'viprolemessages', 'karutaeventconfig', 'autoreactions', 'owocount', 'milestones', 'votereminder',
+                      'viprolemessages', 'karutaeventconfig', 'autoreactions', 'owocount', 'milestones',
                       'voters', 'cooldowns', 'selfrolemessages', 'devmode', 'blacklisted_words',
                       'blacklist', 'freezenick', 'autorole', 'giveaways', 'giveawayentrants', 'dankdrops', 'autorole',
                       'donation_categories', 'christmaseventconfig', 'commandaccess', 'ignoredchristmascat',
