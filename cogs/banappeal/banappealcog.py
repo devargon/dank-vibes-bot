@@ -11,7 +11,7 @@ import typing
 import server
 from aiohttp import ClientSession
 
-from .banappeal_views import BanAppealView, GetBannedView
+from .banappeal_views import BanAppealView
 from .banappealdb import BanAppealDB, BanAppeal
 from main import dvvt
 from utils.format import proper_userf, print_exception
@@ -120,7 +120,6 @@ class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banapp
         self.check_unupdated_appeals.start()
         self.check_appeal_deadlines.start()
         self.client.add_view(view=BanAppealView())
-        self.client.add_view(view=GetBannedView())
 
     @tasks.loop(seconds=5)
     async def check_unposted_appeals(self):
