@@ -379,6 +379,7 @@ class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight
         embed = discord.Embed(color=self.client.embed_color, timestamp=discord.utils.utcnow())
         embed.add_field(name="Uptime", value=uptime_str, inline=False)
         embed.add_field(name='Since', value=since, inline=False)
+        embed.add_field(name="Having issues?", value="Check the status page at https://status.nogra.xyz/status/dv", inline=False)
         embed.set_author(name=ctx.me.name)
         await ctx.send(embed=embed)
 
@@ -394,6 +395,8 @@ class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight
         totalping = round((end - start) * 1000)
         embed = discord.Embed(title='Pong!', color=self.client.embed_color)
         embed.description = f"**API:** `{round(self.client.latency * 1000)}` ms\n**RoundTrip:** `{totalping}` ms"
+        embed.add_field(name="Having issues?", value="Check the status page at https://status.nogra.xyz/status/dv",
+                        inline=False)
         try:
             await message.edit(content=None, embed=embed)
         except discord.NotFound:
