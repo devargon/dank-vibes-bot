@@ -111,7 +111,7 @@ class BanAppealServer(commands.Cog):
                 data = {"ban": {"is_banned": False}}
 
         ban_appeals = await banappealdb.get_user_all_ban_appeals(user_id)
-        data['past_appeals'] = [banappeal.to_public_dict() for banappeal in ban_appeals]
+        data['past_appeals'] = [banappeal.to_presentable_format() for banappeal in ban_appeals]
 
         print(data)
         return web.json_response(data=data, status=200)
@@ -219,28 +219,54 @@ class BanAppealServer(commands.Cog):
                 return status_400(data={
                     "error": "You've recently submitted an appeal. You can make a new appeal 30 days after your previous one.",
                     "next_appeal_dt": (most_recent_appeal.appeal_timestamp + timedelta(days=30)).isoformat()})
-        obj = discord.Object(user_id)
+        appealer = await self.get_or_fetch_user(user_id)
         guild = self.get_guild(server_id)
         if guild is None:
             status_500(data={"error": "INTERNAL SERVER ERROR"})
             raise ValueError("Guild could not be fetched for /api/appeal")
         try:
-            ban = await guild.fetch_ban(obj)
+            ban = await guild.fetch_ban(appealer or discord.Object(user_id))
         except discord.NotFound:
             return status_400(data={"error": "You are currently not banned."})
+        except (discord.Forbidden, discord.HTTPException) as e:
+            print_exception("Error while fetching ban", e)
+            return status_500(data={"error": "I am unable to check if you're banned at the moment."})
         ban_reason = ban.reason or "Not specified"
-        print(data)
-        appeal_answer1 = data.get('appeal_answer1')
-        appeal_answer2 = data.get('appeal_answer2')
-        appeal_answer3 = data.get('appeal_answer3')
-        print(appeal_answer1, appeal_answer2, appeal_answer3)
-        if appeal_answer1 is None or appeal_answer2 is None or appeal_answer1 is None:
-            return status_400(data={"error": "One or more of your answers are invalid."})
-        appeal_answer1 = bleach.clean(appeal_answer1, strip=True)[:1024]
-        appeal_answer2 = bleach.clean(appeal_answer2, strip=True)[:1024]
-        appeal_answer3 = bleach.clean(appeal_answer3, strip=True)[:1024]
-        new_appeal_id = await banappealdb.add_new_ban_appeal(user_id, ban_reason, appeal_answer1, appeal_answer2,
-                                                             appeal_answer3)
+        if ban_reason == "Account too young":
+            version = 2
+        else:
+            version = 1
+
+        if version == 1:
+            appeal_answer1 = data.get('appeal_answer1')
+            appeal_answer2 = data.get('appeal_answer2')
+            appeal_answer3 = data.get('appeal_answer3')
+            if appeal_answer1 is None or appeal_answer2 is None or appeal_answer3 is None:
+                return status_400(data={"error": "You did not fill up all of the required fields."})
+            appeal_answer1 = bleach.clean(appeal_answer1, strip=True)[:1024]
+            appeal_answer2 = bleach.clean(appeal_answer2, strip=True)[:1024]
+            appeal_answer3 = bleach.clean(appeal_answer3, strip=True)[:1024]
+
+
+
+            new_appeal_id = await banappealdb.add_new_ban_appeal(user_id, ban_reason, appeal_answer1, appeal_answer2,
+                                                                 appeal_answer3, version, discord.utils.utcnow() + timedelta(days=7))
+
+        elif version == 2:
+            appeal_answer3 = data.get('appeal_answer3')
+            appeal_answer3 = bleach.clean(appeal_answer3, strip=True)[:1024]
+            if appeal_answer3 is None:
+                return status_400(data={"error": "You did not fill up all of the required fields."})
+            if (account_create_duration := discord.utils.utcnow() - appealer.created_at) <= timedelta(days=10):  # Account is less than 10 days old
+                time_until_dungeon_off = timedelta(days=10) - account_create_duration
+                review_by = discord.utils.utcnow() + time_until_dungeon_off + (timedelta(days=5) if time_until_dungeon_off > timedelta(days=2) else timedelta(days=7))
+            else:
+                review_by = discord.utils.utcnow() + timedelta(days=7)
+
+            new_appeal_id = await banappealdb.add_new_ban_appeal(user_id, ban_reason, "PLACEHOLDER", "PLACEHOLDER",
+                                                                 appeal_answer3, version, review_by)
+        else:
+            new_appeal_id = None
         if new_appeal_id:
             new_appeal = await banappealdb.get_ban_appeal_by_appeal_id(new_appeal_id)
             cog = self.get_cog('banappeal')
