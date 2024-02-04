@@ -154,7 +154,6 @@ class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banapp
         if not self.notifyUpdateQueueStarted:
             self.notifyUpdateQueueStarted = True
             print("Appeal Update Queue Check started")
-        print("Task for checking unupdated appeals started.")
         try:
             if len(self.discordBanAppealUpdateQueue) > 0:
                 banappealdb = BanAppealDB(self.client.db)
@@ -194,7 +193,6 @@ class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banapp
         try:
             banappealdb = BanAppealDB(self.client.db)
             appeals = await banappealdb.get_all_awaiting_ban_appeals()
-            print(f"There are {len(appeals)} appeals awaiting response.")
             for appeal in appeals:
                 time_to_remind = appeal.review_before_timestamp - timedelta(days=1)
                 channel = self.client.get_channel(appeal.channel_id)
