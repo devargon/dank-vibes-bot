@@ -682,7 +682,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         else:
             auditreason = reason + f" | Requested by {proper_userf(ctx.author)} ({ctx.author.id}"
         if isinstance(member, discord.Member):
-            embed = discord.Embed(title="You were banned by a Karuta Senpai!", description=f"Reason: **{reason}**\n\n> If you would like to appeal against your ban, submit an appeal [here](https://kable.lol/DankVibesAppeals/). Specify that you were banned by a Karuta Senpai in the `Other` question.", timestamp=discord.utils.utcnow(), color=discord.Color.red()).set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url, url="https://discord.gg/dankmemer")
+            embed = discord.Embed(title="You were banned by a Karuta Senpai!", description=f"Reason: **{reason}**\n\n> If you would like to appeal against your ban, submit an appeal [here](https://banappeal.dankvibes.nogra.xyz). Specify that you were banned by a Karuta Senpai in the `Other` question.", timestamp=discord.utils.utcnow(), color=discord.Color.red()).set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url, url="https://discord.gg/dankmemer")
             try:
                 await member.send(embed=embed)
             except Exception as e:
