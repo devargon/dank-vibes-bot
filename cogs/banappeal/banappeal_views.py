@@ -65,11 +65,14 @@ class BanAppealReasonModal(discord.ui.Modal):
         appealer_text = f"**{proper_userf(appealer)}** ({appealer.id})" if appealer is not None else str(banappeal.user_id)
         banned_guild = interaction.client.get_guild(banappeal.guild_id)
         err = None
+        user_already_unbanned = False
         if self.selected_appeal_status == 2:
             if appealer is not None:
                 try:
                     await banned_guild.unban(appealer, reason=f"Ban appeal #{banappeal.appeal_id} was approved by {proper_userf(interaction.user)}  ({interaction.user.id})")
                     asyncio.create_task(self.handle_carlbot_logging(banappeal, interaction))
+                except discord.NotFound:
+                    user_already_unbanned = True
                 except discord.Forbidden:  # No permission to unban
                     err = "I'm unable to unban the user because I lack the necessary permissions. Ensure I have the \"Ban Members\" permission."
                 except discord.HTTPException as e:
@@ -90,7 +93,7 @@ class BanAppealReasonModal(discord.ui.Modal):
         cog = interaction.client.get_cog('banappeal')
         cog.discordBanAppealUpdateQueue.append(banappeal)
 
-        await self.send_result(banappeal, interaction, result_embed, appealer_text)
+        await self.send_result(banappeal, interaction, result_embed, appealer_text, user_already_unbanned)
 
         if banappeal.email is not None:
             asyncio.create_task(self.handle_email_sending(banappeal, appealer))
@@ -115,7 +118,7 @@ class BanAppealReasonModal(discord.ui.Modal):
             except Exception as e:
                 print_exception(f"Error while sending appeal #{banappeal.appeal_id} data to endpoint:", e)
 
-    async def send_result(self, banappeal, interaction, result_embed, appealer_text):
+    async def send_result(self, banappeal, interaction, result_embed, appealer_text, user_already_unbanned):
         result_embed.color = discord.Color.green()
         result_embed.set_footer(text=proper_userf(interaction.user),
                                 icon_url=interaction.user.display_avatar.with_size(32).url)
@@ -126,6 +129,9 @@ class BanAppealReasonModal(discord.ui.Modal):
             result_embed.description += f" with the remarks: \n\n> {banappeal.reviewer_response}"
         else:
             result_embed.description += f" with no remarks."
+
+        if user_already_unbanned:
+            result_embed.description += "\n\n⚠️ *User was already unbanned before this appeal was reviewed.*"
 
         if interaction.response.is_done():
             await interaction.followup.send(embed=result_embed, ephemeral=True)
