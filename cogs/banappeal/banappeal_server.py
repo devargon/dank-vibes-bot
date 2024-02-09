@@ -162,6 +162,8 @@ class BanAppealServer(commands.Cog):
         ban_appeal = await banappealdb.get_ban_appeal_by_appeal_id(appeal_id)
         if ban_appeal is None or ban_appeal.user_id != user_id:
             return web.json_response(data={"error": "Ban appeal not found"}, status=404)
+        if ban_appeal.appeal_status != 0:
+            return web.json_response(data={"error": "Ban appeal is already reviewed"}, status=404)
         appeal_answer1 = data.get('appeal_answer1')
         appeal_answer2 = data.get('appeal_answer2')
         appeal_answer3 = data.get('appeal_answer3')
