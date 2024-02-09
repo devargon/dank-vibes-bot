@@ -232,17 +232,17 @@ class Whois(commands.Cog):
                 for nickname in past_nicknames:
                     if nickname.get('nickname'):
                         nicknames.append(nickname.get('nickname'))
-                embed.set_field_at(-2, name="Nicknames", value=f"{', '.join(nicknames) if len(nicknames) > 0 else 'No records; nicknames are only tracked after 9 January 21.'}\n\nRun `nicknames @{proper_userf(user, False)}` to see their other nicknames and the time they were changed.", inline=False)
+                embed.set_field_at(-2, name="Nicknames", value=f"{', '.join(nicknames) if len(nicknames) > 0 else 'No records; nicknames are only tracked after 9 January 21.'}\n\nRun `nicknames @{proper_userf(user, False)}` to see their other nicknames and the time they were changed."[:1023], inline=False)
             else:
-                embed.set_field_at(-2, name="Nicknames", value=f"No records; nicknames are only tracked after 9 January 2022.", inline=False)
+                embed.set_field_at(-2, name="Nicknames", value=f"No records", inline=False)
             past_names = await self.client.db.fetch("SELECT * FROM name_changes WHERE user_id = $1 ORDER BY time DESC LIMIT 20", user.id)
             if past_names:
                 names = []
                 for name in past_names:
                     if name.get('name'):
                         names.append(name.get('name'))
-                    embed.set_field_at(-1, name="Usernames", value=f"{', '.join(names) if len(names) > 0 else 'No records; usernames are only tracked after 9 January 21.'}\n\nRun `names @{proper_userf(user, False)}` to see their after usernames and the time they were changed.", inline=False)
+                    embed.set_field_at(-1, name="Usernames", value=f"{', '.join(names) if len(names) > 0 else 'No records; usernames are only tracked after 9 January 21.'}\n\nRun `names @{proper_userf(user, False)}` to see their after usernames and the time they were changed."[:1023], inline=False)
             else:
-                embed.set_field_at(-1, name="Usernames", value=f"No records; usernames are only tracked after 9 January 2022.", inline=False)
+                embed.set_field_at(-1, name="Usernames", value=f"No records", inline=False)
             wiview.base_embed = embed
             await uimessage.edit(embed=embed)
