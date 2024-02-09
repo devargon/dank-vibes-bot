@@ -681,9 +681,15 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, n
         old_hex = '#%06x' % random_color_role.color.value
         random_int_color = random.randint(0, 0xFFFFFF)
         str_random_hex_color = '#%06x' % random_int_color
+        embed = discord.Embed(title="Choosing a color...")
+        embed.set_thumbnail(url="https://i.imgur.com/TrBfTLb.gif")
+        m = await ctx.send(embed=embed)
+        await asyncio.sleep(3)
+        embed.title = "Random Color set!"
+        embed.description = f"{ctx.author.mention} changed the color of {random_color_role.mention} from {old_hex} to {str_random_hex_color}."
+        embed.set_thumbnail(url=f"https://singlecolorimage.com/get/{str_random_hex_color.replace('#', '')}/400x400")
         await random_color_role.edit(color=random_int_color)
-        embed = discord.Embed(title="Role Color Changed", description=f"{ctx.author.mention} changed the color of {random_color_role.mention} from {old_hex} to {str_random_hex_color}.", color=random_int_color)
-        await ctx.send(embed=embed)
+        await m.edit(embed=embed)
 
     @commands.command(name="active", aliases=['activeitems'])
     async def active_items(self, ctx: DVVTcontext):

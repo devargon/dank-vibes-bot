@@ -53,6 +53,7 @@ AVAILABLE_EXTENSIONS = [
     'cogs.imgen',
     'cogs.disboard',
     'cogs.slashtags',
+    'cogs.banappeal',
 ]
 
 load_dotenv('credentials.env')
@@ -65,7 +66,7 @@ password = os.getenv('dbPASSWORD')
 amari_key = os.getenv('AMARI_KEY')
 
 
-intents = discord.Intents(guilds=True, members=True, presences=True, messages=True, reactions=True, emojis=True, invites=True, voice_states=True, message_content=True, typing=True)
+intents = discord.Intents(guilds=True, members=True, presences=True, messages=True, reactions=True, emojis=True, invites=True, voice_states=True, message_content=True, typing=True, moderation=True)
 allowed_mentions = discord.AllowedMentions(everyone=False, roles=False)
 
 
@@ -279,7 +280,7 @@ class dvvt(commands.Bot):
                       'remindersettings', 'inventories', 'iteminfo', 'tempweekly', 'rules', 'serverconfig',
                       'owocurrent', 'owopast', 'temp', 'stickymessages', 'maintenance', 'teleport',
                       'suggestion_response', 'suggestions', 'lockdownprofiles', 'grinderdata', 'messagemilestones',
-                      'viprolemessages', 'karutaeventconfig', 'autoreactions', 'owocount', 'milestones', 'votereminder',
+                      'viprolemessages', 'karutaeventconfig', 'autoreactions', 'owocount', 'milestones',
                       'voters', 'cooldowns', 'selfrolemessages', 'devmode', 'blacklisted_words',
                       'blacklist', 'freezenick', 'autorole', 'giveaways', 'giveawayentrants', 'dankdrops', 'autorole',
                       'donation_categories', 'christmaseventconfig', 'commandaccess', 'ignoredchristmascat',

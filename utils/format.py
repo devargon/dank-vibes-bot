@@ -69,9 +69,9 @@ def proper_userf(user: Union[discord.Member, discord.User], show_at_symbol: Opti
         if user.discriminator.isnumeric and int(user.discriminator) > 0:
             return f"{user.name}#{user.discriminator}"
         else:
-            return f"@{user.name}"
+            return f"@{user.name}" if show_at_symbol else f"{user.name}"
     else:
-        return f"@{user.name}"
+        return f"@{user.name}" if show_at_symbol else f"{user.name}"
 
 
 def human_join(seq, delim=', ', final='or'):
