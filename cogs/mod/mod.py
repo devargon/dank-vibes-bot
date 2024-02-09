@@ -1345,3 +1345,61 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
                         await ctx.send(text)
                 else:
                     await ctx.send(text_joined)
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name="banappealguide")
+    async def banappealguide(self, ctx: DVVTcontext):
+        """
+        Searches for a certain user's reactions in a message's reactions. Only works to reactions of less than 500 members.
+        """
+        embed1 = discord.Embed(title="Ban Appeals Guide (for MODMS+)", color=0x58b9ff)
+        embed1.add_field(
+            name="Basic Information",
+            value="- A ban appeal is posted in <#679122147553312778> whenever a user creates an appeal on the [ban appeal site](https://dankvibes.banappeal.nogra.xyz).\n- A banned user can only make an appeal if;\n- They are banned from DV (obviously)\n- They are not blacklisted from using the site (not implemented yet)\n- They have not made a ban appeal in the past 30 days\n- They don\'t have a pending appeal",
+            inline=False
+        )
+        embed1.add_field(
+            name="Appeal Process",
+            value="- Approve or deny an appeal within 7 days.\n"
+            + "- After 7 days, the appeal is automatically denied. \n"
+            + "  - *For dungeon bans, the duration of the appeal is raised to 10 days after the user\'s account creation date + 5 days.*\n"
+            + "- You can choose to add a remark when approving/denying an appeal. **Such remarks will be shown to the appealer**.\n"
+            + "  - Such remarks will be shown to the user. It can be a comment about the appeal, or a message to the user.\n"
+            + "  - **Note**: When you **approve** an appeal **with remarks**, it will be highlighted as yellow instead of green.\n"
+            + "- *See __Email Variants__ and __Ban Appeal Status Variants__ below.*\n"
+            + "- If you think it\'s required to send a message to the appealer, go ahead and add remarks.",
+            inline=False
+        )
+        embed1.add_field(
+            name="\u200b",
+            value="- To __view their modlog__, click on the \"User ID\" button. You can then copy the user ID.\n"
+            + "- When you Approve/Deny an appeal, a prompt will show asking you to add remarks. Remember, it is **not compulsory** to add remarks.\n"
+            + "- After **approving an appeal**, the user is **unbanned immediately**.\n"
+            + "- DV Bot will prompt you to copy and send a message for __updating Carlbot\'s unban modlog entry__. Do so as it will constantly reminding you while waiting for you to send it.",
+            inline=False
+        )
+        embed1.add_field(
+            name="Other features",
+            value="- You can view past appeals with the /appeals command, including an option to filter the appeals. You can also immediately take action on the appeals from the /appeals command.",
+            inline=False
+        )
+        embed2 = discord.Embed(
+            title="Ban-specific forms",
+            description="For users who are banned with the reason \"Account too young\", they\'ll only get one question that asks about their account.\n\n"
+            + "This fixes the complaints of dungeon-banned users who don\'t know how to answer the original questions meant for troublemakers.",
+            color=0x58b9ff
+        )
+        embed2.set_image(url="https://i.imgur.com/CH7JkZC.png")
+        embed3 = discord.Embed(
+            title="Email Variants",
+            description="*What emails will look like for various appeal status.*",
+            color=0x58b9ff
+        )
+        embed3.set_image(url="https://i.imgur.com/QLxDnWh.png")
+        embed4 = discord.Embed(
+            title="Ban Appeal Status Variants",
+            description="*What various appeal status will look like on the ban appeal website.*",
+            color=0x58b9ff
+        )
+        embed4.set_image(url="https://i.imgur.com/D813K4q.png")
+        await ctx.send(embeds=[embed1, embed2, embed3, embed4])
