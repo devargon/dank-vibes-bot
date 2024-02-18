@@ -218,6 +218,39 @@ class donations(commands.Cog):
                     return await pages.start(ctx)
 
     @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name="donationsuserid", aliases=['du'])
+    async def donationsuserid(self, ctx, member: int = None):
+        """
+        Shows a user's donations.
+        """
+        if member is None:
+            member = ctx.author.id
+        async with ctx.typing():
+            categories = await self.client.db.fetch("SELECT * FROM donation_categories WHERE guild_id = $1", ctx.guild.id)
+            if not categories:
+                return await ctx.send("There are no donation categories set up for this server.")
+            else:
+                donations = []
+                category_names = [category.get('category_name') for category in categories]
+                for category in category_names:
+                    count = await self.get_donation_count(discord.Object(id=member), category)
+                    donations.append((category, count))
+                title = f"Donations in {ctx.guild.name}"
+                if len(donations) <= 15:
+                    desc = ""
+                    for donation in donations:
+                        if donations[-1] == donation:
+                            desc += f"<:Reply:871808167011549244> {format_donation(donation)}"
+                        else:
+                            desc += f"<:ReplyCont:871807889587707976> {format_donation(donation)}\n"
+                    embed = discord.Embed(title=title, description=desc, color=self.client.embed_color, timestamp=discord.utils.utcnow())
+                    embed.set_author(name=member.display_name, icon_url=member.display_avatar.url)
+                    return await ctx.send(embed=embed)
+                else:
+                    pages = CustomMenu(source=UserDonations(donations, title, member), clear_reactions_after=True, timeout=60)
+                    return await pages.start(ctx)
+
+    @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="resetdonations")
     async def resetdonations(self, ctx, category_name: str = None):
         """
