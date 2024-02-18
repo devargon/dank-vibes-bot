@@ -74,15 +74,20 @@ class donations(commands.Cog):
     def __init__(self, client):
         self.client: dvvt = client
 
-    async def get_donation_count(self, member: discord.Member, category: str):
+    async def get_donation_count(self, member: discord.Member, category: str, guild_id=None):
         """
         Gets the donation count for a user in a category.
         """
-        result = await self.client.db.fetchval("SELECT value FROM donations.{} WHERE user_id = $1".format(f"guild{member.guild.id}_{category.lower()}"), member.id)
-        if result is None:
-            return 0
+        if isinstance(member, discord.Member):
+            result = await self.client.db.fetchval("SELECT value FROM donations.{} WHERE user_id = $1".format(f"guild{member.guild.id}_{category.lower()}"), member.id)
+            return result or 0
+        elif isinstance(member, discord.Object) and guild_id is not None:
+            result = await self.client.db.fetchval("SELECT value FROM donations.{} WHERE user_id = $1".format(
+                f"guild{guild_id}_{category.lower()}"), member.id)
+            return result or 0
         else:
-            return result
+            return None
+
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="add-category")
@@ -200,7 +205,7 @@ class donations(commands.Cog):
                 donations = []
                 category_names = [category.get('category_name') for category in categories]
                 for category in category_names:
-                    count = await self.get_donation_count(member, category)
+                    count = await self.get_donation_count(member, category, ctx.guild.id)
                     donations.append((category, count))
                 title = f"Donations in {ctx.guild.name}"
                 if len(donations) <= 15:
