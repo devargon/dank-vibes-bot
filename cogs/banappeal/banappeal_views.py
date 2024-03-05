@@ -34,8 +34,8 @@ class BanAppealReasonModal(discord.ui.Modal):
 
         # Add a text input field for the remark
         self.remark = discord.ui.InputText(
-            label=("Approved" if selected_appeal_status == 2 else "Denied" if selected_appeal_status == 1 else "???") + " Remarks",
-            placeholder="It will be seen by the user, leave this field blank if you're not adding one. Ensure content is respectful **to prevent emails from being marked AS SPAM**.",
+            label="Optional Remarks (blank if not needed)",
+            placeholder="Ensure content is respectful **to prevent emails from being marked AS SPAM**.",
             style=discord.InputTextStyle.paragraph,
             max_length=512,
             required=False
