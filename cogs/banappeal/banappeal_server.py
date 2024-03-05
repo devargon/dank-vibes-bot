@@ -234,7 +234,7 @@ class BanAppealServer(commands.Cog):
             print_exception("Error while fetching ban", e)
             return status_500(data={"error": "I am unable to check if you're banned at the moment."})
         ban_reason = ban.reason or "Not specified"
-        if ban_reason == "Account too young":
+        if ban_reason == "Account too young" or ban_reason == "Dungeon auto-ban":
             version = 2
         else:
             version = 1
