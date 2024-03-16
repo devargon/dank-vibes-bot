@@ -413,7 +413,7 @@ class OnMessage(commands.Cog):
         """
         IMPORTANT: IF YOU'RE DEVELOPING ANY MORE MESSAGE EVENTS, THIS ONE MIGHT BLOCK FOR 5 MINUTES
         """
-        if message.guild is not None and isinstance(message.author, discord.Member) and (discord.utils.get(message.author.roles, id=758174046365679686) or message.channel.id == 871737314831908974) and ":3" in message.content:
+        if message.guild is not None and isinstance(message.author, discord.Member) and (discord.utils.get(message.author.roles, id=758174046365679686) or message.channel.id == 871737314831908974) and (":3" in message.content or ";3" in message.content):
             await message.add_reaction("<a:DVB_peoplewhooverusethisisweird:1218423094331445259>")
             # self.active_eboy_message_ids.append(message.id)
             def check2(payload):
