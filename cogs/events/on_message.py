@@ -417,16 +417,10 @@ class OnMessage(commands.Cog):
             await message.add_reaction("<a:DVB_peoplewhooverusethisisweird:1218423094331445259>")
             # self.active_eboy_message_ids.append(message.id)
             def check2(payload):
-                print("Message ID check:", payload.message_id == message.id)
-                print("Emoji check:", str(payload.emoji) == "<a:DVB_peoplewhooverusethisisweird:1218423094331445259>")
-                print("Author is bot check:", not message.author.bot)
-                author_not_in_list = message.author.id not in [866346404573216769, 771916467523551243]
-                print("Author ID not in list check:", author_not_in_list)
-
-                return (payload.message_id == message.id and
-                        str(payload.emoji) == "<a:DVB_peoplewhooverusethisisweird:1218423094331445259>" and
-                        not message.author.bot and
-                        author_not_in_list)
+                return payload.message_id == message.id \
+                    and str(payload.emoji) == "<a:DVB_peoplewhooverusethisisweird:1218423094331445259>" \
+                    and not message.author.bot \
+                    and payload.user_id not in [866346404573216769, 771916467523551243]
             try:
                 rrae: discord.RawReactionActionEvent = await self.client.wait_for("raw_reaction_add", check=check2, timeout=300)
             except asyncio.TimeoutError:
