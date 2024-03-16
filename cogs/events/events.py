@@ -26,6 +26,7 @@ class Events(GuildChannelDelete, RawTyping, GuildChannelCreate, MemberJoin, Stat
         self.pls_prompt = {}
         self.k_prompt = {}
         self.last_muted = 0
+        self.active_eboy_message_ids = []
 
     @tasks.loop(minutes=1)
     async def check_status(self):

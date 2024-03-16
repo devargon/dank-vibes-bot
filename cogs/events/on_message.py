@@ -7,7 +7,7 @@ import asyncio
 import re
 
 import typing
-from utils.format import human_join, durationdisplay, proper_userf
+from utils.format import human_join, durationdisplay, proper_userf, print_exception
 
 from main import dvvt
 import discord
@@ -133,6 +133,7 @@ class OnMessage(commands.Cog):
         self.mafia_wait = False
         self.pls_prompt = {}
         self.k_prompt = {}
+        self.active_eboy_message_ids = []
 
 
     @commands.Cog.listener()
@@ -407,6 +408,40 @@ class OnMessage(commands.Cog):
                 if owner is not None and c.get('owner_id') == owner.id:
                     now = round(time())
                     await self.client.db.execute("UPDATE channels SET last_used = $1 WHERE channel_id = $2", now, message.channel.id)
+
+        # IMPORTANT: IF YOU'RE DEVELOPING ANY MORE MESSAGE EVENTS, THIS ONE MIGHT BLOCK FOR 5 MINUTES
+        """
+        IMPORTANT: IF YOU'RE DEVELOPING ANY MORE MESSAGE EVENTS, THIS ONE MIGHT BLOCK FOR 5 MINUTES
+        """
+        if message.guild is not None and (discord.utils.get(message.author.roles, id=758174046365679686) or message.channel.id == 871737314831908974) and ":3" in message.content:
+            await message.add_reaction("<a:DVB_peoplewhooverusethisisweird:1218423094331445259>")
+            # self.active_eboy_message_ids.append(message.id)
+            def check2(payload):
+                return payload.message_id == message.id and str(payload.emoji) == "<a:DVB_peoplewhooverusethisisweird:1218423094331445259>" and not message.author.bot
+            try:
+                m = await self.client.wait_for("raw_reaction_add", check=check2, timeout=300)
+            except asyncio.TimeoutError:
+                pass
+            else:
+                try:
+                    await message.reply(file=discord.File(fp="assets/miscellaneous/eboy.png"), delete_after=120.0)
+                except Exception as e:
+                    print_exception("Error while handling :3 reaction", e)
+            finally:
+                try:
+                    await message.clear_reaction("<a:DVB_peoplewhooverusethisisweird:1218423094331445259>")
+                except (discord.HTTPException, discord.NotFound, discord.InvalidArgument):
+                    pass
+                except discord.Forbidden:
+                    try:
+                        await message.remove_reaction("<a:DVB_peoplewhooverusethisisweird:1218423094331445259>", self.client.user)
+                    except:
+                        pass
+
+
+
+
+
 
 
 
