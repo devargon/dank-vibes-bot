@@ -5,8 +5,12 @@ import operator
 import os
 import asyncio
 import re
+import textwrap
 
 import typing
+
+import aiohttp
+
 from utils.format import human_join, durationdisplay, proper_userf, print_exception
 
 from main import dvvt
@@ -138,6 +142,42 @@ class OnMessage(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        try:
+            if message.guild is None and message.author.id == self.client.user.id and isinstance(message.channel, discord.DMChannel):
+                try:
+                    log_c = self.client.get_channel(int(os.getenv("BOT_DM_LOG_CHANNEL") or ""))
+                except ValueError:
+                    log_c = None
+                if log_c is not None:
+                    w = await self.client.get_webhook(log_c)
+                    c = message.content or ""
+                    # if message.jump_url is not None
+                    recipient = None
+                    if message.channel.jump_url is not None:
+                        try:
+                            dm_c_id = message.channel.jump_url.split("/")[-1]
+                        except IndexError:
+                            pass
+                        else:
+                            try:
+                                dm_c: discord.DMChannel = self.client.get_channel(int(dm_c_id))
+                            except ValueError:
+                                pass
+                            else:
+                                recipient = dm_c.recipient
+                    if recipient is not None:
+                        for_ = f"For {recipient.name} {recipient.id}"
+                    else:
+                        for_ = f"DM CID: {message.channel.id}"
+                    c = textwrap.shorten(f"*{for_} DM MID {message.id}*\n\n{c}", 2000)
+                    e = message.embeds or []
+                    v = discord.ui.View.from_message(message) if len(message.components) > 0 else None
+                    if v is not None:
+                        await w.send(content=c, embeds=e, view=v)
+                    else:
+                        await w.send(content=c, embeds=e)
+        except Exception as e:
+            print_exception("Error while logging bot-initiated DMs:", e)
         if message.guild is None:
             return
         if message.author.id == 235148962103951360:
