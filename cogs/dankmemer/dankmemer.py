@@ -506,7 +506,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                         remindersettings = await self.client.db.fetchval("SELECT method FROM remindersettings WHERE member_id = $1", i)
                         if remindersettings == 1:
                             try:
-                                await member.send(msg)
+                                await member.send(dm_msg)
                             except:
                                 if len(tempmsg) + len(msg) < 1800:
                                     tempmsg += f"{member.mention}"
