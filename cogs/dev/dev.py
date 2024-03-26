@@ -1099,7 +1099,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
         transcript = await chat_exporter.export(
             c,
             limit=50,
-            tz_info=a.timezone if a is not None else "UTC" or "UTC",
+            tz_info=(a.timezone if a is not None else "UTC") or "UTC",
             military_time=True,
             bot=self.client,
         )
