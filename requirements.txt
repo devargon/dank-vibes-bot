@@ -3,9 +3,9 @@ async-timeout==3.0.1
 asyncpg
 colorthief
 cycler==0.10.0
-discord-ext-menus @ git+https://github.com/Rapptz/discord-ext-menus@fbb8803779373357e274e1540b368365fd9d8074
+discord-ext-menus @ git+https://github.com/nogra-xyz/discord-ext-reaction-menus
 py-cord==2.4.0
-alexflipnote.py @ git+https://github.com/argo0n/forked_alexflipnote.py
+alexflipnote.py @ git+https://github.com/nogra-xyz/alexflipnote.py
 dpy-http-server @ git+https://github.com/argo0n/dpy-http-server
 expr.py
 thefuzz[speed]
@@ -58,3 +58,4 @@ unidecode==1.3.4
 Wand==0.6.8
 bleach
 pydantic==1.10.2
+chat_exporter @ git+https://github.com/nogra-xyz/DiscordChatExporterPy@2.7.0
