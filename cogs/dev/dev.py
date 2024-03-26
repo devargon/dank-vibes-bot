@@ -14,6 +14,7 @@ from collections import Counter
 
 from datetime import datetime, timezone
 
+import chat_exporter
 import matplotlib.pyplot as plt
 
 import discord
@@ -1078,3 +1079,42 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
                 await basemsg.edit(content="```\n" + content + "\n```")
             content += f"\n\nCompleted in {round((time.perf_counter() - now) * 1000, 3)}ms"
             await basemsg.edit(content="```\n" + content + "\n```")
+
+    @checks.dev()
+    @commands.group(name="exportchat", hidden=True, invoke_without_command=True)
+    async def exportchat_base(self, ctx: DVVTcontext):
+        await ctx.checkmark()
+
+    @checks.dev()
+    @exportchat_base.command(name="channelid", hidden=True)
+    async def export_by_channel_id(self, ctx: DVVTcontext, channel_id: int, limit: int = 50):
+        c = await self.client.fetch_channel(channel_id)
+        if c.guild is None:
+            return await ctx.send(f"<:DVB_False:887589731515392000> {c.mention} is not part of a guild.")
+        if not (c.permissions_for(c.guild.me).read_messages and c.permissions_for(c.guild.me).read_message_history and c.permissions_for(c.guild.me).view_channel):
+            return await ctx.send(f"<:DVB_False:887589731515392000> I do not have permissions to see {c.mention} or view its messages.")
+        m = await ctx.send(f"<:DVB_True:887589686808309791> Found {c.mention}. Exporting messages...")
+        a = await self.client.fetch_user_info(ctx.author.id)
+
+        transcript = await chat_exporter.export(
+            c,
+            limit=50,
+            tz_info=a.timezone if a is not None else "UTC" or "UTC",
+            military_time=True,
+            bot=self.client,
+        )
+
+        if transcript is None:
+            await m.edit(f"<:DVB_False:887589731515392000> Unable to export messages for {c.mention}.")
+            return
+
+        else:
+            today = datetime.now()
+            transcript_file = discord.File(
+                io.BytesIO(transcript.encode()),
+                filename=f"transcript-{c.name}-for-{c.guild.name}-at-{today.date()}-{today.month}-{today.year}-{today.hour}-{today.minute}-{today.second}.html"
+            )
+            await m.delete()
+            await ctx.send(f"<:DVB_True:887589686808309791> Exported messages in {c.mention}.", file=transcript_file)
+
+
