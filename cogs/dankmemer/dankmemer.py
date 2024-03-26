@@ -492,13 +492,16 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 msg = f"""
                 <a:dv_pepeConfettiOwO:837712470902571008> An item from Dank Memer is dropping! <a:dv_pepeConfettiOwO:837712470902571008>\nItem: {name}\nCost: {price}\n\nYou can buy this item now! </drops:1011560371078832205>
                 """
+                dm_msg = f"""
+                                <a:dv_pepeConfettiOwO:837712470902571008> An item from Dank Memer is dropping! <a:dv_pepeConfettiOwO:837712470902571008>\nItem: {name}\nCost: {price}\n\nHead to <@270904126974590976> to buy this item!
+                                """
                 if drop.get('time') == 1666490390:
                     msg.replace("You can buy this item now! </drops:1011560371078832205>", "You can buy this item in Dank Vibes, a Dank Memer partnered server! Run </drops:1011560371078832205>.")
                 messages = []
                 ids = [i.get('member_id') for i in enabled]
                 tempmsg = f'{msg}\n\n'
                 for i in ids:
-                    member = self.client.get_user(i)
+                    member = guild.get_member(i)
                     if member is not None:
                         remindersettings = await self.client.db.fetchval("SELECT method FROM remindersettings WHERE member_id = $1", i)
                         if remindersettings == 1:
