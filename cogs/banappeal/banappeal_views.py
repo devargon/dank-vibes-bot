@@ -230,7 +230,7 @@ class BanAppealView(discord.ui.View):
                     modal = BanAppealReasonModal(1, appeal.appeal_id)
                     return await interaction.response.send_modal(modal=modal)
                 elif self.custom_id == "appeal:get_user_id":
-                    return await interaction.response.send_message(str(appeal.user_id) or "?", ephemeral=True)
+                    return await interaction.response.send_message(str(appeal.user_id) or "?", delete_after=120.0)
                 elif self.custom_id == "appeal:refresh":
                     try:
                         appeal.updated = False
