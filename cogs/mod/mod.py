@@ -287,43 +287,26 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
 
     @tasks.loop(seconds=5)
     async def ensure_forced_timeout(self):
-        print("Starting ensure_forced_timeout loop...")  # Print statement to indicate the start of the loop
         try:
             a = await self.client.db.fetch("SELECT * FROM forcetimeout WHERE end_time > $1", round(time.time()))
-            print(f"Retrieved {len(a)} entries from forcetimeout table.")  # Print the number of entries retrieved
             for entry in a:
-                print(f"Processing entry: {entry}")  # Print the current entry being processed
                 guild = self.client.get_guild(entry.get('guild_id'))
                 if guild is None:
-                    print(
-                        f"Guild with ID {entry.get('guild_id')} not found, skipping...")  # Print if guild is not found
                     continue
-
                 offender = guild.get_member(entry.get('offender_id'))
                 if offender is None:
-                    print(
-                        f"Offender with ID {entry.get('offender_id')} not found in guild {guild.name}, skipping...")  # Print if offender is not found
                     continue
-                print(f"Processing offender: {offender.name}")  # Print the name of the offender being processed
                 if not offender.timed_out:
-                    print(
-                        f"{offender.name} is not timed out, continuing with timeout implementation...")  # Print if offender is not timed out
                     until_dt = datetime.utcfromtimestamp(entry.get('end_time'))
-                    print(f"End time for timeout: {until_dt}")  # Print the end time of the timeout
                     reason = f"Automatic continued timeout implemented by <@{entry.get('moderator_id')}>"
                     if (timeout_reason := entry.get('reason')) is not None:
                         reason += f": {timeout_reason}"
-                    print(f"Timeout reason: {reason}")  # Print the reason for the timeout
                     try:
                         await offender.timeout(until_dt, reason=f"{reason}")
-                        print(
-                            f"{offender.name} timed out successfully until {until_dt}.")  # Print if offender is timed out successfully
                     except (discord.HTTPException, discord.Forbidden) as e:
-                        print(f"Failed to timeout {offender.name}: {e}")  # Print if there's an error during timeout
                         continue
         except Exception as e:
-            print_exception("Ignoring Error in ensuring forced timeout",
-                            e)  # Print any exceptions that occur during the loop
+            print_exception("Ignoring Error in ensuring forced timeout", e)
 
     @commands.Cog.listener()
     async def on_guild_channel_create(self, channel):
