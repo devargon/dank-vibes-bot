@@ -3,7 +3,7 @@ import itertools
 import json
 import re
 
-from discord.ext import menus, pages
+from discord.ext import menus, pages, tasks
 
 from main import dvvt
 from utils.paginator import SingleMenuPaginator
@@ -19,8 +19,8 @@ from .donations import donations
 
 from utils import checks
 from utils.buttons import *
-from utils.format import text_to_file, ordinal, human_join, pagify, proper_userf
-from utils.time import humanize_timedelta, short_humanize_timedelta
+from utils.format import text_to_file, ordinal, human_join, pagify, proper_userf, print_exception
+from utils.time import humanize_timedelta, short_humanize_timedelta, UserFriendlyTime
 from utils.menus import CustomMenu
 from utils.converters import BetterTimeConverter, MemberUserConverter
 from utils.helper import generate_captcha, DynamicUpdater
@@ -283,6 +283,47 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         self.client: dvvt = client
         prefs = {"download_restrictions": 3}
         self.op.add_experimental_option("prefs", prefs)
+        self.ensure_forced_timeout.start()
+
+    @tasks.loop(seconds=5)
+    async def ensure_forced_timeout(self):
+        print("Starting ensure_forced_timeout loop...")  # Print statement to indicate the start of the loop
+        try:
+            a = await self.client.db.fetch("SELECT * FROM forcetimeout WHERE end_time > $1", round(time.time()))
+            print(f"Retrieved {len(a)} entries from forcetimeout table.")  # Print the number of entries retrieved
+            for entry in a:
+                print(f"Processing entry: {entry}")  # Print the current entry being processed
+                guild = self.client.get_guild(entry.get('guild_id'))
+                if guild is None:
+                    print(
+                        f"Guild with ID {entry.get('guild_id')} not found, skipping...")  # Print if guild is not found
+                    continue
+
+                offender = guild.get_member(entry.get('offender_id'))
+                if offender is None:
+                    print(
+                        f"Offender with ID {entry.get('offender_id')} not found in guild {guild.name}, skipping...")  # Print if offender is not found
+                    continue
+                print(f"Processing offender: {offender.name}")  # Print the name of the offender being processed
+                if not offender.timed_out:
+                    print(
+                        f"{offender.name} is not timed out, continuing with timeout implementation...")  # Print if offender is not timed out
+                    until_dt = datetime.utcfromtimestamp(entry.get('end_time'))
+                    print(f"End time for timeout: {until_dt}")  # Print the end time of the timeout
+                    reason = f"Automatic continued timeout implemented by <@{entry.get('moderator_id')}>"
+                    if (timeout_reason := entry.get('reason')) is not None:
+                        reason += f": {timeout_reason}"
+                    print(f"Timeout reason: {reason}")  # Print the reason for the timeout
+                    try:
+                        await offender.timeout(until_dt, reason=f"{reason}")
+                        print(
+                            f"{offender.name} timed out successfully until {until_dt}.")  # Print if offender is timed out successfully
+                    except (discord.HTTPException, discord.Forbidden) as e:
+                        print(f"Failed to timeout {offender.name}: {e}")  # Print if there's an error during timeout
+                        continue
+        except Exception as e:
+            print_exception("Ignoring Error in ensuring forced timeout",
+                            e)  # Print any exceptions that occur during the loop
 
     @commands.Cog.listener()
     async def on_guild_channel_create(self, channel):
@@ -1403,3 +1444,60 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         )
         embed4.set_image(url="https://i.imgur.com/D813K4q.png")
         await ctx.send(embeds=[embed1, embed2, embed3, embed4])
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.guild_only()
+    @commands.command(name='hardtimeout', aliases=['hto'])
+    async def hardtimeout(self, ctx, member: discord.Member = None, duration: BetterTimeConverter = None, *,
+                      reason: str = None):
+        """
+        Timeouts a member for a specified amount of time.
+        """
+        if member is None:
+            return await ctx.send("You need to tell me who you want to timeout.")
+        if member.top_role >= ctx.me.top_role:
+            return await ctx.send(
+                f"I cannot put **{proper_userf(member)}** on a time-out as their highest role is higher than or the same as **my** highest role.")
+        if member.top_role >= ctx.author.top_role:
+            return await ctx.send("You **cannot** timeout a user that has a higher role than you.")
+        if duration is None:
+            return await ctx.send("You need to tell me how long you want to timeout the user for.")
+        duration: int = duration
+        if duration <= 0:
+            return await ctx.send("You can't timeout someone for less than 1 second.")
+        if duration > 2419200:
+            return await ctx.send("You can't timeout someone for more than 4 weeks (28 days).")
+        now = round(time.time())
+        ending = now + duration
+        td_obj = timedelta(seconds=duration)
+        try:
+            if reason is None:
+                auditreason = f"Requested by {proper_userf(ctx.author)} ({ctx.author.id}"
+            else:
+                auditreason = reason + f" | Requested by {proper_userf(ctx.author)} ({ctx.author.id}"
+            await member.timeout_for(duration=td_obj, reason=auditreason)
+            await self.client.db.execute("INSERT INTO forcetimeout(guild_id, offender_id, moderator_id, start_time, duration, end_time, reason) VALUES($1, $2, $3, $4, $5, $6, $7)", ctx.guild.id, member.id, ctx.author.id, now, duration, ending, reason)
+
+        except discord.Forbidden:
+            return await ctx.send(f"I do not have permission to put **{proper_userf(member)}** on a timeout.")
+        else:
+            msg = f"**{ctx.author}** has put **{proper_userf(member)}** on a forced timeout for {humanize_timedelta(seconds=duration)}, until <t:{ending}>."
+            if reason is not None:
+                msg += f"\nReason: {reason}"
+            await ctx.send(msg)
+            if (await self.client.get_guild_settings(ctx.guild.id)).timeoutlog is True:
+                offender = member
+                moderator = ctx.author
+                reason = reason or "NA"
+                duration = humanize_timedelta(seconds=duration)
+                embed = discord.Embed(
+                    title=f"Hard Timeout",
+                    description=f'**Offender**: {offender} {offender.mention}\n**Reason**: {reason}\n**Duration**: {duration}\n**Responsible Moderator**: {moderator}',
+                    color=discord.Color.orange(), timestamp=discord.utils.utcnow())
+                try:
+                    serverconf = await self.client.get_guild_settings(ctx.guild.id)
+                    modlogchan = ctx.guild.get_channel(serverconf.modlog_channel)
+                    if modlogchan is not None:
+                        await modlogchan.send(embed=embed)
+                except Exception as e:
+                    print(e)
