@@ -525,6 +525,7 @@ class ChannelView(discord.ui.View):
         embed = discord.Embed(title=f"You're editing **{self.channel.name}**'s position")
         if self.move_category is True:
             if self.selected_channel_id is None:
+                print(f"Select menu: {self.select_menu} Select menu values: {self.select_menu.values}")
                 if len(self.select_menu.values) < 1:
                     description = f"Choose a category from the dropdown to move {self.channel.mention} to."
                 else:
