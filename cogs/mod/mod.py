@@ -287,6 +287,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
 
     @tasks.loop(seconds=5)
     async def ensure_forced_timeout(self):
+        await self.client.wait_until_ready()
         try:
             a = await self.client.db.fetch("SELECT * FROM forcetimeout WHERE end_time > $1", round(time.time()))
             for entry in a:
