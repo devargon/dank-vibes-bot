@@ -6,7 +6,7 @@ from discord.ext import commands
 from main import dvvt
 from utils import checks
 from typing import Union, Optional
-from utils.format import box
+from utils.format import box, print_exception
 
 channel_starters = [
     "・",
@@ -337,29 +337,32 @@ class ChannelViewButton(discord.ui.Button):
             self.emoji = discord.PartialEmoji.from_str("<:DVB_ChannelCategory:997787503744516126>")
 
     async def callback(self, interaction: discord.Interaction):
-        if self.view.active is True:
-            return interaction.response.send_message("A channel move is in progress, you can't interact with this menu until it's over.", ephemeral=True)
-        if self.view.move_category is True:
-            self.view.selected_channel_id = None
-            self.view.move_above = True
-            self.view.move_category = False
-            self.move_category = False
-            self.format()
-            self.view.format_items()
-            if self.view.channel.category is not None:
-                channels_for_options = self.view.channel.category.channels
+        try:
+            if self.view.active is True:
+                return interaction.response.send_message("A channel move is in progress, you can't interact with this menu until it's over.", ephemeral=True)
+            if self.view.move_category is True:
+                self.view.selected_channel_id = None
+                self.view.move_above = True
+                self.view.move_category = False
+                self.move_category = False
+                self.format()
+                self.view.format_items()
+                if self.view.channel.category is not None:
+                    channels_for_options = self.view.channel.category.channels
+                else:
+                    channels_for_options = get_non_category_channels(interaction.guild)
+                self.view.select_menu.regenerate_options(channels_for_options)
             else:
-                channels_for_options = get_non_category_channels(interaction.guild)
-            self.view.select_menu.regenerate_options(channels_for_options)
-        else:
-            self.view.selected_channel_id = None
-            self.view.move_category = True
-            self.move_category = True
-            self.format()
-            self.view.format_items()
-            self.view.select_menu.regenerate_options(interaction.guild.categories)
-        self.view.generate_embed()
-        await interaction.response.edit_message(view=self.view, embed=self.view.embed)
+                self.view.selected_channel_id = None
+                self.view.move_category = True
+                self.move_category = True
+                self.format()
+                self.view.format_items()
+                self.view.select_menu.regenerate_options(interaction.guild.categories)
+            self.view.generate_embed()
+            await interaction.response.edit_message(view=self.view, embed=self.view.embed)
+        except Exception as e:
+            print_exception("AMONGUS", e)
 
 
 class SwitchAboveOrBelow(discord.ui.Button):
