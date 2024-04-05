@@ -143,7 +143,7 @@ class OnMessage(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         try:
-            if message.guild is None and message.author.id == self.client.user.id and isinstance(message.channel, discord.DMChannel):
+            if message.guild is None and message.author.id == self.client.user.id and isinstance(message.channel, discord.DMChannel) and message.webhook_id is None:
                 try:
                     log_c = self.client.get_channel(int(os.getenv("BOT_DM_LOG_CHANNEL") or ""))
                 except ValueError:
