@@ -1129,24 +1129,20 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
         await updater.send_update("Starting export...")
 
         async for message in fc.history(limit=None, oldest_first=True):
-            # minimum header: `12345678901234567890123456789012#1234 (1225825463700815954) MID 1225825463700815954` <t:1712330435> \n
-            # maximum header is 101 characters. There may be messages that are exactly 2000 characters long.
-            # for each message, it's content (the content must have the header prepended to the content with splitlines between them), embeds if any, and view if any will be sent to `tc`.
-            # The header must be added to header only messages too.
-            # Make sure to check whether after adding the header, will there be enough characters. If not, send whatever can be sent with the header first, then send the next part again with the header.
-            #If there are embeds with the message just send the embed in the first message
-            # There are messages 4000 characters long so if you need to send more than 2 messages so be it.
             header = f"### {proper_userf(message.author)} `{message.author.id}` `{message.id}` <t:{int(message.created_at.timestamp())}:f> \n\n"
             v = discord.ui.View.from_message(message) if len(message.components) > 0 else None
             if time.time() - last_update > 50:
                 last_update = time.time()
                 await updater.send_update(f"<t:{round(time.time())}:T> {messages_processed} messages processed. Last message timestamp was {last_message_timestamp.strftime('%Y-%m-%d %H:%M:%S') if last_message_timestamp is not None else None}")
+
+            files = [await attachment.to_file() for attachment in message.attachments if
+                     attachment.size < 25_000_000]  # Discord's limit is 8 MB for files in regular messages
+
             try:
+                sent_message = None  # Initialize sent_message to None
+
                 if message.embeds:
-                    if v is not None:
-                        await tc.send(content=header, embeds=message.embeds, view=v)
-                    else:
-                        await tc.send(content=header, embeds=message.embeds)
+                    sent_message = await tc.send(content=header, embeds=message.embeds, view=v, files=files)
                 else:
                     content_with_header = header + message.content
                     max_length = 2000
@@ -1155,16 +1151,23 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
                         parts = [content_with_header[i:i + content_length_after_header] for i in
                                  range(0, len(content_with_header), content_length_after_header)]
                         for part in parts:
-                            await tc.send(header + part[len(header):] if part.startswith(header) else part)
+                            # When sending parts of a long message, only the first part will return a message object that could potentially be pinned
+                            sent_part_message = await tc.send(
+                                header + part[len(header):] if part.startswith(header) else part)
+                            if parts.index(part) == 0:
+                                sent_message = sent_part_message
                     else:
-                        if v is not None:
-                            await tc.send(content_with_header, view=v)
-                        else:
-                            await tc.send(content_with_header)
+                        sent_message = await tc.send(content=content_with_header, view=v, files=files)
+
+                # If the original message was pinned, pin the corresponding message in the target channel
+                if message.pinned and sent_message:
+                    await sent_message.pin()
+
                 last_message_timestamp = message.created_at
                 messages_processed += 1
             except Exception as e:
                 errors.append((message.id, traceback.format_exc()))
+
         await ctx.author.send(f"{messages_processed} messages processed.")
 
         if len(errors) > 0:
