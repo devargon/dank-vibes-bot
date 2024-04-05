@@ -1,7 +1,6 @@
 import imghdr
 import math
 import re
-from symbol import argument
 
 import aiohttp
 import discord
