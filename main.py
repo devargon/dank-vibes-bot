@@ -99,6 +99,7 @@ class dvvt(commands.Bot):
         for ext in self.available_extensions:
             self.load_extension(ext, store=False)
             print(f"{datetime.datetime.utcnow().strftime(strfformat)} | Loaded {ext}")
+        self.add_check(self.check_application_command_validity)
 
     async def fetch_amari_data(self, user_id: int, guild_id: int) -> Tuple[Union[None, api.User, AwaitingAmariData, NoAmariData], int, Exception]:
         guild_data = self.amari_data.get(guild_id, None)
@@ -261,6 +262,32 @@ class dvvt(commands.Bot):
                 maintenance_message = self.maintenance_message.get(ctx.cog.qualified_name)
                 return await message.channel.send(maintenance_message)
         await self.invoke(ctx)
+
+    async def check_application_command_validity(self, ctx):
+        if isinstance(ctx, discord.ApplicationCommand) or isinstance(ctx, discord.ApplicationContext):
+            if ctx.cog:
+                if ctx.author.id in self.blacklist:
+                    if ctx.author.id not in [650647680837484556, 515725341910892555, 321892489470410763]:
+                        if time.time() >= self.blacklist[ctx.author.id]:
+                            blacklist = await self.db.fetchrow(
+                                "SELECT * FROM blacklist WHERE user_id=$1 AND time_until = $2 AND blacklist_active = $3",
+                                ctx.author.id, self.blacklist[ctx.author.id], True)
+                            await self.db.execute(
+                                "UPDATE blacklist SET blacklist_active = $1 WHERE user_id = $2 and incident_id = $3",
+                                False, ctx.author.id, blacklist.get('incident_id'))
+                            embed = discord.Embed(title=f"Bot Unblacklist | Case {blacklist.get('incident_id')}",
+                                                  description=f"**Reason**: Blacklist over, automatically rescinded\n**Responsible Moderator**: {ctx.me} ({ctx.me.id})",
+                                                  color=discord.Color.green())
+                            embed.set_author(name=f"{ctx.author} ({ctx.author.id})",
+                                             icon_url=ctx.author.display_avatar.url)
+                            await self.get_channel(906433823594668052).send(embed=embed)
+                        return False
+                if self.maintenance.get(ctx.cog.qualified_name) and ctx.author.id not in [321892489470410763,
+                                                                                              650647680837484556]:
+                    maintenance_message = self.maintenance_message.get(ctx.cog.qualified_name)
+                    await ctx.respond(maintenance_message)
+                    return False
+        return True
 
     async def on_message(self, message):
         if message.author.bot:
