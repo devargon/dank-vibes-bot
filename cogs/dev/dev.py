@@ -1129,7 +1129,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
         await updater.send_update("Starting export...")
 
         async for message in fc.history(limit=None, oldest_first=True):
-            header = f"### {proper_userf(message.author)} `{message.author.id}` `{message.id}` <t:{int(message.created_at.timestamp())}:f> \n\n"
+            header = f"### {proper_userf(message.author)} `fr:{message.author.id}` `mi:{message.id}` <t:{int(message.created_at.timestamp())}:f> \n\n"
             v = discord.ui.View.from_message(message) if len(message.components) > 0 else None
             if time.time() - last_update > 50:
                 last_update = time.time()
