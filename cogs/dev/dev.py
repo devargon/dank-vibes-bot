@@ -2,6 +2,7 @@ import functools
 import getpass
 import importlib
 import io
+import json
 import os
 import re
 import ast
@@ -44,6 +45,26 @@ from typing import Optional, Union
 from utils.menus import CustomMenu
 from utils.context import DVVTcontext
 
+
+class MessageUpdater:
+    def __init__(self, author):
+        self.author = author
+        self.message = None
+
+    async def send_update(self, string):
+        if self.message:
+            # Attempt to append new content
+            new_content = self.message.content + "\n" + string
+            if len(new_content) > 2000:
+                # Content would exceed the limit; send a new message
+                self.message = await self.author.send(string)
+            else:
+                # Update existing message
+                self.message = await self.message.edit(content=new_content)
+        else:
+            # No message yet, so send a new one and save the reference
+            self.message = await self.author.send(string)
+
 class ConfirmContinue(discord.ui.View):
     def __init__(self, ctx):
         super().__init__(timeout=180)
@@ -82,7 +103,7 @@ class toggledevmode(discord.ui.View):
         self.context = ctx
         self.response = None
         self.result = None
-        self.client = client
+        self.client: dvvt = client
         self.enabled = enabled
         super().__init__(timeout=5.0)
         init_enabled = self.enabled
@@ -1085,6 +1106,84 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
     @commands.group(name="exportchat", hidden=True, invoke_without_command=True)
     async def exportchat_base(self, ctx: DVVTcontext):
         await ctx.checkmark()
+
+    @checks.dev()
+    @exportchat_base.command(name="tochannel", hidden=True)
+    async def export_to_channel(self, ctx: DVVTcontext, from_channel_id: int, to_channel_id: int):
+        updater = MessageUpdater(ctx.author)
+        fc = await self.client.fetch_channel(from_channel_id)
+        tc = await self.client.fetch_channel(to_channel_id)
+        await updater.send_update(f"Found channels: From {from_channel_id} -> {fc} To {to_channel_id} -> {tc}")
+
+
+
+
+        if fc is None or tc is None:
+            return await updater.send_update("Either From channel or To channel is not found, so this command will stop.")
+
+        errors = []
+        messages_processed = 0
+        last_message_timestamp = None
+        last_update = time.time()
+
+        await updater.send_update("Starting export...")
+
+        async for message in fc.history(limit=None, oldest_first=True):
+            # minimum header: `12345678901234567890123456789012#1234 (1225825463700815954) MID 1225825463700815954` <t:1712330435> \n
+            # maximum header is 101 characters. There may be messages that are exactly 2000 characters long.
+            # for each message, it's content (the content must have the header prepended to the content with splitlines between them), embeds if any, and view if any will be sent to `tc`.
+            # The header must be added to header only messages too.
+            # Make sure to check whether after adding the header, will there be enough characters. If not, send whatever can be sent with the header first, then send the next part again with the header.
+            #If there are embeds with the message just send the embed in the first message
+            # There are messages 4000 characters long so if you need to send more than 2 messages so be it.
+            header = f"### {proper_userf(message.author)} `{message.author.id}` `{message.id}` <t:{int(message.created_at.timestamp())}:f> \n\n"
+            v = discord.ui.View.from_message(message) if len(message.components) > 0 else None
+            if time.time() - last_update > 50:
+                last_update = time.time()
+                await updater.send_update(f"<t:{round(time.time())}:T> {messages_processed} messages processed. Last message timestamp was {last_message_timestamp.strftime('%Y-%m-%d %H:%M:%S') if last_message_timestamp is not None else None}")
+            try:
+                if message.embeds:
+                    if v is not None:
+                        await tc.send(content=header, embeds=message.embeds, view=v)
+                    else:
+                        await tc.send(content=header, embeds=message.embeds)
+                else:
+                    content_with_header = header + message.content
+                    max_length = 2000
+                    if len(content_with_header) > max_length:
+                        content_length_after_header = max_length - len(header)
+                        parts = [content_with_header[i:i + content_length_after_header] for i in
+                                 range(0, len(content_with_header), content_length_after_header)]
+                        for part in parts:
+                            await tc.send(header + part[len(header):] if part.startswith(header) else part)
+                    else:
+                        if v is not None:
+                            await tc.send(content_with_header, view=v)
+                        else:
+                            await tc.send(content_with_header)
+                last_message_timestamp = message.created_at
+                messages_processed += 1
+            except Exception as e:
+                errors.append((message.id, traceback.format_exc()))
+        await ctx.author.send(f"{messages_processed} messages processed.")
+
+        if len(errors) > 0:
+            error_ids_text = "\n".join(str(mid) for mid, _ in errors)
+            error_details_json = json.dumps([{"message_id": mid, "error": error} for mid, error in errors], indent=4)
+
+            with open('temp/error_ids.txt', 'w') as f:
+                f.write(error_ids_text)
+
+            with open('temp/errors.json', 'w') as f:
+                f.write(error_details_json)
+
+            await ctx.author.send(f"{len(errors)} exceptions were caught while exporting the messages:",
+                                  files=[discord.File('temp/error_ids.txt'), discord.File('temp/errors.json')])
+
+
+
+
+
 
     @checks.dev()
     @exportchat_base.command(name="channelid", hidden=True)
