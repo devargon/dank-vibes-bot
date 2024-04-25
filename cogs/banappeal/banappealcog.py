@@ -283,3 +283,10 @@ class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banapp
         self.discordBanAppealPostQueue = await banappealdb.get_ban_appeals_awaiting_post()
         self.discordBanAppealUpdateQueue = await banappealdb.get_ban_appeals_awaiting_update()
         await ctx.message.add_reaction("👍")
+
+    @checks.dev()
+    @commands.command(name="updateallappeals", aliases=["uaa"])
+    async def update_appeal_queue(self, ctx):
+        banappealdb = BanAppealDB(self.client.db)
+        self.discordBanAppealPostQueue = await banappealdb.get_all_ban_appeals(100)
+        await ctx.message.add_reaction("👍")
