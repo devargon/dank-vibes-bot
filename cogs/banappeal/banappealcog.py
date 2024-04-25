@@ -57,7 +57,7 @@ class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banapp
             embed.color = discord.Color.green() if appeal.appeal_status == 2 else discord.Color.red() if appeal.appeal_status == 1 else discord.Color.light_gray()
             appealing_user = await self.client.get_or_fetch_user(appeal.user_id)
             if appealing_user:
-                ap_user_disp = (f"@{appealing_user.name}" if appealing_user.discriminator == "0" else f"{appealing_user.name}#{appealing_user.discriminator}") + str(appealing_user.id)
+                ap_user_disp = (f"@{appealing_user.name}" if appealing_user.discriminator == "0" else f"{appealing_user.name}#{appealing_user.discriminator}") + f" ({appealing_user.id})"
             else:
                 ap_user_disp = str(appeal.user_id)
             embed.set_author(name=ap_user_disp, icon_url=appealing_user.display_avatar.with_size(32).url)
