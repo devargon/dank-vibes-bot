@@ -381,8 +381,8 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
             multirole = dankvibes_rolemultis.get(str(dv_role_id))
             if multirole:
                 member_dv_roles_that_have_multi.append(multirole)
-                if dv_role_id == 819998671742959636:
-                    member_dv_roles_that_have_multi.append(dankvibes_rolemultis.get("819998800382132265")) # donator 3b if donator 5b
+                if dv_role_id == 819998800382132265:
+                    member_dv_roles_that_have_multi.append(dankvibes_rolemultis.get("819998671742959636")) # donator 3b if donator 5b
         dankvibes_rolemultis_display = []
         total_dv_eligible_multi = 0
         for i in member_dv_roles_that_have_multi:
