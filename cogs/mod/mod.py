@@ -341,82 +341,83 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="dankskycheck", aliases=["dsc"])
     async def dankskycheck(self, ctx: DVVTcontext, member: discord.Member):
-        with open("assets/data/sky_amari_data.json", "r", encoding="utf-8") as f:
-            sky_amari_data = json.load(f)
-        with open("assets/data/danksky_rolemultis.json", "r", encoding="utf-8") as f:
-            danksky_rolemultis = json.load(f)
-        with open("assets/data/dankvibes_rolemultis.json", "r", encoding="utf-8") as f:
-            dankvibes_rolemultis = json.load(f)
-        with open("assets/data/amari_levels.json", "r", encoding="utf=8") as f:
-            amari_levels = json.load(f)
-        try:
-            user_amari = sky_amari_data[str(member.id)]
-        except KeyError:
-            return await ctx.send(f"⚠️ I could not find **{member.name}**'s AmariBot exp data in Dank Sky, as of <t:1715355904>.")
-        danksky_multi: int = user_amari.get("exp")
-        level: int = user_amari.get("level")
+        async with ctx.typing():
+            with open("assets/data/sky_amari_data.json", "r", encoding="utf-8") as f:
+                sky_amari_data = json.load(f)
+            with open("assets/data/danksky_rolemultis.json", "r", encoding="utf-8") as f:
+                danksky_rolemultis = json.load(f)
+            with open("assets/data/dankvibes_rolemultis.json", "r", encoding="utf-8") as f:
+                dankvibes_rolemultis = json.load(f)
+            with open("assets/data/amari_levels.json", "r", encoding="utf=8") as f:
+                amari_levels = json.load(f)
+            try:
+                user_amari = sky_amari_data[str(member.id)]
+            except KeyError:
+                return await ctx.send(f"⚠️ I could not find **{member.name}**'s AmariBot exp data in Dank Sky, as of <t:1715355904>.")
+            danksky_multi: int = user_amari.get("exp")
+            level: int = user_amari.get("level")
 
-        a = await self.client.fetch_amari_data(member.id, ctx.guild.id)
-        embed = discord.Embed(title=f"", color=self.client.embed_color)
-        dv_user_amari = a[0]
-        if not isinstance(dv_user_amari, amari.objects.User):
-            return await ctx.send(f"⚠️ I could not fetch **{member.name}**'s Amaribot data in Dank Vibes.")
-        embed.description = f"Amari level in Dank Sky: **{level}**\nAmari EXP in Dank Sky: **{comma_number(danksky_multi)}**\n\nAmari level in Dank Vibes: **{dv_user_amari.level}**\nAmari EXP in Dank Vibes: **{comma_number(dv_user_amari.exp)}**"
+            a = await self.client.fetch_amari_data(member.id, ctx.guild.id)
+            embed = discord.Embed(title=f"", color=self.client.embed_color)
+            dv_user_amari = a[0]
+            if not isinstance(dv_user_amari, amari.objects.User):
+                return await ctx.send(f"⚠️ I could not fetch **{member.name}**'s Amaribot data in Dank Vibes.")
+            embed.description = f"Amari level in Dank Sky: **{level}**\nAmari EXP in Dank Sky: **{comma_number(danksky_multi)}**\n\nAmari level in Dank Vibes: **{dv_user_amari.level}**\nAmari EXP in Dank Vibes: **{comma_number(dv_user_amari.exp)}**"
 
-        # fetch user's roles in dank sky
-        sky_server = self.client.get_guild(795142299327004673)
-        if sky_server is None:
-            return await ctx.send("⚠️ I could not fetch the Dank Sky server.")
-        member_in_sky = sky_server.get_member(member.id)
-        if member_in_sky is None:
-            return await ctx.send(f"⚠️ I could not find **{member.name}** in Dank Sky. This might be due to a caching issue.")
+            # fetch user's roles in dank sky
+            sky_server = self.client.get_guild(795142299327004673)
+            if sky_server is None:
+                return await ctx.send("⚠️ I could not fetch the Dank Sky server.")
+            member_in_sky = sky_server.get_member(member.id)
+            if member_in_sky is None:
+                return await ctx.send(f"⚠️ I could not find **{member.name}** in Dank Sky. This might be due to a caching issue.")
 
-        embed.set_author(name=f"{member.name}'s Amari data conversion", icon_url=member.display_avatar.with_size(64).url)
-        member_sky_role_list = user_amari.get('roles') or [role.id for role in member_in_sky.roles]
-        member_sky_roles_that_have_multi = []
-        for member_sky_role in member_sky_role_list:
-            multirole = danksky_rolemultis.get(str(member_sky_role))
-            if multirole:
-                member_sky_roles_that_have_multi.append(multirole)
+            embed.set_author(name=f"{member.name}'s Amari data conversion", icon_url=member.display_avatar.with_size(64).url)
+            member_sky_role_list = user_amari.get('roles') or [role.id for role in member_in_sky.roles]
+            member_sky_roles_that_have_multi = []
+            for member_sky_role in member_sky_role_list:
+                multirole = danksky_rolemultis.get(str(member_sky_role))
+                if multirole:
+                    member_sky_roles_that_have_multi.append(multirole)
 
-        danksky_rolemultis_display = []
-        total_danksky_eligible_multi_to_convert = 0
-        for i in member_sky_roles_that_have_multi:
-            danksky_rolemultis_display.append(f"**{i.get('name')}**: `{i.get('multi')}`")
-            total_danksky_eligible_multi_to_convert += i.get('multi')
-        danksky_rolemultis_display.append(f"\nTotal eligible multi from Dank Sky: `{total_danksky_eligible_multi_to_convert}`")
-        embed.add_field(name="Eligible multi roles in Dank Sky:", value="\n".join(danksky_rolemultis_display))
+            danksky_rolemultis_display = []
+            total_danksky_eligible_multi_to_convert = 0
+            for i in member_sky_roles_that_have_multi:
+                danksky_rolemultis_display.append(f"**{i.get('name')}**: `{i.get('multi')}`")
+                total_danksky_eligible_multi_to_convert += i.get('multi')
+            danksky_rolemultis_display.append(f"\nTotal eligible multi from Dank Sky: `{total_danksky_eligible_multi_to_convert}`")
+            embed.add_field(name="Eligible multi roles in Dank Sky:", value="\n".join(danksky_rolemultis_display))
 
-        member_dv_roles_that_have_multi = []
-        for dv_role_id in [role.id for role in member.roles]:
-            multirole = dankvibes_rolemultis.get(str(dv_role_id))
-            if multirole:
-                member_dv_roles_that_have_multi.append(multirole)
-                if dv_role_id == 819998800382132265:
-                    member_dv_roles_that_have_multi.append(dankvibes_rolemultis.get("819998671742959636")) # donator 3b if donator 5b
-        dankvibes_rolemultis_display = []
-        total_dv_eligible_multi = 0
-        for i in member_dv_roles_that_have_multi:
-            dankvibes_rolemultis_display.append(f"**{i.get('name')}**: `{i.get('multi')}`")
-            total_dv_eligible_multi += i.get('multi')
-        dankvibes_rolemultis_display.append(f"\nTotal eligible multi from Dank Vibes: `{total_dv_eligible_multi}`")
-        embed.add_field(name="Eligible multi roles in Dank Vibes:", value="\n".join(dankvibes_rolemultis_display))
-        percentage_conversion = round(total_dv_eligible_multi / total_danksky_eligible_multi_to_convert, 2)
-        percentage_conversion_display = f"{percentage_conversion*100:.2f}%"
-        exp_conversion_to_dankvibes = int(percentage_conversion * danksky_multi)
-        expected_dv_level = 0
-        for i in amari_levels:
-            if i.get("exp") > exp_conversion_to_dankvibes:
-                expected_dv_level = i.get("level") - 1
-                break
+            member_dv_roles_that_have_multi = []
+            for dv_role_id in [role.id for role in member.roles]:
+                multirole = dankvibes_rolemultis.get(str(dv_role_id))
+                if multirole:
+                    member_dv_roles_that_have_multi.append(multirole)
+                    if dv_role_id == 819998800382132265:
+                        member_dv_roles_that_have_multi.append(dankvibes_rolemultis.get("819998671742959636")) # donator 3b if donator 5b
+            dankvibes_rolemultis_display = []
+            total_dv_eligible_multi = 0
+            for i in member_dv_roles_that_have_multi:
+                dankvibes_rolemultis_display.append(f"**{i.get('name')}**: `{i.get('multi')}`")
+                total_dv_eligible_multi += i.get('multi')
+            dankvibes_rolemultis_display.append(f"\nTotal eligible multi from Dank Vibes: `{total_dv_eligible_multi}`")
+            embed.add_field(name="Eligible multi roles in Dank Vibes:", value="\n".join(dankvibes_rolemultis_display))
+            percentage_conversion = round(total_dv_eligible_multi / total_danksky_eligible_multi_to_convert, 2)
+            percentage_conversion_display = f"{percentage_conversion*100:.2f}%"
+            exp_conversion_to_dankvibes = int(percentage_conversion * danksky_multi)
+            expected_dv_level = 0
+            for i in amari_levels:
+                if i.get("exp") > exp_conversion_to_dankvibes:
+                    expected_dv_level = i.get("level") - 1
+                    break
 
-        result = [
-            f"You're eligible for `{percentage_conversion_display}` of your Dank Sky EXP to be __transferred to Dank Vibes__. (`{total_dv_eligible_multi}` ÷ `{total_danksky_eligible_multi_to_convert}`).",
-            f"Your **resulting EXP in Dank Vibes** will be `{comma_number(exp_conversion_to_dankvibes)}`. (`{percentage_conversion_display}` × `{danksky_multi})`",
-            f"Your level in Dank Vibes wil be `{expected_dv_level}`."
-        ]
+            result = [
+                f"You're eligible for `{percentage_conversion_display}` of your Dank Sky EXP to be __transferred to Dank Vibes__. (`{total_dv_eligible_multi}` ÷ `{total_danksky_eligible_multi_to_convert}`).",
+                f"Your **resulting EXP in Dank Vibes** will be `{comma_number(exp_conversion_to_dankvibes)}`. (`{percentage_conversion_display}` × `{danksky_multi})`",
+                f"Your level in Dank Vibes wil be `{expected_dv_level}`."
+            ]
 
-        embed.add_field(name="Conversion result", value="\n".join(result), inline=False)
+            embed.add_field(name="Conversion result", value="\n".join(result), inline=False)
         await ctx.send(embed=embed)
 
 
