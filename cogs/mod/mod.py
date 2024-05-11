@@ -370,7 +370,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         for i in member_sky_roles_that_have_multi:
             pass
             #danksky_rolemultis = danksky_rolemultis.get(str(i))
-        embed.add_field(name="Eligible multi roles in Dank Sky:", value="\n".join(danksky_rolemultis))
+        embed.add_field(name="Eligible multi roles in Dank Sky:", value="\n".join(member_sky_roles_that_have_multi))
         await ctx.send(embed=embed)
 
 
