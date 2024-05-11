@@ -340,9 +340,9 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="dankskycheck", aliases=["dsc"])
     async def dankskycheck(self, ctx: DVVTcontext, member: discord.Member):
-        with open("assets/sky_amari_data.json", "r", encoding="utf-8") as f:
+        with open("assets/data/sky_amari_data.json", "r", encoding="utf-8") as f:
             sky_amari_data = json.load(f)
-        with open("assets/danksky_rolemultis.json", "r", encoding="utf-8") as f:
+        with open("assets/data/danksky_rolemultis.json", "r", encoding="utf-8") as f:
             danksky_rolemultis = json.load(f)
         try:
             user_amari = sky_amari_data[str(member.id)]
