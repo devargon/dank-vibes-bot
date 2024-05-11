@@ -357,7 +357,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         member_in_sky = sky_server.get_member(member.id)
         if member_in_sky is None:
             return await ctx.send(f"⚠️ I could not find **{member.name}** in Dank Sky. This might be due to a caching issue.")
-        embed = discord.Embed(title=f"")
+        embed = discord.Embed(title=f"", color=self.client.embed_color)
         embed.set_author(name=f"{member.name}'s Amari data conversion", icon_url=member.display_avatar.with_size(64).url)
         member_sky_role_list = user_amari.get('roles') or [role.id for role in member_in_sky.roles]
         member_sky_roles_that_have_multi = []
@@ -367,10 +367,12 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
                 member_sky_roles_that_have_multi.append(multirole)
         embed.description = f"Amari level in Dank Sky: **{level}**\nAmari EXP in Dank Sky: **{exp}**"
         danksky_rolemultis_display = []
+        total_danksky_eligible_multi_to_convert = 0
         for i in member_sky_roles_that_have_multi:
-            pass
-            #danksky_rolemultis = danksky_rolemultis.get(str(i))
-        embed.add_field(name="Eligible multi roles in Dank Sky:", value="\n".join(member_sky_roles_that_have_multi))
+            danksky_rolemultis_display.append(f"{i.get('name')}: {i.get('multi')}")
+            total_danksky_eligible_multi_to_convert += i.get('multi')
+        danksky_rolemultis_display.append(f"\nTotal eligible multi from Dank Sky: {total_danksky_eligible_multi_to_convert}")
+        embed.add_field(name="Eligible multi roles in Dank Sky:", value="\n".join(danksky_rolemultis_display))
         await ctx.send(embed=embed)
 
 
