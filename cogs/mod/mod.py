@@ -337,6 +337,45 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
 
 
 
+    @checks.has_permissions_or_role(manage_roles=True)
+    @commands.command(name="dankskycheck", aliases=["dsc"])
+    async def dankskycheck(self, ctx: DVVTcontext, member: discord.Member):
+        with open("assets/sky_amari_data.json", "r", encoding="utf-8") as f:
+            sky_amari_data = json.load(f)
+        with open("assets/danksky_rolemultis.json", "r", encoding="utf-8") as f:
+            danksky_rolemultis = json.load(f)
+        try:
+            user_amari = sky_amari_data[str(member.id)]
+        except KeyError:
+            return await ctx.send(f"⚠️ I could not find **{member.name}**'s AmariBot exp data in Dank Sky, as of <t:1715355904>.")
+        exp: int = user_amari.exp
+        level: int = user_amari.level
+        # fetch user's roles in dank sky
+        sky_server = self.client.get_guild(795142299327004673)
+        if sky_server is None:
+            return await ctx.send("⚠️ I could not fetch the Dank Sky server.")
+        member_in_sky = sky_server.get_member(member.id)
+        if member_in_sky is None:
+            return await ctx.send(f"⚠️ I could not find **{member.name}** in Dank Sky. This might be due to a caching issue.")
+        embed = discord.Embed(title=f"")
+        embed.set_author(name=f"{member.name}'s Amari data conversion", icon_url=member.display_avatar.with_size(64).url)
+        member_sky_role_list = user_amari.get('roles') or [role.id for role in member_in_sky.roles]
+        member_sky_roles_that_have_multi = []
+        for member_sky_role in member_sky_role_list:
+            multirole = danksky_rolemultis.get(str(member_sky_role))
+            if multirole:
+                member_sky_roles_that_have_multi.append(multirole)
+        embed.description = f"Amari level in Dank Sky: **{level}**\nAmari EXP in Dank Sky: **{exp}**"
+        danksky_rolemultis_display = []
+        for i in member_sky_roles_that_have_multi:
+            pass
+            #danksky_rolemultis = danksky_rolemultis.get(str(i))
+        embed.add_field(name="Eligible multi roles in Dank Sky:", value="\n".join(danksky_rolemultis))
+
+
+
+
+
 
 
 
