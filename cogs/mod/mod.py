@@ -348,8 +348,8 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
             user_amari = sky_amari_data[str(member.id)]
         except KeyError:
             return await ctx.send(f"⚠️ I could not find **{member.name}**'s AmariBot exp data in Dank Sky, as of <t:1715355904>.")
-        exp: int = user_amari.exp
-        level: int = user_amari.level
+        exp: int = user_amari.get("exp")
+        level: int = user_amari.get("level")
         # fetch user's roles in dank sky
         sky_server = self.client.get_guild(795142299327004673)
         if sky_server is None:
