@@ -402,11 +402,11 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         dankvibes_rolemultis_display.append(f"\nTotal eligible multi from Dank Vibes: `{total_dv_eligible_multi}`")
         embed.add_field(name="Eligible multi roles in Dank Vibes:", value="\n".join(dankvibes_rolemultis_display))
         percentage_conversion = round(total_dv_eligible_multi / total_danksky_eligible_multi_to_convert, 2)
-        percentage_conversion_display = f"{percentage_conversion:.2f}%"
+        percentage_conversion_display = f"{percentage_conversion*100:.2f}%"
         exp_conversion_to_dankvibes = int(percentage_conversion * danksky_multi)
         expected_dv_level = 0
         for i in amari_levels:
-            if i.get("exp") < exp_conversion_to_dankvibes:
+            if i.get("exp") > exp_conversion_to_dankvibes:
                 expected_dv_level = i.get("level") - 1
                 break
 
