@@ -358,10 +358,10 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
 
         a = await self.client.fetch_amari_data(member.id, ctx.guild.id)
         embed = discord.Embed(title=f"", color=self.client.embed_color)
-        user_amari = a[0]
-        if not isinstance(user_amari, amari.objects.User):
+        dv_user_amari = a[0]
+        if not isinstance(dv_user_amari, amari.objects.User):
             return await ctx.send(f"⚠️ I could not fetch **{member.name}**'s Amaribot data in Dank Vibes.")
-        embed.description = f"Amari level in Dank Sky: **{level}**\nAmari EXP in Dank Sky: **{comma_number(danksky_multi)}**\n\nAmari level in Dank Vibes: **{user_amari.level}**\nAmari EXP in Dank Vibes: **{comma_number(user_amari.exp)}**"
+        embed.description = f"Amari level in Dank Sky: **{level}**\nAmari EXP in Dank Sky: **{comma_number(danksky_multi)}**\n\nAmari level in Dank Vibes: **{dv_user_amari.level}**\nAmari EXP in Dank Vibes: **{comma_number(dv_user_amari.exp)}**"
 
         # fetch user's roles in dank sky
         sky_server = self.client.get_guild(795142299327004673)
