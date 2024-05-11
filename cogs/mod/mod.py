@@ -3,6 +3,7 @@ import itertools
 import json
 import re
 
+import amari
 from discord.ext import menus, pages, tasks
 
 from main import dvvt
@@ -19,7 +20,7 @@ from .donations import donations
 
 from utils import checks
 from utils.buttons import *
-from utils.format import text_to_file, ordinal, human_join, pagify, proper_userf, print_exception
+from utils.format import text_to_file, ordinal, human_join, pagify, proper_userf, print_exception, comma_number
 from utils.time import humanize_timedelta, short_humanize_timedelta, UserFriendlyTime
 from utils.menus import CustomMenu
 from utils.converters import BetterTimeConverter, MemberUserConverter
@@ -346,12 +347,22 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
             danksky_rolemultis = json.load(f)
         with open("assets/data/dankvibes_rolemultis.json", "r", encoding="utf-8") as f:
             dankvibes_rolemultis = json.load(f)
+        with open("assets/data/amari_levels.json", "r", encoding="utf=8") as f:
+            amari_levels = json.load(f)
         try:
             user_amari = sky_amari_data[str(member.id)]
         except KeyError:
             return await ctx.send(f"⚠️ I could not find **{member.name}**'s AmariBot exp data in Dank Sky, as of <t:1715355904>.")
-        exp: int = user_amari.get("exp")
+        danksky_multi: int = user_amari.get("exp")
         level: int = user_amari.get("level")
+
+        a = await self.client.fetch_amari_data(member.id, ctx.guild.id)
+        embed = discord.Embed(title=f"", color=self.client.embed_color)
+        user_amari = a[0]
+        if not isinstance(user_amari, amari.objects.User):
+            return await ctx.send(f"⚠️ I could not fetch **{member.name}**'s Amaribot data in Dank Vibes.")
+        embed.description = f"Amari level in Dank Sky: **{level}**\nAmari EXP in Dank Sky: **{comma_number(danksky_multi)}**\n\nAmari level in Dank Vibes: **{user_amari.level}**\nAmari EXP in Dank Vibes: **{comma_number(user_amari.exp)}**"
+
         # fetch user's roles in dank sky
         sky_server = self.client.get_guild(795142299327004673)
         if sky_server is None:
@@ -359,7 +370,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         member_in_sky = sky_server.get_member(member.id)
         if member_in_sky is None:
             return await ctx.send(f"⚠️ I could not find **{member.name}** in Dank Sky. This might be due to a caching issue.")
-        embed = discord.Embed(title=f"", color=self.client.embed_color)
+
         embed.set_author(name=f"{member.name}'s Amari data conversion", icon_url=member.display_avatar.with_size(64).url)
         member_sky_role_list = user_amari.get('roles') or [role.id for role in member_in_sky.roles]
         member_sky_roles_that_have_multi = []
@@ -367,7 +378,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
             multirole = danksky_rolemultis.get(str(member_sky_role))
             if multirole:
                 member_sky_roles_that_have_multi.append(multirole)
-        embed.description = f"Amari level in Dank Sky: **{level}**\nAmari EXP in Dank Sky: **{exp}**"
+
         danksky_rolemultis_display = []
         total_danksky_eligible_multi_to_convert = 0
         for i in member_sky_roles_that_have_multi:
@@ -390,7 +401,22 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
             total_dv_eligible_multi += i.get('multi')
         dankvibes_rolemultis_display.append(f"\nTotal eligible multi from Dank Vibes: `{total_dv_eligible_multi}`")
         embed.add_field(name="Eligible multi roles in Dank Vibes:", value="\n".join(dankvibes_rolemultis_display))
+        percentage_conversion = round(total_dv_eligible_multi / total_danksky_eligible_multi_to_convert, 2)
+        percentage_conversion_display = f"{percentage_conversion:.2f}%"
+        exp_conversion_to_dankvibes = int(percentage_conversion * danksky_multi)
+        expected_dv_level = 0
+        for i in amari_levels:
+            if i.get("exp") < exp_conversion_to_dankvibes:
+                expected_dv_level = i.get("level") - 1
+                break
 
+        result = [
+            f"You're eligible for `{percentage_conversion_display}` of your Dank Sky EXP to be __transferred to Dank Vibes__. (`{total_dv_eligible_multi}` ÷ `{total_danksky_eligible_multi_to_convert}`).",
+            f"Your **resulting EXP in Dank Vibes** will be `{comma_number(exp_conversion_to_dankvibes)}`. (`{percentage_conversion_display}` × `{danksky_multi})`",
+            f"Your level in Dank Vibes wil be `{expected_dv_level}`."
+        ]
+
+        embed.add_field(name="Conversion result", value="\n".join(result), inline=False)
         await ctx.send(embed=embed)
 
 
