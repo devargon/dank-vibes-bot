@@ -344,6 +344,8 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
             sky_amari_data = json.load(f)
         with open("assets/data/danksky_rolemultis.json", "r", encoding="utf-8") as f:
             danksky_rolemultis = json.load(f)
+        with open("assets/data/dankvibes_rolemultis.json", "r", encoding="utf-8") as f:
+            dankvibes_rolemultis = json.load(f)
         try:
             user_amari = sky_amari_data[str(member.id)]
         except KeyError:
@@ -369,10 +371,24 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         danksky_rolemultis_display = []
         total_danksky_eligible_multi_to_convert = 0
         for i in member_sky_roles_that_have_multi:
-            danksky_rolemultis_display.append(f"{i.get('name')}: {i.get('multi')}")
+            danksky_rolemultis_display.append(f"**{i.get('name')}**: `{i.get('multi')}`")
             total_danksky_eligible_multi_to_convert += i.get('multi')
-        danksky_rolemultis_display.append(f"\nTotal eligible multi from Dank Sky: {total_danksky_eligible_multi_to_convert}")
+        danksky_rolemultis_display.append(f"\nTotal eligible multi from Dank Sky: `{total_danksky_eligible_multi_to_convert}`")
         embed.add_field(name="Eligible multi roles in Dank Sky:", value="\n".join(danksky_rolemultis_display))
+
+        member_dv_roles_that_have_multi = []
+        for dv_role_id in [role.id for role in member.roles]:
+            multirole = dankvibes_rolemultis.get(str(dv_role_id))
+            if multirole:
+                member_dv_roles_that_have_multi.append(multirole)
+        dankvibes_rolemultis_display = []
+        total_dv_eligible_multi = 0
+        for i in member_dv_roles_that_have_multi:
+            dankvibes_rolemultis_display.append(f"**{i.get('name')}**: `{i.get('multi')}`")
+            total_dv_eligible_multi += i.get('multi')
+        dankvibes_rolemultis_display.append(f"\nTotal eligible multi from Dank Vibes: `{total_dv_eligible_multi}`")
+        embed.add_field(name="Eligible multi roles in Dank Vibes:", value="\n".join(dankvibes_rolemultis_display))
+
         await ctx.send(embed=embed)
 
 
