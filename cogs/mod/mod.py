@@ -340,7 +340,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
 
     @checks.has_permissions_or_role(manage_roles=True)
     @commands.command(name="dankskycheck", aliases=["dsc"])
-    async def dankskycheck(self, ctx: DVVTcontext, member: discord.Member):
+    async def dankskycheck(self, ctx: DVVTcontext, member: discord.Member, account_existing_xp: str = None):
         async with ctx.typing():
             with open("assets/data/sky_amari_data.json", "r", encoding="utf-8") as f:
                 sky_amari_data = json.load(f)
@@ -404,7 +404,11 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
             embed.add_field(name="Eligible multi roles in Dank Vibes:", value="\n".join(dankvibes_rolemultis_display))
             percentage_conversion = round(total_dv_eligible_multi / total_danksky_eligible_multi_to_convert, 2)
             percentage_conversion_display = f"{percentage_conversion*100:.2f}%"
-            exp_conversion_to_dankvibes = int(percentage_conversion * danksky_multi)
+            if account_existing_xp:
+                exp_conversion_to_dankvibes = int(percentage_conversion * danksky_multi) + dv_user_amari.exp
+            else:
+                exp_conversion_to_dankvibes = int(percentage_conversion * danksky_multi)
+
             expected_dv_level = 0
             for i in amari_levels:
                 if i.get("exp") > exp_conversion_to_dankvibes:
@@ -413,7 +417,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
 
             result = [
                 f"You're eligible for `{percentage_conversion_display}` of your Dank Sky EXP to be __transferred to Dank Vibes__. (`{total_dv_eligible_multi}` ÷ `{total_danksky_eligible_multi_to_convert}`).",
-                f"Your **resulting EXP in Dank Vibes** will be `{comma_number(exp_conversion_to_dankvibes)}`. (`{percentage_conversion_display}` × `{danksky_multi})`",
+                f"Your **resulting EXP in Dank Vibes**, including XP you've earned, will be `{comma_number(exp_conversion_to_dankvibes)}`. (`{percentage_conversion_display}` × `{danksky_multi})` + `{comma_number(dv_user_amari.exp)}" if exp_conversion_to_dankvibes else f"Your **resulting EXP in Dank Vibes** will be `{comma_number(exp_conversion_to_dankvibes)}`. (`{percentage_conversion_display}` × `{danksky_multi})`",
                 f"Your level in Dank Vibes wil be `{expected_dv_level}`."
             ]
 
