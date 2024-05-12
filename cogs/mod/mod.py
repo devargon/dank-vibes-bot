@@ -385,7 +385,8 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
             for i in member_sky_roles_that_have_multi:
                 danksky_rolemultis_display.append(f"**{i.get('name')}**: `{i.get('multi')}`")
                 total_danksky_eligible_multi_to_convert += i.get('multi')
-            danksky_rolemultis_display.append(f"\nTotal eligible multi from Dank Sky: `{total_danksky_eligible_multi_to_convert}`")
+            total_danksky_eligible_multi_to_convert += 1 # For base message XP
+            danksky_rolemultis_display.append(f"\nTotal eligible multi from Dank Sky: `{total_danksky_eligible_multi_to_convert}` (Including base XP)")
             embed.add_field(name="Eligible multi roles in Dank Sky:", value="\n".join(danksky_rolemultis_display))
 
             member_dv_roles_that_have_multi = []
@@ -400,7 +401,8 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
             for i in member_dv_roles_that_have_multi:
                 dankvibes_rolemultis_display.append(f"**{i.get('name')}**: `{i.get('multi')}`")
                 total_dv_eligible_multi += i.get('multi')
-            dankvibes_rolemultis_display.append(f"\nTotal eligible multi from Dank Vibes: `{total_dv_eligible_multi}`")
+            total_dv_eligible_multi += 1 # For base message XP
+            dankvibes_rolemultis_display.append(f"\nTotal eligible multi from Dank Vibes: `{total_dv_eligible_multi}` (Including base XP)")
             embed.add_field(name="Eligible multi roles in Dank Vibes:", value="\n".join(dankvibes_rolemultis_display))
             percentage_conversion = round(total_dv_eligible_multi / total_danksky_eligible_multi_to_convert, 2)
             percentage_conversion_display = f"{percentage_conversion*100:.2f}%"
