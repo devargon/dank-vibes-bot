@@ -1066,7 +1066,6 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                     minutes_between_next_interaction = 10
                     interact_minutes_re_search = re.search(r"You can interact with your stream every `(\d+)` minute", afterembed.description)
                     if interact_minutes_re_search:
-                        print(f"caught number of minutes: {interact_minutes_re_search} {interact_minutes_re_search.group(1)}")
                         minutes_between_next_interaction = int(interact_minutes_re_search.group(1)) or 10
                     nextstreamtime = round(time.time()) + minutes_between_next_interaction * 60
                     await self.handle_reminder_entry(member.id, 20, aftermsg.channel.id, aftermsg.guild.id, nextstreamtime, uses_name=True)
