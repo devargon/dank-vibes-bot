@@ -54,6 +54,7 @@ AVAILABLE_EXTENSIONS = [
     'cogs.disboard',
     'cogs.slashtags',
     'cogs.banappeal',
+    'cogs.ai_moderation'
 ]
 
 load_dotenv('credentials.env')
