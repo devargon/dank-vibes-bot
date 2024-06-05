@@ -34,16 +34,14 @@ wincertstore==0.2
 yarl
 alexflipnote.py
 more-itertools
-googletrans==3.1.0a0
+googletrans-py @ git+https://github.com/argo0n/googletrans
 hyper
 emoji==1.7.0
 typing
 stemming
 httpcore==0.9.1
 pytz
-h2==3.2.0
 parsedatetime
-hyperframe==5.2.0
 owoify-py
 bugsnag
 amari.py
@@ -59,3 +57,5 @@ Wand==0.6.8
 bleach
 pydantic==1.10.2
 chat_exporter @ git+https://github.com/nogra-xyz/DiscordChatExporterPy@2.8.0
+pytesseract==0.3.10
+openai
