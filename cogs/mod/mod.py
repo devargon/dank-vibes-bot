@@ -229,6 +229,7 @@ class PublicVoteView(discord.ui.View):
         else:
             await interaction.response.send_message("<:DVB_False:887589731515392000> **You do not have the <@&683884762997587998> role.**\n` - ` Vote for Dank Vibes at https://top.gg/servers/595457764935991326/vote, and click on the button again to see if you can join the heist!\n` - ` If you have voted for Dank Vibes but still do not have the role, open a ticket in <#870880772985344010> and inform a Mod there.", ephemeral=True)
 
+
 class ModlogPagination:
     def __init__(self, entries, user, per_page, client):
         self.user = user
