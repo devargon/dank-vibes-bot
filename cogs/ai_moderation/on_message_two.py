@@ -12,7 +12,6 @@ from collections import deque
 from io import BytesIO
 
 import aiohttp
-import openai
 from PIL import Image
 from openai import AsyncOpenAI
 from openai.types import CompletionUsage
@@ -24,10 +23,6 @@ from utils.format import human_join, durationdisplay, proper_userf, print_except
 from main import dvvt
 import discord
 from discord.ext import commands, tasks
-from time import time
-from datetime import datetime
-import pytz
-from utils.context import DVVTcontext
 import pytesseract
 
 ID_REGEX = re.compile(r"([0-9]{15,20})")
@@ -103,7 +98,7 @@ async def process_attachments_and_links(message: discord.Message):
 class AIMessageModeration(commands.Cog):
     def __init__(self, client):
         self.client: dvvt = client
-        self.plana_messages = deque(maxlen=10)
+        self.plana_messages = deque(maxlen=3)
         self.openai_api_key = os.getenv("DVB_OPENAI_API_KEY")
         if self.openai_api_key is None:
             print("No OpenAI API key found")
