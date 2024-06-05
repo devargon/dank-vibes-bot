@@ -179,7 +179,7 @@ class AIMessageModeration(commands.Cog):
                     cid = None
                 if cid is not None:
                     c = self.client.get_channel(cid)
-                    await c.send("<@&821981461833187330>", embed=embed, view=SingleURLButton(message.jump_url, "Jump to message"))
+                    await c.send("<@&821981461833187330>", embed=embed, view=SingleURLButton(message.jump_url, "Jump to message"), allowed_mentions=discord.AllowedMentions(everyone=False, users=True, roles=True, replied_user=False))
 
                 print(f"Probability: {probability}\n\nReasons: \n\n{reasons}")
             else:
