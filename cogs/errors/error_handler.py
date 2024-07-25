@@ -46,6 +46,8 @@ class ErrorHandler(commands.Cog):
         if isinstance(error, commands.NoPrivateMessage):
             handled = True
             await send_error("Sowwi, you can't use this command in DMs :(", delete_after=10)
+        elif isinstance(error, discord.CheckFailure):
+            handled = True # For now this handles issues with blacklists/maintanence
         elif isinstance(error, commands.CheckFailure):
             handled = True
             await send_error("Oops!, looks like you don't have enough permission to use this command.", delete_after=5)

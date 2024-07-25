@@ -2,6 +2,7 @@ import functools
 import getpass
 import importlib
 import io
+import json
 import os
 import re
 import ast
@@ -14,6 +15,7 @@ from collections import Counter
 
 from datetime import datetime, timezone
 
+import chat_exporter
 import matplotlib.pyplot as plt
 
 import discord
@@ -28,6 +30,7 @@ from abc import ABC
 
 from main import dvvt
 from utils import checks
+from utils.helper import upload_file_to_bunnycdn
 from .status import Status
 from .botutils import BotUtils
 from contextlib import redirect_stdout
@@ -41,6 +44,26 @@ from utils.converters import MemberUserConverter, TrueFalse
 from typing import Optional, Union
 from utils.menus import CustomMenu
 from utils.context import DVVTcontext
+
+
+class MessageUpdater:
+    def __init__(self, author):
+        self.author = author
+        self.message = None
+
+    async def send_update(self, string):
+        if self.message:
+            # Attempt to append new content
+            new_content = self.message.content + "\n" + string
+            if len(new_content) > 2000:
+                # Content would exceed the limit; send a new message
+                self.message = await self.author.send(string)
+            else:
+                # Update existing message
+                self.message = await self.message.edit(content=new_content)
+        else:
+            # No message yet, so send a new one and save the reference
+            self.message = await self.author.send(string)
 
 class ConfirmContinue(discord.ui.View):
     def __init__(self, ctx):
@@ -80,7 +103,7 @@ class toggledevmode(discord.ui.View):
         self.context = ctx
         self.response = None
         self.result = None
-        self.client = client
+        self.client: dvvt = client
         self.enabled = enabled
         super().__init__(timeout=5.0)
         init_enabled = self.enabled
@@ -1078,3 +1101,204 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
                 await basemsg.edit(content="```\n" + content + "\n```")
             content += f"\n\nCompleted in {round((time.perf_counter() - now) * 1000, 3)}ms"
             await basemsg.edit(content="```\n" + content + "\n```")
+
+    @checks.dev()
+    @commands.group(name="exportchat", hidden=True, invoke_without_command=True)
+    async def exportchat_base(self, ctx: DVVTcontext):
+        await ctx.checkmark()
+
+    @checks.dev()
+    @exportchat_base.command(name="tochannel", hidden=True)
+    async def export_to_channel(self, ctx: DVVTcontext, from_channel_id: int, to_channel_id: int):
+        updater = MessageUpdater(ctx.author)
+        fc = await self.client.fetch_channel(from_channel_id)
+        tc = await self.client.fetch_channel(to_channel_id)
+        await updater.send_update(f"Found channels: From {from_channel_id} -> {fc} To {to_channel_id} -> {tc}")
+
+
+
+
+        if fc is None or tc is None:
+            return await updater.send_update("Either From channel or To channel is not found, so this command will stop.")
+
+        errors = []
+        messages_processed = 0
+        last_message_timestamp = None
+        last_update = time.time()
+
+        await updater.send_update("Starting export...")
+
+        async for message in fc.history(limit=None, oldest_first=True):
+            header = f"### {proper_userf(message.author)} `fr:{message.author.id}` `mi:{message.id}` <t:{int(message.created_at.timestamp())}:f> \n\n"
+            v = discord.ui.View.from_message(message) if len(message.components) > 0 else None
+            if time.time() - last_update > 50:
+                last_update = time.time()
+                await updater.send_update(f"<t:{round(time.time())}:T> {messages_processed} messages processed. Last message timestamp was {last_message_timestamp.strftime('%Y-%m-%d %H:%M:%S') if last_message_timestamp is not None else None}")
+
+            files = [await attachment.to_file() for attachment in message.attachments if
+                     attachment.size < 25_000_000]  # Discord's limit is 8 MB for files in regular messages
+
+            try:
+                sent_message = None  # Initialize sent_message to None
+
+                if message.embeds:
+                    sent_message = await tc.send(content=header, embeds=message.embeds, view=v, files=files)
+                else:
+                    content_with_header = header + message.content
+                    max_length = 2000
+                    if len(content_with_header) > max_length:
+                        content_length_after_header = max_length - len(header)
+                        parts = [content_with_header[i:i + content_length_after_header] for i in
+                                 range(0, len(content_with_header), content_length_after_header)]
+                        for part in parts:
+                            # When sending parts of a long message, only the first part will return a message object that could potentially be pinned
+                            sent_part_message = await tc.send(
+                                header + part[len(header):] if part.startswith(header) else part)
+                            if parts.index(part) == 0:
+                                sent_message = sent_part_message
+                    else:
+                        sent_message = await tc.send(content=content_with_header, view=v, files=files)
+
+                # If the original message was pinned, pin the corresponding message in the target channel
+                if message.pinned and sent_message:
+                    await sent_message.pin()
+
+                last_message_timestamp = message.created_at
+                messages_processed += 1
+            except Exception as e:
+                errors.append((message.id, traceback.format_exc()))
+
+        await ctx.author.send(f"{messages_processed} messages processed.")
+
+        if len(errors) > 0:
+            error_ids_text = "\n".join(str(mid) for mid, _ in errors)
+            error_details_json = json.dumps([{"message_id": mid, "error": error} for mid, error in errors], indent=4)
+
+            with open('temp/error_ids.txt', 'w') as f:
+                f.write(error_ids_text)
+
+            with open('temp/errors.json', 'w') as f:
+                f.write(error_details_json)
+
+            await ctx.author.send(f"{len(errors)} exceptions were caught while exporting the messages:",
+                                  files=[discord.File('temp/error_ids.txt'), discord.File('temp/errors.json')])
+
+    @checks.dev()
+    @exportchat_base.command(name="tochannelmeonly", hidden=True)
+    async def export_to_channel_only_me(self, ctx: DVVTcontext, from_channel_id: int, to_channel_id: int):
+        updater = MessageUpdater(ctx.author)
+        fc = await self.client.fetch_channel(from_channel_id)
+        tc = await self.client.fetch_channel(to_channel_id)
+        await updater.send_update(f"Found channels: From {from_channel_id} -> {fc} To {to_channel_id} -> {tc}")
+
+        if fc is None or tc is None:
+            return await updater.send_update(
+                "Either From channel or To channel is not found, so this command will stop.")
+
+        errors = []
+        messages_processed = 0
+        last_message_timestamp = None
+        last_update = time.time()
+
+        await updater.send_update("Starting export...")
+
+        async for message in fc.history(limit=None, oldest_first=True):
+            if message.author.id != 650647680837484556:
+                continue
+            header = f"### {proper_userf(message.author)} `fr:{message.author.id}` `mi:{message.id}` <t:{int(message.created_at.timestamp())}:f> \n\n"
+            v = discord.ui.View.from_message(message) if len(message.components) > 0 else None
+            if time.time() - last_update > 50:
+                last_update = time.time()
+                await updater.send_update(
+                    f"<t:{round(time.time())}:T> {messages_processed} messages processed. Last message timestamp was {last_message_timestamp.strftime('%Y-%m-%d %H:%M:%S') if last_message_timestamp is not None else None}")
+
+            files = [await attachment.to_file() for attachment in message.attachments if
+                     attachment.size < 25_000_000]  # Discord's limit is 8 MB for files in regular messages
+
+            try:
+                sent_message = None  # Initialize sent_message to None
+
+                if message.embeds:
+                    sent_message = await tc.send(content=header, embeds=message.embeds, view=v, files=files)
+                else:
+                    content_with_header = header + message.content
+                    max_length = 2000
+                    if len(content_with_header) > max_length:
+                        content_length_after_header = max_length - len(header)
+                        parts = [content_with_header[i:i + content_length_after_header] for i in
+                                 range(0, len(content_with_header), content_length_after_header)]
+                        for part in parts:
+                            # When sending parts of a long message, only the first part will return a message object that could potentially be pinned
+                            sent_part_message = await tc.send(
+                                header + part[len(header):] if part.startswith(header) else part)
+                            if parts.index(part) == 0:
+                                sent_message = sent_part_message
+                    else:
+                        sent_message = await tc.send(content=content_with_header, view=v, files=files)
+
+                # If the original message was pinned, pin the corresponding message in the target channel
+                if message.pinned and sent_message:
+                    await sent_message.pin()
+
+                last_message_timestamp = message.created_at
+                messages_processed += 1
+            except Exception as e:
+                errors.append((message.id, traceback.format_exc()))
+
+        await ctx.author.send(f"{messages_processed} messages processed.")
+
+        if len(errors) > 0:
+            error_ids_text = "\n".join(str(mid) for mid, _ in errors)
+            error_details_json = json.dumps([{"message_id": mid, "error": error} for mid, error in errors], indent=4)
+
+            with open('temp/error_ids.txt', 'w') as f:
+                f.write(error_ids_text)
+
+            with open('temp/errors.json', 'w') as f:
+                f.write(error_details_json)
+
+            await ctx.author.send(f"{len(errors)} exceptions were caught while exporting the messages:",
+                                  files=[discord.File('temp/error_ids.txt'), discord.File('temp/errors.json')])
+
+
+
+
+
+
+    @checks.dev()
+    @exportchat_base.command(name="channelid", hidden=True)
+    async def export_by_channel_id(self, ctx: DVVTcontext, channel_id: int, limit: int = 50):
+        c = await self.client.fetch_channel(channel_id)
+        if c.guild is None:
+            return await ctx.send(f"<:DVB_False:887589731515392000> {c.mention} is not part of a guild.")
+        if not (c.permissions_for(c.guild.me).read_messages and c.permissions_for(c.guild.me).read_message_history and c.permissions_for(c.guild.me).view_channel):
+            return await ctx.send(f"<:DVB_False:887589731515392000> I do not have permissions to see {c.mention} or view its messages.")
+        m = await ctx.send(f"<a:DVB_CLoad2:994913353388527668> Found {c.mention}. Exporting messages...")
+        a = await self.client.fetch_user_info(ctx.author.id)
+
+        transcript = await chat_exporter.export(
+            c,
+            limit=50,
+            tz_info=(a.timezone if a is not None else "UTC") or "UTC",
+            military_time=True,
+            bot=self.client,
+        )
+
+        if transcript is None:
+            await m.edit(f"<:DVB_False:887589731515392000> Unable to export messages for {c.mention}.")
+            return
+
+        else:
+            today = datetime.now()
+            await m.edit(f"<a:DVB_CLoad1:994913315442663475> Uploading export to Nogra's CDN...")
+            result_url = await upload_file_to_bunnycdn(file=transcript.encode('utf-8'), filename=f"transcript_{c.guild.id}_{c.id}_{today.isoformat()}.html", directory="chat_transcripts")
+            await m.edit(f"<:DVB_True:887589686808309791> Exported messages in {c.mention}. View them at {result_url}")
+            # timenow = discord.utils.utcnow()
+            #transcript_file = discord.File(
+            #    io.BytesIO(transcript.encode('utf-8')),
+            #    filename=f"transcript_{c.guild.id}_{c.id}_{today.isoformat()}.html"
+            #)
+            #await m.delete()
+            #await ctx.send(f"<:DVB_True:887589686808309791> Exported messages in {c.mention}.", file=transcript_file)
+
+

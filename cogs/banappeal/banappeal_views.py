@@ -2,6 +2,7 @@ import asyncio
 import os
 import random
 import re
+from datetime import timedelta
 
 import discord
 from typing import Optional
@@ -34,8 +35,8 @@ class BanAppealReasonModal(discord.ui.Modal):
 
         # Add a text input field for the remark
         self.remark = discord.ui.InputText(
-            label=("Approved" if selected_appeal_status == 2 else "Denied" if selected_appeal_status == 1 else "???") + " Remarks",
-            placeholder="It will be seen by the user, leave this field blank if you're not adding one.",
+            label="Optional Remarks (blank if not needed)",
+            placeholder="Ensure content is respectful **to prevent emails from being marked AS SPAM**.",
             style=discord.InputTextStyle.paragraph,
             max_length=512,
             required=False
@@ -65,11 +66,14 @@ class BanAppealReasonModal(discord.ui.Modal):
         appealer_text = f"**{proper_userf(appealer)}** ({appealer.id})" if appealer is not None else str(banappeal.user_id)
         banned_guild = interaction.client.get_guild(banappeal.guild_id)
         err = None
+        user_already_unbanned = False
         if self.selected_appeal_status == 2:
             if appealer is not None:
                 try:
                     await banned_guild.unban(appealer, reason=f"Ban appeal #{banappeal.appeal_id} was approved by {proper_userf(interaction.user)}  ({interaction.user.id})")
                     asyncio.create_task(self.handle_carlbot_logging(banappeal, interaction))
+                except discord.NotFound:
+                    user_already_unbanned = True
                 except discord.Forbidden:  # No permission to unban
                     err = "I'm unable to unban the user because I lack the necessary permissions. Ensure I have the \"Ban Members\" permission."
                 except discord.HTTPException as e:
@@ -90,7 +94,7 @@ class BanAppealReasonModal(discord.ui.Modal):
         cog = interaction.client.get_cog('banappeal')
         cog.discordBanAppealUpdateQueue.append(banappeal)
 
-        await self.send_result(banappeal, interaction, result_embed, appealer_text)
+        await self.send_result(banappeal, interaction, result_embed, appealer_text, user_already_unbanned)
 
         if banappeal.email is not None:
             asyncio.create_task(self.handle_email_sending(banappeal, appealer))
@@ -106,7 +110,7 @@ class BanAppealReasonModal(discord.ui.Modal):
             try:
                 async with ClientSession(headers={"authorization": os.getenv("APPEALS_SHARED_SECRET")}) as session:
                     print(f"Sending Appeal #{banappeal.appeal_id} data to notify endpoint")
-                    data = banappeal.to_public_dict()
+                    data = banappeal.to_presentable_format()
                     if appealer:
                         data['username'] = appealer.display_name
                     a = await session.post(f"{middleman_server}/api/notify-update", json=data)
@@ -115,7 +119,7 @@ class BanAppealReasonModal(discord.ui.Modal):
             except Exception as e:
                 print_exception(f"Error while sending appeal #{banappeal.appeal_id} data to endpoint:", e)
 
-    async def send_result(self, banappeal, interaction, result_embed, appealer_text):
+    async def send_result(self, banappeal, interaction, result_embed, appealer_text, user_already_unbanned):
         result_embed.color = discord.Color.green()
         result_embed.set_footer(text=proper_userf(interaction.user),
                                 icon_url=interaction.user.display_avatar.with_size(32).url)
@@ -126,6 +130,9 @@ class BanAppealReasonModal(discord.ui.Modal):
             result_embed.description += f" with the remarks: \n\n> {banappeal.reviewer_response}"
         else:
             result_embed.description += f" with no remarks."
+
+        if user_already_unbanned:
+            result_embed.description += "\n\n⚠️ *User was already unbanned before this appeal was reviewed.*"
 
         if interaction.response.is_done():
             await interaction.followup.send(embed=result_embed, ephemeral=True)
@@ -202,13 +209,40 @@ class BanAppealView(discord.ui.View):
                                             description=f"An appeal with the ID `{appeal_no}` was not found.",
                                             color=discord.Color.red()), ephemeral=True)
                 if self.custom_id == "appeal:approve":
+                    if appeal.version == 2:
+                        appealer = await interaction.client.get_or_fetch_user(appeal.user_id)
+                        if appealer is not None:
+                            if discord.utils.utcnow() - appealer.created_at < timedelta(days=10):
+                                return await interaction.response.send_message(
+                                    embed=discord.Embed(title=f"Error in updating appeal #{appeal_no}",
+                                                        description=f"This is a __dungeon ban appeal__, but the appealer's account is not 10 days old yet (created {discord.utils.format_dt(appealer.created_at, 'R')}). Come back once the appealer's account has turned 10 days old.",
+                                                        color=discord.Color.red()), ephemeral=True)
                     modal = BanAppealReasonModal(2, appeal.appeal_id)
                     return await interaction.response.send_modal(modal=modal)
                 elif self.custom_id == "appeal:deny":
+                    if appeal.version == 2:
+                        appealer = await interaction.client.get_or_fetch_user(appeal.user_id)
+                        if appealer is not None:
+                            if discord.utils.utcnow() - appealer.created_at < timedelta(days=10):
+                                return await interaction.response.send_message(
+                                    embed=discord.Embed(title=f"Error in updating appeal #{appeal_no}",
+                                                        description=f"This is a __dungeon ban appeal__, but the appealer's account is not 10 days old yet (created {discord.utils.format_dt(appealer.created_at, 'R')}). Come back once the appealer's account has turned 10 days old.",
+                                                        color=discord.Color.red()), ephemeral=True)
                     modal = BanAppealReasonModal(1, appeal.appeal_id)
                     return await interaction.response.send_modal(modal=modal)
                 elif self.custom_id == "appeal:get_user_id":
-                    return await interaction.response.send_message(str(appeal.user_id) or "?", ephemeral=True)
+                    return await interaction.response.send_message(str(appeal.user_id) or "?", delete_after=120.0)
+                elif self.custom_id == "appeal:refresh":
+                    try:
+                        appeal.updated = False
+                        await banappealdb.update_ban_appeal(appeal)
+                        cog = interaction.client.get_cog('banappeal')
+                        cog.discordBanAppealUpdateQueue.append(appeal)
+                        return await interaction.response.send_message("Update requested for this message/ban appeal.", ephemeral=True)
+                    except Exception as e:
+                        print_exception("Error on update Ban Appeal Message button:", e)
+                        return await interaction.response.send_message("An error occured while trying to update this message/ban appeal.", ephemeral=True)
+
 
         self.green_button = AppealActionButton(label='Approve + Unban', emoji=discord.PartialEmoji.from_str("<:DVB_checkmark:955345523139805214>"), style=discord.ButtonStyle.green, custom_id="appeal:approve")
         self.red_button = AppealActionButton(label='Deny', emoji=discord.PartialEmoji.from_str("<:DVB_crossmark:955345521151737896>"), style=discord.ButtonStyle.red, custom_id="appeal:deny")
@@ -226,6 +260,7 @@ class BanAppealView(discord.ui.View):
         self.add_item(self.green_button)
         self.add_item(self.red_button)
         self.add_item(self.grey_button)
+        self.add_item(AppealActionButton(emoji="🔄", style=discord.ButtonStyle.blurple, custom_id="appeal:refresh"))
 
 
 class BanButton(discord.ui.Button):

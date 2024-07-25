@@ -7,12 +7,16 @@ from typing import Optional, Union, List
 
 class Voter:
     def __init__(self, record: asyncpg.Record, member: Optional[discord.Member] = None):
+        topgg_deprecation = record.get('topgg_deprecation')
+        if topgg_deprecation is None:
+            topgg_deprecation = False
         self.member_id: int = record.get('member_id')
         self.count: int = record.get('count')
         self.rmtype: int = record.get('rmtype')
         self.rmtime: int = record.get('rmtime')
-        self.topgg_deprecation: bool = record.get('topgg_deprecation')
+        self.topgg_deprecation: bool = topgg_deprecation
         self.member: discord.Member = member
+
 
 
 class VoteDB:
