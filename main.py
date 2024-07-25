@@ -38,7 +38,6 @@ AVAILABLE_EXTENSIONS = [
     'cogs.help',
     'cogs.utility',
     'cogs.banappeal',
-    'cogs.ai_moderation'
 ]
 
 load_dotenv('credentials.env')
