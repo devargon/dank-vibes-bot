@@ -1843,10 +1843,14 @@ class giveaways(commands.Cog):
 
     @checks.has_permissions_or_role(manage_roles=True)
     @giveaway.command(name="reroll", aliases=["r"])
-    async def giveaway_reroll(self, ctx, message_id: BetterMessageID = None, winner: int = None):
+    async def giveaway_reroll(self, ctx, message_id: typing.Optional[BetterMessageID] = None, winner: int = None):
         """
         Rerolls the winner for a giveaway.
         """
+        if message_id is None:
+            if ctx.message.reference is None:
+                return "A Message ID is required, or you need to reply to a message containing a giveaway."
+            message_id = ctx.message.reference.message_id
         result = await self.client.db.fetchrow("SELECT * FROM giveaways WHERE message_id = $1 AND guild_id = $2", message_id, ctx.guild.id)
         if result is None:
             with contextlib.suppress(Exception):
