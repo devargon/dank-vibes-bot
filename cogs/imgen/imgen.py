@@ -178,7 +178,7 @@ class Imgen(ImgenSlash, commands.Cog, name='imgen'):
 
     @checks.perm_insensitive_roles()
     @commands.cooldown(10, 1, commands.BucketType.user)
-    @commands.command(name="didyoumean", aliases=['dym', 'google'], usage="<2 texts separated by a comma>")
+    @commands.command(name="didyoumean", aliases=['dym'], usage="<2 texts separated by a comma>")
     async def didyoumean(self, ctx, *, text: str = None):
         """
         When you search for `text1` on Google, but they ask you if you meant `text2`...
