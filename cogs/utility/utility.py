@@ -841,7 +841,7 @@ class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight
         await paginator.send(ctx)
 
     @commands.command(name="google")
-    async def google_search(self, ctx: DVVTcontext, search_term: str):
+    async def google_search(self, ctx: DVVTcontext, *, search_term: str):
         """Perform a Google search and display results."""
         # Perform the search (limiting to 5 results)
         results = search(search_term, num_results=6, advanced=True)
