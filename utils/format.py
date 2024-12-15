@@ -1,31 +1,17 @@
 import sys
-
-import discord
 import traceback
 from io import BytesIO
-from typing import Sequence, Iterator, Literal, Optional, Union
-from discord.ext import commands
+from typing import Sequence, Iterator, Optional, Union
+
+import discord
 import inflect
-import math
+from discord.ext import commands
 from expr import evaluate
-import aiohttp
+
 from utils.errors import ArgumentBaseError
 
 p = inflect.engine()
 
-def durationdisplay(seconds):
-    seconds = round(seconds)
-    time = []
-    if seconds < 60:
-        time.append("0")
-        time.append(str(seconds))
-        return ":".join(time)
-    minutes = math.trunc(seconds / 60)
-    if minutes < 60:
-        seconds = seconds - minutes * 60
-        time.append(str(minutes))
-        time.append("0" + str(seconds) if seconds < 10 else str(seconds))
-    return ":".join(time)
 
 class plural:
     """
@@ -44,24 +30,6 @@ class plural:
 def comma_number(number:int):
     return "{:,}".format(number)
 
-def short_time(duration:int):
-    if duration is None or duration < 1:
-        return ''
-    duration_in_mins = duration/60
-    if duration_in_mins < 1:
-        return '< 1m'
-    if duration_in_mins < 60:
-        return f'{math.ceil(duration_in_mins)}m'
-    duration_in_hours = duration_in_mins/60
-    if duration_in_hours < 1.017:
-        return '1h'
-    if duration_in_hours < 24:
-        return f'{math.ceil(duration_in_hours)}h'
-    duration_in_days = duration_in_hours/24
-    if duration_in_days < 1.05:
-        return '1d'
-    else:
-        return f'{math.ceil(duration_in_days)}d'
 
 
 def proper_userf(user: Union[discord.Member, discord.User], show_at_symbol: Optional[bool] = True):
@@ -185,79 +153,6 @@ def get_command_name(command: Union[commands.Command, discord.ApplicationCommand
     elif isinstance(command, discord.ApplicationCommand):
         return command.qualified_name
 
-
-class TabularData:
-    def __init__(self):
-        self._widths = []
-        self._columns = []
-        self._rows = []
-
-    def set_columns(self, columns):
-        self._columns = columns
-        self._widths = [len(c) + 2 for c in columns]
-
-    def add_row(self, row):
-        rows = [str(r) for r in row]
-        self._rows.append(rows)
-        for index, element in enumerate(rows):
-            width = len(element) + 2
-            if width > self._widths[index]:
-                self._widths[index] = width
-
-    def add_rows(self, rows):
-        for row in rows:
-            self.add_row(row)
-
-    def render(self):
-        """
-        Renders a table in rST format.
-        """
-
-        sep = '+'.join('-' * w for w in self._widths)
-        sep = f'+{sep}+'
-
-        to_draw = [sep]
-
-        def get_entry(d):
-            elem = '|'.join(f'{e:^{self._widths[i]}}' for i, e in enumerate(d))
-            return f'|{elem}|'
-
-        to_draw.append(get_entry(self._columns))
-        to_draw.append(sep)
-
-        for row in self._rows:
-            to_draw.append(get_entry(row))
-
-        to_draw.append(sep)
-        return '\n'.join(to_draw)
-
-
-def split_string_into_list(string, return_type: Literal[str, int], delimiter=',', include_empty_elements: Optional[bool] = False) -> list:
-    """
-    Splits a string into a list. It will always return a list.
-    """
-    if include_empty_elements is True and return_type == int:
-        raise ValueError("include_empty_elements cannot be True if return_type is int")
-    if string is None:
-        return []
-    if len(string) == 0:
-        return []
-    split = string.split(delimiter)
-    split = [s.strip() for s in split]
-    new_split = []
-    for s in split:
-        if len(s) > 0:
-            if return_type == str:
-                new_split.append(s)
-            elif return_type == int:
-                new_split.append(int(s))
-        else:
-            if include_empty_elements is True:
-                if return_type == str:
-                    new_split.append(s)
-    return new_split
-
-
 def stringnum_toint(string:str):
     allowedsymbols = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "m", "k", 'e', '.', '-', ',']
     string = string.lower()
@@ -332,30 +227,6 @@ def stringtime_duration(string:str):
         return None
     intstring = int(intstring) if intstring is not None else intstring
     return intstring
-
-
-def grammarformat(iterable):
-    if len(iterable) == 0:
-        return ''
-    if len(iterable) == 1:
-        return iterable[0]
-    if len(iterable) == 2:
-        return iterable[0] + ' and ' + iterable[1]
-    return ', '.join(iterable[:-1]) + ', and ' + iterable[-1]
-
-
-async def get_image(url:str):
-    async with aiohttp.ClientSession() as session:
-        try:
-            async with session.get(url) as r:
-                data = await r.read()
-        except aiohttp.InvalidURL:
-            raise ArgumentBaseError(message=f"Invalid URL: {url}")
-        except aiohttp.ClientError:
-            raise ArgumentBaseError(message="Something went wrong while trying to get the image.")
-        else:
-            return data
-
 
 def generate_loadbar(percentage: float, length: Optional[int] = 20):
     aStartLoad = "<a:DVB_aStartLoad:912007459898544198>"

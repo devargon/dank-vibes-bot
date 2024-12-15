@@ -1,5 +1,7 @@
-import aiohttp
 from typing import Literal
+
+import aiohttp
+
 
 async def get(url, res_method: Literal["read", "json"]):
     async with aiohttp.ClientSession() as session:

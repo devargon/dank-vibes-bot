@@ -1,6 +1,7 @@
 import discord
-from utils import checks
 from discord.ext import commands
+
+from utils import checks
 
 status_emojis = {
     discord.Status.dnd: "<:DVB_status_dnd:955345506228392056>",

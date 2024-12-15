@@ -1,9 +1,10 @@
+from typing import Union, Literal
+
 import discord
 
 from utils.context import DVVTcontext
-from utils.helper import paste
-from typing import Union, Literal, Optional
 from utils.format import human_join, proper_userf
+from utils.helper import paste
 
 
 def make_embed(user, target, action, details=None):

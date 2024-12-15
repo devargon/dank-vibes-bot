@@ -1,16 +1,15 @@
-import time
 import inspect
-import asyncio
-import discord
-import contextlib
-from discord import ui
 from typing import Optional, Any, Union, Dict, Type, Iterable
-from functools import partial
-from utils.context import DVVTcontext
+
+import discord
+from discord import ui
 from discord.ext import commands
+
+import time
 from utils.context import DVVTcontext
-from utils.menus import ListPageInteractionBase, MenuViewInteractionBase
 from utils.helper import BaseEmbed
+from utils.menus import ListPageInteractionBase, MenuViewInteractionBase
+
 
 class SingleURLButton(discord.ui.View):
     def __init__(self, link: str, text: str, emoji=None, timeout=None, disabled=False):
@@ -86,23 +85,6 @@ class BaseView(ui.View):
 
     def set_timeout(self, new_time):
         self._View_timeout_expiry = new_time
-
-class CallbackView(BaseView):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for b in self.children:
-            self.wrap(b)
-
-    def wrap(self, b):
-        callback = b.callback
-        b.callback = partial(self.handle_callback, callback, b)
-
-    async def handle_callback(self, callback, item, interaction):
-        pass
-
-    def add_item(self, item: ui.Item) -> None:
-        self.wrap(item)
-        super().add_item(item)
 
 class ViewButtonIteration(BaseView):
     def __init__(self, *args: Any, mapper: Optional[Dict[str, Any]] = None,

@@ -1,36 +1,8 @@
 from discord.ext import commands
 
-class AmariError(Exception):
-    __slots__ = ('exception', 'retry_after')
-
-    def __init__(self, exception, retry_after):
-        self.exception = exception
-        self.retry_after = retry_after
-
-class AmariDeveloperError(Exception):
-    __slots__ = ('exception')
-
-    def __init__(self, exception):
-        self.exception = exception
-
-
-class AmariDataNotFound(Exception):
-    pass
-
-class AmariUserNotFound(Exception):
-    pass
-
 class ArgumentBaseError(commands.UserInputError):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
-class ThisEmpty(ArgumentBaseError):
-    def __init__(self, arg, **kwargs):
-        super().__init__(message=f"No valid argument was converted. Which makes {arg} as empty.", **kwargs)
-
-class DonationCategoryDoesNotExist(ArgumentBaseError):
-    def __init__(self, arg, **kwargs):
-        super().__init__(message=f"The donation category {arg} does not exist.", **kwargs)
 
 class RoleNotFound(ArgumentBaseError):
     def __init__(self, arg, **kwargs):
@@ -55,7 +27,3 @@ class NotInBanBattle(ArgumentBaseError):
 class InvalidDatabase(ArgumentBaseError):
     def __init__(self, arg, **kwargs):
         super().__init__(message=f"**{arg}** is not a valid database.", **kwargs)
-
-class NicknameIsManaged(ArgumentBaseError):
-    def __init__(self, **kwargs):
-        super().__init__(message=f"The user you're interacting with has their nickname managed/frozen by the bot.", **kwargs)

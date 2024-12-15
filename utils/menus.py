@@ -1,7 +1,9 @@
-import discord
-from discord.ext import menus
 from collections import namedtuple
 from typing import Iterable, Any, Dict
+
+import discord
+from discord.ext import menus
+from discord.ext.menus import First, Last, Button
 from discord.ui import View, Button
 from discord.ext.menus import First, Last, Button
 

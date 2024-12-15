@@ -1,17 +1,13 @@
-import contextlib
-
-import discord
-from datetime import datetime
-from utils.time import humanize_timedelta
-from discord.ext import commands
-from utils.format import print_exception, proper_userf
-from utils.errors import ArgumentBaseError
-import requests
-import json
-import asyncio
-import bugsnag
-
 import os
+
+import bugsnag
+import discord
+from discord.ext import commands
+
+from utils.errors import ArgumentBaseError
+from utils.format import print_exception, proper_userf
+from utils.time import humanize_timedelta
+
 dir = os.path.join(os.getcwd(), 'main.py')
 bugsnag.configure(
     api_key=os.getenv('bugsnap_key'),

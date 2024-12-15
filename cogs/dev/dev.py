@@ -1,69 +1,36 @@
-import functools
+import ast
+import asyncio
+import contextlib
+import copy
 import getpass
-import importlib
+import inspect
 import io
 import json
 import os
 import re
-import ast
-import copy
 import subprocess
-import sys
-import time
-import typing
-from collections import Counter
-
-from datetime import datetime, timezone
-
-import chat_exporter
-import matplotlib.pyplot as plt
-
-import discord
-from discord import Webhook
-import asyncio
-import inspect
-import aiohttp
 import textwrap
+import time
 import traceback
-import contextlib
+import typing
 from abc import ABC
+from contextlib import redirect_stdout
+from datetime import datetime
+from typing import Optional, Union
+
+import aiohttp
+import discord
+from discord.ext import commands
+from dotenv import load_dotenv
 
 from main import dvvt
 from utils import checks
-from utils.helper import upload_file_to_bunnycdn
-from .status import Status
-from .botutils import BotUtils
-from contextlib import redirect_stdout
-from discord.ext import commands, menus
-from .cog_manager import CogManager
-from utils.buttons import confirm
-from utils.format import pagify, TabularData, plural, text_to_file, get_command_name, comma_number, box, proper_userf
-from .maintenance import Maintenance
-from.logging import Logging, ReplyToMessage
-from utils.converters import MemberUserConverter, TrueFalse
-from typing import Optional, Union
-from utils.menus import CustomMenu
 from utils.context import DVVTcontext
+from utils.converters import MemberUserConverter, TrueFalse
+from utils.format import pagify, plural, comma_number, box, generate_loadbar
+from .cog_manager import CogManager
+from .status import Status
 
-
-class MessageUpdater:
-    def __init__(self, author):
-        self.author = author
-        self.message = None
-
-    async def send_update(self, string):
-        if self.message:
-            # Attempt to append new content
-            new_content = self.message.content + "\n" + string
-            if len(new_content) > 2000:
-                # Content would exceed the limit; send a new message
-                self.message = await self.author.send(string)
-            else:
-                # Update existing message
-                self.message = await self.message.edit(content=new_content)
-        else:
-            # No message yet, so send a new one and save the reference
-            self.message = await self.author.send(string)
 
 class ConfirmContinue(discord.ui.View):
     def __init__(self, ctx):
@@ -84,55 +51,6 @@ class ConfirmContinue(discord.ui.View):
         self.stop()
 
 
-
-
-class Suggestion(menus.ListPageSource):
-    def __init__(self, entries, title):
-        self.title = title
-        super().__init__(entries, per_page=6)
-
-    async def format_page(self, menu, entries):
-        embed = discord.Embed(title=self.title, color=menu.ctx.bot.embed_color, timestamp=discord.utils.utcnow())
-        for entry in entries:
-            embed.add_field(name=f"{entry[0]}", value=entry[1], inline=False)
-        embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
-        return embed
-
-class toggledevmode(discord.ui.View):
-    def __init__(self, ctx: DVVTcontext, client, enabled):
-        self.context = ctx
-        self.response = None
-        self.result = None
-        self.client: dvvt = client
-        self.enabled = enabled
-        super().__init__(timeout=5.0)
-        init_enabled = self.enabled
-
-        async def update_message(interaction):
-            self.enabled = False if self.enabled else True
-            await self.client.db.execute("UPDATE devmode SET enabled = $1 WHERE user_id = $2", self.enabled, ctx.author.id)
-            self.children[0].style = discord.ButtonStyle.green if self.enabled else discord.ButtonStyle.red
-            self.children[0].label = "Dev Mode is enabled" if self.enabled else "Dev mode is disabled"
-            await interaction.response.edit_message(view=self)
-
-        class somebutton(discord.ui.Button):
-            async def callback(self, interaction: discord.Interaction):
-                await update_message(interaction)
-        self.add_item(somebutton(emoji="🛠️", label = "Dev Mode is enabled" if init_enabled else "Dev mode is disabled", style=discord.ButtonStyle.green if init_enabled else discord.ButtonStyle.red))
-
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        ctx = self.context
-        author = ctx.author
-        if interaction.user != author:
-            await interaction.response.send_message("Only the author can interact with this message.", ephemeral=True)
-            return False
-        return True
-
-    async def on_timeout(self) -> None:
-        for b in self.children:
-            b.disabled = True
-        await self.response.edit(view=self)
-
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
     """
     This allows the metaclass used for proper type detection to
@@ -140,7 +58,7 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
     """
     pass
 
-class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog, name='dev', command_attrs=dict(hidden=True), metaclass=CompositeMetaClass):
+class Developer(CogManager, Status, commands.Cog, name='dev', command_attrs=dict(hidden=True), metaclass=CompositeMetaClass):
     """
     This module contains various development focused commands.
     """
@@ -192,7 +110,6 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
     async def on_ready(self):
         if not self.view_added:
             self.view_added = True
-            self.client.add_view(ReplyToMessage())
 
     @checks.dev()
     @commands.command(hidden=True, usage='[silently]')
@@ -407,64 +324,6 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
         new_ctx = await self.client.get_context(message, cls=type(ctx))
         await self.client.invoke(new_ctx)
 
-    @checks.dev()
-    @commands.group(name='sql', invoke_without_command=True, hidden=True)
-    async def sql(self, ctx, *, query: str = None):
-        """
-        Evaluate a SQL query directly from your discord.
-        """
-        if query is None:
-            return await ctx.send('Query is a required argument.')
-        query = self.cleanup_code(query)      
-        multistatement = query.count(';') > 1
-        if query.lower().startswith('select') and not multistatement:
-            strategy = self.client.db.fetch
-        else:
-            multistatement = True
-            strategy = self.client.db.execute
-        try:
-            start = time.perf_counter()
-            results = await strategy(query)
-            time_taken = (time.perf_counter() - start) * 1000.0
-        except Exception:
-            return await ctx.send(f'```py\n{traceback.format_exc()}\n```')
-        rows = len(results)
-        if multistatement or rows == 0:
-            return await ctx.send(f'`{time_taken:.2f}ms: {results}`')
-        headers = list(results[0].keys())
-        table = TabularData()
-        table.set_columns(headers)
-        table.add_rows(list(r.values()) for r in results)
-        render = table.render()
-        msg = f'{render}\n*Returned {plural(len(results)):row} in {time_taken:.2f}ms*'
-        if len(headers) > 2:
-            return await ctx.send(file=text_to_file(msg, "sql.txt"))
-        await ctx.send_interactive(self.get_sql(msg))
-
-    @checks.dev()
-    @sql.command(name='table', hidden=True, usage="<table>")
-    async def sql_table(self, ctx, table: str = None):
-        """
-        Describes the table schema.
-        """
-        if table is None:
-            return await ctx.send("Table is a required argument.")
-        query = """SELECT column_name, data_type, column_default, is_nullable
-                   FROM INFORMATION_SCHEMA.COLUMNS
-                   WHERE table_name = $1
-                """
-        try:
-            results = await self.client.db.fetch(query, table)
-        except Exception:
-            return await ctx.send(f'```py\n{traceback.format_exc()}\n```')
-        headers = list(results[0].keys())
-        table = TabularData()
-        table.set_columns(headers)
-        table.add_rows(list(r.values()) for r in results)
-        render = table.render()
-        msg = f'{render}'
-        await ctx.send_interactive(self.get_sql(msg))
-
     @checks.admoon()
     @commands.command(name="dsay", aliases=["decho"])
     async def d_say(self, ctx, channel: Optional[discord.TextChannel], *, message = None):
@@ -537,67 +396,6 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
         raise ValueError(message)
 
     @checks.dev()
-    @commands.command(name="suggestions")
-    async def active_suggestions(self, ctx, *, inquery: Union[int, discord.Member, str] = None):
-        """
-        Lists the active suggestions.
-        the query can be a suggestion ID or `--active`
-        """
-        if inquery is None:
-            embed = discord.Embed(title="Developer Suggestion Utilities", description="`--active` - list active suggestions.\n`--open` - list active suggestions.\n`--inactive` - list closed suggestions.\n`--closed` - list closed suggestions.\n`<num>` - show a specific suggestion.\n`<member>` - list suggestions from a member.", color=discord.Color.green())
-            return await ctx.send(embed=embed)
-        if type(inquery) == int:
-            result = await self.client.db.fetchrow("SELECT * FROM suggestions WHERE suggestion_id = $1", inquery)
-            if result is not None:
-                member = self.client.get_user(result.get('user_id'))
-                embed = discord.Embed(title=f"Suggestion {inquery}", description = result.get('suggestion'), color=self.client.embed_color)
-                embed.add_field(name="Suggested by", value=f"{proper_userf(member)} ({member.id})" if member else result.get('user_id'), inline=True)
-                embed.add_field(name="Status", value="Closed" if result.get('finish') else "Open", inline=True)
-                if result.get('finish'):
-                    response = await self.client.db.fetchrow("SELECT * FROM suggestion_response WHERE suggestion_id = $1", inquery)
-                    if response is not None:
-                        responder = self.client.get_user(response.get('user_id'))
-                        embed.add_field(name=f"Closed by {responder} with the remarks:", value=response.get('message'), inline=False)
-                return await ctx.send(embed=embed)
-            else:
-                return await ctx.send(f"There is no such suggestion with the ID {inquery}.")
-        if type(inquery) == discord.Member:
-            query = f"SELECT * FROM suggestions WHERE user_id = $1", inquery.id
-            title = f"{inquery}'s suggestions"
-        elif type(inquery) == str:
-            if ctx.message.content.endswith("--active") or ctx.message.content.endswith("--open"):
-                query = "SELECT * FROM suggestions WHERE finish = False"
-                title = "Active suggestions"
-            elif ctx.message.content.endswith("--inactive") or ctx.message.content.endswith("--closed"):
-                query = "SELECT * FROM suggestions WHERE finish = True"
-                title = "Closed suggestions"
-            elif ctx.message.content.endswith("--all"):
-                query = "SELECT * FROM suggestions"
-                title = "All suggestions"
-            else:
-                return await ctx.send("You did not provide a proper flag.")
-        else:
-            embed = discord.Embed(title="Developer Suggestion Utilities", description="`--active` - list active suggestions.\n`--open` - list active suggestions.\n`--inactive` - list closed suggestions.\n`--closed` - list closed suggestions.\n`<num>` - show a specific suggestion.\n`<member>` - list suggestions from a member.", color=discord.Color.green())
-            return await ctx.send(embed=embed)
-        if len(query) == 2:
-            result = await self.client.db.fetch(query[0], query[1])
-        else:
-            result = await self.client.db.fetch(query)
-        suggestions = []
-        for suggestion in result:
-            member = self.client.get_user(suggestion.get('user_id'))
-            name = f"{suggestion.get('suggestion_id')}. {proper_userf(member)} ({member.id})" if member is not None else f"{suggestion.get('suggestion_id')}. {suggestion.get('user_id')}"
-            suggestions.append((name, suggestion.get('suggestion')))
-        if len(suggestions) <= 6:
-            embed = discord.Embed(title=title, color=self.client.embed_color, timestamp=discord.utils.utcnow())
-            for suggestion in suggestions:
-                embed.add_field(name=suggestion[0], value=suggestion[1], inline=False)
-            return await ctx.send(embed=embed)
-        else:
-            pages = CustomMenu(source=Suggestion(suggestions, title), clear_reactions_after=True, timeout=60)
-            return await pages.start(ctx)
-
-    @checks.dev()
     @commands.command(name="dmock", aliases=["pretend"])
     async def dmock(self, ctx, channel: Optional[discord.TextChannel], member: discord.Member, *, message: str):
         """Mock a user.
@@ -626,320 +424,6 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
                 await ctx.message.delete()
             except discord.HTTPException:
                 pass
-
-
-
-    @checks.base_dev()
-    @commands.command(name="devmode")
-    async def devmode(self, ctx):
-        result = await self.client.db.fetchrow("SELECT * FROM devmode WHERE user_id = $1", ctx.author.id)
-        if result is None:
-            await self.client.db.execute("INSERT INTO devmode VALUES($1, $2)", ctx.author.id, False)
-            result = await self.client.db.fetchrow("SELECT * FROM devmode WHERE user_id = $1", ctx.author.id)
-        is_enabled = result.get('enabled')
-        view = toggledevmode(ctx, self.client, is_enabled)
-        msg = await ctx.send("__**Toogle Developer mode**__", view=view)
-        view.response = msg
-        await view.wait()
-
-    @checks.dev()
-    @commands.command(name="commandusage")
-    async def commandusage(self, ctx, argument: typing.Union[discord.User, discord.TextChannel, str] = None):
-        """
-        Shows the command usage.
-        The argument can be a user, text channel, or command name.
-        """
-        async def create_line_chart(x_axis, y_axis, x_label, y_label, title):
-            x_axis = list(x_axis)
-            y_axis = list(y_axis)
-            x_axis_dt_format = [datetime.fromtimestamp(x).replace(tzinfo=timezone.utc) for x in x_axis]
-            for x in x_axis_dt_format:
-                string = x.strftime("%a %d $b")
-            plt.clf()
-            fig, ax = plt.subplots()
-            ax.plot(x_axis_dt_format, y_axis)
-            fig.autofmt_xdate()
-            plt.title(title)
-            plt.xlabel(x_label)
-            plt.ylabel(y_label)
-            plt.grid(True)
-
-            def generate_graph():
-                buf = io.BytesIO()
-                fig.savefig(buf, format='png')
-                buf.seek(0)
-                return buf
-            task = functools.partial(generate_graph)
-            task = self.client.loop.run_in_executor(None, task)
-            try:
-                buf = await asyncio.wait_for(task, timeout=10)
-            except asyncio.TimeoutError:
-                return None
-            else:
-                return buf
-
-        perf_now = time.perf_counter()
-
-        def sort_dictionary(dictionary: dict, reverse: bool = False):
-            lst = sorted(dictionary.items(), key=lambda x: x[1], reverse=reverse)
-            new_dict = {}
-            for item in lst:
-                new_dict[item[0]] = item[1]
-            return new_dict
-
-        past_7_days = round(time.time()) - 604800
-        past_24_hours = round(time.time()) - 86400
-        past_30_days = round(time.time()) - 2592000
-
-        if argument is None:
-            result = await self.client.db.fetch("SELECT * FROM commandlog ORDER BY time")
-            if len(result) < 10:
-                resultembed = discord.Embed(title="Warning", description="Not enough command usage to produce a proper result.", color=discord.Color.red())
-                file = None
-            else:
-                user_dict = Counter([x.get('user_id') for x in result])
-                all_time_usage_dict = {}
-                all_time_usage = 0
-                seven_day_usage = 0
-                twentyfour_hour_usage = 0
-                thirty_day_usage = 0
-                two_week_usage_data_per_hour = {}
-                now = round(time.time())
-
-                while len(two_week_usage_data_per_hour) < 14:
-                    while now % 86400 != 0:
-                        now -= 1
-                    if now in two_week_usage_data_per_hour:
-                        now -= 1
-                    else:
-                        two_week_usage_data_per_hour[now] = 0
-                for command_record in result:
-                    time_run = command_record.get('time')
-                    all_time_usage += 1
-                    if time_run > past_7_days:
-                        seven_day_usage += 1
-                    if time_run > past_24_hours:
-                        twentyfour_hour_usage += 1
-                    if time_run > past_30_days:
-                        for key in two_week_usage_data_per_hour:
-                            if time_run - key > 86400:
-                                break
-                            elif time_run - key < 0:
-                                continue
-                            else:
-                                two_week_usage_data_per_hour[key] += 1
-                                break
-                        thirty_day_usage += 1
-                    if command_record.get('command') not in all_time_usage_dict:
-                        all_time_usage_dict[command_record.get('command')] = 1
-                    else:
-                        all_time_usage_dict[command_record.get('command')] += 1
-                usage_sorted = sort_dictionary(all_time_usage_dict, reverse=True)
-                details = f"Past 7 days: {seven_day_usage}\nPast 24 hours: {twentyfour_hour_usage}\nPast 30 days: {thirty_day_usage}\n**All time: {all_time_usage}**"
-                top_usage = []
-                for cmd in usage_sorted:
-                    if len(top_usage) < 5:
-                        top_usage.append(f"`{cmd}`: **{usage_sorted[cmd]}**")
-                top_usage = '\n'.join(top_usage)
-                u = await create_line_chart(two_week_usage_data_per_hour.keys(), two_week_usage_data_per_hour.values(), "Time", "Usage", "Command usage over time")
-                user_sorted = sort_dictionary(user_dict, reverse=True)
-                top_users = []
-                for user in user_sorted:
-                    if len(top_users) < 5:
-                        user_obj = self.client.get_user(user) or user
-                        top_users.append(f"{user_obj}: **{user_sorted[user]}**")
-                top_users = '\n'.join(top_users)
-                file = discord.File(u, filename="graph.png")
-                resultembed = discord.Embed(title="Command Usage", color=self.client.embed_color)
-                resultembed.add_field(name="Usage Statistics", value=details, inline=True)
-                resultembed.add_field(name="Top 5 commands", value=top_usage, inline=True)
-                resultembed.add_field(name="Top 5 users", value=top_users, inline=True)
-                resultembed.set_image(url="attachment://graph.png")
-
-        elif isinstance(argument, discord.User):
-            result = await self.client.db.fetch("SELECT * FROM commandlog WHERE user_id = $1 ORDER BY time", argument.id)
-            if len(result) < 10:
-                resultembed = discord.Embed(title="Warning", description="Not enough command usage to produce a proper result.", color=discord.Color.red())
-                file = None
-            else:
-                all_time_usage_dict = {}
-                channel_data = {}
-                all_time_usage = 0
-                two_week_usage_data_per_hour = {}
-                now = round(time.time())
-                while len(two_week_usage_data_per_hour) < 15:
-                    while now % 86400 != 0:
-                        now -= 1
-                    now -= 86400
-                    if now in two_week_usage_data_per_hour:
-                        now -= 1
-                    else:
-                        two_week_usage_data_per_hour[now] = 0
-                for command_record in result:
-                    if command_record.get('channel_id') not in channel_data:
-                        channel_data[command_record.get('channel_id')] = 1
-                    else:
-                        channel_data[command_record.get('channel_id')] += 1
-                    time_run = command_record.get('time')
-                    all_time_usage += 1
-                    # putting them into their respective keys is faster than iterating over the whole data
-                    for key in two_week_usage_data_per_hour:
-                        if time_run - key > 86400:
-                            break
-                        elif time_run - key < 0:
-                            continue
-                        else:
-                            two_week_usage_data_per_hour[key] += 1
-                            break
-                    if command_record.get('command') not in all_time_usage_dict:
-                        all_time_usage_dict[command_record.get('command')] = 1
-                    else:
-                        all_time_usage_dict[command_record.get('command')] += 1
-                usage_sorted = sort_dictionary(all_time_usage_dict, reverse=True)
-                channel_usage_sorted = sort_dictionary(channel_data, reverse=True)
-                chan_data = []
-                for chan in channel_usage_sorted:
-                    if len(chan_data) < 5:
-                        channel = self.client.get_channel(chan)
-                        channel = channel.mention if channel else chan
-                        chan_data.append(f"{channel}: **{channel_usage_sorted[chan]}**")
-                top_usage = [f"**All time: {all_time_usage}**"]
-                for cmd in usage_sorted:
-                    if len(top_usage) < 6:
-                        top_usage.append(f"`{cmd}`: **{usage_sorted[cmd]}**")
-                top_usage = '\n'.join(top_usage)
-                u = await create_line_chart(two_week_usage_data_per_hour.keys(), two_week_usage_data_per_hour.values(), "Time", "Usage", f"{argument}'s command usage over the last two weeks")
-                file = discord.File(u, filename="graph.png")
-                resultembed = discord.Embed(title=f"{argument}'s Command Usage", color=self.client.embed_color)
-                resultembed.add_field(name="Usage Statistics", value=top_usage, inline=True)
-                resultembed.add_field(name="Top used channels", value='\n'.join(chan_data), inline=True)
-                resultembed.set_image(url="attachment://graph.png")
-        elif isinstance(argument, discord.TextChannel):
-            result = await self.client.db.fetch("SELECT * FROM commandlog WHERE channel_id = $1 ORDER BY time", argument.id)
-            if len(result) < 10:
-                resultembed = discord.Embed(title="Warning", description="Not enough command usage to produce a proper result.", color=discord.Color.red())
-                file = None
-            else:
-                all_time_usage_dict = {}
-                user_data = {}
-                all_time_usage = 0
-                two_week_usage_data_per_hour = {}
-                now = round(time.time())
-                while len(two_week_usage_data_per_hour) < 15:
-                    while now % 86400 != 0:
-                        now -= 1
-                    if now in two_week_usage_data_per_hour:
-                        now -= 1
-                    else:
-                        two_week_usage_data_per_hour[now] = 0
-                for command_record in result:
-                    if command_record.get('user_id') not in user_data:
-                        user_data[command_record.get('user_id')] = 1
-                    else:
-                        user_data[command_record.get('user_id')] += 1
-                    time_run = command_record.get('time')
-                    all_time_usage += 1
-                    # putting them into their respective keys is faster than iterating over the whole data
-                    for key in two_week_usage_data_per_hour:
-                        if time_run - key > 86400:
-                            break
-                        elif time_run - key < 0:
-                            continue
-                        else:
-                            two_week_usage_data_per_hour[key] += 1
-                            break
-                    if command_record.get('command') not in all_time_usage_dict:
-                        all_time_usage_dict[command_record.get('command')] = 1
-                    else:
-                        all_time_usage_dict[command_record.get('command')] += 1
-                usage_sorted = sort_dictionary(all_time_usage_dict, reverse=True)
-                user_data_sorted = sort_dictionary(user_data, reverse=True)
-                user_data = []
-                for user in user_data_sorted:
-                    if len(user_data) < 5:
-                        user_obj = self.client.get_user(user) or user
-                        user_data.append(f"{user_obj}: **{user_data_sorted[user]}**")
-                top_usage = [f"**All time: {all_time_usage}**"]
-                for cmd in usage_sorted:
-                    if len(top_usage) < 6:
-                        top_usage.append(f"`{cmd}`: **{usage_sorted[cmd]}**")
-                top_usage = '\n'.join(top_usage)
-                u = await create_line_chart(two_week_usage_data_per_hour.keys(), two_week_usage_data_per_hour.values(), "Time", "Usage", f"{argument.mention}'s command usage over the last two weeks")
-                file = discord.File(u, filename="graph.png")
-                resultembed = discord.Embed(title=f"{argument.name}'s Command Usage", color=self.client.embed_color)
-                resultembed.add_field(name="Usage Statistics", value=top_usage, inline=True)
-                resultembed.add_field(name="Top used users", value='\n'.join(user_data), inline=True)
-                resultembed.set_image(url="attachment://graph.png")
-        elif isinstance(argument, str):
-            cmd = self.client.get_command(argument)
-            if cmd is None:
-                resultembed = discord.Embed(title="Warning", description="Command not found. The argument passed can be a **Channel**, **Member**, **Command** or Nothing.", color=discord.Color.red())
-                file = None
-            else:
-                full_cmd = get_command_name(cmd)
-                result = await self.client.db.fetch("SELECT * FROM commandlog WHERE command = $1 ORDER BY time", full_cmd)
-                if len(result) < 10:
-                    resultembed = discord.Embed(title="Warning", description="Not enough command usage to produce a proper result.", color=discord.Color.red())
-                    file = None
-                else:
-                    channel_data = Counter([x.get('channel_id') for x in result])
-                    user_data = Counter([x.get('user_id') for x in result])
-                    all_time_usage = 0
-                    seven_day_usage = 0
-                    twentyfour_hour_usage = 0
-                    thirty_day_usage = 0
-                    two_week_usage_data_per_hour = {}
-                    now = round(time.time())
-
-                    while len(two_week_usage_data_per_hour) < 30:
-                        while now % 86400 != 0:
-                            now -= 1
-                        if now in two_week_usage_data_per_hour:
-                            now -= 1
-                        else:
-                            two_week_usage_data_per_hour[now] = 0
-                    for command_record in result:
-                        time_run = command_record.get('time')
-                        all_time_usage += 1
-                        if time_run > past_7_days:
-                            seven_day_usage += 1
-                        if time_run > past_24_hours:
-                            twentyfour_hour_usage += 1
-                        if time_run > past_30_days:
-                            for key in two_week_usage_data_per_hour:
-                                if time_run - key > 86400:
-                                    break
-                                elif time_run - key < 0:
-                                    continue
-                                else:
-                                    two_week_usage_data_per_hour[key] += 1
-                                    break
-                            thirty_day_usage += 1
-                    channel_data_sorted = sort_dictionary(channel_data, reverse=True)
-                    user_data_sorted = sort_dictionary(user_data, reverse=True)
-                    channel_data = []
-                    for channel in channel_data_sorted:
-                        if len(channel_data) < 5:
-                            channel_obj = self.client.get_channel(channel) or channel
-                            channel_data.append(f"{channel_obj}: **{channel_data_sorted[channel]}**")
-                    user_data = []
-                    for user in user_data_sorted:
-                        if len(user_data) < 5:
-                            user_obj = self.client.get_user(user) or user
-                            user_data.append(f"{user_obj}: **{user_data_sorted[user]}**")
-                    u = await create_line_chart(two_week_usage_data_per_hour.keys(), two_week_usage_data_per_hour.values(), "Time", "Usage", f"{full_cmd}'s usage over 30 days")
-                    file = discord.File(u, filename="graph.png")
-                    resultembed = discord.Embed(title=f"`{full_cmd}` Usage", color=self.client.embed_color)
-                    resultembed.add_field(name="Top used channels", value='\n'.join(channel_data), inline=True)
-                    resultembed.add_field(name="Top used users", value='\n'.join(user_data), inline=True)
-                    resultembed.set_image(url="attachment://graph.png")
-        else:
-            resultembed = None
-            file = None
-        done = round(time.perf_counter() - perf_now, 3)
-        resultembed.timestamp = discord.utils.utcnow()
-        resultembed.set_footer(icon_url=self.client.user.display_avatar.url, text=f"Processing completed in {done} seconds.")
-        await ctx.send(f"Completed in {done}s", embed=resultembed, file=file)
 
     @checks.dev()
     @commands.group(name="github", aliases=['git'], invoke_without_command=True)
@@ -1072,6 +556,8 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
                 await msg.edit(content="All retrieved in `{}`ms".format(round((time.perf_counter() - now) * 1000)),
                                embed=embed)
 
+
+
     @checks.dev()
     @github_cmd.command(name='pull', hidden=True)
     async def github_pull(self, ctx):
@@ -1083,6 +569,66 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
             stdout, stderr = await self.run_process('git pull')
             content += f"{stdout}\n\nCompleted in {round((time.perf_counter() - now) * 1000, 3)}ms"
             await msg.edit(content="```\n" + content + "\n```")
+
+    @checks.dev()
+    @commands.command(name="frenzy", hidden=True)
+    async def frenzy(self, ctx:DVVTcontext):
+        IGNORETHESEUSERS = [709069221304205454,1209970788409540629,1072548077564608624]
+        g = await self.client.fetch_guild(595457764935991326)
+        load_dotenv("credentials.env")
+        file_id = os.getenv("FILE")
+        if not file_id:
+            await ctx.send("Add \"FILE\" to your credentials file.")
+        target_active_members_json = f"filtered_combined_data_{file_id}.json"
+        inactive_members_json = f"not_in_combined_data_{file_id}.json"
+        with open(target_active_members_json, "r") as f:
+            active_members = json.load(f).get("data")
+        with open(inactive_members_json, "r") as f:
+            inactive_members = json.load(f).get("data")
+        await ctx.send(f"I have {len(active_members)} active members to take action.")
+        await ctx.send(f"I have {len(inactive_members)} inactive members to take action.")
+        for index, inactivemember in enumerate(inactive_members):
+            im_id = inactivemember.get("id")
+            if im_id in IGNORETHESEUSERS:
+                print(f"Inactive user {im_id} is in list of IGNORETHEUSERS, skipping.")
+                continue
+            member_in_remastered_dankvibes = self.client.get_guild(1288032530569625660).get_member(im_id)
+            if member_in_remastered_dankvibes:
+                await ctx.send(f"{member_in_remastered_dankvibes} is already in the remastered server. Skipping")
+                continue
+            try:
+                print(f"Kick inactive user {im_id}")
+                await g.kick(user=discord.Object(id=im_id), reason="Automod triggered kick")
+            except Exception as e:
+                await ctx.send(f"Kick {im_id} failed: {e}")
+            try:
+                am = active_members[index]
+                am_id = int(am.get("id"))
+                if am_id in IGNORETHESEUSERS:
+                    print(f"Active user {am_id} is in list of IGNORETHEUSERS, skipping.")
+                    continue
+                m = g.get_member(am_id)
+                if m:
+                    try:
+                        await ctx.author.send(
+                            'Hello! 👋 This is a message from **Dank Vibes Bot**, sent on behalf of the former staff team.  \n\n**Sethos**, the server owner, has sold Dank Vibes for personal gain, ignoring the vibrant community we all worked hard to build. 💔 While advertising the server for sale, he became inactive and ignored the staff team completely. Alongside Harsh, someone who was supposed to help improve the server, they betrayed the trust of everyone here and handed it over to a buyer who has now turned it into a crypto server.  \n\nYou’re receiving this message because you might be active in Dank Vibes. To protect you from potential scams, you may have been kicked from the server after the sale. If you’d like to reconnect with the community, we’ve created a new server where you can keep in touch with the people you met here. We are looking into transferring your **Dank Vibes Bot** data to the new server.\n\ndiscord.gg/JrzjZAT3W9\n\nThis new server is smaller and focused solely on socializing with fellow DV members. It won’t be as big or active as before, we are unlikely to have events/bot related activites, but it’s still a safe space to keep those connections alive. \U0001fac2  \n\nWe’re truly sorry it has come to this. Sethos’s actions disrespected not just the staff, but every member of this community. Thank you for being part of what made Dank Vibes special. 💜  \n\n— **Argon, Ari, Blank, Jennifer, Mason, Wicked**')
+                    except Exception as e:
+                        await ctx.send(f"DM {am_id} failed: {e}")
+                    print(f"Kick active user {am_id}")
+                    try:
+                        await g.kick(user=discord.Object(id=am_id), reason="Automod triggered kick")
+                    except Exception as e:
+                        await ctx.send(f"Kick {am_id} failed: {e}")
+                else:
+                    print(f"Cannot get member {am_id}, skipping")
+            except IndexError:
+                pass
+            if index % 50 == 0:
+                await ctx.send(f"{generate_loadbar((index+1)/(len(inactive_members)), 15)} {index+1}/{len(inactive_members)} inactive members processed.\n{generate_loadbar(min(index+1, len(active_members))/(len(inactive_members)), 15)}{min(index+1, len(active_members))}/{len(active_members)} processed.")
+        await ctx.send("Nuke complete.")
+
+
+
 
     @checks.dev()
     @commands.command(name="bash", hidden=True, aliases=['cmd', 'terminal'])
@@ -1103,202 +649,8 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
             await basemsg.edit(content="```\n" + content + "\n```")
 
     @checks.dev()
-    @commands.group(name="exportchat", hidden=True, invoke_without_command=True)
-    async def exportchat_base(self, ctx: DVVTcontext):
-        await ctx.checkmark()
-
-    @checks.dev()
-    @exportchat_base.command(name="tochannel", hidden=True)
-    async def export_to_channel(self, ctx: DVVTcontext, from_channel_id: int, to_channel_id: int):
-        updater = MessageUpdater(ctx.author)
-        fc = await self.client.fetch_channel(from_channel_id)
-        tc = await self.client.fetch_channel(to_channel_id)
-        await updater.send_update(f"Found channels: From {from_channel_id} -> {fc} To {to_channel_id} -> {tc}")
-
-
-
-
-        if fc is None or tc is None:
-            return await updater.send_update("Either From channel or To channel is not found, so this command will stop.")
-
-        errors = []
-        messages_processed = 0
-        last_message_timestamp = None
-        last_update = time.time()
-
-        await updater.send_update("Starting export...")
-
-        async for message in fc.history(limit=None, oldest_first=True):
-            header = f"### {proper_userf(message.author)} `fr:{message.author.id}` `mi:{message.id}` <t:{int(message.created_at.timestamp())}:f> \n\n"
-            v = discord.ui.View.from_message(message) if len(message.components) > 0 else None
-            if time.time() - last_update > 50:
-                last_update = time.time()
-                await updater.send_update(f"<t:{round(time.time())}:T> {messages_processed} messages processed. Last message timestamp was {last_message_timestamp.strftime('%Y-%m-%d %H:%M:%S') if last_message_timestamp is not None else None}")
-
-            files = [await attachment.to_file() for attachment in message.attachments if
-                     attachment.size < 25_000_000]  # Discord's limit is 8 MB for files in regular messages
-
-            try:
-                sent_message = None  # Initialize sent_message to None
-
-                if message.embeds:
-                    sent_message = await tc.send(content=header, embeds=message.embeds, view=v, files=files)
-                else:
-                    content_with_header = header + message.content
-                    max_length = 2000
-                    if len(content_with_header) > max_length:
-                        content_length_after_header = max_length - len(header)
-                        parts = [content_with_header[i:i + content_length_after_header] for i in
-                                 range(0, len(content_with_header), content_length_after_header)]
-                        for part in parts:
-                            # When sending parts of a long message, only the first part will return a message object that could potentially be pinned
-                            sent_part_message = await tc.send(
-                                header + part[len(header):] if part.startswith(header) else part)
-                            if parts.index(part) == 0:
-                                sent_message = sent_part_message
-                    else:
-                        sent_message = await tc.send(content=content_with_header, view=v, files=files)
-
-                # If the original message was pinned, pin the corresponding message in the target channel
-                if message.pinned and sent_message:
-                    await sent_message.pin()
-
-                last_message_timestamp = message.created_at
-                messages_processed += 1
-            except Exception as e:
-                errors.append((message.id, traceback.format_exc()))
-
-        await ctx.author.send(f"{messages_processed} messages processed.")
-
-        if len(errors) > 0:
-            error_ids_text = "\n".join(str(mid) for mid, _ in errors)
-            error_details_json = json.dumps([{"message_id": mid, "error": error} for mid, error in errors], indent=4)
-
-            with open('temp/error_ids.txt', 'w') as f:
-                f.write(error_ids_text)
-
-            with open('temp/errors.json', 'w') as f:
-                f.write(error_details_json)
-
-            await ctx.author.send(f"{len(errors)} exceptions were caught while exporting the messages:",
-                                  files=[discord.File('temp/error_ids.txt'), discord.File('temp/errors.json')])
-
-    @checks.dev()
-    @exportchat_base.command(name="tochannelmeonly", hidden=True)
-    async def export_to_channel_only_me(self, ctx: DVVTcontext, from_channel_id: int, to_channel_id: int):
-        updater = MessageUpdater(ctx.author)
-        fc = await self.client.fetch_channel(from_channel_id)
-        tc = await self.client.fetch_channel(to_channel_id)
-        await updater.send_update(f"Found channels: From {from_channel_id} -> {fc} To {to_channel_id} -> {tc}")
-
-        if fc is None or tc is None:
-            return await updater.send_update(
-                "Either From channel or To channel is not found, so this command will stop.")
-
-        errors = []
-        messages_processed = 0
-        last_message_timestamp = None
-        last_update = time.time()
-
-        await updater.send_update("Starting export...")
-
-        async for message in fc.history(limit=None, oldest_first=True):
-            if message.author.id != 650647680837484556:
-                continue
-            header = f"### {proper_userf(message.author)} `fr:{message.author.id}` `mi:{message.id}` <t:{int(message.created_at.timestamp())}:f> \n\n"
-            v = discord.ui.View.from_message(message) if len(message.components) > 0 else None
-            if time.time() - last_update > 50:
-                last_update = time.time()
-                await updater.send_update(
-                    f"<t:{round(time.time())}:T> {messages_processed} messages processed. Last message timestamp was {last_message_timestamp.strftime('%Y-%m-%d %H:%M:%S') if last_message_timestamp is not None else None}")
-
-            files = [await attachment.to_file() for attachment in message.attachments if
-                     attachment.size < 25_000_000]  # Discord's limit is 8 MB for files in regular messages
-
-            try:
-                sent_message = None  # Initialize sent_message to None
-
-                if message.embeds:
-                    sent_message = await tc.send(content=header, embeds=message.embeds, view=v, files=files)
-                else:
-                    content_with_header = header + message.content
-                    max_length = 2000
-                    if len(content_with_header) > max_length:
-                        content_length_after_header = max_length - len(header)
-                        parts = [content_with_header[i:i + content_length_after_header] for i in
-                                 range(0, len(content_with_header), content_length_after_header)]
-                        for part in parts:
-                            # When sending parts of a long message, only the first part will return a message object that could potentially be pinned
-                            sent_part_message = await tc.send(
-                                header + part[len(header):] if part.startswith(header) else part)
-                            if parts.index(part) == 0:
-                                sent_message = sent_part_message
-                    else:
-                        sent_message = await tc.send(content=content_with_header, view=v, files=files)
-
-                # If the original message was pinned, pin the corresponding message in the target channel
-                if message.pinned and sent_message:
-                    await sent_message.pin()
-
-                last_message_timestamp = message.created_at
-                messages_processed += 1
-            except Exception as e:
-                errors.append((message.id, traceback.format_exc()))
-
-        await ctx.author.send(f"{messages_processed} messages processed.")
-
-        if len(errors) > 0:
-            error_ids_text = "\n".join(str(mid) for mid, _ in errors)
-            error_details_json = json.dumps([{"message_id": mid, "error": error} for mid, error in errors], indent=4)
-
-            with open('temp/error_ids.txt', 'w') as f:
-                f.write(error_ids_text)
-
-            with open('temp/errors.json', 'w') as f:
-                f.write(error_details_json)
-
-            await ctx.author.send(f"{len(errors)} exceptions were caught while exporting the messages:",
-                                  files=[discord.File('temp/error_ids.txt'), discord.File('temp/errors.json')])
-
-
-
-
-
-
-    @checks.dev()
-    @exportchat_base.command(name="channelid", hidden=True)
-    async def export_by_channel_id(self, ctx: DVVTcontext, channel_id: int, limit: int = 50):
-        c = await self.client.fetch_channel(channel_id)
-        if c.guild is None:
-            return await ctx.send(f"<:DVB_False:887589731515392000> {c.mention} is not part of a guild.")
-        if not (c.permissions_for(c.guild.me).read_messages and c.permissions_for(c.guild.me).read_message_history and c.permissions_for(c.guild.me).view_channel):
-            return await ctx.send(f"<:DVB_False:887589731515392000> I do not have permissions to see {c.mention} or view its messages.")
-        m = await ctx.send(f"<a:DVB_CLoad2:994913353388527668> Found {c.mention}. Exporting messages...")
-        a = await self.client.fetch_user_info(ctx.author.id)
-
-        transcript = await chat_exporter.export(
-            c,
-            limit=50,
-            tz_info=(a.timezone if a is not None else "UTC") or "UTC",
-            military_time=True,
-            bot=self.client,
-        )
-
-        if transcript is None:
-            await m.edit(f"<:DVB_False:887589731515392000> Unable to export messages for {c.mention}.")
-            return
-
-        else:
-            today = datetime.now()
-            await m.edit(f"<a:DVB_CLoad1:994913315442663475> Uploading export to Nogra's CDN...")
-            result_url = await upload_file_to_bunnycdn(file=transcript.encode('utf-8'), filename=f"transcript_{c.guild.id}_{c.id}_{today.isoformat()}.html", directory="chat_transcripts")
-            await m.edit(f"<:DVB_True:887589686808309791> Exported messages in {c.mention}. View them at {result_url}")
-            # timenow = discord.utils.utcnow()
-            #transcript_file = discord.File(
-            #    io.BytesIO(transcript.encode('utf-8')),
-            #    filename=f"transcript_{c.guild.id}_{c.id}_{today.isoformat()}.html"
-            #)
-            #await m.delete()
-            #await ctx.send(f"<:DVB_True:887589686808309791> Exported messages in {c.mention}.", file=transcript_file)
-
-
+    @commands.command(name="checkin", hidden=True)
+    async def checkin(self, ctx: DVVTcontext):
+        async with ctx.typing():
+            await asyncio.sleep(3)
+        ctx.send(f"{self.client.user} checking in, I am running file {os.getenv('FILE')}. Also wicked is a bottom")

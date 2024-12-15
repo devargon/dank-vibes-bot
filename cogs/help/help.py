@@ -1,19 +1,20 @@
+import contextlib
 import copy
+import itertools
 import re
+from collections import namedtuple
+from typing import Optional, Any, List, Union, Tuple
+
+import discord
+import more_itertools
+from discord.ext import commands
+
+from utils.buttons import BaseButton, ViewButtonIteration, MenuViewBase
 from utils.context import DVVTcontext
 from utils.errors import ArgumentBaseError
-import discord
-import itertools
-import contextlib
-import more_itertools
-from datetime import datetime
-from discord.ext import commands
-from utils.menus import CogMenu, GroupMenu, ListPageInteractionBase, HelpMenu, HelpMenuBase, MenuViewInteractionBase
-from utils.buttons import BaseButton, ViewButtonIteration, MenuViewBase
-from utils.helper import unpack, empty_page_format
-from collections import namedtuple
 from utils.format import get_command_name
-from typing import Optional, Any, List, Union, Tuple
+from utils.helper import unpack, empty_page_format
+from utils.menus import CogMenu, ListPageInteractionBase, HelpMenu, HelpMenuBase, MenuViewInteractionBase
 
 CommandGroup = Union[commands.Command, commands.Group]
 CogHelp = namedtuple("CogAmount", 'name commands description')
@@ -251,14 +252,6 @@ class DVBotHelp(commands.DefaultHelpCommand):
         embed = discord.Embed(title=self.get_command_name(command))
         embed.description = self.get_help(command, brief=False)
         command_withno_prefix = self.get_command_name(command).replace(self.context.clean_prefix, '')
-        roles = await self.context.bot.db.fetch("SELECT * FROM rules WHERE guild_id = $1 AND command = $2", self.context.guild.id, command_withno_prefix)
-        if len(roles) > 0:
-            required_roles = []
-            for role in roles:
-                role = self.context.guild.get_role(role.get('role_id'))
-                if role is not None:
-                    required_roles.append(role.mention)
-            embed.description = embed.description + "\nRequired roles: " + ', '.join(required_roles)
         embed.color = self.context.bot.embed_color
         embed.timestamp = discord.utils.utcnow()
         if alias := self.get_aliases(command):
@@ -332,7 +325,6 @@ class DVBotHelp(commands.DefaultHelpCommand):
         Gets called when `uwu help <group>` is invoked.
         """
         # await self.handle_help(group)
-        from discord import ui
         if not self.context.guild:
             raise commands.NoPrivateMessage
         self.show_hidden = True

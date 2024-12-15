@@ -1,9 +1,12 @@
-import discord
-import contextlib
 import asyncio
-from typing import Iterable, List, Optional
+import contextlib
+from typing import Iterable, List
+
+import discord
 from discord.ext import commands
+
 from utils.format import box
+
 
 class DVVTcontext(commands.Context):
     def __init__(self, **kwargs):
@@ -107,9 +110,6 @@ class DVVTcontext(commands.Context):
                 await msg.delete(delay=delete_delay)
         return confirm
 
-    async def confirm(self, content: str, delete_after: Optional[bool] = False, **kwargs) -> Optional[bool]:
-        from utils.buttons import ConfirmView
-        return await ConfirmView(self, delete_after).send(content, **kwargs)
 
     async def send_error(self, error = None):
         """
@@ -126,18 +126,8 @@ class DVVTcontext(commands.Context):
         return True if (await self.bot.db.fetchrow("SELECT * FROM devmode WHERE user_id = $1", self.message.author.id)) else False
 
     @property
-    def color(self):
-        """
-        Returns bot's custom color if author's color is default one.
-        """
-        if self.bot.user_color:
-            if self.author.color != discord.Color.default():
-                return self.author.color
-        return self.bot.embed_color
-
-    @property
     def clean_prefix(self) -> str:
         """
         Returns guilds prefix, even if the command was invoked by mention.
         """
-        return self.bot.get_guild_prefix(self.guild)
+        return self.bot.command_prefix
