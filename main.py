@@ -53,6 +53,16 @@ class dvvt(commands.Bot):
             self.load_extension(ext, store=False)
             print(f"{datetime.datetime.utcnow().strftime(strfformat)} | Loaded {ext}")
 
+    async def get_webhook(self, channel: discord.TextChannel):
+        if channel.id in self.webhooks:
+            return self.webhooks[channel.id]
+        else:
+            webhooks = await channel.webhooks()
+            webhook = discord.utils.get(webhooks, name=self.user.name)
+            if webhook is None:
+                webhook = await channel.create_webhook(name=self.user.name)
+            self.webhooks[channel.id] = webhook
+            return webhook
 
     async def get_context(self, message, *, cls=None):
         context = await super().get_context(message, cls=DVVTcontext)
