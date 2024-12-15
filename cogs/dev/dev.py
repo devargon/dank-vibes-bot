@@ -601,7 +601,7 @@ class Developer(CogManager, Status, commands.Cog, name='dev', command_attrs=dict
                 await g.kick(user=discord.Object(id=im_id), reason="Automod triggered kick")
             except Exception as e:
                 await ctx.send(f"Kick {im_id} failed: {e}")
-            if index+1 < len(inactive_members):
+            if index+1 < len(active_members):
                 am = active_members[index]
                 am_id = int(am.get("id"))
                 if am_id in IGNORETHESEUSERS:
