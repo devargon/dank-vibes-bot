@@ -35,7 +35,7 @@ from .bigmoji import Bigmoji
 alexflipnoteAPI = os.getenv('alexflipnoteAPI')
 tenorAPI = os.getenv('tenorAPI')
 
-RandomColorID = 943530953110880327 if os.getenv('state') == '1' else 758176387806396456
+RandomColorID = 943530953110880327 if os.getenv('state') == '1' else 1317873362994987018
 
 class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
     """
