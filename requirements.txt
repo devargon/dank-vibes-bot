@@ -13,8 +13,7 @@ inflect==6.0.0
 multidict==6.1.0
 propcache==0.2.1
 py-cord==2.6.1
-pydantic==2.10.3
-pydantic_core==2.27.1
+pydantic==1.10.2
 python-dotenv==1.0.1
 rply==0.7.8
 typing_extensions==4.12.2
