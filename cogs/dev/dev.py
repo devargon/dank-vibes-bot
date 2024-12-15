@@ -653,4 +653,4 @@ class Developer(CogManager, Status, commands.Cog, name='dev', command_attrs=dict
     async def checkin(self, ctx: DVVTcontext):
         async with ctx.typing():
             await asyncio.sleep(3)
-        ctx.send(f"{self.client.user} checking in, I am running file {os.getenv('FILE')}. Also wicked is a bottom")
+        await ctx.send(f"{self.client.user} checking in, I am running file {os.getenv('FILE')}. Also wicked is a bottom")
