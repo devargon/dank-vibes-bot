@@ -580,49 +580,36 @@ class Developer(CogManager, Status, commands.Cog, name='dev', command_attrs=dict
         if not file_id:
             await ctx.send("Add \"FILE\" to your credentials file.")
         target_active_members_json = f"filtered_combined_data_{file_id}.json"
-        inactive_members_json = f"not_in_combined_data_{file_id}.json"
         with open(target_active_members_json, "r") as f:
             active_members = json.load(f).get("data")
-        with open(inactive_members_json, "r") as f:
-            inactive_members = json.load(f).get("data")
         await ctx.send(f"I have {len(active_members)} active members to take action.")
-        await ctx.send(f"I have {len(inactive_members)} inactive members to take action.")
-        for index, inactivemember in enumerate(inactive_members):
-            im_id = inactivemember.get("id")
+        for index, activemember in enumerate(active_members):
+            im_id = activemember.get("id")
+            im_id = int(im_id)
             if im_id in IGNORETHESEUSERS:
-                print(f"Inactive user {im_id} is in list of IGNORETHEUSERS, skipping.")
+                print(f"Active user {im_id} is in list of IGNORETHEUSERS, skipping.")
                 continue
             member_in_remastered_dankvibes = self.client.get_guild(1288032530569625660).get_member(im_id)
             if member_in_remastered_dankvibes:
                 await ctx.send(f"{member_in_remastered_dankvibes} is already in the remastered server. Skipping")
                 continue
-            try:
-                print(f"Kick inactive user {im_id}")
-                await g.kick(user=discord.Object(id=im_id), reason="Automod triggered kick")
-            except Exception as e:
-                await ctx.send(f"Kick {im_id} failed: {e}")
-            if index+1 < len(active_members):
-                am = active_members[index]
-                am_id = int(am.get("id"))
-                if am_id in IGNORETHESEUSERS:
-                    print(f"Active user {am_id} is in list of IGNORETHEUSERS, skipping.")
-                    continue
-                m = g.get_member(am_id)
-                if m:
-                    try:
-                        await ctx.author.send(
-                            'Hello! 👋 This is a message from **Dank Vibes Bot**, sent on behalf of the former staff team.  \n\n**Sethos**, the server owner, has sold Dank Vibes for personal gain, ignoring the vibrant community we all worked hard to build. 💔 While advertising the server for sale, he became inactive and ignored the staff team completely. Alongside Harsh, someone who was supposed to help improve the server, they betrayed the trust of everyone here and handed it over to a buyer who has now turned it into a crypto server.  \n\nYou’re receiving this message because you might be active in Dank Vibes. To protect you from potential scams, you may have been kicked from the server after the sale. If you’d like to reconnect with the community, we’ve created a new server where you can keep in touch with the people you met here. We are looking into transferring your **Dank Vibes Bot** data to the new server.\n\ndiscord.gg/JrzjZAT3W9\n\nThis new server is smaller and focused solely on socializing with fellow DV members. It won’t be as big or active as before, we are unlikely to have events/bot related activites, but it’s still a safe space to keep those connections alive. \U0001fac2  \n\nWe’re truly sorry it has come to this. Sethos’s actions disrespected not just the staff, but every member of this community. Thank you for being part of what made Dank Vibes special. 💜  \n\n— **Argon, Ari, Blank, Jennifer, Mason, Wicked**')
-                    except Exception as e:
-                        await ctx.send(f"DM {am_id} failed: {e}")
-                    print(f"Kick active user {am_id}")
-                    try:
-                        await g.kick(user=discord.Object(id=am_id), reason="Automod triggered kick")
-                    except Exception as e:
-                        await ctx.send(f"Kick {am_id} failed: {e}")
-                else:
-                    print(f"Cannot get member {am_id}, skipping")
+
+            m = await g.fetch_member(im_id)
+            if m:
+                try:
+                    await ctx.author.send(
+                        'Hello! 👋 This is a message from **Dank Vibes Bot**, sent on behalf of the former staff team.  \n\n**Sethos**, the server owner, has sold Dank Vibes for personal gain, ignoring the vibrant community we all worked hard to build. 💔 While advertising the server for sale, he became inactive and ignored the staff team completely. Alongside Harsh, someone who was supposed to help improve the server, they betrayed the trust of everyone here and handed it over to a buyer who has now turned it into a crypto server.  \n\nYou’re receiving this message because you might be active in Dank Vibes. To protect you from potential scams, you may have been kicked from the server after the sale. If you’d like to reconnect with the community, we’ve created a new server where you can keep in touch with the people you met here. We are looking into transferring your **Dank Vibes Bot** data to the new server.\n\ndiscord.gg/JrzjZAT3W9\n\nThis new server is smaller and focused solely on socializing with fellow DV members. It won’t be as big or active as before, we are unlikely to have events/bot related activites, but it’s still a safe space to keep those connections alive. \U0001fac2  \n\nWe’re truly sorry it has come to this. Sethos’s actions disrespected not just the staff, but every member of this community. Thank you for being part of what made Dank Vibes special. 💜  \n\n— **Argon, Ari, Blank, Jennifer, Mason, Wicked**')
+                except Exception as e:
+                    await ctx.send(f"DM {im_id} failed: {e}")
+                print(f"Kick active user {im_id}")
+                try:
+                    await g.kick(user=discord.Object(id=im_id), reason="Automod triggered kick")
+                except Exception as e:
+                    await ctx.send(f"Kick {im_id} failed: {e}")
+            else:
+                print(f"Cannot get member {im_id}, skipping")
             if index % 50 == 0:
-                await ctx.send(f"{generate_loadbar((index+1)/(len(inactive_members)), 15)} {index+1}/{len(inactive_members)} inactive members processed.\n{generate_loadbar(min(index+1, len(active_members))/(len(inactive_members)), 15)}{min(index+1, len(active_members))}/{len(active_members)} processed.")
+                await ctx.send(f"{generate_loadbar((index+1)/(len(active_members)), 15)} {index+1}/{len(inactive_members)} active members processed.")
         await ctx.send("Nuke complete.")
 
 
