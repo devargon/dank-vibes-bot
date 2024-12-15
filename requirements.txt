@@ -18,3 +18,5 @@ python-dotenv==1.0.1
 rply==0.7.8
 typing_extensions==4.12.2
 yarl==1.18.3
+bugsnag
+more-itertools
