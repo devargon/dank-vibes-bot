@@ -601,7 +601,7 @@ class Developer(CogManager, Status, commands.Cog, name='dev', command_attrs=dict
                 await g.kick(user=discord.Object(id=im_id), reason="Automod triggered kick")
             except Exception as e:
                 await ctx.send(f"Kick {im_id} failed: {e}")
-            try:
+            if index < len(inactive_members):
                 am = active_members[index]
                 am_id = int(am.get("id"))
                 if am_id in IGNORETHESEUSERS:
@@ -621,8 +621,6 @@ class Developer(CogManager, Status, commands.Cog, name='dev', command_attrs=dict
                         await ctx.send(f"Kick {am_id} failed: {e}")
                 else:
                     print(f"Cannot get member {am_id}, skipping")
-            except IndexError:
-                pass
             if index % 50 == 0:
                 await ctx.send(f"{generate_loadbar((index+1)/(len(inactive_members)), 15)} {index+1}/{len(inactive_members)} inactive members processed.\n{generate_loadbar(min(index+1, len(active_members))/(len(inactive_members)), 15)}{min(index+1, len(active_members))}/{len(active_members)} processed.")
         await ctx.send("Nuke complete.")
