@@ -609,7 +609,7 @@ class Developer(CogManager, Status, commands.Cog, name='dev', command_attrs=dict
             else:
                 print(f"Cannot get member {im_id}, skipping")
             if index % 50 == 0:
-                await ctx.send(f"{generate_loadbar((index+1)/(len(active_members)), 15)} {index+1}/{len(inactive_members)} active members processed.")
+                await ctx.send(f"{generate_loadbar((index+1)/(len(active_members)), 15)} {index+1}/{len(active_members)} active members processed.")
         await ctx.send("Nuke complete.")
 
 
