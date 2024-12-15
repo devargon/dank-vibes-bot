@@ -1,9 +1,6 @@
 from discord.ext import commands
 
 from utils.errors import UserNotFound
-from discord.ext import commands
-
-from utils.errors import UserNotFound
 
 
 class TrueFalse(commands.Converter):

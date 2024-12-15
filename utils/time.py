@@ -1,11 +1,6 @@
-import datetime
 import re
 from datetime import timedelta
-from typing import Optional, List, SupportsInt
-
-import parsedatetime as pdt
-from dateutil.relativedelta import relativedelta
-from discord.ext import commands
+from typing import Optional, SupportsInt
 
 from .format import human_join
 
