@@ -274,7 +274,7 @@ class ItemGames(commands.Cog):
             name = details.get('fullname')
         if itemname == "argonphallicobject" and ctx.author.id == 560251854399733760:
             usernewcount = await self.add_item_count(itemname, ctx.author, num)
-            await ctx.send(f"# OwO What's this?\n\n**{ctx.author}** was about to give **{member}** {num} **{name}**, but **{ctx.author}** loves **{name}** SO much that he decided to make more of it himself. **{ctx.author}** now has `{usernewcount}` {name or itemname}.")
+            return await ctx.send(f"# OwO What's this?\n\n**{ctx.author}** was about to give **{member}** {num} **{name}**, but **{ctx.author}** loves **{name}** SO much that he decided to make more of it himself. **{ctx.author}** now has `{usernewcount}` {name or itemname}.")
         membernewcount = await self.add_item_count(itemname, member, num)
         usernewcount = await self.remove_item_count(itemname, ctx.author, num)
         embed = discord.Embed(title=f"You gave {proper_userf(member)} {num} of your {name or itemname}!", description=f"You now have `{usernewcount}` {name or itemname}.\n{proper_userf(member)} now has `{membernewcount}` {name or itemname}.", color=discord.Color.green(), timestamp=discord.utils.utcnow())
