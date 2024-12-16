@@ -265,8 +265,6 @@ class ItemGames(commands.Cog):
         member_itemcount = await self.get_item_count(itemname, member)
         if member_itemcount + num > 9223372036854775807:
             return await ctx.send(f"{proper_userf(member)} can only hold a maximum of 9,223,372,036,854,775,807 {itemname}.")
-        membernewcount = await self.add_item_count(itemname, member, num)
-        usernewcount = await self.remove_item_count(itemname, ctx.author, num)
         details = await self.client.db.fetchrow("SELECT image, fullname FROM iteminfo WHERE name=$1", itemname)
         if details is None:
             item_url = None
@@ -274,6 +272,11 @@ class ItemGames(commands.Cog):
         else:
             item_url = details.get('image')
             name = details.get('fullname')
+        if itemname == "argonphallicobject" and ctx.author.id == 560251854399733760:
+            usernewcount = await self.additemcount(itemname, ctx.author, num)
+            await ctx.send(f"# OwO What's this?\n\n**{ctx.author}** was about to give **{member}** {num} **{name}**, but **{ctx.author}** loves **{name}** SO much that he decided to make more of it himself. **{ctx.author}** now has `{usernewcount}` {name or itemname}.")
+        membernewcount = await self.add_item_count(itemname, member, num)
+        usernewcount = await self.remove_item_count(itemname, ctx.author, num)
         embed = discord.Embed(title=f"You gave {proper_userf(member)} {num} of your {name or itemname}!", description=f"You now have `{usernewcount}` {name or itemname}.\n{proper_userf(member)} now has `{membernewcount}` {name or itemname}.", color=discord.Color.green(), timestamp=discord.utils.utcnow())
         if item_url:
             embed.set_thumbnail(url=item_url)
