@@ -610,5 +610,6 @@ class ItemGames(commands.Cog):
         for i, result in enumerate(finalresult):
             user = result[0]
             count = result[1]
-            embed.add_field(name=f"{i + 1}. {proper_userf(user)} {'🥇' if i == 0 else '🥈' if i == 1 else '🥉' if i == 2 else ''}", value=f"{comma_number(count)} {itemname}s", inline=False)
+            user_disp = user if type(user) == int else proper_userf(user)
+            embed.add_field(name=f"{i + 1}. {user_disp} {'🥇' if i == 0 else '🥈' if i == 1 else '🥉' if i == 2 else ''}", value=f"{comma_number(count)} {itemname}s", inline=False)
         await ctx.send(embed=embed)
