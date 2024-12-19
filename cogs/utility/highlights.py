@@ -58,40 +58,41 @@ class Highlight(commands.Cog):
         When you don't talk after a minute, you will be DMed if someone highlights you with said phrase.
         """
         def get_highlight_limit():
-            donator_25m = ctx.guild.get_role(DONATOR_25M_ID)
-            donator_50m = ctx.guild.get_role(DONATOR_50M_ID)
-            donator_100m = ctx.guild.get_role(DONATOR_100M_ID)
-            donator_300m = ctx.guild.get_role(DONATOR_300M_ID)
-            donator_500m = ctx.guild.get_role(DONATOR_500M_ID)
-            donator_750m = ctx.guild.get_role(DONATOR_750M_ID)
-            donator_1b = ctx.guild.get_role(DONATOR_1B_ID)
-            donator_3b = ctx.guild.get_role(DONATOR_3B_ID)
-            donator_5b = ctx.guild.get_role(DONATOR_5B_ID)
-            highest_donator = ctx.guild.get_role(HIGHEST_DONATOR_ID)
-            level_30 = ctx.guild.get_role(LEVEL_30_ID)
-            level_50 = ctx.guild.get_role(LEVEL_50_ID)
-            level_100 = ctx.guild.get_role(LEVEL_100_ID)
-
-            hl_limit = 0
-            list_of_donor_roles = [donator_25m, donator_50m, donator_100m, donator_300m, donator_500m, donator_750m,
-                                   donator_1b, donator_3b, donator_5b, highest_donator]
-            if None in list_of_donor_roles:
-                raise ArgumentBaseError(message=f"A donator role ID is potentially invalid.")
-            elif any(dr in ctx.author.roles for dr in list_of_donor_roles):
-                hl_limit += 1
-            if level_30 is None:
-                raise ArgumentBaseError(message=f"{LEVEL_30_ID} is not a valid role ID for level_30")
-            elif level_30 in ctx.author.roles:
-                hl_limit += 1
-            if level_50 is None:
-                raise ArgumentBaseError(message=f"{LEVEL_50_ID} is not a valid role ID for level_50")
-            elif level_50 in ctx.author.roles:
-                hl_limit += 2
-            if level_100 is None:
-                raise ArgumentBaseError(message=f"{LEVEL_100_ID} is not a valid role ID for level_100")
-            elif level_100 in ctx.author.roles:
-                hl_limit += 1000
-            return hl_limit
+            return 999
+            # donator_25m = ctx.guild.get_role(DONATOR_25M_ID)
+            # donator_50m = ctx.guild.get_role(DONATOR_50M_ID)
+            # donator_100m = ctx.guild.get_role(DONATOR_100M_ID)
+            # donator_300m = ctx.guild.get_role(DONATOR_300M_ID)
+            # donator_500m = ctx.guild.get_role(DONATOR_500M_ID)
+            # donator_750m = ctx.guild.get_role(DONATOR_750M_ID)
+            # donator_1b = ctx.guild.get_role(DONATOR_1B_ID)
+            # donator_3b = ctx.guild.get_role(DONATOR_3B_ID)
+            # donator_5b = ctx.guild.get_role(DONATOR_5B_ID)
+            # highest_donator = ctx.guild.get_role(HIGHEST_DONATOR_ID)
+            # level_30 = ctx.guild.get_role(LEVEL_30_ID)
+            # level_50 = ctx.guild.get_role(LEVEL_50_ID)
+            # level_100 = ctx.guild.get_role(LEVEL_100_ID)
+            #
+            # hl_limit = 0
+            # list_of_donor_roles = [donator_25m, donator_50m, donator_100m, donator_300m, donator_500m, donator_750m,
+            #                        donator_1b, donator_3b, donator_5b, highest_donator]
+            # if None in list_of_donor_roles:
+            #     raise ArgumentBaseError(message=f"A donator role ID is potentially invalid.")
+            # elif any(dr in ctx.author.roles for dr in list_of_donor_roles):
+            #     hl_limit += 1
+            # if level_30 is None:
+            #     raise ArgumentBaseError(message=f"{LEVEL_30_ID} is not a valid role ID for level_30")
+            # elif level_30 in ctx.author.roles:
+            #     hl_limit += 1
+            # if level_50 is None:
+            #     raise ArgumentBaseError(message=f"{LEVEL_50_ID} is not a valid role ID for level_50")
+            # elif level_50 in ctx.author.roles:
+            #     hl_limit += 2
+            # if level_100 is None:
+            #     raise ArgumentBaseError(message=f"{LEVEL_100_ID} is not a valid role ID for level_100")
+            # elif level_100 in ctx.author.roles:
+            #     hl_limit += 1000
+            # return hl_limit
         if text is None:
             return await ctx.send("You need to specify text that you want to be highlighted for.")
         text = (await commands.clean_content().convert(ctx, text)).lower()
