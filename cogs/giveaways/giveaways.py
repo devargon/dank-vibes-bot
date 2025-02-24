@@ -540,7 +540,7 @@ class GiveawayView(discord.ui.View):
         self.thankers = []
         super().__init__(timeout=None)
 
-    @discord.ui.button(emoji=discord.PartialEmoji.from_str("<a:dv_iconOwO:837943874973466664>"), label="Join giveaway", style=discord.ButtonStyle.green, custom_id="dvb:giveawayjoin")
+    @discord.ui.button(emoji=discord.PartialEmoji.from_str("<a:dv_DankVibes1OwO:1318037798720245820>"), label="Join giveaway", style=discord.ButtonStyle.green, custom_id="dvb:giveawayjoin")
     async def JoinGiveaway(self, button: discord.ui.Button, interaction: discord.Interaction):
         can_bypass = None
         edit_final = False
@@ -845,7 +845,7 @@ class GiveawayView(discord.ui.View):
         embed = await self.cog.format_giveaway_details_embed(giveawayentry)
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @discord.ui.button(emoji=discord.PartialEmoji.from_str("<:dv_textThankyouOwO:837712265469231166>"), style=discord.ButtonStyle.grey, custom_id='dvb:giveawaythankyou')
+    @discord.ui.button(emoji=discord.PartialEmoji.from_str("<:dv_textThankyouOwO:1318048861243047976>"), style=discord.ButtonStyle.grey, custom_id='dvb:giveawaythankyou')
     async def thankyou(self, button: discord.ui.Button, interaction: discord.Interaction):
         if interaction.user not in self.thankers:
             await interaction.response.send_message("Thank you!", ephemeral=True)
@@ -1214,6 +1214,14 @@ class giveaways(commands.Cog):
             guild = self.client.get_guild(entry.guild_id)
             if guild is not None and guild.icon is not None:
                 embed.set_thumbnail(url=guild.icon.url)
+        if entry.multi and guild is not None:
+            req_list = []
+            for role_id, number_of_entries in entry.multi.items():
+                role = guild.get_role(int(role_id))
+                if role is not None:
+                    req_list.append(f"{role.mention}: **{number_of_entries}** extra entries")
+            if len(req_list) > 0:
+                embed.add_field(name="Extra Entries", value="\n ".join(req_list), inline=False)
         return embed
 
     @commands.Cog.listener()
