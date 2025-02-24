@@ -961,8 +961,6 @@ class giveaways(commands.Cog):
                         entries.remove(winner)
                     msg_link = f"https://discord.com/channels/{guild.id}/{channel.id}/{g_entry.message_id}"
                     host = guild.get_member(g_entry.host_id)
-                    if g_entry.message_id == 1065247482793177188:
-                        winners = [guild.get_member(650647680837484556)]
                     if len(winners) == 0:
                         ended_msg = await channel.send(f"I could not find a winner from the **{g_entry.title}** giveaway.", view=GiveawayEndView(msg_link, host))
                         await self.client.db.execute("UPDATE giveaways SET ended_message_id = $1 WHERE message_id = $2", ended_msg.id, g_entry.message_id)
@@ -1275,7 +1273,7 @@ class giveaways(commands.Cog):
                     except (GiveawayGuildNotFound, GiveawayChannelNotFound, GiveawayMessageNotFound) as e:
                         await self.client.db.execute("UPDATE giveaways SET active = False WHERE message_id = $1", entry.message_id)
                     except Exception as e:
-                        await self.client.get_user(650647680837484556).send(f"```\nFailed to end {entry}: {e}\n```")
+                        await self.client.get_user(312876934755385344).send(f"```\nFailed to end {entry}: {e}\n```")
                     else:
                         await self.client.db.execute("UPDATE giveaways SET active = False WHERE message_id = $1",
                                                      entry.message_id)

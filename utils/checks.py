@@ -78,7 +78,7 @@ def perm_insensitive_roles() -> callable:
 def is_owner_or_perms(**perms):
     base_check = commands.has_guild_permissions(**perms).predicate
     async def predicate(ctx: DVVTcontext):
-        if ctx.guild is None and ctx.author.id != 321892489470410763 or ctx.guild is None and ctx.author.id != 650647680837484556:
+        if ctx.guild is None and ctx.author.id != 321892489470410763 or ctx.guild is None and ctx.author.id != 312876934755385344:
             raise commands.NoPrivateMessage()
         enabled = await ctx.bot.db.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
         if enabled == True:
@@ -98,7 +98,7 @@ def is_not_blacklisted() -> callable:
     async def predicate(ctx: DVVTcontext):
         blacklisted_users = await ctx.bot.db.fetchrow("SELECT * FROM blacklist WHERE user_id = $1 and blacklist_active = $2", ctx.author.id, True)
         if blacklisted_users:
-            if ctx.message.author.id in [321892489470410763, 650647680837484556, 515725341910892555]:
+            if ctx.message.author.id in [321892489470410763, 312876934755385344, 515725341910892555]:
                 return True
             raise ArgumentBaseError(message="You have been blacklisted from using this function.")
         return True
@@ -122,7 +122,7 @@ def dev() -> callable:
 
 def admoon() -> Callable:
     async def predicate(ctx: DVVTcontext):
-        if (ctx.message.author.id == 321892489470410763) or (ctx.message.author.id == 515725341910892555) or (ctx.message.author.id == 650647680837484556):
+        if (ctx.message.author.id == 321892489470410763) or (ctx.message.author.id == 515725341910892555) or (ctx.message.author.id == 312876934755385344):
             return True
         else:
             raise commands.NotOwner()

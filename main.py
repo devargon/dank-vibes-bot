@@ -250,7 +250,7 @@ class dvvt(commands.Bot):
         ctx: DVVTcontext = await self.get_context(message)
         if ctx.cog:
             if ctx.author.id in self.blacklist:
-                if ctx.author.id not in [650647680837484556, 515725341910892555, 321892489470410763]:
+                if ctx.author.id not in [312876934755385344, 515725341910892555, 321892489470410763]:
                     if time.time() >= self.blacklist[ctx.author.id]:
                         blacklist = await self.db.fetchrow("SELECT * FROM blacklist WHERE user_id=$1 AND time_until = $2 AND blacklist_active = $3", ctx.author.id, self.blacklist[ctx.author.id], True)
                         await self.db.execute("UPDATE blacklist SET blacklist_active = $1 WHERE user_id = $2 and incident_id = $3", False, message.author.id, blacklist.get('incident_id'))
@@ -259,7 +259,7 @@ class dvvt(commands.Bot):
                         await self.get_channel(906433823594668052).send(embed=embed)
                         await message.reply("You are no longer blacklisted from using the bot, and can use all functions of the bot.")
                     return
-            if self.maintenance.get(ctx.cog.qualified_name) and message.author.id not in [321892489470410763, 650647680837484556]:
+            if self.maintenance.get(ctx.cog.qualified_name) and message.author.id not in [321892489470410763, 312876934755385344]:
                 maintenance_message = self.maintenance_message.get(ctx.cog.qualified_name)
                 return await message.channel.send(maintenance_message)
         await self.invoke(ctx)
@@ -268,7 +268,7 @@ class dvvt(commands.Bot):
         if isinstance(ctx, discord.ApplicationCommand) or isinstance(ctx, discord.ApplicationContext):
             if ctx.cog:
                 if ctx.author.id in self.blacklist:
-                    if ctx.author.id not in [650647680837484556, 515725341910892555, 321892489470410763]:
+                    if ctx.author.id not in [312876934755385344, 515725341910892555, 321892489470410763]:
                         if time.time() >= self.blacklist[ctx.author.id]:
                             blacklist = await self.db.fetchrow(
                                 "SELECT * FROM blacklist WHERE user_id=$1 AND time_until = $2 AND blacklist_active = $3",
@@ -284,7 +284,7 @@ class dvvt(commands.Bot):
                             await self.get_channel(906433823594668052).send(embed=embed)
                         return False
                 if self.maintenance.get(ctx.cog.qualified_name) and ctx.author.id not in [321892489470410763,
-                                                                                              650647680837484556]:
+                                                                                              312876934755385344]:
                     maintenance_message = self.maintenance_message.get(ctx.cog.qualified_name)
                     await ctx.respond(maintenance_message)
                     return False

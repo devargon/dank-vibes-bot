@@ -755,7 +755,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                                     content = ""
                                 else:
                                     embed.description = f"**{comma_number(item_count)} {item}**\nWorth \u23e3 0 (unknown item)"
-                                    content = "<@650647680837484556>"
+                                    content = "<@312876934755385344>"
                             log_channel = self.client.get_channel(serverpool_donate_log_channel_id)
                             if log_channel is not None:
                                 webh = await self.client.get_webhook(log_channel)

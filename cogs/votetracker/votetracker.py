@@ -335,7 +335,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
             except discord.Forbidden:
                 pass
         except Exception as e:
-            await self.client.get_user(650647680837484556).send(
+            await self.client.get_user(312876934755385344).send(
                 f"Error in DSL Vote: ```py\n{e}\n```\nData: ```json\n{data}\n```")
             print_exception("Error in Vote", e)
             raise(e)

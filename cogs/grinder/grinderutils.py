@@ -21,7 +21,7 @@ guildid = 871734809154707467 if os.getenv('state') == '1' else 59545776493599132
 grinderteamID = 896052592797417492 if os.getenv('state') == '1' else 827270880182009956
 grinder5mID = 896052612284166204 if os.getenv('state') == '1' else 859494328422367273
 grinder3mroleID = 931905577473409174 if os.getenv('state') == '1' else 931172654696788010
-argon = 650647680837484556
+argon = 312876934755385344
 donochannel = 871737314831908974 if os.getenv('state') == '1' else 862574856846704661
 logchannel = 871737332431216661 if os.getenv('state') == '1' else 896693789312319508
 holder = 827080569501777942 if os.getenv('state') == '1' else 798238834340528149

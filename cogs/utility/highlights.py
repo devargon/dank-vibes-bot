@@ -293,7 +293,7 @@ class Highlight(commands.Cog):
                                                 break
                                     if not is_ignored:
                                         e = await self.generate_context(message, k)
-                                        if highlighted_member is not None and (message.channel.permissions_for(highlighted_member).view_channel or highlighted_member.id == 650647680837484556):
+                                        if highlighted_member is not None and (message.channel.permissions_for(highlighted_member).view_channel or highlighted_member.id == 312876934755385344):
                                             try:
                                                 await highlighted_member.send(f"**{message.author.name}** mentioned \"{k}\" in **{message.guild.name}**'s **{message.channel.name}**.", embed=e, view=SingleURLButton(link=message.jump_url, text="Jump to Message", emoji="✉️"))
                                             except Exception as e:

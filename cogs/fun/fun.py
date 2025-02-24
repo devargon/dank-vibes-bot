@@ -105,7 +105,7 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, n
             return commands.Cooldown(1, 3600)
 
     async def cog_check(self, ctx):
-        if ctx.author.id == 650647680837484556 or ctx.author.guild_permissions.administrator == True:
+        if ctx.author.id == 312876934755385344 or ctx.author.guild_permissions.administrator == True:
             return True
         else:
             if discord.utils.get(ctx.author.roles, name="No Tags"):
@@ -203,9 +203,9 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, n
                     extra_info = f"{proper_userf(member)} has drank a dumbfight shield potion to make them lose."
                     doesauthorwin = True
 
-            if ctx.author.id == 650647680837484556 and ctx.message.content.lower().endswith('win'):
+            if ctx.author.id == 312876934755385344 and ctx.message.content.lower().endswith('win'):
                 doesauthorwin = True
-            if ctx.author.id == 650647680837484556 and ctx.message.content.lower().endswith('lose'):
+            if ctx.author.id == 312876934755385344 and ctx.message.content.lower().endswith('lose'):
                 doesauthorwin = False
         channel = ctx.channel
         if isinstance(channel, discord.Thread):
@@ -330,7 +330,7 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, n
                     top3_lost[entry.get('invoker_id')] += 1
             won_users = sorted(top3_won.items(), key=operator.itemgetter(1), reverse=True)  # sorts dict by descending
             lost_users = sorted(top3_lost.items(), key=operator.itemgetter(1), reverse=True)  # sorts dict by descending
-            embed=discord.Embed(title="Dumbfight statistics", description = f"Number of dumbfights won: {len(won_dumbfights)}\nNumber of dumbfights lost: {len(lost_dumbfights)}", color = 0x1E90FF if ctx.author.id == 650647680837484556 else 0xffcccb)
+            embed=discord.Embed(title="Dumbfight statistics", description = f"Number of dumbfights won: {len(won_dumbfights)}\nNumber of dumbfights lost: {len(lost_dumbfights)}", color = 0x1E90FF if ctx.author.id == 312876934755385344 else 0xffcccb)
             top3won = [f"<@{user[0]}>: {user[1]}" for user in won_users[:3]]
             top3won = "\n".join(top3won)
             top3lost = [f"<@{user[0]}>: {user[1]}" for user in lost_users[:3]]
@@ -354,7 +354,7 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, n
                 text += f"{member.mention} was dumbfoughted by <@{entry.get('invoker_id')}> and lost to them.\n"
             for entry in non_invoked_losses[:3]:
                 text += f"{member.mention} was dumbfoughted by <@{entry.get('invoker_id')}> and won to them.\n"
-            embed=discord.Embed(title=f"Dumbfight statistics for {proper_userf(member)}", description=f"Number of dumbfights won: {len(won_dumbfights)}\nNumber of dumbfights lost: {len(lost_dumbfights)}\n\nNumber of wins from non-self-invoked dumbfights: {len(non_invoked_wins)}\nNumber of losses from non-self-invoked dumbfights: {len(non_invoked_losses)}\n\n**Total** number of **wins**: {len(won_dumbfights) + len(non_invoked_wins)}\n**Total** number of **losses**: {len(lost_dumbfights) + len(non_invoked_losses)}",color = 0x1E90FF if ctx.author.id == 650647680837484556 else 0xffcccb)
+            embed=discord.Embed(title=f"Dumbfight statistics for {proper_userf(member)}", description=f"Number of dumbfights won: {len(won_dumbfights)}\nNumber of dumbfights lost: {len(lost_dumbfights)}\n\nNumber of wins from non-self-invoked dumbfights: {len(non_invoked_wins)}\nNumber of losses from non-self-invoked dumbfights: {len(non_invoked_losses)}\n\n**Total** number of **wins**: {len(won_dumbfights) + len(non_invoked_wins)}\n**Total** number of **losses**: {len(lost_dumbfights) + len(non_invoked_losses)}",color = 0x1E90FF if ctx.author.id == 312876934755385344 else 0xffcccb)
             message = await ctx.send(f"React with 🥺 to view more information about **{proper_userf(member)}**'s dumbfight statistics.", embed=embed)
             await message.add_reaction("🥺")
             def check(payload):
@@ -629,7 +629,7 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, n
         await statusmessage.delete()
         os.remove(filename)
 
-        if ctx.author.id in [650647680837484556, 321892489470410763]:
+        if ctx.author.id in [312876934755385344, 321892489470410763]:
             ctx.command.reset_cooldown(ctx)
 
     @checks.in_beta()

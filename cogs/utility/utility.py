@@ -452,13 +452,13 @@ class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight
             value_1.append(f'<:DVB_stage_channel:955345570900344863> {stage}')
         py_version = "{}.{}.{}".format(*sys.version_info[:3])
         dpy_version = discord.__version__
-        embed = discord.Embed(description=f"Created by {str(self.client.get_user(321892489470410763))} and developed by {str(self.client.get_user(650647680837484556))}, {ctx.guild.me.name} is a multipurpose bot designed to help members and enhance the Dank Vibes experience with a helpful set of fun and utility commands. \n\n{ctx.guild.me.name} is created with the Pycord library.", color=self.client.embed_color)
+        embed = discord.Embed(description=f"Created by {str(self.client.get_user(321892489470410763))} and developed by {str(self.client.get_user(312876934755385344))}, {ctx.guild.me.name} is a multipurpose bot designed to help members and enhance the Dank Vibes experience with a helpful set of fun and utility commands. \n\n{ctx.guild.me.name} is created with the Pycord library.", color=self.client.embed_color)
         embed.add_field(name='Stats', value="\n".join(value_1), inline=True)
         embed.add_field(name='Versions', value=f"<:DVB_python:955345550193078272> `{py_version}`\n<:DVB_PyCord:937351289514385428> `{dpy_version}`", inline=True)
-        embed.add_field(name='Developers', value=f"{str(self.client.get_user(650647680837484556))}", inline=True)
+        embed.add_field(name='Developers', value=f"{str(self.client.get_user(312876934755385344))}", inline=True)
         embed.add_field(name="Thanks To", value=f"{str(await self.client.fetch_user(727498137232736306))}\n{self.client.get_user(321892489470410763)}", inline=True)
         embed.add_field(name="Important Links", value="[Status Page](https://status.nogra.xyz/status/dv)\n[Terms of Service](https://docs.dvbot.nogra.xyz/legal/terms/) and [Privacy Policy](https://docs.dvbot.nogra.xyz/legal/privacy/)", inline=False)
-        if ctx.author.id in [650647680837484556, 515725341910892555, 321892489470410763]:
+        if ctx.author.id in [312876934755385344, 515725341910892555, 321892489470410763]:
             loop = asyncio.get_event_loop()
             def get_advanced_details():
                 nano_process = psutil.Process(os.getpid())
@@ -603,7 +603,7 @@ class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight
 
     @commands.command(name="invite", hidden=True)
     async def _invite(self, ctx):
-        if ctx.author.id == 650647680837484556:
+        if ctx.author.id == 312876934755385344:
             invite_link = discord.utils.oauth_url(self.client.user.id, scopes=['bot'])
             await ctx.send(f"<{invite_link}>")
         else:

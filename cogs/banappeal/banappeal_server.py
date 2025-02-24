@@ -109,7 +109,7 @@ class BanAppealServer(commands.Cog):
                     ban_cache[guild.id] = {}
                 ban_cache[guild.id][user_id] = ({"is_banned": False}, current_time)
                 data = {"ban": {"is_banned": False}}
-        if data.get("ban").get("is_banned") is not True and user_id == 650647680837484556:
+        if data.get("ban").get("is_banned") is not True and user_id == 312876934755385344:
             ban_appeals = await banappealdb.get_all_ban_appeals(100)
         else:
             ban_appeals = await banappealdb.get_user_all_ban_appeals(user_id)
@@ -133,7 +133,7 @@ class BanAppealServer(commands.Cog):
         banappeal = await banappealdb.get_ban_appeal_by_appeal_id(appeal_id)
         if banappeal is None:
             return web.json_response(status=404, data={"Error": f"Ban appeal with ID {appeal_id} not found"})
-        if banappeal.user_id != user_id and user_id != 650647680837484556:
+        if banappeal.user_id != user_id and user_id != 312876934755385344:
             return web.json_response(status=404, data={"Error": f"Ban appeal with ID {appeal_id} not found"})
         return web.json_response(data=banappeal.to_presentable_format(), status=200)
 

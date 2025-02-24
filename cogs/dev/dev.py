@@ -1203,7 +1203,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
         await updater.send_update("Starting export...")
 
         async for message in fc.history(limit=None, oldest_first=True):
-            if message.author.id != 650647680837484556:
+            if message.author.id != 312876934755385344:
                 continue
             header = f"### {proper_userf(message.author)} `fr:{message.author.id}` `mi:{message.id}` <t:{int(message.created_at.timestamp())}:f> \n\n"
             v = discord.ui.View.from_message(message) if len(message.components) > 0 else None

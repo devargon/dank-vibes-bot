@@ -99,7 +99,7 @@ class ErrorHandler(commands.Cog):
                 embed = discord.Embed(title="⚠️ Oh no!",
                                       description="Something terribly went wrong when this command was used.\n\nThe developers have been notified and it'll fixed soon.",
                                       color=discord.Color.red())
-                if ctx.author.id in [650647680837484556, 321892489470410763]:
+                if ctx.author.id in [312876934755385344, 321892489470410763]:
                     embed.add_field(name="Error", value=f"```prolog\n{error}\n```\n<#871737028105109574>")
                     await send_error(embed=embed)
                 else:
@@ -179,7 +179,7 @@ class ErrorHandler(commands.Cog):
             else:
                 bugsnag.notify(error, user={"id": str(ctx.author.id), "name": proper_userf(ctx.author)}, metadata={"command": ctx.message.content, "msg_url": ctx.message.jump_url})
                 embed = discord.Embed(title="⚠️ Oh no!", description="Something terribly went wrong when this command was used.\n\nThe developers have been notified and it'll fixed soon.", color=discord.Color.red())
-                if ctx.author.id in [650647680837484556, 321892489470410763]:
+                if ctx.author.id in [312876934755385344, 321892489470410763]:
                     embed.add_field(name="Error", value=f"```prolog\n{error}\n```\n<#871737028105109574>")
                     await send_error(embed=embed)
                 else:

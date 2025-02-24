@@ -59,7 +59,7 @@ class Joining(commands.Cog):
         To remove the join message, do not include a channel in the command.
         This are the optional tags you can use when setting the text:
         `-` `{member}` shows the Username#Discriminator. Example: Argon#0002
-        `-` `{member_mention}` shows the user but in a mention. Example: <@650647680837484556>
+        `-` `{member_mention}` shows the user but in a mention. Example: <@312876934755385344>
         `-` `{count}` shows the number of members after the user has joined. Example: 36121st
         """
         config = await self.client.db.fetchrow("SELECT * FROM joinmessages WHERE guild_id = $1", ctx.guild.id)
@@ -97,7 +97,7 @@ class Joining(commands.Cog):
         questionmessage = await ctx.send("""Send the **text** message that will be sent when a member joins the server. If you do not want to specify a message, type 'none' instead. A text message can only have up to 2000 characters.
         This are the optional tags you can use when setting the text:
         `-` `{member}` shows the Username#Discriminator. Example: Argon#0002
-        `-` `{member_mention}` shows the user but in a mention. Example: `<@650647680837484556>`
+        `-` `{member_mention}` shows the user but in a mention. Example: `<@312876934755385344>`
         `-` `{count}` shows the number of members after the user has joined. Example: 36121st""")
         def check(payload):
             return payload.author == ctx.author and payload.channel == ctx.channel
@@ -119,7 +119,7 @@ class Joining(commands.Cog):
         questionmessage = await ctx.send("""Send the **embed** message in the form of a JSON that will be sent when a member joins the server. If you do not want to specify an embed, type 'none' instead.
                 This are the optional tags you can use when setting the text:
                 `-` `{member}` shows the Username#Discriminator. Example: Argon#0002
-                `-` `{member_mention}` shows the user but in a mention. Example: `<@650647680837484556>`
+                `-` `{member_mention}` shows the user but in a mention. Example: `<@312876934755385344>`
                 `-` `{count}` shows the number of members after the user has joined. Example: 36121st""")
         try:
             response = await self.client.wait_for('message', check=check, timeout=10.0 * 60.0)
