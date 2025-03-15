@@ -12,10 +12,10 @@ from discord.ext import commands, menus, tasks, pages
 from utils import checks
 from utils.paginator import MultiMenuPaginator
 
-owo50_id = 847877497634553856
-owo100_id = 847881186314289243
-owo_player_id = 837594929974870047
-owo_announcement = 837781619057885184
+owo50_id = 1345898615586947152
+owo100_id = 1345898644238241895
+owo_player_id = 1329316718849556533
+owo_announcement = 1345457101933121606
 
 class Leaderboard(menus.ListPageSource):
     def __init__(self, entries, title):
@@ -163,7 +163,7 @@ class OwO(commands.Cog, name='owo'):
 
     @tasks.loop(hours=24)
     async def daily_owo_reset(self):
-        guild = self.client.get_guild(595457764935991326)
+        guild = self.client.get_guild(1288032530569625660)
         channel = guild.get_channel(owo_announcement)
         owo50 = guild.get_role(owo50_id)
         owo100 = guild.get_role(owo100_id)
@@ -223,7 +223,7 @@ class OwO(commands.Cog, name='owo'):
             return
         if self.client.maintenance.get(self.qualified_name):
             return
-        if not message.guild or message.guild.id != 595457764935991326:
+        if not message.guild or message.guild.id != 1288032530569625660:
             return
         if message.author.id in self.waitlist:
             return
