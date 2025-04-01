@@ -8,6 +8,7 @@ import re
 import textwrap
 
 import typing
+import warnings
 
 import aiohttp
 
@@ -142,6 +143,11 @@ class OnMessage(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        # DeprecationWarning: interaction is deprecated since version 2.6,
+        # consider using interaction_metadata instead.
+        # See https://discord.com/developers/docs/change-log#userinstallable-apps-preview for more information.
+        # if message.interaction_metadata is not None and message.interaction.name == "setup" and self.mafia_wait is not True:
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
         try:
             if message.guild is None and message.author.id == self.client.user.id and isinstance(message.channel, discord.DMChannel) and message.webhook_id is None:
                 try:

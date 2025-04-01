@@ -7,7 +7,6 @@ from typing import Optional, Union
 import aiohttp
 import discord
 from discord.ext import commands
-from emoji import UNICODE_EMOJI
 
 from utils import checks
 import asyncio
