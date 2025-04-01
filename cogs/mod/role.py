@@ -10,7 +10,7 @@ from utils import checks
 import imghdr
 import aiohttp
 from typing import Union
-from emoji import UNICODE_EMOJI
+from emoji import EMOJI_DATA
 from utils.context import DVVTcontext
 import re
 
@@ -119,7 +119,7 @@ class Role(commands.Cog):
             argumenttype = "ATTACHMENT"
             argument = ctx.message.attachments[0]
         elif isinstance(argument, str):
-            if argument in UNICODE_EMOJI['en']:
+            if argument in EMOJI_DATA:
                 argumenttype = "UNICODE"
             elif re.match(regex, argument):
                 argumenttype = "URL"

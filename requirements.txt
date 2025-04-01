@@ -33,7 +33,7 @@ alexflipnote.py
 more-itertools
 googletrans-py @ git+https://github.com/argo0n/googletrans
 hyper
-emoji==1.7.0
+emoji
 typing
 stemming
 httpcore==1.0.5

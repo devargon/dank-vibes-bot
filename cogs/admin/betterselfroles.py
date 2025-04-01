@@ -3,7 +3,7 @@ import re
 from typing import Union
 
 import discord
-from emoji import UNICODE_EMOJI
+from emoji import EMOJI_DATA
 
 from utils import checks
 from discord.ext import commands
@@ -117,7 +117,7 @@ def format_emoji(arg: str) -> Union[discord.PartialEmoji, str, None]:
         if check is True:
             arg = discord.PartialEmoji.from_str(arg)
         else:
-            if arg in UNICODE_EMOJI['en']:
+            if arg in EMOJI_DATA:
                 pass
             else:
                 raise EmojiNotFound
