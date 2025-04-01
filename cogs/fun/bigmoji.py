@@ -6,6 +6,8 @@ import unicodedata
 import aiohttp
 import discord
 from discord.ext import commands
+from wand.color import Color
+
 from main import dvvt
 from utils.context import DVVTcontext
 
@@ -58,12 +60,13 @@ class Bigmoji(commands.Cog):
             if "20e3" in chars:
                 # COMBINING ENCLOSING KEYCAP doesn't want to play nice either
                 chars.remove("fe0f")
+            print(chars)
 
             if svg_convert is not None:
-                url = "https://twemoji.maxcdn.com/2/svg/" + "-".join(chars) + ".svg"
+                url = "https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/" + "-".join(chars) + ".svg"
                 convert = True
             else:
-                url = "https://twemoji.maxcdn.com/2/72x72/" + "-".join(chars) + ".png"
+                url = "https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/72x72/" + "-".join(chars) + ".png"
 
         async with self.session.get(url) as resp:
             if resp.status != 200:
@@ -90,7 +93,7 @@ class Bigmoji(commands.Cog):
     def generate(img):
         # Designed to be run in executor to avoid blocking
         if svg_convert == "wand":
-            with Image(blob=img, format="svg", resolution=2160) as bob:
+            with Image(blob=img, format="svg", resolution=2160, background=Color("transparent")) as bob:
                 return bob.make_blob("png")
         else:
             return io.BytesIO(img)
