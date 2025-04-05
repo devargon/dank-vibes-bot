@@ -1,0 +1,32 @@
+create table if not exists remindersettings
+(
+    member_id bigint not null
+        constraint remindersettings_pkey1
+            primary key,
+    method    integer default 0,
+    daily     boolean default false,
+    lottery   boolean default false,
+    work      boolean default false,
+    lifesaver boolean default false,
+    redeem    boolean default false,
+    weekly    boolean default false,
+    monthly   boolean default false,
+    hunt      boolean default false,
+    fish      boolean default false,
+    dig       boolean default false,
+    highlow   boolean default false,
+    snakeeyes boolean default false,
+    search    boolean default false,
+    crime     boolean default false,
+    beg       boolean default false,
+    dailybox  boolean default false,
+    horseshoe boolean default false,
+    pizza     boolean default false,
+    drop      boolean default false,
+    stream    boolean default false,
+    postmeme  boolean default false,
+    marriage  boolean default false,
+    pet       boolean default false,
+    m_partner bigint,
+    adventure boolean default false
+);

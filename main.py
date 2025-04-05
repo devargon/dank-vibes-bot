@@ -31,6 +31,9 @@ class EditContent:
 
 strfformat = "%d-%m-%y %H:%M:%S"
 
+def get_display_time_now():
+    return datetime.datetime.utcnow().strftime(strfformat)
+
 
 AVAILABLE_EXTENSIONS = [
     'cogs.dev',
@@ -66,6 +69,7 @@ port = int(os.getenv('dbPORT'))
 password = os.getenv('dbPASSWORD')
 amari_key = os.getenv('AMARI_KEY')
 
+TABLE_SCHEMAS_PATH = "./table_schemas"
 
 intents = discord.Intents(guilds=True, members=True, presences=True, messages=True, reactions=True, emojis=True, invites=True, voice_states=True, message_content=True, typing=True, moderation=True)
 allowed_mentions = discord.AllowedMentions(everyone=False, roles=False)
@@ -75,7 +79,6 @@ class dvvt(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix = self.get_prefix, intents=intents, allowed_mentions=allowed_mentions, case_insensitive=True)
         self.custom_status = False
-        self.AmariClient = api.AmariClient(amari_key)
         self.AmariLastUpdate = None
         self.prefixes = {}
         self.uptime = None
@@ -99,7 +102,7 @@ class dvvt(commands.Bot):
         self.logstrf = strfformat
         for ext in self.available_extensions:
             self.load_extension(ext, store=False)
-            print(f"{datetime.datetime.utcnow().strftime(strfformat)} | Loaded {ext}")
+            print(f"{get_display_time_now()} | Loaded {ext}")
         self.add_check(self.check_application_command_validity)
 
     async def fetch_amari_data(self, user_id: int, guild_id: int) -> Tuple[Union[None, api.User, AwaitingAmariData, NoAmariData], int, Exception]:
@@ -187,6 +190,44 @@ class dvvt(commands.Bot):
                 webhook = await channel.create_webhook(name=self.user.name)
             self.webhooks[channel.id] = webhook
             return webhook
+
+    async def initialize_database(self):
+        print(f"{get_display_time_now()} | Checking tables")
+        schema_files = sorted([
+            f for f in os.listdir(TABLE_SCHEMAS_PATH)
+            if f.endswith(".sql") and "_" in f
+        ])
+
+        table_to_file = {}
+        for file in schema_files:
+            parts = file.split("_")
+            if len(parts) < 2:
+                print(f"{get_display_time_now()} | ⚠️ Skipping invalid file name: {file}")
+                continue
+            table_name = "_".join(parts[1:]).replace(".sql", "")
+            table_to_file[table_name] = file
+
+        result = await self.db.fetch(
+            "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';"
+        )
+        db_tables = set(row["table_name"] for row in result)
+        schema_tables = set(table_to_file.keys())
+
+        valid_tables = db_tables & schema_tables
+        missing_tables = schema_tables - db_tables
+        extra_tables = db_tables - schema_tables
+
+        for table in sorted(missing_tables):
+            file = table_to_file[table]
+            with open(os.path.join(TABLE_SCHEMAS_PATH, file), 'r') as f:
+                sql = f.read()
+                await self.db.execute(sql)
+            print(f"{get_display_time_now()} | ✅ Created missing table `{table}` from `{file}`")
+
+        print(f"\n{get_display_time_now()} | ✅ Valid tables ({len(valid_tables)}): {', '.join(sorted(valid_tables))}")
+        print(f"{get_display_time_now()} | ❌ Missing tables created ({len(missing_tables)}): {', '.join(sorted(missing_tables))}")
+        print(
+            f"{get_display_time_now()} | ⚠️ Extra tables in DB not in schema folder ({len(extra_tables)}): {', '.join(sorted(extra_tables))}\n")
 
 
     @tasks.loop(seconds=5)
@@ -302,110 +343,10 @@ class dvvt(commands.Bot):
         for guild in self.guilds:
             guild_settings = await client.fetch_guild_settings(guild.id)
             self.serverconfig[guild.id] = guild_settings
-        print(f"{datetime.datetime.utcnow().strftime(strfformat)} | Loaded all Server Configurations")
-        all_tables = ['prefixes', 'dankreminders', 'stats', 'nicknames', 'channelconfigs', 'dmrequestslog',
-                      'dumbfightlog', 'joinmessages', 'dmrequests', 'messagelog', 'lockdownmsgs',
-                      'remindersettings', 'inventories', 'iteminfo', 'tempweekly', 'rules', 'serverconfig',
-                      'owocurrent', 'owopast', 'temp', 'stickymessages', 'maintenance', 'teleport',
-                      'suggestion_response', 'suggestions', 'lockdownprofiles', 'grinderdata', 'messagemilestones',
-                      'viprolemessages', 'karutaeventconfig', 'autoreactions', 'owocount', 'milestones',
-                      'voters', 'cooldowns', 'selfrolemessages', 'devmode', 'blacklisted_words',
-                      'blacklist', 'freezenick', 'autorole', 'giveaways', 'giveawayentrants', 'dankdrops', 'autorole',
-                      'donation_categories', 'christmaseventconfig', 'commandaccess', 'ignoredchristmascat',
-                      'ignoredchristmaschan', 'perkremoval', 'commandlog', 'timedunlock', 'nickname_changes',
-                      'name_changes', 'timers', 'infections', 'polls', 'pollvotes', 'highlight', 'highlight_ignores',
-                      'reminders', 'userconfig', 'modlog', 'watchlist', 'usercleanup', 'giveawayconfig', 'contests',
-                      'contest_submissions', 'contest_votes', 'customroles']
-        print(f"{datetime.datetime.utcnow().strftime(strfformat)} | Checking for missing databases")
-        tables = await self.db.fetch("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';")
-        tables = [i.get('table_name') for i in tables]
-        if tables is None:
-            pass
-        else:
-            missing_tables = []
-            for table in all_tables:
-                if table not in tables:
-                    missing_tables.append(table)
-            if len(missing_tables) == 0:
-                pass
-            else:
-                print(f"Some databases do not exist, creating them now...")
-                await self.db.execute("""CREATE TABLE IF NOT EXISTS autoreactions(guild_id bigint, trigger text, response text);
-CREATE TABLE IF NOT EXISTS autorole(member_id bigint, guild_id bigint, role_id bigint, time bigint);
-CREATE TABLE IF NOT EXISTS blacklist(incident_id serial, user_id bigint, moderator_id bigint, blacklist_active boolean, time_until bigint, reason text);
-CREATE TABLE IF NOT EXISTS blacklisted_words(string text);
-CREATE TABLE IF NOT EXISTS channelconfigs(guild_id bigint NOT null PRIMARY KEY, nickname_channel_id bigint, dmchannel_id bigint);
-CREATE TABLE IF NOT EXISTS christmaseventconfig(guild_id bigint, percentage real);
-CREATE TABLE IF NOT EXISTS commandaccess(member_id bigint, command text, until bigint);
-CREATE TABLE IF NOT EXISTS cooldowns(command_name text, member_id bigint, time bigint);
-CREATE TABLE IF NOT EXISTS dankdrops(guild_id bigint, name text, price text, time bigint);
-CREATE TABLE IF NOT EXISTS dankreminders(member_id bigint, remindertype bigint, channel_id bigint, guild_id bigint, time bigint);
-CREATE TABLE IF NOT EXISTS devmode(user_id bigint, devmode boolean);
-CREATE TABLE IF NOT EXISTS donation_categories(guild_id bigint, category_name text);
-CREATE TABLE IF NOT EXISTS dmrequests(id serial, member_id bigint, target_id bigint, dmcontent text, messageid bigint);
-CREATE TABLE IF NOT EXISTS dmrequestslog(id bigint, member_id bigint, target_id bigint, approver_id bigint, dmcontent text, status integer);
-CREATE TABLE IF NOT EXISTS dumbfightlog(invoker_id bigint, target_id bigint, did_win integer);
-CREATE TABLE IF NOT EXISTS freezenick(id serial, user_id bigint, guild_id bigint, nickname text, old_nickname text, time bigint, reason text, responsible_moderator bigint);
-CREATE TABLE IF NOT EXISTS grinderdata(user_id bigint PRIMARY KEY, today bigint, past_week bigint, last_week bigint, past_month bigint, all_time bigint, last_dono_time bigint, last_dono_msg text, advance_amt bigint); 
-CREATE TABLE IF NOT EXISTS giveaways(guild_id bigint, channel_id bigint, message_id bigint, time bigint, name text, host_id bigint, winners integer);
-CREATE TABLE IF NOT EXISTS giveawayentrants(message_id bigint, user_id bigint);
-CREATE TABLE IF NOT EXISTS ignoredchristmascat(guild_id bigint, category_id bigint PRIMARY KEY);
-CREATE TABLE IF NOT EXISTS ignoredchristmaschan(guild_id bigint, channel_id bigint PRIMARY KEY);
-CREATE TABLE IF NOT EXISTS inventories(user_id bigint PRIMARY KEY, skull bigint, argonphallicobject bigint, llamaspit bigint, slicefrenzylesliecake bigint, wickedrusteze bigint);
-CREATE TABLE IF NOT EXISTS iteminfo(name text PRIMARY KEY, fullname text, description text, emoji text, image text, hidden boolean);
-CREATE TABLE IF NOT EXISTS joinmessages(guild_id bigint PRIMARY KEY, channel_id bigint, plain_text text, embed_details text, delete_after integer);
-CREATE TABLE IF NOT EXISTS karutaeventconfig(channel_id text, percentage_chance real);
-CREATE TABLE IF NOT EXISTS lockdownmsgs(guild_id bigint, profile_name text, startmsg text, endmsg text);
-CREATE TABLE IF NOT EXISTS lockdownprofiles(guild_id bigint, profile_name text, channel_id bigint);
-CREATE TABLE IF NOT EXISTS maintenance(cog_name text PRIMARY KEY, message text, enabled boolean);
-CREATE TABLE IF NOT EXISTS messagelog(user_id bigint PRIMARY KEY, messagecount bigint);
-CREATE TABLE IF NOT EXISTS messagemilestones(messagecount integer, roleid bigint);
-CREATE TABLE IF NOT EXISTS milestones(votecount integer, roleid bigint);
-CREATE TABLE IF NOT EXISTS nicknames(id serial, member_id bigint PRIMARY KEY, nickname text, messageid bigint);
-CREATE TABLE IF NOT EXISTS owocount(member_id bigint PRIMARY KEY, daily_count integer, weekly_count integer, total_count integer, yesterday integer, last_week integer);
-CREATE TABLE IF NOT EXISTS owocurrent(member_id bigint PRIMARY KEY, daily_count integer, weekly_count integer, total_count integer);
-CREATE TABLE IF NOT EXISTS owopast(member_id bigint PRIMARY KEY, yesterday integer, last_week integer);
-CREATE TABLE IF NOT EXISTS perkremoval(member_id bigint, perk text, until bigint);
-CREATE TABLE IF NOT EXISTS prefixes(guild_id bigint PRIMARY KEY, prefix text);
-CREATE TABLE IF NOT EXISTS remindersettings(member_id bigint PRIMARY KEY, method integer, daily bigint, lottery bigint, work bigint, lifesaver bigint, apple integer, redeem integer, weekly integer, monthly integer, hunt integer, fish integer, dig integer, highlow integer, snakeeyes integer, search integer, crime integer, beg integer, dailybox integer, horseshoe integer, pizza integer, drop integer);
-CREATE TABLE IF NOT EXISTS rules(guild_id bigint, command text, role_id bigint, whitelist boolean);
-CREATE TABLE IF NOT EXISTS selfrolemessages(guild_id bigint, age bigint, gender bigint, location bigint, minigames bigint, event_pings bigint, dank_pings bigint, server_pings bigint, bot_roles bigint, random_color bigint, colors bigint, specialcolors bigint, boostping bigint, vipheist bigint);
-CREATE TABLE IF NOT EXISTS serverconfig(guild_id bigint PRIMARY KEY NOT NULL, owodailylb bool NOT NULL DEFAULT FALSE, verification bool NOT NULL DEFAULT TRUE, censor bool NOT NULL DEFAULT FALSE, owoweeklylb bool NOT NULL DEFAULT TRUE, votelb bool NOT NULL DEFAULT TRUE, timeoutlog bool NOT NULL DEFAULT FALSE, statusrole bool NOT NULL DEFAULT FALSE, statusroleid bigint NOT NULL DEFAULT 0, statustext text NOT NULL DEFAULT 'lorem ipsum');
-CREATE TABLE IF NOT EXISTS stats(member_id bigint, remindertype integer, time bigint);
-CREATE TABLE IF NOT EXISTS stickmessages(guild_id bigint PRIMARY KEY, channel_id bigint, message_id bigint, type integer, message text);
-CREATE TABLE IF NOT EXISTS suggestion_response(suggestion_id integer, user_id bigint, response_id bigint, message_id bigint, message text);
-CREATE TABLE IF NOT EXISTS suggestions(suggestion_id serial, user_id bigint, finish boolean, response_id bigint, suggestion text);
-CREATE TABLE IF NOT EXISTS teleport(member_id bigint, checkpoint text, channel_id bigint);
-CREATE TABLE IF NOT EXISTS temp(member_id bigint PRIMARY KEY, daily_count integer, weekly_count integer, total_count integer, yesterday integer, last_week integer);
-CREATE TABLE IF NOT EXISTS tempweekly(member_id bigint PRIMARY KEY, yesterday integer, last_week integer);
-CREATE TABLE IF NOT EXISTS timedrole(member_id bigint, guild_id bigint, role_id bigint, time bigint);
-CREATE TABLE IF NOT EXISTS viprolemessages(guild_id bigint, colors bigint, vipcolors bigint, boostgaw bigint, vipheistping bigint);
-CREATE TABLE IF NOT EXISTS votecount(member_id bigint PRIMARY KEY, count integer);
-CREATE TABLE IF NOT EXISTS commandlog(guild_id bigint, channel_id bigint, user_id bigint, command text, message text, time bigint);
-CREATE TABLE IF NOT EXISTS timedunlock(guild_id bigint, channel_id bigint, time bigint, responsible_moderator bigint);
-CREATE TABLE IF NOT EXISTS nickname_changes(guild_id bigint, member_id bigint, nickname text, time bigint);
-CREATE TABLE IF NOT EXISTS name_changes(user_id bigint, name text, time bigint);
-CREATE TABLE IF NOT EXISTS timers(guild_id bigint, channel_id bigint, message_id bigint, user_id bigint, time bigint, title text);
-CREATE TABLE IF NOT EXISTS infections(infectioncase serial, member_id bigint PRIMARY KEY, guild_id bigint, channel_id bigint, message_id bigint, timeinfected bigint);
-CREATE TABLE IF NOT EXISTS polls(poll_id serial, guild_id bigint, channel_id bigint, invoked_message_id bigint, message_id bigint, creator_id bigint, poll_name text, choices text, created bigint);
-CREATE TABLE IF NOT EXISTS pollvotes(poll_id integer, user_id bigint, choice text);
-CREATE TABLE IF NOT EXISTS highlight (guild_id bigint, user_id bigint, highlights text);
-CREATE TABLE IF NOT EXISTS highlight_ignores (guild_id bigint, user_id bigint, ignore_type text, ignore_id bigint);
-CREATE TABLE IF NOT EXISTS reminders(id serial, user_id bigint, guild_id bigint, channel_id bigint, message_id bigint, name text, time bigint, created_time bigint);
-CREATE TABLE IF NOT EXISTS userconfig(user_id bigint PRIMARY KEY, votereminder bigint, dumbfight_result bool, dumbfight_rig_duration bigint, virus_immune bigint, received_daily_potion bool);
-CREATE TABLE IF NOT EXISTS modlog(case_id serial, guild_id bigint not null, moderator_id bigint not null, offender_id bigint not null, action text not null, reason text, start_time bigint, duration bigint, end_time bigint);
-CREATE TABLE IF NOT EXISTS changelog(version_number serial, version_str text, changelog text);
-CREATE TABLE IF NOT EXISTS watchlist(guild_id bigint, user_id bigint, target_id bigint, remarks text);
-CREATE TABLE IF NOT EXISTS usercleanup(guild_id bigint, target_id bigint, channel_id bigint, message text);
-CREATE TABLE IF NOT EXISTS giveawayconfig(guild_id bigint not null, channel_id bigint not null constraint giveawayconfig_pkey primary key, bypass_roles text, blacklisted_roles text, multi jsonb);
-CREATE TABLE IF NOT EXISTS dankitems(name bigint, IDcode text PRIMARY KEY, image_url text, type text, trade_value int, last_updated bigint default 0, overwrite bool default false);
-CREATE TABLE IF NOT EXISTS contests(contest_id serial, guild_id bigint not null, contest_starter_id bigint not null, contest_channel_id bigint not null, name text, created bigint, active bool default true, voting bool default false);
-CREATE TABLE IF NOT EXISTS contest_submissions(contest_id int not null, entry_id int, submitter_id bigint not null, media_link text not null, second_media_link text, approve_id bigint, msg_id bigint, approved bool default false);
-CREATE TABLE IF NOT EXISTS contest_votes(contest_id int not null, entry_id int, user_id bigint not null);
-CREATE TABLE IF NOT EXISTS customroles(guild_id bigint NOT NULL, user_id bigint NOT NULL, role_id bigint NOT NULL);
-CREATE TABLE IF NOT EXISTS payoutchannels(channel_id BIGINT PRIMARY KEY, ticket_user_id BIGINT, staff BIGINT);
-CREATE SCHEMA IF NOT EXISTS donations""")
-        print(f"{datetime.datetime.utcnow().strftime(strfformat)} | {self.user} ({self.user.id}) is ready")
+        print(f"{get_display_time_now()} | Loaded all Server Configurations")
+        await self.initialize_database()
+        await self.db.execute("CREATE SCHEMA IF NOT EXISTS donations;")
+        print(f"{get_display_time_now()} | {self.user} ({self.user.id}) is ready")
 
     @property
     def error_channel(self):
@@ -413,6 +354,9 @@ CREATE SCHEMA IF NOT EXISTS donations""")
 
     async def on_guild_join(self, guild):
         await self.db.execute('INSERT INTO prefixes VALUES ($1, $2) ON CONFLICT DO UPDATE SET prefix=$2', guild.id, "dv.")
+
+    async def create_amari_client(self):
+        return api.AmariClient(amari_key)
 
     async def get_prefix(self, message):
         if message.guild is None:
@@ -501,7 +445,7 @@ CREATE SCHEMA IF NOT EXISTS donations""")
     def starter(self):
         """starts the bot properly."""
         start = time.time()
-        print(f"{datetime.datetime.utcnow().strftime(strfformat)} | Starting Bot")
+        print(f"{get_display_time_now()} | Starting Bot")
         try:
             pool_pg = self.loop.run_until_complete(asyncpg.create_pool(
                 host=host,
@@ -511,11 +455,12 @@ CREATE SCHEMA IF NOT EXISTS donations""")
                 password=password
             ))
         except Exception as e:
-            print_exception(f"{datetime.datetime.utcnow().strftime(strfformat)} | Could not connect to databases:", e)
+            print_exception(f"{get_display_time_now()} | Could not connect to databases:", e)
         else:
             self.uptime = discord.utils.utcnow()
             self.db = pool_pg
-            print(f"{datetime.datetime.utcnow().strftime(strfformat)} | Connected to the database")
+            self.AmariClient = self.loop.run_until_complete(self.create_amari_client())
+            print(f"{get_display_time_now()} | Connected to the database")
             self.loop.create_task(self.after_ready())
             self.loop.create_task(self.load_maintenance_data())
             self.loop.create_task(self.get_all_blacklisted_users())
