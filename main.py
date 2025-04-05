@@ -340,11 +340,11 @@ class dvvt(commands.Bot):
         await self.wait_until_ready()
 
     async def on_ready(self):
+        await self.initialize_database()
         for guild in self.guilds:
             guild_settings = await client.fetch_guild_settings(guild.id)
             self.serverconfig[guild.id] = guild_settings
         print(f"{get_display_time_now()} | Loaded all Server Configurations")
-        await self.initialize_database()
         await self.db.execute("CREATE SCHEMA IF NOT EXISTS donations;")
         print(f"{get_display_time_now()} | {self.user} ({self.user.id}) is ready")
 
