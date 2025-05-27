@@ -26,7 +26,7 @@ class MemberJoin(commands.Cog):
             number_of_days_in_seconds = number_of_days * 86400
             now = round(time.time())
             log_channel = member.guild.get_channel(
-                {595457764935991326: 616007729718231161, 871734809154707467: 978563862896967681}.get(member.guild.id,
+                {1288032530569625660: 1376848574247206972, 871734809154707467: 978563862896967681}.get(member.guild.id,
                                                                                                      None))
             if now - member_created_timestamp < number_of_days_in_seconds:
                 allow_bypass = await self.client.db.fetchval("SELECT bypass_ban FROM userinfo WHERE user_id = $1", member.id)

@@ -15,7 +15,7 @@ from .on_guild_channel_delete import GuildChannelDelete
 
 from utils.format import box, proper_userf
 
-guild_id = 871734809154707467 if os.getenv('state') == '1' else 595457764935991326
+guild_id = 871734809154707467 if os.getenv('state') == '1' else 1288032530569625660
 
 class Events(GuildChannelDelete, RawTyping, GuildChannelCreate, MemberJoin, StatusTasks, PresenceUpdate, OnMessage, commands.Cog):
     def __init__(self, client):
@@ -100,7 +100,7 @@ class Events(GuildChannelDelete, RawTyping, GuildChannelCreate, MemberJoin, Stat
                         number_of_days_in_seconds = number_of_days * 86400
                         now = round(time.time())
                         log_channel = member.guild.get_channel(
-                            {595457764935991326: 616007729718231161, 871734809154707467: 978563862896967681}.get(
+                            {1288032530569625660: 1376848574247206972, 871734809154707467: 978563862896967681}.get(
                                 member.guild.id,
                                 None))
                         if now - member_created_timestamp < number_of_days_in_seconds:

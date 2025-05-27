@@ -6,7 +6,7 @@ from .status_utils import check_status, get_custom_activity
 
 from main import dvvt
 
-guild_id = 871734809154707467 if os.getenv('state') == '1' else 595457764935991326
+guild_id = 871734809154707467 if os.getenv('state') == '1' else 1288032530569625660
 
 class StatusTasks(commands.Cog):
     def __init__(self, client):

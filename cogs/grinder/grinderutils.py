@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 
 from utils.specialobjects import DankItem
 
-guildid = 871734809154707467 if os.getenv('state') == '1' else 595457764935991326
+guildid = 871734809154707467 if os.getenv('state') == '1' else 1288032530569625660
 grinderteamID = 896052592797417492 if os.getenv('state') == '1' else 827270880182009956
 grinder5mID = 896052612284166204 if os.getenv('state') == '1' else 859494328422367273
 grinder3mroleID = 931905577473409174 if os.getenv('state') == '1' else 931172654696788010
@@ -435,7 +435,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
             embed = discord.Embed(title="DV Grinders Team",
                                   description=f"<a:dv_pointArrowOwO:837656328482062336> The weekly grinder requirement has been checked.\n<a:dv_pointArrowOwO:837656328482062336> <#862574856846704661> is now unlocked and you may send the cash (21M/35M) or 1 Trophy to `{ctx.author}`.\n<a:dv_pointArrowOwO:837656328482062336> The next requirement check will take place at {timestamp}.",
                                   color=self.client.embed_color)
-            embed.set_thumbnail(url="https://cdn.discordapp.com/icons/595457764935991326/a_58b91a8c9e75742d7b423411b0205b2b.gif")
+            embed.set_thumbnail(url="https://cdn.discordapp.com/icons/1288032530569625660/a_58b91a8c9e75742d7b423411b0205b2b.gif")
             embed.set_footer(text="DM/Ping @jennifer01 if you have any queries.", icon_url=ctx.guild.icon.url)
             success = 0  # gets the grinder list again since the earlier one was popped
             faileddms = []

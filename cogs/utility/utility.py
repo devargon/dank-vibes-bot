@@ -249,7 +249,7 @@ class TimerRemindMe(discord.ui.View):
         else:
             await interaction.client.get_cog('utility').add_reminder(interaction.user.id, interaction.guild.id, 698462922682138654, interaction.message.id, self.what_to_remind, self.timestamp)
             if interaction.channel.id in [876827800236064808, 690125458272288814, 871737314831908974]:
-                if interaction.guild.id == 595457764935991326:
+                if interaction.guild.id == 1288032530569625660:
                     heistping = interaction.guild.get_role(758174643814793276)
                     if heistping in interaction.guild.roles:
                         await interaction.user.add_roles(heistping)

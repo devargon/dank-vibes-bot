@@ -29,7 +29,7 @@ class LotterySlash(commands.Cog):
             embed.add_field(name="Entry:", value=f"<a:dv_pointArrowOwO:837656328482062336> Read the sticky message in <#680002065950703646> for information on how to enter!")
         elif type == 'karuta':
             embed.add_field(name="Entry:", value=f"<a:dv_pointArrowOwO:837656328482062336> Follow the format given in <#887006001566462062> and kindly wait for a <@&843756047964831765> to assist you!")
-        if ctx.guild.id == 595457764935991326:
+        if ctx.guild.id == 1288032530569625660:
             if type == 'dank':
                 ping = "<@&680131933778346011>"
             elif type == 'owo':
@@ -50,7 +50,7 @@ class LotterySlash(commands.Cog):
         dank_required_roles = [663502776952815626, 684591962094829569, 608500355973644299]
         karuta_required_roles = [843756047964831765, 663502776952815626, 684591962094829569, 608500355973644299]
         owo_required_roles = [837595910661603330, 663502776952815626, 684591962094829569, 608500355973644299]
-        if ctx.guild.id == 595457764935991326:
+        if ctx.guild.id == 1288032530569625660:
             if type == 'dank':
                 if not any([ctx.guild.get_role(r_id) in ctx.author.roles for r_id in dank_required_roles]):
                     confirm_host_view = confirm(ctx, self.client, 30.0)

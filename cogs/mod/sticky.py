@@ -97,7 +97,7 @@ class Sticky(commands.Cog):
     async def sticky_create(self, ctx, channel:discord.TextChannel=None, *, content=None):
         """
         Creates a sticky message for the specified channel. Only one sticky message can be created for one channel.
-        To add an embed as a message, add it in the form of a JSON code which you can get from https://carl.gg/dashboard/595457764935991326/embeds.
+        To add an embed as a message, add it in the form of a JSON code which you can get from https://carl.gg/dashboard/1288032530569625660/embeds.
         """
         if channel is None:
             return await ctx.send("`channel` is a required argument. `sticky create [channel] [content]`")

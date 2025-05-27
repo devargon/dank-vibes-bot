@@ -203,7 +203,7 @@ class snipe(commands.Cog):
             else:
                 for string in blacklisted:
                     if string in str(snipedata['emoji']):
-                        return "This emoji has a blacklisted name and cannot be shown.", "https://cdn.discordapp.com/attachments/616007729718231161/905702687566336013/DVB_False.png"
+                        return "This emoji has a blacklisted name and cannot be shown.", "https://cdn.discordapp.com/attachments/1376848574247206972/905702687566336013/DVB_False.png"
                 return f"{snipedata['emoji'].name} (Emoji ID: {snipedata['emoji'].id})", snipedata['url']
 
         emoji = await emoji()
