@@ -10,7 +10,7 @@ class L2LVC(commands.Cog):
     async def on_voice_state_update(self, member, before, after):
         if member.bot:
             return
-        if member.guild.id != 595457764935991326:
+        if member.guild.id != 1288032530569625660:
             return
         l2lrole = member.guild.get_role(798074726458982420)
         if before.channel == after.channel:

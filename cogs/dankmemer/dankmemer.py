@@ -702,7 +702,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             return
         if not message.guild:
             return
-        #if message.guild.id != 595457764935991326:
+        #if message.guild.id != 1288032530569625660:
 #            return
         """
         Serverevents Donate

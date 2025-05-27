@@ -21,7 +21,7 @@ from datetime import datetime
 import pytz
 from utils.context import DVVTcontext
 
-modcommands_id = 978563862896967681 if os.getenv('state') == '1' else 616007729718231161
+modcommands_id = 978563862896967681 if os.getenv('state') == '1' else 1376848574247206972
 dankmemerplayerrole_id = 982153033523793950 if os.getenv('state') == '1' else 837594909917708298
 
 ID_REGEX = re.compile(r"([0-9]{15,20})")
@@ -112,7 +112,7 @@ class GetDankMemerPlayerRole(discord.ui.Button):
 
 class GoToChannel(discord.ui.Button):
     def __init__(self):
-        super().__init__(label="Teleport to a Dank Memer Bot Channel", style=discord.ButtonStyle.grey, url="https://discord.com/channels/595457764935991326/614945340617130004")
+        super().__init__(label="Teleport to a Dank Memer Bot Channel", style=discord.ButtonStyle.grey, url="https://discord.com/channels/1288032530569625660/1317844354303393832")
 
 class RoleOnlyView(discord.ui.View):
     def __init__(self):
@@ -266,8 +266,8 @@ class OnMessage(commands.Cog):
                     except Exception as e:
                         await message.channel.send(offender_msg)
         if message.interaction is not None and message.interaction.name == "setup" and self.mafia_wait is not True:
-            lounge_category = 595457764935991327 if message.guild.id == 595457764935991326 else 875316745416617984
-            if message.channel.id == 711377990113820924 or discord.utils.get(message.author.roles, id=735417263968223234) or discord.utils.get(message.author.roles, id=724971657143255170) or message.author.guild_permissions.manage_roles:
+            lounge_category = 1288032530569625661 if message.guild.id == 1288032530569625660 else 875316745416617984
+            if message.channel.id == 1340040237853839360 or discord.utils.get(message.author.roles, id=735417263968223234) or discord.utils.get(message.author.roles, id=724971657143255170) or message.author.guild_permissions.manage_roles:
                 #         it will treat it as a to be monitored game if it's in events, or user is a modm+/event hoster or event sponsor
                 status = ["<a:DVB_CLoad3:994913503771111515> Waiting for Mafia Channel creation."]
                 self.mafia_wait = True
@@ -289,7 +289,7 @@ class OnMessage(commands.Cog):
                 else:
                     status = [f"{return_emoji(True)} {mafia_channel.mention} game found", "<a:DVB_CLoad2:994913353388527668> Setting up Mafia Log channel..."]
                 log_channel_name = get_channel_name(mafia_channel)
-                if message.guild.id == 595457764935991326:
+                if message.guild.id == 1288032530569625660:
                     # set perms if the game was started in mafia
                     event_hoster_role = message.guild.get_role(735417263968223234)
                     event_manager_role = message.guild.get_role(756667326623121568)
@@ -344,7 +344,7 @@ class OnMessage(commands.Cog):
 <:d_snowydash:921327788223500288> __Bribing__ other players is not allowed."""
                         self.client.mafia_game_details[message.channel.id] = MafiaGameDetails(message.mentions)
 
-                        if message.guild.id == 595457764935991326: # dank vibes event sposnor stuff
+                        if message.guild.id == 1288032530569625660: # dank vibes event sposnor stuff
                             event_sponsor_role = message.guild.get_role(724971657143255170) # event sponsor role, check if event sponsor joined the event
                             if event_sponsor_role is not None:
                                 sponsors_in_game = []
@@ -400,7 +400,7 @@ class OnMessage(commands.Cog):
                     allowed_mentions=discord.AllowedMentions.none()
                 )
         if message.channel.name == 'mafia':
-            lounge_category = 595457764935991327 if message.guild.id == 595457764935991326 else 875316745416617984
+            lounge_category = 1288032530569625661 if message.guild.id == 1288032530569625660 else 875316745416617984
             if message.channel.category_id == lounge_category:
                 if message.channel.id not in self.client.mafia_channels.keys():
                     log_channel = discord.utils.get(message.guild.channels, name=get_channel_name(message.channel))

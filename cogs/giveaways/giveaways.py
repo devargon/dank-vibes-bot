@@ -44,7 +44,7 @@ class VoteLink(discord.ui.View):
     def __init__(self):
         super().__init__()
         self.add_item(discord.ui.Button(label='Vote for Dank Vibes at Top.gg',
-                                        url="https://top.gg/servers/595457764935991326/vote",
+                                        url="https://top.gg/servers/1288032530569625660/vote",
                                         emoji=discord.PartialEmoji.from_str('<a:dv_iconOwO:837943874973466664>')))
 
 class GiveawayList(menus.ListPageSource):
@@ -1455,13 +1455,13 @@ class giveaways(commands.Cog):
             'gang': {
                 'role_id': 758175760909074432,
                 'required_role': [627284965222121482],
-                'required_channel': [701771740912549938, 626704430468825089, 630587061665267713, 616007729718231161],
+                'required_channel': [701771740912549938, 626704430468825089, 630587061665267713, 1376848574247206972],
                 'text': "Join the giveaway above ♡"
             },
             'elite': {
                 'role_id': 758174135276142593,
                 'required_role': [627284965222121482],
-                'required_channel': [701771740912549938, 741254464303923220, 630587061665267713, 616007729718231161],
+                'required_channel': [701771740912549938, 741254464303923220, 630587061665267713, 1376848574247206972],
                 'text': "Join the Elite giveaway above ♡"
             },
             'karuta': {
@@ -1963,7 +1963,7 @@ class giveaways(commands.Cog):
         await ctx.message.delete()
         #gang channel check
         if os.getenv('state') == '0':
-            if ctx.channel.id not in [701771740912549938, 626704430468825089, 630587061665267713, 616007729718231161]:
+            if ctx.channel.id not in [701771740912549938, 626704430468825089, 630587061665267713, 1376848574247206972]:
                 return await ctx.send("You cannot use this command in this channel! �")
         if text is None:
             text = "Join the giveaway above ♡"
@@ -1979,7 +1979,7 @@ class giveaways(commands.Cog):
         await ctx.message.delete()
         #elite channel check
         if os.getenv('state') == '0':
-            if ctx.channel.id not in [701771740912549938, 741254464303923220, 630587061665267713, 616007729718231161, 803039330310029362]:
+            if ctx.channel.id not in [701771740912549938, 741254464303923220, 630587061665267713, 1376848574247206972, 803039330310029362]:
                 return await ctx.send("You cannot use this command in this channel! �")
         if text is None:
             text = "Join the Elite giveaway above ♡"
@@ -2009,7 +2009,7 @@ class giveaways(commands.Cog):
     async def giveaway_nitro(self, ctx, *, text=None):
         await ctx.message.delete()
         if os.getenv('state') == '0':
-            if ctx.channel.id not in [650244237744537630, 630587061665267713, 616007729718231161]:
+            if ctx.channel.id not in [650244237744537630, 630587061665267713, 1376848574247206972]:
                 return await ctx.send("You cannot use this command in this channel! �")
         if text is None:
             text = "Join the Nitro giveaway above ♡"

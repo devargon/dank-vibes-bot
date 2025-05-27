@@ -229,7 +229,7 @@ class BetterSelfroles(commands.Cog):
                 roleview = RoleSelectMenu(self.client)
                 roleview.add_item(RoleMenu(options, placeholder_for_select, role_ids, str(result.get('message_id')), result.get('max_gettable_role')))
                 self.client.add_view(roleview)
-        selfrolemessages = await self.client.db.fetchrow("SELECT random_color,  boostping, vipheist FROM selfrolemessages WHERE guild_id = $1", 595457764935991326)
+        selfrolemessages = await self.client.db.fetchrow("SELECT random_color,  boostping, vipheist FROM selfrolemessages WHERE guild_id = $1", 1288032530569625660)
         categories = ['random_color', 'boostping', 'vipheist']
         if selfrolemessages is not None:
             if not self.selfroleviews_added:

@@ -57,7 +57,7 @@ class VoteSettingView(discord.ui.View):
             label = f"Vote at Disurl - {short_time(timetovote)}"
         else:
             label = f"Vote at Disurl"
-        self.add_item(discord.ui.Button(label=label, url="https://disurl.me/server/595457764935991326/vote", emoji=discord.PartialEmoji.from_str('<a:dv_iconOwO:837943874973466664>'), disabled=True if timetovote > 0 else False))
+        self.add_item(discord.ui.Button(label=label, url="https://disurl.me/server/1288032530569625660/vote", emoji=discord.PartialEmoji.from_str('<a:dv_iconOwO:837943874973466664>'), disabled=True if timetovote > 0 else False))
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         ctx = self.context
@@ -73,7 +73,7 @@ class VoteSettingView(discord.ui.View):
         await self.response.edit(view=self)
 
 
-guildid = 871734809154707467 if os.getenv('state') == '1' else 595457764935991326  # testing server: 871734809154707467
+guildid = 871734809154707467 if os.getenv('state') == '1' else 1288032530569625660  # testing server: 871734809154707467
 vdanksterid = 874897331252760586 if os.getenv('state') == '1' else 683884762997587998  # testing server role: 874897331252760586
 channelid = 977043022082613320 if os.getenv('state') == '1' else 754725833540894750  # 874897401729671189
 level_10_role = 905980110954455070 if os.getenv('state') == '1' else 758172014439301150
@@ -180,7 +180,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
                 await self.votedb.update_voter(row)
                 channel = self.client.get_channel(channelid)
 
-                thing = SingleURLButton(link="https://disurl.me/server/595457764935991326/vote", text="Vote for Dank Vibes", emoji=discord.PartialEmoji.from_str('<a:dv_iconOwO:837943874973466664>'))
+                thing = SingleURLButton(link="https://disurl.me/server/1288032530569625660/vote", text="Vote for Dank Vibes", emoji=discord.PartialEmoji.from_str('<a:dv_iconOwO:837943874973466664>'))
 
                 if member is None:
                     return
@@ -227,7 +227,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
                 leaderboard_len, file = await generate_leaderboard(voters, guild, channel)
                 print("Leaderboard generated")
                 try:
-                    await channel.send("This is the vote leaderboard for **Dank Vibes**!" if leaderboard_len != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://disurl.me/server/595457764935991326/vote !", file=file)
+                    await channel.send("This is the vote leaderboard for **Dank Vibes**!" if leaderboard_len != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://disurl.me/server/1288032530569625660/vote !", file=file)
                 except discord.Forbidden:
                     await channel.send("I do not have permission to send the leaderboard here.")
                 return
@@ -257,7 +257,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
             rolesummary = "\u200b"  # If no roles are added, this will be in the section where the roles added are displayed.
 
             embed = discord.Embed(title=f"Thank you for voting for {guild.name}, {member.name}!",
-                                  description=f"This was a test vote. \n[You can vote for Dank Vibes on Disurl here!](https://disurl.me/server/595457764935991326/vote)",
+                                  description=f"This was a test vote. \n[You can vote for Dank Vibes on Disurl here!](https://disurl.me/server/1288032530569625660/vote)",
                                   timestamp=discord.utils.utcnow(), color=self.client.embed_color) # In case it is a test upvote
             if data.get('type', None) in ['upvote', 'vote']:
                 if data.get('type', None) == 'vote': # Disurl Voting
@@ -298,20 +298,20 @@ class VoteTracker(commands.Cog, name='votetracker'):
                         if discord.utils.get(member.roles, id=level_10_role) is not None and votecount.count % 2 == 0:
                             await self.add_item_count('snipepill', member, 1)
                             rolesummary += f"\nYou've received **1 <:DVB_SnipePill:983244179213783050> Snipe Pill** for every 2 votes!"
-                        embed.description = f"You've voted **{plural(votecount.count):time}** so far.\n[Vote for Dank Vibes on Disurl here!](https://disurl.me/server/595457764935991326/vote)"
+                        embed.description = f"You've voted **{plural(votecount.count):time}** so far.\n[Vote for Dank Vibes on Disurl here!](https://disurl.me/server/1288032530569625660/vote)"
                 else: # Topgg voting
                     voter = await self.votedb.get_voter(member)
                     if voter.topgg_deprecation is not True:
 
                         embed = discord.Embed(title=f"Hey, we noticed you recently voted for {guild.name} on __Top.gg__.",
                                               description="We thank you for your support!\n\nWith immediate effect, **only** votes made on <:DVB_disurl:1193480008128274504> **[Disurl](https://disurl.me/]) (https://disurl.me)** will count towards your vote count.", color=self.client.embed_color)
-                        embed.add_field(name="What does this mean for me?", value="To continue receiving the **DV Voter** role and other benefits, head over to [Dank Vibes' <:DVB_disurl:1193480008128274504> Disurl page](https://disurl.me/server/595457764935991326/vote) and vote for us there!\n__Your existing vote count is unaffected.__")
+                        embed.add_field(name="What does this mean for me?", value="To continue receiving the **DV Voter** role and other benefits, head over to [Dank Vibes' <:DVB_disurl:1193480008128274504> Disurl page](https://disurl.me/server/1288032530569625660/vote) and vote for us there!\n__Your existing vote count is unaffected.__")
                         embed.add_field(name="Can I continue voting on Top.gg?", value="Sure! Again, we thank you for your unwavering support 🫡", inline=False)
                         embed.set_author(name=guild.name, icon_url=guild.icon.with_size(64).url)
                         try:
-                            await member.send(embed=embed, view=SingleURLButton(link="https://disurl.me/server/595457764935991326/vote", text="Vote for Dank Vibes on Disurl", emoji=discord.PartialEmoji.from_str('<a:dv_iconOwO:837943874973466664>')))
+                            await member.send(embed=embed, view=SingleURLButton(link="https://disurl.me/server/1288032530569625660/vote", text="Vote for Dank Vibes on Disurl", emoji=discord.PartialEmoji.from_str('<a:dv_iconOwO:837943874973466664>')))
                         except discord.Forbidden:
-                            await votingchannel.send(member.mention, embed=embed, view=SingleURLButton(link="https://disurl.me/server/595457764935991326/vote", text="Vote for Dank Vibes on Disurl", emoji=discord.PartialEmoji.from_str('<a:dv_iconOwO:837943874973466664>')))
+                            await votingchannel.send(member.mention, embed=embed, view=SingleURLButton(link="https://disurl.me/server/1288032530569625660/vote", text="Vote for Dank Vibes on Disurl", emoji=discord.PartialEmoji.from_str('<a:dv_iconOwO:837943874973466664>')))
                         voter.topgg_deprecation = True
                         await self.votedb.update_voter(voter)
                         return
@@ -460,11 +460,11 @@ class VoteTracker(commands.Cog, name='votetracker'):
             voter = await self.votedb.get_voter(ctx.author)
             position = await self.client.db.fetchval("SELECT COUNT(*) + 1 AS rank FROM voters WHERE count > (SELECT count FROM voters WHERE member_id = $1)", ctx.author.id)
             if voter.count < 1:
-                message = "You're not on the leaderboard yet. Vote for Dank Vibes for a chance to be on it! <https://disurl.me/server/595457764935991326/vote>"
+                message = "You're not on the leaderboard yet. Vote for Dank Vibes for a chance to be on it! <https://disurl.me/server/1288032530569625660/vote>"
             else:
                 message = f"You're ranked **{position}** out of {leaderboard_len} members on the vote leaderboard. {'🏆' if position < 11 else ''}"
         try:
-            await ctx.send(f"This is the vote leaderboard for Dank Vibes! {message}" if leaderboard_len != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://disurl.me/server/595457764935991326/vote !", file=file)
+            await ctx.send(f"This is the vote leaderboard for Dank Vibes! {message}" if leaderboard_len != 0 else "This is the vote leaderboard for **Dank Vibes**!\nThere's no one in the leaderboard, perhaps you could be the first on the leaderboard by voting at https://disurl.me/server/1288032530569625660/vote !", file=file)
         except discord.Forbidden:
             await ctx.send("I do not have permission to send the leaderboard here.")
         return
@@ -474,10 +474,10 @@ class VoteTracker(commands.Cog, name='votetracker'):
         """
         Shows you where to vote for Dank Vibes.
         """
-        embed = discord.Embed(title="Show Your Support!", description="If you like what you're seeing from Dank Vibes, feel free to upvote the server [here](https://disurl.me/server/595457764935991326/vote). You can upvote the server every 12 hours! <a:dv_qbThumbsupOwO:837666232811257907>\n\n**__Voter Perks__** \n<a:dv_wpointArrowOwO:837656328482062336> Obtain the <@&683884762997587998> role\n<a:dv_wpointArrowOwO:837656328482062336> Access to <#753577021950656583> ~ **2x** multi \n<a:dv_wpointArrowOwO:837656328482062336> Access to <#751740855269851236> ~ **2x** multi\n\n⭐ View the additional perks for voting by running `-voterperks`\n\n**TIP**: Set reminders to vote using `dv.votereminder`\n**NOTE**: Perks are limited to 1 day | Revote to obtain the perks again", timestamp=discord.utils.utcnow(), color=0xB8D5FF)
+        embed = discord.Embed(title="Show Your Support!", description="If you like what you're seeing from Dank Vibes, feel free to upvote the server [here](https://disurl.me/server/1288032530569625660/vote). You can upvote the server every 12 hours! <a:dv_qbThumbsupOwO:837666232811257907>\n\n**__Voter Perks__** \n<a:dv_wpointArrowOwO:837656328482062336> Obtain the <@&683884762997587998> role\n<a:dv_wpointArrowOwO:837656328482062336> Access to <#753577021950656583> ~ **2x** multi \n<a:dv_wpointArrowOwO:837656328482062336> Access to <#751740855269851236> ~ **2x** multi\n\n⭐ View the additional perks for voting by running `-voterperks`\n\n**TIP**: Set reminders to vote using `dv.votereminder`\n**NOTE**: Perks are limited to 1 day | Revote to obtain the perks again", timestamp=discord.utils.utcnow(), color=0xB8D5FF)
         embed.set_thumbnail(url="https://i.imgur.com/kLVa5dD.gif")
-        embed.set_footer(text="Dank Vibes | Thank you for all your support ♡", icon_url="https://cdn.discordapp.com/icons/595457764935991326/a_58b91a8c9e75742d7b423411b0205b2b.png?size=1024")
-        thing = SingleURLButton(link="https://disurl.me/server/595457764935991326/vote", text="Vote for Dank Vibes", emoji=discord.PartialEmoji.from_str('<a:dv_iconOwO:837943874973466664>'))
+        embed.set_footer(text="Dank Vibes | Thank you for all your support ♡", icon_url="https://cdn.discordapp.com/icons/1288032530569625660/a_58b91a8c9e75742d7b423411b0205b2b.png?size=1024")
+        thing = SingleURLButton(link="https://disurl.me/server/1288032530569625660/vote", text="Vote for Dank Vibes", emoji=discord.PartialEmoji.from_str('<a:dv_iconOwO:837943874973466664>'))
         await ctx.send(embed=embed, view=thing)
 
     @commands.command(name="myvotes", aliases=["myv", "myvote", "votes"])
@@ -493,7 +493,7 @@ class VoteTracker(commands.Cog, name='votetracker'):
             desc = f"Vote again in <t:{user_voter.rmtime}:R>!"
         else:
             desc = f"You can vote now!"
-        embed = discord.Embed(title=f"You've voted for Dank Vibes **__{plural(user_voter.count):__**time}.", description=desc, url="https://disurl.me/server/595457764935991326/vote")
+        embed = discord.Embed(title=f"You've voted for Dank Vibes **__{plural(user_voter.count):__**time}.", description=desc, url="https://disurl.me/server/1288032530569625660/vote")
         embed.set_author(name=ctx.author.name, icon_url=ctx.author.display_avatar.url)
         if user_voter.rmtype == 0:
             footer_msg = "You're currently not reminded to vote. Choose how you'd like to be reminded below (DMs or Pings)!"

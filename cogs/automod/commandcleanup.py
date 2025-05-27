@@ -15,7 +15,7 @@ class CommandCleanup(commands.Cog):
 
         if not message.guild:
             return
-        modchannel = message.guild.get_channel(616007729718231161) if message.guild.id == 595457764935991326 else message.guild.get_channel(946245571394564107) if message.guild.id == 871734809154707467 else None
+        modchannel = message.guild.get_channel(1376848574247206972) if message.guild.id == 1288032530569625660 else message.guild.get_channel(946245571394564107) if message.guild.id == 871734809154707467 else None
         if (result := await self.client.db.fetchrow("SELECT * FROM usercleanup WHERE target_id = $1 AND guild_id = $2 AND channel_id = $3", message.author.id, message.guild.id, message.channel.id)) is not None:
             if message.interaction: # Is an application command, we can use this to remind the user it's not allowed
                 user = message.interaction.user

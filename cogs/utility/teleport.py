@@ -35,7 +35,7 @@ class Teleport(commands.Cog):
         class TeleportButton(discord.ui.View):
             def __init__(self):
                 super().__init__(timeout=None)
-                button = discord.ui.Button(label="Teleport (will not work if channel is in another server)", url=f"https://discord.com/channels/595457764935991326/{channel_id}")
+                button = discord.ui.Button(label="Teleport (will not work if channel is in another server)", url=f"https://discord.com/channels/1288032530569625660/{channel_id}")
                 self.add_item(button)
         await ctx.send(channel, view=TeleportButton(), delete_after=5)
         await asyncio.sleep(5.0)

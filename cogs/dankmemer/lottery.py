@@ -86,7 +86,7 @@ class LottoTemplateView(discord.ui.View):
 
 
 def get_lotto_channel(guild_id: int, type_of_lottery: Literal['dank', 'karuta', 'owo']) -> int:
-    if guild_id == 595457764935991326:
+    if guild_id == 1288032530569625660:
         if type_of_lottery == 'dank':
             lottery_chan_id = 731398659664511057
         elif type_of_lottery == 'karuta':
@@ -110,7 +110,7 @@ def get_lotto_channel(guild_id: int, type_of_lottery: Literal['dank', 'karuta', 
 
 
 def get_ping(guild_id: int, type_of_lottery: Literal['dank', 'karuta', 'owo']) -> str:
-    if guild_id == 595457764935991326:
+    if guild_id == 1288032530569625660:
         if type_of_lottery == 'dank':
             ping = "<@&680131933778346011>"
         elif type_of_lottery == 'owo':
@@ -257,7 +257,7 @@ class Lottery(commands.Cog):
         dank_required_roles = [663502776952815626, 684591962094829569, 608500355973644299]
         karuta_required_roles = [843756047964831765, 663502776952815626, 684591962094829569, 608500355973644299]
         owo_required_roles = [837595910661603330, 663502776952815626, 684591962094829569, 608500355973644299]
-        if ctx.guild.id == 595457764935991326:
+        if ctx.guild.id == 1288032530569625660:
             if lottery_type == 'dank':
                 if not any([ctx.guild.get_role(r_id) in ctx.author.roles for r_id in dank_required_roles]):
                     confirm_host_view = confirm(ctx,self.client, 30.0)

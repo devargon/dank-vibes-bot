@@ -11,7 +11,7 @@ class WatchList(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        chan_notify_id = 616007729718231161 if member.guild.id == 595457764935991326 else 871737314831908974 if member.guild.id == 871734809154707467 else None
+        chan_notify_id = 1376848574247206972 if member.guild.id == 1288032530569625660 else 871737314831908974 if member.guild.id == 871734809154707467 else None
         chan = member.guild.get_channel(chan_notify_id)
         if chan is not None and chan.permissions_for(member.guild.get_member(self.client.user.id)).send_messages:
             channel_exists = True

@@ -227,7 +227,7 @@ class PublicVoteView(discord.ui.View):
         if discord.utils.get(interaction.user.roles, name="DV Voter"):
             await interaction.response.send_message("<:DVB_True:887589686808309791> **You currently have the <@&683884762997587998> role** and can join the heist!\nIf the heist hasn't started, get <@&758174643814793276> to be notified when it starts!", ephemeral=True, view=GetHeistPing())
         else:
-            await interaction.response.send_message("<:DVB_False:887589731515392000> **You do not have the <@&683884762997587998> role.**\n` - ` Vote for Dank Vibes at https://top.gg/servers/595457764935991326/vote, and click on the button again to see if you can join the heist!\n` - ` If you have voted for Dank Vibes but still do not have the role, open a ticket in <#870880772985344010> and inform a Mod there.", ephemeral=True)
+            await interaction.response.send_message("<:DVB_False:887589731515392000> **You do not have the <@&683884762997587998> role.**\n` - ` Vote for Dank Vibes at https://top.gg/servers/1288032530569625660/vote, and click on the button again to see if you can join the heist!\n` - ` If you have voted for Dank Vibes but still do not have the role, open a ticket in <#870880772985344010> and inform a Mod there.", ephemeral=True)
 
 
 class ModlogPagination:
@@ -313,7 +313,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
 
     @commands.Cog.listener()
     async def on_guild_channel_create(self, channel):
-        CatId = 608506105835814933 if channel.guild.id == 595457764935991326 else 925352977890410557
+        CatId = 1325178965588967456 if channel.guild.id == 1288032530569625660 else 925352977890410557
         if channel.category.id == CatId:
             try:
                 ticketmessage = await self.client.wait_for('message', check=lambda m: m.channel.id == channel.id and len(m.mentions) > 0, timeout=60)
@@ -1252,7 +1252,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         for channel in ctx.guild.channels:
             if isinstance(channel, discord.TextChannel):
                 if channel.name == "mafia":
-                    if ctx.guild.id == 595457764935991326 and channel.category_id == 595457764935991327:
+                    if ctx.guild.id == 1288032530569625660 and channel.category_id == 1288032530569625661:
                         qualified_channels.append(channel)
                     elif ctx.guild.id == 871734809154707467 and channel.category_id == 875316745416617984:
                         qualified_channels.append(channel)
@@ -1261,7 +1261,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
                 qualified_channels.remove(channel)
         if len(qualified_channels) == 0:
             return await ctx.send("Either there are no ongoing mafia games to be tracked, or all current mafia games are already being tracked. ")
-        lounge_category_id = 595457764935991327 if ctx.guild.id == 595457764935991326 else 875316745416617984
+        lounge_category_id = 1288032530569625661 if ctx.guild.id == 1288032530569625660 else 875316745416617984
         lounge_category = ctx.guild.get_channel(lounge_category_id)
         if lounge_category is None:
             return await ctx.send(f"{return_emoji(False)} Tried to find the lounge category where Mafia games are hosted, but could not find category.")
@@ -1279,7 +1279,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
                 log_channel_name = f"mafia-at-{time_created_at}"
                 log_channel = discord.utils.get(ctx.guild.channels, name=log_channel_name)
                 if log_channel is None:
-                    if ctx.guild.id == 595457764935991326:
+                    if ctx.guild.id == 1288032530569625660:
                         # set perms if the game was started in mafia
                         event_hoster_role = ctx.guild.get_role(735417263968223234)
                         event_manager_role = ctx.guild.get_role(756667326623121568)
@@ -1474,7 +1474,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         embed1 = discord.Embed(title="Ban Appeals Guide (for MODMS+)", color=0x58b9ff)
         embed1.add_field(
             name="Basic Information",
-            value="- A ban appeal is posted in <#679122147553312778> whenever a user creates an appeal on the [ban appeal site](https://dankvibes.banappeal.nogra.xyz).\n- A banned user can only make an appeal if;\n- They are banned from DV (obviously)\n- They are not blacklisted from using the site (not implemented yet)\n- They have not made a ban appeal in the past 30 days\n- They don\'t have a pending appeal",
+            value="- A ban appeal is posted in <#1345459131204505691> whenever a user creates an appeal on the [ban appeal site](https://dankvibes.banappeal.nogra.xyz).\n- A banned user can only make an appeal if;\n- They are banned from DV (obviously)\n- They are not blacklisted from using the site (not implemented yet)\n- They have not made a ban appeal in the past 30 days\n- They don\'t have a pending appeal",
             inline=False
         )
         embed1.add_field(
