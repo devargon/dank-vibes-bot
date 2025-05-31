@@ -48,9 +48,9 @@ async def checkmark(message:discord.Message):
 
 def is_dank_slash_command(message: discord.Message, command: str):
     if message.author.id == dank_memer_id:
-        if message.interaction is not None:
-            if message.interaction.type == 2:
-                if message.interaction.name == command:
+        if message._raw_data.get("interaction") is not None:
+            if message._raw_data["interaction"].get("type") == 2:
+                if message._raw_data["interaction"].get("name") == command:
                     return True
     return False
 
@@ -829,7 +829,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         Daily reminder
         """
         if is_dank_slash_command(message, 'daily'):
-            member = message.interaction.user
+            member = message.interaction_metadata.user
             now = discord.utils.utcnow()
             next_reminder_time = now.replace(hour=0, minute=0, second=0, microsecond=0) + datetime.timedelta(days=1)
             nextdailytime = round(next_reminder_time.timestamp())
@@ -855,7 +855,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         Monthly Reminder
         """
         if is_dank_slash_command(message, 'monthly'):
-            if "You can buy the ability" not in message.embeds[0].description:
+            if len(message.embeds) == 0 or ("You can buy the ability" not in message.embeds[0].description):
                 member = message.interaction.user
                 now = discord.utils.utcnow()
                 next_monthly_datetime = (now.replace(day=1) + datetime.timedelta(days=32)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
