@@ -165,10 +165,12 @@ class interactionconfirm(discord.ui.View):
         self.response = None
         self.client = client
         self.returning_value = None
+        self.interaction = None
         super().__init__(timeout=30.0)
 
     @discord.ui.button(label="Yes", style=discord.ButtonStyle.green)
     async def yes(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.interaction = interaction
         self.returning_value = True
         for b in self.children:
             if b != button:
@@ -182,6 +184,7 @@ class interactionconfirm(discord.ui.View):
 
     @discord.ui.button(label="No", style=discord.ButtonStyle.red)
     async def no(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.interaction = interaction
         self.returning_value = False
         for b in self.children:
             if b != button:
