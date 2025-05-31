@@ -282,6 +282,7 @@ class ImgenSlash(commands.Cog):
         """
         Sell someone - a random stranger, or a friend - on eBay.
         """
+        await ctx.defer()
         loop = asyncio.get_event_loop()
         member_avatar = await member.display_avatar.with_format('png').read()
 
