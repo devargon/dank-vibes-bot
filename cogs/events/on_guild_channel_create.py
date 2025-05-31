@@ -14,9 +14,6 @@ class GuildChannelCreate(commands.Cog):
         if isinstance(channel, discord.TextChannel):
             try:
                 def check(message: discord.Message):
-                    print(f"message.channel.id == channel.id: {message.channel.id == channel.id}")
-                    print(f"len(m.mentions) > 0: {len(message.mentions) > 0}")
-                    print(f"DVB_PVC_CREATED in message.content: " + "DVB_PVC_CREATED" in message.content)
                     return message.channel.id == channel.id and len(message.mentions) > 0 and "DVB_PVC_CREATED" in message.content
                 m = await self.client.wait_for('message', check=check, timeout=60)
             except asyncio.TimeoutError:
