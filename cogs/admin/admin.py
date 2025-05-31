@@ -170,6 +170,9 @@ class ServerConfigView(discord.ui.View):
                 elif self.custom_id == "serverpool_donation_log":
                     self.serverconfig.serverpool_donation_log = update_bool(self.serverconfig.serverpool_donation_log)
                     self.style = get_style(self.serverconfig.serverpool_donation_log)
+                elif self.custom_id == "enable_amari_transfer":
+                    self.serverconfig.enable_amari_transfer = update_bool(self.serverconfig.enable_amari_transfer)
+                    self.style = get_style(self.serverconfig.enable_amari_transfer)
                 else:
                     await interaction.response.send_message(f"invalid custom id {self.custom_id}", ephemeral=True)
                     await self.serverconfig.update(self.client)
@@ -313,6 +316,7 @@ class ServerConfigView(discord.ui.View):
         self.add_item(BaseToggleButton(self.serverconfig, self.client, label="Status Role", custom_id="statusroleenabled", style=get_style(self.serverconfig.statusroleenabled)))
         self.add_item(BaseToggleButton(self.serverconfig, self.client, label="Mute Lem", custom_id="mute_lem", style=get_style(self.serverconfig.mute_lem)))
         self.add_item(BaseToggleButton(self.serverconfig, self.client, label="Serverpool Log", custom_id="serverpool_donation_log", style=get_style(self.serverconfig.serverpool_donation_log)))
+        self.add_item(BaseToggleButton(self.serverconfig, self.client, label="Amari Transfers", custom_id="enable_amari_transfer", style=get_style(self.serverconfig.enable_amari_transfer)))
         self.add_item(ChangeLoggingChanneL(label="Log channel (Click here to change)"))
         self.add_item(ChangeRoleID(label="Status Reward -> Role ID (Click here to change)"))
         self.add_item(StatusText(label="Status Text (Click here to change)"))
@@ -333,6 +337,7 @@ class ServerConfigView(discord.ui.View):
         embed.add_field(name=f"Status Rewards - {return_emoji(self.serverconfig.statusroleenabled)}", value=f"Whether status role rewards are enabled.")
         embed.add_field(name=f"Mute Lem - {return_emoji(self.serverconfig.mute_lem)}", value=f"Mute Lem whenever he starts typing")
         embed.add_field(name=f"Log Serverpool Donations - {return_emoji(self.serverconfig.serverpool_donation_log)}", value=f"\u200b")
+        embed.add_field(name=f"Amari Transfers - {return_emoji(self.serverconfig.enable_amari_transfer)}", value=f"\u200b")
         embed.add_field(name=f"Status Text - `{self.serverconfig.statustext}`", value=f"The text in a user's status to be able to obtain the role.", inline=False)
         embed.add_field(name=f"Status Role - `{self.ctx.guild.get_role(self.serverconfig.statusroleid) or self.serverconfig.statusroleid}`", value=f"The ID of the role that can be obtained.", inline=False)
         embed.add_field(name=f"Status Matching - `{self.serverconfig.statusmatchtype}`", value=f"How should the status text be matched.\n`Strict`: Must be exactly the same.\n`Contains`: Must contain the text but any other text can be addded.", inline=False)
