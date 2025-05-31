@@ -19,5 +19,6 @@ create table if not exists serverconfig
     log_channel             bigint  default 0                   not null,
     modlog_channel          bigint  default 0                   not null,
     mute_lem                boolean default false,
-    serverpool_donation_log boolean default false
+    serverpool_donation_log boolean default false,
+    enable_amari_transfer   boolean default false
 );
