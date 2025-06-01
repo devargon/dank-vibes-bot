@@ -588,7 +588,7 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
         Show configurations for nickname and DM requests.
         """
         result = await self.client.db.fetchrow("SELECT * FROM channelconfigs where guild_id = $1", ctx.guild.id)
-        if len(result) == 0:
+        if not result:
             return await ctx.send(f"No configuration for DM and nickname requests have been set yet. ")
         else:
             await ctx.send(embed=discord.Embed(title=f"Configurations for {ctx.guild.name}", description = f"Nickname requests: {ctx.guild.get_channel(result.get('nicknamechannel_id'))}\nDM requests: {ctx.guild.get_channel(result.get('dmchannel_id'))}", color = self.client.embed_color))
