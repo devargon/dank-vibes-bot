@@ -1004,7 +1004,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
 
 
     @commands.Cog.listener()
-    async def on_message_edit(self, beforemsg, aftermsg):
+    async def on_message_edit(self, beforemsg: discord.Message, aftermsg: discord.Message):
         #
         """
         Work Reminder
@@ -1015,7 +1015,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             return
         if is_dank_slash_command(beforemsg, 'work shift'):
             if type(aftermsg.embeds[0].title) == str and ("Terrible work!" in aftermsg.embeds[0].title or "Great work!" in aftermsg.embeds[0].title):
-                member = aftermsg.interaction.user
+                member = aftermsg.interaction_metadata.user
                 nextworktime = round(time.time()) + 3600
                 await self.handle_reminder_entry(member.id, 6, aftermsg.channel.id, aftermsg.guild.id, nextworktime)
                 with contextlib.suppress(discord.HTTPException):
