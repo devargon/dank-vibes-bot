@@ -388,7 +388,10 @@ class TaskStatusView(discord.ui.View):
     def __init__(self, client: dvvt, initiator_id: int):
         self.client = client
         self.initiator_id = initiator_id
-        super().__init__(timeout=60.0)  # 60 second timeout
+        super().__init__(timeout=60.0)
+
+    def get_cog(self, interaction: discord.Interaction):
+        return interaction.client.get_cog("amari_import")
 
     @discord.ui.button(
         label="Start Task",
@@ -401,20 +404,17 @@ class TaskStatusView(discord.ui.View):
                 f"{DVB_FALSE} Only the person who initiated this command can control the task.",
                 ephemeral=True
             )
-
-        cog = self.client.get_cog("AmariImport")
+        cog = self.get_cog(interaction)
         if not cog:
             return await interaction.response.send_message(
                 f"{DVB_FALSE} AmariImport cog not found.",
                 ephemeral=True
             )
-
         if cog.amari_import_task.is_running():
             return await interaction.response.send_message(
                 f"{DVB_FALSE} The task is already running.",
                 ephemeral=True
             )
-
         try:
             await cog.amari_import_task.start()
             await interaction.response.send_message(
@@ -429,7 +429,7 @@ class TaskStatusView(discord.ui.View):
             )
 
     @discord.ui.button(
-        label="Stop Task",
+        label="Stop Task (Graceful)",
         style=discord.ButtonStyle.red,
         emoji="⏹️"
     )
@@ -439,30 +439,64 @@ class TaskStatusView(discord.ui.View):
                 f"{DVB_FALSE} Only the person who initiated this command can control the task.",
                 ephemeral=True
             )
-
-        cog = self.client.get_cog("AmariImport")
+        cog = self.get_cog(interaction)
         if not cog:
             return await interaction.response.send_message(
                 f"{DVB_FALSE} AmariImport cog not found.",
                 ephemeral=True
             )
-
         if not cog.amari_import_task.is_running():
             return await interaction.response.send_message(
                 f"{DVB_FALSE} The task is not currently running.",
                 ephemeral=True
             )
-
         try:
-            cog.amari_import_task.cancel()
+            cog.amari_import_task.stop()
             await interaction.response.send_message(
-                f"{DVB_TRUE} Background task stopped successfully.",
+                f"{DVB_TRUE} Task stop requested (will finish current loop).",
                 ephemeral=True
             )
+            await asyncio.sleep(0.5)
             await self._update_status_embed(interaction)
         except Exception as e:
             await interaction.response.send_message(
                 f"{DVB_FALSE} Error stopping task: {str(e)}",
+                ephemeral=True
+            )
+
+    @discord.ui.button(
+        label="Cancel Task (Immediate)",
+        style=discord.ButtonStyle.red,
+        emoji="❌"
+    )
+    async def cancel_task_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if interaction.user.id != self.initiator_id:
+            return await interaction.response.send_message(
+                f"{DVB_FALSE} Only the person who initiated this command can control the task.",
+                ephemeral=True
+            )
+        cog = self.get_cog(interaction)
+        if not cog:
+            return await interaction.response.send_message(
+                f"{DVB_FALSE} AmariImport cog not found.",
+                ephemeral=True
+            )
+        if not cog.amari_import_task.is_running():
+            return await interaction.response.send_message(
+                f"{DVB_FALSE} The task is not currently running.",
+                ephemeral=True
+            )
+        try:
+            cog.amari_import_task.cancel()
+            await interaction.response.send_message(
+                f"{DVB_TRUE} Task cancel requested (will stop immediately).",
+                ephemeral=True
+            )
+            await asyncio.sleep(0.5)
+            await self._update_status_embed(interaction)
+        except Exception as e:
+            await interaction.response.send_message(
+                f"{DVB_FALSE} Error cancelling task: {str(e)}",
                 ephemeral=True
             )
 
@@ -477,33 +511,25 @@ class TaskStatusView(discord.ui.View):
                 f"{DVB_FALSE} Only the person who initiated this command can refresh the status.",
                 ephemeral=True
             )
-
         await interaction.response.defer()
         await self._update_status_embed(interaction)
 
     async def _update_status_embed(self, interaction: discord.Interaction):
-        """Update the status embed with current information"""
-        cog = self.client.get_cog("AmariImport")
+        cog = self.get_cog(interaction)
         if not cog:
             return
-
         task = cog.amari_import_task
 
-        # Determine status
         if task.is_running():
             status_text = f"{DVB_STATUS_GREEN} Running"
             status_color = discord.Color.green()
         elif task.failed():
             status_text = f"{DVB_STATUS_RED} Failed"
             status_color = discord.Color.red()
-        elif task.cancelled():
-            status_text = f"{DVB_STATUS_RED} Cancelled"
-            status_color = discord.Color.red()
         else:
             status_text = f"{DVB_STATUS_YELLOW} Stopped"
             status_color = discord.Color.yellow()
 
-        # Get exception info if available
         exception_info = "None"
         if task.failed() and hasattr(task, 'exception') and task.exception():
             exception_info = f"```py\n{str(task.exception())[:1000]}```"
@@ -513,48 +539,51 @@ class TaskStatusView(discord.ui.View):
             color=status_color,
             timestamp=discord.utils.utcnow()
         )
-
-        embed.add_field(
-            name="Status",
-            value=status_text,
-            inline=True
-        )
-
+        embed.add_field(name="Status", value=status_text, inline=True)
         embed.add_field(
             name="Current Iteration",
-            value=f"`{task.current_loop if hasattr(task, 'current_loop') else 'N/A'}`",
+            value=f"`{getattr(task, 'current_loop', 'N/A')}`",
             inline=True
         )
-
         embed.add_field(
             name="Next Iteration",
-            value=f"<t:{int(task.next_iteration.timestamp()) if task.next_iteration else 0}:R>",
+            value=f"<t:{int(task.next_iteration.timestamp()) if getattr(task, 'next_iteration', None) else 0}:R>",
             inline=True
         )
-
+        embed.add_field(
+            name="Loop Count",
+            value=f"`{task.completed_loops() if hasattr(task, 'completed_loops') else 'N/A'}`",
+            inline=True
+        )
+        embed.add_field(
+            name="Is Being Cancelled",
+            value=f"`{task.is_being_cancelled() if hasattr(task, 'is_being_cancelled') else 'N/A'}`",
+            inline=True
+        )
+        embed.add_field(
+            name="Failed",
+            value=f"`{task.failed() if hasattr(task, 'failed') else 'N/A'}`",
+            inline=True
+        )
         if exception_info != "None":
             embed.add_field(
                 name="Last Exception",
                 value=exception_info,
                 inline=False
             )
-
         embed.set_footer(text="Last updated")
-
         try:
-            await interaction.edit_original_response(embed=embed, view=self)
-        except:
+            await interaction.response.edit_message(embed=embed, view=self)
+        except Exception:
             pass
 
     async def on_timeout(self):
         for item in self.children:
             item.disabled = True
-
         try:
             await self.message.edit(view=self)
-        except:
+        except Exception:
             pass
-
 
 class AmariRequestTicketManagementView(discord.ui.View):
     """View for managing Amari transfer request tickets"""
@@ -1061,6 +1090,19 @@ class TaskProcessor:
 
         self._debug_print("Saving failed task to database")
         await task.update(self.client)
+
+        if task_ticket_channel is not None:
+            embed = EmbedFormatter.format_task_embed(task)
+            self._debug_print("Sending failed message and updating embed")
+            try:
+                await task_ticket_channel.get_partial_message(task.ticket_message_id).edit(embed=embed)
+                self._debug_print(f"Edit embed message API call")
+                await task_ticket_channel.send(
+                    f"# {DVB_FALSE} Failed\n\nI was unable to complete transferring your Amari stats due to an error. A developer has been notified of this issue and will assist you soon."
+                )
+                self._debug_print("Successfully sent failed message")
+            except Exception:
+                pass
 
     async def _simple_update_embed(self, task):
         self._debug_print(f"Performing simple embed update ot task {task.id}")
