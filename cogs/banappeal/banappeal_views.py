@@ -210,7 +210,7 @@ class BanAppealView(discord.ui.View):
                 if self.custom_id == "appeal:approve":
                     if appeal.version == 2:
                         appealer = await interaction.client.get_or_fetch_user(appeal.user_id)
-                        if appealer is not None:
+                        if appealer is not None and appealer.id != 1376832460356321311:
                             if discord.utils.utcnow() - appealer.created_at < timedelta(days=10):
                                 return await interaction.response.send_message(
                                     embed=discord.Embed(title=f"Error in updating appeal #{appeal_no}",
