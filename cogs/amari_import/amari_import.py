@@ -756,7 +756,7 @@ class AmariRequestView(discord.ui.View):
 
             # Check if user already has a task
             all_user_tasks = await self.amari_import_dao.fetchAllTasksForUser(interaction.user.id)
-            if len(all_user_tasks) > 999:
+            if len(all_user_tasks) > 0:
                 return await interaction.response.send_message(
                     f"{DVB_FALSE} You have previously opened an Amari transfer request. You are not allowed to open more than 1 request.\n"
                     "Please open a ticket in <#1343892378687377408> if you think this is an error.",
@@ -1001,8 +1001,6 @@ class TaskProcessor:
         await task.update(self.client)
 
         # TODO: Implement actual Amari/selfbot transfer logic here
-        if task.user_id == 312876934755385344:
-            raise ValueError("mock error")
         await self._complete_task(task, task_ticket_channel)
         lastUpdatedQueuePositions.pop(task.id, None)
 
