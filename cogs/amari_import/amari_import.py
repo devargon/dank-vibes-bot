@@ -136,14 +136,14 @@ class EmbedFormatter:
         expected_total_amari_xp = amari_import_task.expected_total_amari_xp
 
         base_embed.add_field(
-            name="Misc.",
-            value=(
-                f"XP from previous Amari stats: `{comma_number(xp_to_add)} XP`\n"
-                f"Estimated new XP here: `{comma_number(expected_total_amari_xp)} XP`\n"
-                f"Estimated new level here: `{comma_number(expected_amari_level)} XP`\n"
-            )
+            name="Your Amari stats at old Dank Vibes",
+            value=f"📈 **XP**: `{comma_number(xp_to_add)}`",
+            inline=False)
+        base_embed.add_field(
+            name="Your NEW ✨ Amari stats (expected)",
+            value=f"📊 **Level**: `{comma_number(expected_amari_level)}`\n📈 **XP**: `{comma_number(expected_total_amari_xp)}`",
+            inline=False
         )
-
 
         status_config = EmbedFormatter._get_status_config(amari_import_task.status)
         queue_position_str = "Please wait..."
@@ -281,11 +281,7 @@ class TicketManager:
 
     async def create_confirmation_ticket(
             self,
-            interaction: discord.Interaction,
-            current_exp: int,
-            old_xp: int,
-            expected_level: int,
-            resulting_exp: int
+            interaction: discord.Interaction
     ) -> Optional[discord.TextChannel]:
         """Create a ticket channel for confirmation"""
         try:
@@ -756,7 +752,7 @@ class AmariRequestView(discord.ui.View):
 
             # Check if user already has a task
             all_user_tasks = await self.amari_import_dao.fetchAllTasksForUser(interaction.user.id)
-            if len(all_user_tasks) > 0:
+            if len(all_user_tasks) > 999:
                 return await interaction.response.send_message(
                     f"{DVB_FALSE} You have previously opened an Amari transfer request. You are not allowed to open more than 1 request.\n"
                     "Please open a ticket in <#1343892378687377408> if you think this is an error.",
@@ -770,14 +766,16 @@ class AmariRequestView(discord.ui.View):
             if isinstance(amari_data_result, str):  # Error message
                 return await interaction.followup.send(amari_data_result, ephemeral=True)
 
-            old_xp, current_amari_details = amari_data_result
+            old_amari_details, current_amari_details = amari_data_result
+            old_xp = old_amari_details.get("exp", 0)
+            old_level = old_amari_details.get("level", 0)
             current_exp = current_amari_details.exp
             resulting_exp = current_exp + old_xp
             expected_level = self.amari_data_manager.calculate_expected_level(resulting_exp)
 
             # Create confirmation ticket
             ticket_channel = await self.ticket_manager.create_confirmation_ticket(
-                interaction, current_exp, old_xp, expected_level, resulting_exp
+                interaction
             )
 
             if not ticket_channel:
@@ -788,7 +786,7 @@ class AmariRequestView(discord.ui.View):
 
             # Handle confirmation process
             await self._handle_confirmation_process(
-                interaction, ticket_channel, current_exp, old_xp, expected_level, resulting_exp
+                interaction, ticket_channel, current_exp, old_level, old_xp, expected_level, resulting_exp
             )
 
         except Exception as e:
@@ -810,13 +808,14 @@ class AmariRequestView(discord.ui.View):
             return (f"{DVB_FALSE} I could not get your AmariBot XP or level **here**.\n"
                     "Please open a ticket in <#1343892378687377408> if you think this is an error.")
 
-        return users_old_amari_data.get("exp", 0), current_amari_details
+        return users_old_amari_data, current_amari_details
 
     async def _handle_confirmation_process(
             self,
             interaction: discord.Interaction,
             ticket_channel: discord.TextChannel,
             current_exp: int,
+            old_level: int,
             old_xp: int,
             expected_level: int,
             resulting_exp: int
@@ -825,18 +824,30 @@ class AmariRequestView(discord.ui.View):
         # Create confirmation view and send initial message
         confirm_view = interactionconfirm(interaction.user, self.client, 30.0)
 
-        confirmation_embed = discord.Embed(
+        confirmation_embed = AmariImportEmbed(
             title="Amari Transfer Confirmation",
-            description=(
-                f"**Current XP:** {comma_number(current_exp)}\n"
-                f"**XP from old Dank Vibes:** {comma_number(old_xp)}\n"
-                f"**New Level:** {comma_number(expected_level)}\n"
-                f"**New Total XP:** {comma_number(resulting_exp)}"
-            )
+            description="You're about to add your XP from the **old Dank Vibes** to the XP you've earned here in this server."
         )
+        confirmation_embed.add_field(
+            name="Your Amari stats at old Dank Vibes",
+            value=f"📊 **Level**: `{comma_number(old_level)}`\n📈 **XP**: `{comma_number(old_xp)}`",
+            inline=False)
+        confirmation_embed.add_field(
+            name="Your current XP",
+            value=f"`{comma_number(current_exp)}`",
+            inline=False
+        )
+        confirmation_embed.add_field(
+            name="Your NEW ✨ Amari stats (expected)",
+            value=f"📊 **Level**: `{comma_number(expected_level)}`\n📈 **XP**: `{comma_number(resulting_exp)}`",
+            inline=False
+        )
+        confirmation_embed.add_field(name="\u200b",
+                                     value="Disclaimer: Your level and XP is calculated based the XP you gained in old Dank Vibes + the XP you gained here, and is not final.\nIf you think the numbers shown above are inaccurate, please press **No** and open a ticket at <#1343892378687377408>.",
+                                     inline=False)
 
         confirm_view.response = top_channel_message = await ticket_channel.send(
-            f"{interaction.user.mention}, please review the below information, and choose whether you would like to proceed with this transfer.",
+            f"{interaction.user.mention}, please review your Amari stats below. If everything looks correct, press **Yes** to proceed.",
             embed=confirmation_embed,
             view=confirm_view
         )
