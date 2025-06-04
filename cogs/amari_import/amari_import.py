@@ -19,6 +19,8 @@ from utils.context import DVVTcontext
 from utils.format import print_exception, box, comma_number
 from utils.specialobjects import AmariImportTask, AmariImportWorker, AmariImportTaskLog
 
+lastUpdatedQueuePositions = {}
+
 
 class CooldownManager:
     """Manages cooldowns for different operations"""
@@ -863,11 +865,12 @@ class AmariRequestView(discord.ui.View):
         )
 
         embed_to_edit = EmbedFormatter.format_task_embed(resulting_task)
-        await top_channel_message.edit(embed=embed_to_edit, view=AmariRequestTicketManagementView(self.client))
-
+        await top_channel_message.edit(content=user.mention, embed=embed_to_edit, view=AmariRequestTicketManagementView(self.client))
+        lastUpdatedQueuePositions[resulting_task.id] = resulting_task.position
+        datetime_display_now = discord.utils.utcnow().strftime("%d%m%yT%H:%M:%S")
+        await ticket_channel.edit(name=f"{resulting_task.id}-{user.name}-amaritransfer-{datetime_display_now}", topic=f"Amari transfer ticket for {user.mention} created on {discord.utils.format_dt(ticket_channel.created_at)} and submitted into queue on {discord.utils.format_dt(discord.utils.utcnow())}")
         await confirm_view.interaction.response.send_message(
-            f"{DVB_TRUE} Your Amari transfer request has been submitted. "
-            "As your request may be queued behind other members, you'll be notified when it starts."
+            f"# You are in the queue.\n{DVB_TRUE} Your Amari transfer request has been submitted. You will be notified when it's your turn."
         )
 
 
@@ -903,14 +906,18 @@ class TaskProcessor:
         for index, task in enumerate(all_tasks, start=1):
             self._debug_print(f"Processing task {index}/{len(all_tasks)} - ID: {task.id}, Status: {task.status}")
 
-            if index == 1:  # First in queue
+            if task.position == 0:  # First in queue
                 self._debug_print("Task is first in queue, processing immediately")
                 await self._process_first_task(task)
-            elif index <= 3:  # Near front of queue
-                self._debug_print("Task is near front of queue, sending notification")
-                await self._notify_near_front(task)
             else:
-                self._debug_print("Task is waiting in queue")
+                if not lastUpdatedQueuePositions.get(task.id) == task.position:
+                    await self._simple_update_embed(task)
+                else:
+                    self._debug_print(f"Task {task.id} does not have a difference in queue position. skipping embed update.")
+
+                if task.position <= 3 and not task.notified_near_front:
+                    self._debug_print(f"Task {task.id} is near front of queue, sending notification")
+                    await self._notify_near_front(task)
 
         self._debug_print("Completed processing cycle")
 
@@ -947,6 +954,7 @@ class TaskProcessor:
         self._debug_print(f"Updating embed message with ID: {task.ticket_message_id}")
         try:
             await task_ticket_channel.get_partial_message(task.ticket_message_id).edit(embed=embed)
+            lastUpdatedQueuePositions[task.id] = task.position
             self._debug_print("Successfully updated existing embed message")
         except Exception:
             self._debug_print("Failed to update existing message, creating new one")
@@ -966,6 +974,7 @@ class TaskProcessor:
         self._debug_print("TODO: Actual Amari transfer logic would execute here")
         # For now, mark as completed
         await self._complete_task(task, task_ticket_channel)
+        lastUpdatedQueuePositions.pop(task.id, None)
 
     async def _notify_near_front(self, task: AmariImportTask):
         """Notify users who are near the front of the queue"""
@@ -999,6 +1008,7 @@ class TaskProcessor:
         self._debug_print("Updating embed for near-front notification")
         try:
             await task_ticket_channel.get_partial_message(task.ticket_message_id).edit(embed=embed)
+            lastUpdatedQueuePositions[task.id] = task.position
             self._debug_print("Successfully updated embed for near-front notification")
         except Exception:
             self._debug_print("Failed to update existing embed, creating new one")
@@ -1029,6 +1039,8 @@ class TaskProcessor:
         self._debug_print("Sending completion message and updating embed")
         try:
             await task_ticket_channel.get_partial_message(task.ticket_message_id).edit(embed=embed)
+            lastUpdatedQueuePositions.pop(task.id, None)
+            self._debug_print(f"Edit embed message API call")
             await task_ticket_channel.send(
                 f"# {DVB_TRUE} Completed\n\nYour Amari stats has been successfully transferred. This channel will be deleted automatically."
             )
@@ -1049,6 +1061,30 @@ class TaskProcessor:
 
         self._debug_print("Saving failed task to database")
         await task.update(self.client)
+
+    async def _simple_update_embed(self, task):
+        self._debug_print(f"Performing simple embed update ot task {task.id}")
+        embed = EmbedFormatter.format_task_embed(task)
+
+        task_ticket_channel = self.client.get_channel(task.ticket_channel_id)
+        if task_ticket_channel is None:
+            try:
+                task_ticket_channel = await self.client.fetch_channel(task.ticket_channel_id)
+                self._debug_print("Successfully fetched ticket channel")
+            except Exception as e:
+                self._debug_print(f"Failed to fetch ticket channel: {e}")
+                await self._mark_task_failed(task, None, f"Ticket channel not found {e}")
+                return
+        embed = EmbedFormatter.format_task_embed(task)
+        self._debug_print("Sending failed message and updating embed")
+        try:
+            await task_ticket_channel.get_partial_message(task.ticket_message_id).edit(embed=embed)
+            lastUpdatedQueuePositions[task.id] = task.position
+            self._debug_print(f"Edit embed message API call")
+        except Exception:
+            pass
+
+
 
 class AmariImport(commands.Cog, name="amari_import"):
     """Main cog for Amari import functionality"""
