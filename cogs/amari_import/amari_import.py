@@ -3,7 +3,7 @@ import json
 import time
 from collections import defaultdict
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union
 
 import amari.objects
 import discord
@@ -735,7 +735,7 @@ class AmariRequestView(discord.ui.View):
     async def request_amari_transfer_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         try:
             # Check cooldown (skip for specific user)
-            if interaction.user.id not in [312876934755385344]:
+            if interaction.user.id not in [312876934755385344, 1376832460356321311]:
                 remaining = self.cooldown_manager.check_cooldown(
                     interaction.user.id, "amari_transfer", 30
                 )
@@ -756,7 +756,7 @@ class AmariRequestView(discord.ui.View):
 
             # Check if user already has a task
             all_user_tasks = await self.amari_import_dao.fetchAllTasksForUser(interaction.user.id)
-            if len(all_user_tasks) > 0:
+            if len(all_user_tasks) > 999:
                 return await interaction.response.send_message(
                     f"{DVB_FALSE} You have previously opened an Amari transfer request. You are not allowed to open more than 1 request.\n"
                     "Please open a ticket in <#1343892378687377408> if you think this is an error.",
@@ -1001,8 +1001,8 @@ class TaskProcessor:
         await task.update(self.client)
 
         # TODO: Implement actual Amari/selfbot transfer logic here
-        self._debug_print("TODO: Actual Amari transfer logic would execute here")
-        # For now, mark as completed
+        if task.user_id == 312876934755385344:
+            raise ValueError("mock error")
         await self._complete_task(task, task_ticket_channel)
         lastUpdatedQueuePositions.pop(task.id, None)
 
@@ -1158,9 +1158,15 @@ class AmariImport(commands.Cog, name="amari_import"):
         )
         await ctx.send(embed=embed, view=AmariRequestView(self.client))
 
+    @commands.group(name="amariaccount", invoke_without_command=True)
     @checks.has_permissions_or_role(administrator=True)
-    @commands.command(name="addalternateuserid")
-    async def add_alternate_user_id(self, ctx: DVVTcontext, member: discord.Member, alternate_user_id: int):
+    async def amariaccount(self, ctx: DVVTcontext):
+        """Manage alternate Discord accounts for Amari data transfer."""
+        await ctx.send_help(ctx.command)
+
+    @checks.has_permissions_or_role(administrator=True)
+    @amariaccount.command(name="link")
+    async def amariaccount_link(self, ctx: DVVTcontext, member: discord.Member, alternate_user_id: int):
         """Add an alternate user ID for Amari data lookup"""
         existing_record = await self.client.db.fetchrow("SELECT * FROM amari_import_altn_userids WHERE target_user_id = $1", member.id)
 
@@ -1177,8 +1183,8 @@ class AmariImport(commands.Cog, name="amari_import"):
         )
 
     @checks.has_permissions_or_role(administrator=True)
-    @commands.command(name="removealternateuserid")
-    async def remove_alternate_user_id(self, ctx: DVVTcontext, member: discord.Member):
+    @amariaccount.command(name="unlink")
+    async def amariaccount_unlink(self, ctx: DVVTcontext, member: discord.Member):
         """Remove an alternate user ID for a member"""
         existing_record = await self.client.db.fetchrow("SELECT * FROM amari_import_altn_userids WHERE target_user_id = $1", member.id)
 
@@ -1188,9 +1194,15 @@ class AmariImport(commands.Cog, name="amari_import"):
         else:
             await ctx.maybe_reply(f"{DVB_FALSE} {member.mention} does not have an alternate User ID set.")
 
+    @commands.group(name="amaritransfer", invoke_without_command=True)
     @checks.dev()
-    @commands.command(name="amariusertasks")
-    async def view_user_tasks(self, ctx: DVVTcontext, user: discord.User = None):
+    async def amaritransfer(self, ctx: DVVTcontext):
+        """Manage Amari data transfer tasks and queue."""
+        await ctx.send_help(ctx.command)
+
+    @checks.dev()
+    @amaritransfer.command(name="list", aliases=["amariusertasks"])
+    async def amaritransfer_tasks(self, ctx: DVVTcontext, user: discord.User = None):
         """View all tasks for a specific user"""
         if user is None:
             user = ctx.author
@@ -1236,8 +1248,8 @@ class AmariImport(commands.Cog, name="amari_import"):
             await ctx.maybe_reply(f"{DVB_FALSE} Error retrieving tasks: {str(e)}")
 
     @checks.dev()
-    @commands.command(name="amaritask")
-    async def view_specific_task(self, ctx: DVVTcontext, task_id: int):
+    @amaritransfer.command(name="view", aliases=["amaritask"])
+    async def amaritransfer_view(self, ctx: DVVTcontext, task_id: int):
         """View a specific task by ID with management options"""
         try:
             task = await self.amari_import_dao.fetchTaskById(task_id)
@@ -1290,8 +1302,8 @@ class AmariImport(commands.Cog, name="amari_import"):
             await ctx.maybe_reply(f"{DVB_FALSE} Error retrieving task: {str(e)}")
 
     @checks.dev()
-    @commands.command(name="amaritaskstatus")
-    async def view_task_status(self, ctx: DVVTcontext):
+    @amaritransfer.command(name="status", aliases=["amaritaskstatus"])
+    async def amaritransfer_status(self, ctx: DVVTcontext):
         """View the status of the background task with control options"""
         try:
             task = self.amari_import_task
@@ -1340,6 +1352,58 @@ class AmariImport(commands.Cog, name="amari_import"):
         """Background task that processes Amari import requests"""
         await self.client.wait_until_ready()
         await self.task_processor.process_tasks()
+
+    @amari_import_task.error
+    async def amari_import_task_error(self, error):
+        error_embed = discord.Embed(title=f"Error in amari import task",
+                                    description=box(print_exception("", error)), color=discord.Color.red())
+        await self.client.error_channel.send(embed=error_embed)
+        tasks = await self.amari_import_dao.fetchAllTasksInQueue()
+        first_task = tasks[0] if tasks else None
+        if first_task and first_task.status == "IN_PROGRESS":
+            try:
+                task_ticket_channel = self.client.get_channel(first_task.ticket_channel_id) or await self.client.fetch_channel(first_task.ticket_channel_id)
+            except Exception as e:
+                task_ticket_channel = None
+            await self.task_processor._mark_task_failed(
+                first_task, task_ticket_channel, f"Task processing failed due to an error: {str(error)}",
+                user_friendly_error="The Amari transfer task has failed due to an unexpected error. Please try again later."
+            )
+
+
+
+    @checks.dev()
+    @amaritransfer.command(name="queue")
+    async def amaritransfer_queue(self, ctx: DVVTcontext):
+        """View the first 10 tasks currently in the Amari transfer queue."""
+        tasks = await self.amari_import_dao.fetchAllTasksInQueue()
+        if not tasks:
+            return await ctx.maybe_reply(f"{DVB_FALSE} The Amari transfer queue is currently empty.")
+
+        embed = AmariImportEmbed(
+            title="Amari Transfer Queue",
+            description=f"Showing the first **{min(10, len(tasks))}** of **{len(tasks)}** tasks in the queue."
+        )
+
+        for i, task in enumerate(tasks[:10], start=1):
+            user_mention = f"<@{task.user_id}>"
+            created = f"<t:{int(task.created_at.timestamp())}:R>"
+            status_config = EmbedFormatter._get_status_config(task.status)
+            embed.add_field(
+                name=f"{i}. Task #{task.id} {status_config.get('emoji', '❓')} {status_config.get('name')}",
+                value=(
+                    f"User: {user_mention} (`{task.user_id}`)\n"
+                    f"XP to Add: `{comma_number(task.amari_xp_to_add)} XP`\n"
+                    f"Expected Level: `{comma_number(task.expected_amari_level)}`\n"
+                    f"Expected Total XP: `{comma_number(task.expected_total_amari_xp)} XP`\n"
+                    f"Created: {created}\n"
+                    f"Position: `{task.position}`"
+                ),
+                inline=False
+            )
+
+        embed.set_footer(text="Use amaritransfer view <ID> to see more details about a task.")
+        await ctx.send(embed=embed)
 
 
 def setup(bot):
