@@ -153,11 +153,12 @@ class EmbedFormatter:
             queue_position_str = str(amari_import_task.position)
 
         # Build description
-        descriptions = [
-            f"Position in queue: **{queue_position_str}**",
-            "",
-            "## Status: " + status_config["emoji"] + f" {amari_import_task.status}"
-        ]
+        descriptions = []
+        if amari_import_task.status in ["PENDING", "IN_PROGRESS"]:
+            descriptions.append(f"Position in queue: **{queue_position_str}**")
+            descriptions.append("")
+
+        descriptions.append("## Status: " + status_config["emoji"] + status_config["name"])
 
         # Add ticket message if present
         if amari_import_task.ticket_message:
@@ -964,12 +965,12 @@ class TaskProcessor:
             self._debug_print("Successfully fetched ticket channel")
         except Exception as e:
             self._debug_print(f"Failed to fetch ticket channel: {e}")
-            await self._mark_task_failed(task, f"Ticket channel not found {e}")
+            await self._mark_task_failed(task, None, f"Ticket channel not found {e}")
             return
 
         self._debug_print(f"Sending start notification to user {task.user_id}")
         await task_ticket_channel.send(
-            f"# Your Amari import will be starting in a moment.\n\n"
+            f"# Your Amari import will start in a moment.\n\n"
             f"You are now at the front of the queue.\n<@{task.user_id}>"
         )
 
@@ -993,7 +994,7 @@ class TaskProcessor:
                 self._debug_print(f"Created new embed message with ID: {new_message.id}")
             except Exception as e:
                 self._debug_print(f"Failed to create new embed message: {e}")
-                await self._mark_task_failed(task, f"Could not update message: {e}")
+                await self._mark_task_failed(task, None, f"Could not update message: {e}")
                 return
 
         self._debug_print("Saving task updates to database")
@@ -1019,12 +1020,12 @@ class TaskProcessor:
             self._debug_print("Successfully fetched ticket channel for notification")
         except Exception as e:
             self._debug_print(f"Failed to fetch ticket channel for notification: {e}")
-            await self._mark_task_failed(task, f"Ticket channel not found {e}")
+            await self._mark_task_failed(task, None, f"Ticket channel not found {e}")
             return
 
         self._debug_print(f"Sending near-front notification to user {task.user_id}")
         await task_ticket_channel.send(
-            f"# Your Amari import will be starting soon.\n\n"
+            f"# Your Amari import will start soon.\n\n"
             f"You are near the front of the queue.\n<@{task.user_id}>"
         )
 
@@ -1047,7 +1048,7 @@ class TaskProcessor:
                 self._debug_print(f"Created new embed message for notification: {new_message.id}")
             except Exception as e:
                 self._debug_print(f"Failed to create new embed for notification: {e}")
-                await self._mark_task_failed(task, f"Could not update message: {e}")
+                await self._mark_task_failed(task, None, f"Could not update message: {e}")
                 return
 
         await task.update(self.client)
@@ -1078,7 +1079,7 @@ class TaskProcessor:
             self._debug_print("Failed to send completion message (ignoring error)")
             pass  # Ignore message update errors for completed tasks
 
-    async def _mark_task_failed(self, task: AmariImportTask, error_message: str):
+    async def _mark_task_failed(self, task: AmariImportTask, task_ticket_channel: Union[discord.TextChannel, None], error_message: str, user_friendly_error: str = "This task has failed due to an error."):
         """Mark a task as failed with error message"""
         self._debug_print(f"Marking task {task.id} as failed: {error_message}")
 
@@ -1086,7 +1087,7 @@ class TaskProcessor:
         task.status = "FAILED"
         task.stopped_at = discord.utils.utcnow()
         task.updated_at = discord.utils.utcnow()
-        task.ticket_message = "This task has failed as the channel corresponding to this request is not found."
+        task.ticket_message = user_friendly_error
 
         self._debug_print("Saving failed task to database")
         await task.update(self.client)
