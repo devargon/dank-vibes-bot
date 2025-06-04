@@ -1003,6 +1003,18 @@ class TaskProcessor:
         # TODO: Implement actual Amari/selfbot transfer logic here
         await self._complete_task(task, task_ticket_channel)
         lastUpdatedQueuePositions.pop(task.id, None)
+        try:
+            # TODO: Implement actual Amari/selfbot transfer logic here
+            print("TODO")
+        except Exception as e:
+            await self._mark_task_failed(
+                task, task_ticket_channel,
+                print_exception("Direct task processing failed due to the following exception", e),
+                user_friendly_error="The Amari transfer task has failed due to an unexpected error. Please try again later."
+            )
+        else:
+            await self._complete_task(task, task_ticket_channel)
+            lastUpdatedQueuePositions.pop(task.id, None)
 
     async def _notify_near_front(self, task: AmariImportTask):
         """Notify users who are near the front of the queue"""
@@ -1051,7 +1063,7 @@ class TaskProcessor:
 
         await task.update(self.client)
 
-    async def _complete_task(self, task: AmariImportTask, task_ticket_channel: discord.TextChannel):
+    async def _complete_task(self, task: AmariImportTask, task_ticket_channel: discord.abc.GuildChannel):
         """Mark task as completed"""
         self._debug_print(f"Completing task {task.id}")
 
@@ -1083,7 +1095,6 @@ class TaskProcessor:
 
         task.error_message = error_message
         task.status = "FAILED"
-        task.stopped_at = discord.utils.utcnow()
         task.updated_at = discord.utils.utcnow()
         task.ticket_message = user_friendly_error
 
@@ -1097,7 +1108,7 @@ class TaskProcessor:
                 await task_ticket_channel.get_partial_message(task.ticket_message_id).edit(embed=embed)
                 self._debug_print(f"Edit embed message API call")
                 await task_ticket_channel.send(
-                    f"# {DVB_FALSE} Failed\n\nI was unable to complete transferring your Amari stats due to an error. A developer has been notified of this issue and will assist you soon."
+                    f"# {DVB_FALSE} Failed\n\nI was unable to complete transferring your Amari stats due to an error. A developer has been notified of this issue and will assist you soon.\n\n-# CC: <@312876934755385344>"
                 )
                 self._debug_print("Successfully sent failed message")
             except Exception:
@@ -1364,7 +1375,7 @@ class AmariImport(commands.Cog, name="amari_import"):
             except Exception as e:
                 task_ticket_channel = None
             await self.task_processor._mark_task_failed(
-                first_task, task_ticket_channel, f"Task processing failed due to an error: {str(error)}",
+                first_task, task_ticket_channel, print_exception("Indirect task processing failed due to the following exception", error),
                 user_friendly_error="The Amari transfer task has failed due to an unexpected error. Please try again later."
             )
 
