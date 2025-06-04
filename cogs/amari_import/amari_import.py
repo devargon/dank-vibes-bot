@@ -176,31 +176,37 @@ class EmbedFormatter:
         """Get color and messages for different task statuses"""
         status_configs = {
             "PENDING": {
+                "name": "Pending",
                 "emoji": DVB_STATUS_YELLOW,
                 "color": discord.Color.yellow(),
                 "messages": []
             },
             "IN_PROGRESS": {
+                "name": "In Progress",
                 "emoji": DVB_STATUS_YELLOW,
                 "color": discord.Color.yellow(),
                 "messages": []
             },
             "FAILED": {
+                "name": "Failed",
                 "emoji": DVB_STATUS_RED,
                 "color": discord.Color.red(),
                 "messages": []
             },
             "ADMIN_SKIPPED": {
+                "name": "Skipped (Admin)",
                 "emoji": DVB_STATUS_RED,
                 "color": discord.Color.red(),
                 "messages": []
             },
             "ADMIN_CANCELLED": {
+                "name": "Cancelled",
                 "emoji": DVB_STATUS_RED,
                 "color": discord.Color.red(),
                 "messages": []
             },
             "CANCELLED": {
+                "name": "Cancelled",
                 "emoji": DVB_STATUS_RED,
                 "color": discord.Color.red(),
                 "messages": [
@@ -209,6 +215,7 @@ class EmbedFormatter:
                 ]
             },
             "COMPLETED": {
+                "name": "Completed",
                 "emoji": DVB_STATUS_GREEN,
                 "color": discord.Color.green(),
                 "messages": [
@@ -1138,7 +1145,7 @@ class AmariImport(commands.Cog, name="amari_import"):
                     )
 
                 embed.add_field(
-                    name=f"{status_config.get('emoji', '❓')} {status.replace('_', ' ').title()} ({len(status_tasks)})",
+                    name=f"{status_config.get('emoji', '❓')} {status_config.get('name')} ({len(status_tasks)})",
                     value="\n".join(task_list),
                     inline=False
                 )
@@ -1176,7 +1183,7 @@ class AmariImport(commands.Cog, name="amari_import"):
 
             embed.add_field(name="User", value=user_info, inline=True)
             embed.add_field(name="Status",
-                            value=f"{status_config.get('emoji', '❓')} {task.status.replace('_', ' ').title()}",
+                            value=f"{status_config.get('emoji', '❓')} {status_config.get('name')}",
                             inline=True)
             embed.add_field(name="XP to Add", value=f"`{comma_number(task.amari_xp_to_add)} XP`", inline=True)
             embed.add_field(name="Expected Level", value=f"`{comma_number(task.expected_amari_level)}`", inline=True)
