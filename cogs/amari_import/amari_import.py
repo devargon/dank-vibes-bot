@@ -1023,6 +1023,18 @@ class TaskProcessor:
         else:
             await self._complete_task(task, task_ticket_channel)
             lastUpdatedQueuePositions.pop(task.id, None)
+        try:
+            # TODO: Implement actual Amari/selfbot transfer logic here
+            print("TODO")
+        except Exception as e:
+            await self._mark_task_failed(
+                task, task_ticket_channel,
+                print_exception("Direct task processing failed due to the following exception", e),
+                user_friendly_error="The Amari transfer task has failed due to an unexpected error. Please try again later."
+            )
+        else:
+            await self._complete_task(task, task_ticket_channel)
+            lastUpdatedQueuePositions.pop(task.id, None)
 
     async def _notify_near_front(self, task: AmariImportTask):
         """Notify users who are near the front of the queue"""
