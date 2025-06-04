@@ -38,4 +38,4 @@ SELECT
         ORDER BY COALESCE(enqueued_at, created_at), id
     ) -1 AS position
 FROM amari_import_task_queue
-WHERE stopped_at IS NULL;
+WHERE stopped_at IS NULL OR status = 'FAILED';
