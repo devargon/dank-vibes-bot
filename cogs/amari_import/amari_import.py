@@ -107,6 +107,14 @@ class AmariDataManager:
 
         return 0
 
+    def get_xp_for_level(self, level: int) -> int:
+        """Get the XP required for a specific Amari level"""
+        amari_levels = self.get_amari_levels()
+        for level_data in amari_levels:
+            if level_data.get("level") == level:
+                return level_data.get("exp", 0)
+        return 0
+
 
 class AmariImportEmbed(discord.Embed):
     """Custom embed for Amari import operations"""
