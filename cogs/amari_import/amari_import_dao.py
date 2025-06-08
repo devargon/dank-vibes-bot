@@ -8,17 +8,17 @@ class AmariImportDAO:
     def __init__(self, client: dvvt):
         self.client: dvvt = client
 
-    async def createAmariImportTask(self, user_id: int, ticket_channel_id: int, ticket_message_id: int, amari_xp_to_add: int, expected_amari_level: int, expected_total_amari_xp: int):
+    async def createAmariImportTask(self, user_id: int, ticket_guild_id: int, ticket_channel_id: int, ticket_message_id: int, amari_xp_to_add: int, expected_amari_level: int, expected_total_amari_xp: int):
         newTaskId = await self.client.db.fetchval(
             """
             INSERT INTO amari_import_task_queue(
-                user_id, enqueued_at, ticket_channel_id, ticket_message_id,
+                user_id, enqueued_at, ticket_guild_id, ticket_channel_id, ticket_message_id,
                 amari_xp_to_add, expected_amari_level, expected_total_amari_xp
             )
-            VALUES ($1, CURRENT_TIMESTAMP, $2, $3, $4, $5, $6)
+            VALUES ($1, CURRENT_TIMESTAMP, $2, $3, $4, $5, $6, $7)
             RETURNING id
             """,
-            user_id, ticket_channel_id, ticket_message_id, amari_xp_to_add, expected_amari_level, expected_total_amari_xp
+            user_id, ticket_guild_id, ticket_channel_id, ticket_message_id, amari_xp_to_add, expected_amari_level, expected_total_amari_xp
         )
         return await self.fetchTaskByIdWithCurrentQueuePosition(newTaskId)
 

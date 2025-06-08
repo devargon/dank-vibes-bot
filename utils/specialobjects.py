@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
-from typing import Any, Union, Optional
+from typing import Any, Union, Optional, Literal
 
+import aiohttp
 import discord
 
 
@@ -182,6 +183,7 @@ class AmariImportTask:
             enqueued_at: Optional[datetime] = None,
             updated_at: Optional[datetime] = None,
             stopped_at: Optional[datetime] = None,
+            ticket_guild_id: Optional[int] = None,
             ticket_channel_id: Optional[int] = None,
             ticket_message_id: Optional[int] = None,
             notified_near_front: Optional[bool] = None,
@@ -200,6 +202,7 @@ class AmariImportTask:
             self.enqueued_at = make_utc(record.get('enqueued_at'))
             self.updated_at = make_utc(record.get('updated_at'))
             self.stopped_at = make_utc(record.get('stopped_at'))
+            self.ticket_guild_id = record['ticket_guild_id']
             self.ticket_channel_id = record['ticket_channel_id']
             self.ticket_message_id = record['ticket_message_id']
             self.notified_near_front = record['notified_near_front']
@@ -217,6 +220,7 @@ class AmariImportTask:
             self.enqueued_at = enqueued_at
             self.updated_at = updated_at
             self.stopped_at = stopped_at
+            self.ticket_guild_id = ticket_guild_id
             self.ticket_channel_id = ticket_channel_id
             self.ticket_message_id = ticket_message_id
             self.notified_near_front = notified_near_front
@@ -249,16 +253,17 @@ class AmariImportTask:
                 enqueued_at = $2,
                 updated_at = $3,
                 stopped_at = $4,
-                ticket_channel_id = $5,
-                ticket_message_id = $6,
-                notified_near_front = $7,
-                error_message = $8,
-                ticket_message = $9,
-                amari_xp_to_add = $10,
-                expected_amari_level = $11,
-                expected_total_amari_xp = $12
-            WHERE id = $13
-        """, self.status, self.enqueued_at, self.updated_at, self.stopped_at,
+                ticket_guild_id = $5,
+                ticket_channel_id = $6,
+                ticket_message_id = $7,
+                notified_near_front = $8,
+                error_message = $9,
+                ticket_message = $10,
+                amari_xp_to_add = $11,
+                expected_amari_level = $12,
+                expected_total_amari_xp = $13
+            WHERE id = $14
+        """, self.status, self.enqueued_at, self.updated_at, self.stopped_at, self.ticket_guild_id,
                                 self.ticket_channel_id, self.ticket_message_id, self.notified_near_front,
                                 self.error_message, self.ticket_message, self.amari_xp_to_add,
                                 self.expected_amari_level, self.expected_total_amari_xp, self.id)
