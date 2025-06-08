@@ -21,6 +21,7 @@ create table if not exists amari_import_task_queue
     enqueued_at             TIMESTAMPTZ,
     updated_at              TIMESTAMPTZ,
     stopped_at              TIMESTAMPTZ,
+    ticket_guild_id         BIGINT      NOT NULL,
     ticket_channel_id       BIGINT      NOT NULL,
     ticket_message_id       BIGINT      NOT NULL,
     notified_near_front     BOOLEAN     NOT NULL DEFAULT FALSE,
