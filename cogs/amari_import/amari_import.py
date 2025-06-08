@@ -910,7 +910,7 @@ class AmariRequestView(discord.ui.View):
     ):
         """Handle confirmation accepted"""
         resulting_task = await self.amari_import_dao.createAmariImportTask(
-            user.id, ticket_channel.id, top_channel_message.id, old_xp, expected_level, resulting_exp
+            user.id, ticket_channel.guild.id, ticket_channel.id, top_channel_message.id, old_xp, expected_level, resulting_exp
         )
 
         embed_to_edit = EmbedFormatter.format_task_embed(resulting_task)
