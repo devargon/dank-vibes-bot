@@ -928,6 +928,7 @@ class TaskProcessor:
 
     def __init__(self, client: dvvt, amari_import_dao: AmariImportDAO, debug_mode: bool = False):
         self.client = client
+        self.amari_data_manager = AmariDataManager(self.client)
         self.amari_import_dao = amari_import_dao
         self.debug_mode = debug_mode
 
@@ -1020,18 +1021,28 @@ class TaskProcessor:
         await task.update(self.client)
 
         try:
-            # TODO: Implement actual Amari/selfbot transfer logic here
-            print("TODO")
-        except Exception as e:
-            await self._mark_task_failed(
-                task, task_ticket_channel,
-                print_exception("Direct task processing failed due to the following exception", e),
-                user_friendly_error="The Amari transfer task has failed due to an unexpected error. Please try again later."
+            current_amari_details = await self.amari_data_manager.get_current_amari_data(
+                task.ticket_guild_id, task.user_id
             )
-        else:
-            await self._complete_task(task, task_ticket_channel)
-            lastUpdatedQueuePositions.pop(task.id, None)
-        try:
+            resultingexp = current_amari_details.exp + task.amari_xp_to_add
+            expected_level = self.amari_data_manager.calculate_expected_level(resultingexp)
+            await task_ticket_channel.send(f"**Debug purposes, ignore this message.**\n-# Your current level is `{comma_number(current_amari_details.level)}`. \n-# Your current XP is `{comma_number(current_amari_details.exp)}`. \n-# I will add `{comma_number(task.amari_xp_to_add)}` XP, resulting in `{comma_number(resultingexp)}`. \n-# Your resulting level will be`{comma_number(expected_level)}`.")
+            commands_to_run = []
+            if expected_level <= 200:
+                commands_to_run.append(f"*gl <@{task.user_id}> {expected_level}")
+                level_from_which_to_add_xp_after = expected_level
+
+            else:
+                commands_to_run.append(f"*gl <@{task.user_id}> 200")
+                level_from_which_to_add_xp_after = 200
+            current_xp_added = self.amari_data_manager.get_xp_for_level(level_from_which_to_add_xp_after)
+            remaining_xp_to_add = resultingexp - current_xp_added
+            while remaining_xp_to_add > 100000:
+                commands_to_run.append(f"*modifyexp <@{task.user_id}> 100000")
+                remaining_xp_to_add -= 100000
+            commands_to_run.append(f"*modifyexp <@{task.user_id}> {remaining_xp_to_add}")
+            for command in commands_to_run:
+                await task_ticket_channel.send(command)
             # TODO: Implement actual Amari/selfbot transfer logic here
             print("TODO")
         except Exception as e:
