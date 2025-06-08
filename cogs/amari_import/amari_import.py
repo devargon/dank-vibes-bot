@@ -1109,7 +1109,7 @@ class TaskProcessor:
             self._debug_print("Failed to send completion message (ignoring error)")
             pass  # Ignore message update errors for completed tasks
 
-    async def _mark_task_failed(self, task: AmariImportTask, task_ticket_channel: Union[discord.TextChannel, None], error_message: str, user_friendly_error: str = "This task has failed due to an error."):
+    async def _mark_task_failed(self, task: AmariImportTask, task_ticket_channel: Union[discord.abc.GuildChannel, None], error_message: str, user_friendly_error: str = "This task has failed due to an error."):
         """Mark a task as failed with error message"""
         self._debug_print(f"Marking task {task.id} as failed: {error_message}")
 
