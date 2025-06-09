@@ -326,6 +326,7 @@ class AmariImportWorker:
         *,
         id: Optional[int] = None,
         host: Optional[str] = None,
+        token: Optional[str] = None,
         created_at: Optional[datetime] = None,
         worker_user_id: Optional[int] = None,
         creator_user_id: Optional[int] = None,
@@ -333,12 +334,14 @@ class AmariImportWorker:
         if record:
             self.id = record['id']
             self.host = record['host']
+            self.token = record['token']
             self.created_at = make_utc(record['created_at'])
             self.worker_user_id = record['worker_user_id']
             self.creator_user_id = record['creator_user_id']
         else:
             self.id = id
             self.host = host
+            self.token = token
             self.created_at = created_at
             self.worker_user_id = worker_user_id
             self.creator_user_id = creator_user_id
@@ -350,10 +353,58 @@ class AmariImportWorker:
         await client.db.execute("""
             UPDATE amari_import_workers SET
                 host = $1,
-                worker_user_id = $2,
-                creator_user_id = $3
-            WHERE id = $4
-        """, self.host, self.worker_user_id, self.creator_user_id, self.id)
+                token = $2,
+                worker_user_id = $3,
+                creator_user_id = $4
+            WHERE id = $5
+        """, self.host, self.token, self.worker_user_id, self.creator_user_id, self.id)
+
+    async def fetch_status(self, aiohttp_client: aiohttp.ClientSession):
+        response = await self.make_request(aiohttp_client, "status")
+        return response
+
+    async def give_level(self, aiohttp_client: aiohttp.ClientSession, guild_id: int, channel_id: int, user_id: int, level: int):
+        data = {
+            "user_id": str(user_id),
+            "level": level
+        }
+        response = await self.make_request(aiohttp_client, f"givelevel/{guild_id}/{channel_id}", method="POST", data=data)
+        return response
+
+    async def modify_exp(self, aiohttp_client: aiohttp.ClientSession, guild_id: int, channel_id: int, user_id: int, action: Literal['add', 'remove'], exp: int):
+        data = {
+            "user_id": str(user_id),
+            "action": action,
+            "exp": exp
+        }
+        response = await self.make_request(aiohttp_client, f"modifyexp/{guild_id}/{channel_id}", method="POST", data=data)
+        return response
+
+    async def make_request(self, aiohttp_client: aiohttp.ClientSession, endpoint: str, method: str = 'GET', data: Optional[dict] = None):
+        host = self.host.rstrip("/")
+        endpoint = endpoint.lstrip("/")
+        url = f"{host}/{endpoint}"
+
+        headers = {'Authorization': f"Bearer {self.token}"}
+
+        if method == "POST":
+            print(f"[AmariImportWorker] POST {url} with data: {data}")
+            async with aiohttp_client.post(url, json=data, headers=headers) as response:
+                if response.status == 204:
+                    return True  # or {} if you prefer an empty dict
+                elif response.status == 200:
+                    return await response.json()
+                else:
+                    response.raise_for_status()  # Raises an exception for 4xx/5xx errors
+        else:
+            print(f"[AmariImportWorker] GET {url}")
+            async with aiohttp_client.get(url, headers=headers) as response:
+                if response.status == 204:
+                    return True  # or {} if you prefer an empty dict
+                elif response.status == 200:
+                    return await response.json()
+                else:
+                    response.raise_for_status()  # Raises an exception for 4xx/5xx errors
 
 
 MISSING: Any = _MissingSentinel()
