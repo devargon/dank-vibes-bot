@@ -64,3 +64,35 @@ class AmariImportDAO:
             return rows_deleted
         else:
             return 0
+
+    async def fetchAllTaskWorkers(self) -> list[AmariImportWorker]:
+        workers = []
+        worker_records = await self.client.db.fetch("SELECT * FROM amari_import_workers")
+        for worker_record in worker_records:
+            workers.append(AmariImportWorker(worker_record))
+        return workers
+
+    async def fetchTaskWorkerById(self, worker_id: int) -> AmariImportWorker | None:
+        worker_record = await self.client.db.fetchrow("SELECT * FROM amari_import_workers WHERE id = $1 LIMIT 1", worker_id)
+        return AmariImportWorker(worker_record) if worker_record else None
+
+    async def createTaskWorker(self, worker_user_id: int, creator_id: int, token: str, host: str) -> AmariImportWorker:
+        new_worker_id = await self.client.db.fetchval(
+            """
+            INSERT INTO amari_import_workers(worker_user_id, creator_user_id, token, host, created_at)
+            VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+            RETURNING id
+            """,
+            worker_user_id, creator_id, token, host
+        )
+        return await self.fetchTaskWorkerById(new_worker_id)
+
+    async def deleteWorkerById(self, worker_id: int) -> int:
+
+        result = await self.client.db.execute("DELETE FROM amari_import_workers WHERE id = $1", worker_id)
+        match = re.search(r'DELETE (\d+)', result)
+        if match:
+            rows_deleted = int(match.group(1))
+            return rows_deleted
+        else:
+            return 0
