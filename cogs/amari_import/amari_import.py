@@ -8,6 +8,7 @@ from typing import Optional, Dict, Any, Union, List
 import aiohttp
 import amari.objects
 import discord
+from discord import Interaction
 from discord.ext import commands, tasks
 
 from cogs.admin.contests import interactionconfirm
@@ -345,11 +346,6 @@ class TaskManagementView(discord.ui.View):
         emoji="🗑️"
     )
     async def delete_task_button(self, button: discord.ui.Button, interaction: discord.Interaction):
-        if interaction.user.id != self.initiator_id:
-            return await interaction.response.send_message(
-                f"{DVB_FALSE} Only the person who initiated this command can delete the task.",
-                ephemeral=True
-            )
 
         try:
             rows_changed = await self.amari_import_dao.deleteTaskById(self.task.id)
@@ -390,6 +386,15 @@ class TaskManagementView(discord.ui.View):
                 f"{DVB_FALSE} Error re-queuing task: {str(e)}",
                 ephemeral=True
             )
+
+    async def interaction_check(self, interaction: Interaction) -> bool:
+        if interaction.user.id != self.initiator_id:
+            await interaction.response.send_message(
+                f"{DVB_FALSE} Only the person who initiated this command can interact with these buttons.",
+                ephemeral=True
+            )
+            return False
+        return True
 
     async def on_timeout(self):
         for item in self.children:
