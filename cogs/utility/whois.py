@@ -39,11 +39,12 @@ def spotify_embed(member: discord.Member):
     for activity in activitylist:
         if isinstance(activity, discord.Spotify):
             artists = ", ".join(activity.artists)
-            spotify = discord.Embed(title=f"{member.name} is listening to",
-                                    description=f"[{artists} - {activity.title}](https://open.spotify.com/track/{activity.track_id})",
-                                    color=activity.color)
-            spotify.set_author(name=proper_userf(member), icon_url=member.display_avatar.url)
-            spotify.set_footer(text=f"Powered by Spotify®", icon_url="https://i.imgur.com/zNBmzpl.png")
+            spotify = discord.Embed(title=f"{artists} - {activity.title}",
+                                    description=f"{activity.album}",
+                                    color=activity.color,
+                                    url=activity.track_url)
+            spotify.set_author(name=f"{member.display_name} is listening to", icon_url=member.display_avatar.url)
+            spotify.set_footer(text=f"Spotify®", icon_url="https://i.imgur.com/zNBmzpl.png")
             spotify.set_thumbnail(url=activity.album_cover_url)
             listenduration = today - activity.start
             listenduration = round(listenduration.total_seconds())
@@ -51,12 +52,11 @@ def spotify_embed(member: discord.Member):
             position = (listenduration / songend) * 20
             position = round(position)
             duration = "────────────────────"
-            bar = f" ◄◄⠀▐▐⠀►► {durationdisplay(listenduration)} / {durationdisplay(songend)} ───○ 🔊"
+            bar = f" ◄◄⠀▐▐⠀►► {durationdisplay(listenduration)} / {durationdisplay(songend)}"
             duration = list(duration)
             duration.insert(position, "⚪")
             duration = "".join(duration)
             spotify.add_field(name=duration, value=bar, inline=False)
-            spotify.add_field(name="Song album", value=activity.album, inline=False)
             return spotify
     return None
 
