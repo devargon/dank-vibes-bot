@@ -40,6 +40,19 @@ class ChannelOrMember(commands.Converter):
             except:
                 return None
 
+class TextOrCategoryChannelOrMember(commands.Converter):
+    async def convert(self, ctx, argument):
+        try:
+            return await commands.TextChannelConverter().convert(ctx, argument)
+        except commands.BadArgument:
+            try:
+                return await commands.CategoryChannelConverter().convert(ctx, argument)
+            except commands.BadArgument:
+                try:
+                    return await commands.MemberConverter().convert(ctx, argument)
+                except:
+                    return None
+
 
 class Highlight(commands.Cog):
     def __init__(self, client):
@@ -131,10 +144,12 @@ class Highlight(commands.Cog):
     @checks.perm_insensitive_roles()
     @commands.guild_only()
     @highlight.command(name="block", aliases=['ignore'])
-    async def highlight_block(self, ctx, argument: ChannelOrMember = None):
+    async def highlight_block(self, ctx, argument: TextOrCategoryChannelOrMember = None):
         """
-        Adds a member or channel to the highlight block list.
-        If a user in this list highlights you, or you were highlighted in a ignored channel, you will not be notified of it.
+        Adds a member, channel or category to the highlight block list.
+        You will not be notified if:
+        - A user in this list notifies you
+        - You were highlighted in an ignored channel/category
         """
         if argument is None:
             return await ctx.send("The argument that you need to specify should be a channel or member.")
@@ -144,6 +159,8 @@ class Highlight(commands.Cog):
                 await self.client.db.execute("INSERT INTO highlight_ignores(guild_id, user_id, ignore_type, ignore_id) VALUES ($1, $2, $3, $4)", ctx.guild.id, ctx.author.id, 'member', argument.id)
             elif isinstance(argument, discord.TextChannel):
                 await self.client.db.execute("INSERT INTO highlight_ignores(guild_id, user_id, ignore_type, ignore_id) VALUES ($1, $2, $3, $4)", ctx.guild.id, ctx.author.id, 'channel', argument.id)
+            elif isinstance(argument, discord.CategoryChannel):
+                await self.client.db.execute("INSERT INTO highlight_ignores(guild_id, user_id, ignore_type, ignore_id) VALUES ($1, $2, $3, $4)", ctx.guild.id, ctx.author.id, 'category', argument.id)
             await ctx.send(f"**{argument.name}** has been added to your highlight block list.")
         else:
             await ctx.send(f"**{argument.name}** is already in your highlight block list.")
@@ -200,12 +217,15 @@ class Highlight(commands.Cog):
         else:
             igsn = []
             for ignore in all_ignores:
-                if ignore.get('ignore_type') == 'channel':
+                if ignore.get('ignore_type') == 'channel' or ignore.get('ignore_type') == 'category':
                     chan = ctx.guild.get_channel(ignore.get('ignore_id'))
                     if chan is None:
                         obj = f"{ignore.get('ignore_id')} (unknown channel)"
                     else:
-                        obj = chan.mention
+                        if isinstance(chan, discord.TextChannel):
+                            obj = f"{chan.mention} (Category)"
+                        else:
+                            obj = chan.mention
                 else:
                     if (member := ctx.guild.get_member(ignore.get('ignore_id'))) is not None:
                         obj = f"{member.mention} ({proper_userf(member)})"
@@ -285,6 +305,10 @@ class Highlight(commands.Cog):
                                     for ignore_entry in um:
                                         if ignore_entry.get('ignore_type') == 'channel':
                                             if message.channel.id == ignore_entry.get('ignore_id'):
+                                                is_ignored = True
+                                                break
+                                        elif ignore_entry.get('ignore_type') == 'category':
+                                            if message.channel.category_id == ignore_entry.get('ignore_id'):
                                                 is_ignored = True
                                                 break
                                         elif ignore_entry.get('ignore_type') == 'member':
