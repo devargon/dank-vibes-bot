@@ -1174,24 +1174,45 @@ class TaskProcessor:
             resultingexp = current_amari_details.exp + task.amari_xp_to_add
             expected_level = self.amari_data_manager.calculate_expected_level(resultingexp)
             await task_ticket_channel.send(f"**Debug purposes, ignore this message.**\n-# Your current level is `{comma_number(current_amari_details.level)}`. \n-# Your current XP is `{comma_number(current_amari_details.exp)}`. \n-# I will add `{comma_number(task.amari_xp_to_add)}` XP, resulting in `{comma_number(resultingexp)}`. \n-# Your resulting level will be`{comma_number(expected_level)}`.")
-            commands_to_run = []
-            if expected_level <= 200:
-                commands_to_run.append(f"*gl <@{task.user_id}> {expected_level}")
-                level_from_which_to_add_xp_after = expected_level
 
-            else:
-                commands_to_run.append(f"*gl <@{task.user_id}> 200")
-                level_from_which_to_add_xp_after = 200
-            current_xp_added = self.amari_data_manager.get_xp_for_level(level_from_which_to_add_xp_after)
-            remaining_xp_to_add = resultingexp - current_xp_added
-            while remaining_xp_to_add > 100000:
-                commands_to_run.append(f"*modifyexp <@{task.user_id}> 100000")
-                remaining_xp_to_add -= 100000
-            commands_to_run.append(f"*modifyexp <@{task.user_id}> {remaining_xp_to_add}")
-            for command in commands_to_run:
-                await task_ticket_channel.send(command)
-            # TODO: Implement actual Amari/selfbot transfer logic here
-            print("TODO")
+            finding_worker_message = await task_ticket_channel.send("Finding worker for this task...")
+            workers = await self.amari_import_dao.fetchAllTaskWorkers()
+            current_worker = None
+            status = None
+            async with aiohttp.ClientSession() as session:
+                for worker in workers:
+                    status = await worker.fetch_status(session)
+                    if type(status) == dict:
+                        if status.get("ready", None) is True:
+                            if type(client_data := status.get("client")) == dict:
+                                if client_data.get("ready", None) is True:
+                                    current_worker = worker
+            if current_worker is None:
+                await self._mark_task_failed(
+                    task, task_ticket_channel,
+                    user_friendly_error="I was not able to find a worker to assist this ticket. Please try again later."
+                )
+                return
+            worker_user = await self.client.get_or_fetch_user(current_worker.worker_user_id)
+            await finding_worker_message.edit(content=f"## You are being served by {worker_user.mention}.\n{worker_user} has been online since {discord.utils.format_dt(datetime.fromisoformat(status.get('client').get('readyAt')), 'f')} to assist Amari transfers.")
+            commands_to_run = []
+            async with aiohttp.ClientSession() as session2:
+                if expected_level <= 200:
+                    commands_to_run.append(worker.give_level(session2, task.ticket_guild_id, task.ticket_channel_id, task.user_id, expected_level))
+                    level_from_which_to_add_xp_after = expected_level
+
+                else:
+                    commands_to_run.append(worker.give_level(session2, task.ticket_guild_id, task.ticket_channel_id, task.user_id, 200))
+                    level_from_which_to_add_xp_after = 200
+                current_xp_added = self.amari_data_manager.get_xp_for_level(level_from_which_to_add_xp_after)
+                remaining_xp_to_add = resultingexp - current_xp_added
+                while remaining_xp_to_add > 100000:
+                    commands_to_run.append(worker.modify_exp(session2, task.ticket_guild_id, task.ticket_channel_id, task.user_id, "add", 100000))
+                    remaining_xp_to_add -= 100000
+                commands_to_run.append(
+                    worker.modify_exp(session2, task.ticket_guild_id, task.ticket_channel_id, task.user_id, "add", remaining_xp_to_add))
+                for command in commands_to_run:
+                    await command
         except Exception as e:
             await self._mark_task_failed(
                 task, task_ticket_channel,
@@ -1268,7 +1289,7 @@ class TaskProcessor:
             lastUpdatedQueuePositions.pop(task.id, None)
             self._debug_print(f"Edit embed message API call")
             await task_ticket_channel.send(
-                f"# {DVB_TRUE} Completed\n\nYour Amari stats has been successfully transferred. This channel will be deleted automatically."
+                f"# {DVB_TRUE} Completed\n\nYour Amari stats has been successfully transferred.\n\nThank you for sticking around after the mess with the old server.\n\n-# This channel will be deleted by a staff member."
             )
             self._debug_print("Successfully sent completion message")
         except Exception:
