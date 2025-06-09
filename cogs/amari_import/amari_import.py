@@ -286,6 +286,8 @@ class TicketManager:
 
     TICKET_CATEGORY_ID = 1358041831551537183
 
+    AMARIMOD_ROLE_ID = 1381501781556727859
+
     def __init__(self, client: dvvt):
         self.client = client
 
@@ -295,12 +297,16 @@ class TicketManager:
     ) -> Optional[discord.TextChannel]:
         """Create a ticket channel for confirmation"""
         try:
-            ticket_category = await interaction.guild.fetch_channel(self.TICKET_CATEGORY_ID)
+            ticket_category = interaction.guild.get_channel(self.TICKET_CATEGORY_ID) or await interaction.guild.fetch_channel(self.TICKET_CATEGORY_ID)
             if not ticket_category:
                 return None
 
-            member_in_guild = await interaction.guild.fetch_member(interaction.user.id)
+            member_in_guild = interaction.guild.get_member(interaction.user.id) or await interaction.guild.fetch_member(interaction.user.id)
             if member_in_guild is None:
+                return None
+
+            amarimod_role = interaction.guild.get_role(self.AMARIMOD_ROLE_ID) or await interaction.guild.fetch_role(self.AMARIMOD_ROLE_ID)
+            if amarimod_role is None:
                 return None
 
             ticket_channel = await interaction.guild.create_text_channel(
@@ -321,6 +327,19 @@ class TicketManager:
                         create_public_threads=False,
                         create_private_threads=False,
                         create_instant_invite=False
+                    ),
+                    amarimod_role: discord.PermissionOverwrite(
+                        add_reactions=True,
+                        send_messages=True,
+                        view_channel=True,
+                        use_application_commands=True,
+                        use_external_apps=True,
+                        send_messages_in_threads=True,
+                        read_messages=True,
+                        read_message_history=True,
+                        create_public_threads=True,
+                        create_private_threads=True,
+                        create_instant_invite=True
                     )
                 }
             )
