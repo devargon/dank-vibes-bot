@@ -3,15 +3,16 @@ import json
 import time
 from collections import defaultdict
 from datetime import datetime
-from typing import Optional, Dict, Any, Union
+from typing import Optional, Dict, Any, Union, List
 
+import aiohttp
 import amari.objects
 import discord
 from discord.ext import commands, tasks
 
 from cogs.admin.contests import interactionconfirm
 from cogs.amari_import.amari_import_dao import AmariImportDAO
-from custom_emojis import DVB_TRUE, DVB_FALSE, DVB_STATUS_GREEN, DVB_STATUS_RED, DVB_STATUS_YELLOW
+from custom_emojis import DVB_TRUE, DVB_FALSE, DVB_STATUS_GREEN, DVB_STATUS_RED, DVB_STATUS_YELLOW, DVB_TYPING_INDICATOR
 from main import dvvt
 from utils import checks
 from utils.buttons import confirm, SingleURLButton
@@ -339,8 +340,7 @@ class TaskManagementView(discord.ui.View):
         self.amari_import_dao = AmariImportDAO(client)
         super().__init__(timeout=30.0)  # 30 second timeout
 
-    @discord.ui.button(
-        label="Delete Task",
+    @discord.ui.button(label="Delete Task",
         style=discord.ButtonStyle.danger,
         emoji="🗑️"
     )
@@ -385,6 +385,134 @@ class TaskManagementView(discord.ui.View):
             await self.message.edit(view=self)
         except:
             pass  # Message might be deleted
+
+class AddWorkerModal(discord.ui.Modal):
+    def __init__(self, view):
+        self.worker_host_value = None
+        self.worker_discord_token_value = None
+        self.worker_user_id_value = None
+        self.interactionResponse = None
+        self.view_ref = view
+        super().__init__(title="Add Worker")
+
+        self.add_item(discord.ui.InputText(label="Worker host", style=discord.InputTextStyle.long, placeholder="https://amariworker.example.com"))
+        self.add_item(discord.ui.InputText(label="Worker Discord token", style=discord.InputTextStyle.long, placeholder="MTIzNDU2Nzg5ODEyMzQ1Njc4.YWJjZGVmZ2hpamtsbW5vcA.VP5ZT8Q2X-6a1BcXYZabc12345"))
+        self.add_item(discord.ui.InputText(label="Worker User ID", style=discord.InputTextStyle.short, placeholder="123456789012345678", min_length=17, max_length=19))
+
+    async def callback(self, interaction: discord.Interaction):
+        self.worker_host_value = self.children[0].value.strip()
+        self.worker_discord_token_value = self.children[1].value.strip()
+        try:
+            self.worker_user_id_value = int(self.children[2].value.strip())
+        except ValueError:
+            return await interaction.response.send_message("You provided an invalid User ID. Please try again.", ephemeral=True)
+        self.interactionResponse = interaction.response
+        self.stop()
+
+class AmariWorkerView(discord.ui.View):
+    """View for managing the Amari import worker (non-persistent)"""
+
+    def __init__(self, initial_workers: List[AmariImportWorker], client: dvvt, initiator_id: int):
+        self.client = client
+        self.workers: List[AmariImportWorker] = initial_workers
+        self.selected_worker: Optional[AmariImportWorker] = None
+
+        super().__init__(timeout=60.0)
+
+        self.delete_worker_select.options = self._build_options()
+        self.amari_import_dao = AmariImportDAO(client)
+        self.initiator_id = initiator_id
+
+    def _build_options(self) -> List[discord.SelectOption]:
+        options = []
+        for worker in self.workers:  # Ensure all workers are fetched
+            options.append(discord.SelectOption(
+                label=f"#{worker.id} - {worker.host}",
+                description=f"User ID: {worker.worker_user_id}",
+                value=str(worker.id),
+                default=worker.id == (self.selected_worker.id if self.selected_worker else None)
+            ))
+        self.delete_worker_select.options = options
+        return options
+
+
+    @discord.ui.button(label="Add worker", style=discord.ButtonStyle.green, row=0)
+    async def add_worker_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        workerInputModal = AddWorkerModal(self)
+        await interaction.response.send_modal(workerInputModal)
+        await workerInputModal.wait()
+        if not workerInputModal.interactionResponse:
+            return
+        if not workerInputModal.worker_host_value or not workerInputModal.worker_discord_token_value or not workerInputModal.worker_user_id_value:
+            return await workerInputModal.interactionResponse.send_message(
+                f"{DVB_FALSE} You left one or more fields empty. Please fill in all fields.",
+                ephemeral=True
+            )
+        newWorker = await self.amari_import_dao.createTaskWorker(
+            worker_user_id=workerInputModal.worker_user_id_value,
+            creator_id=interaction.user.id,
+            token=workerInputModal.worker_discord_token_value,
+            host=workerInputModal.worker_host_value
+        )
+        await workerInputModal.interactionResponse.send_message(f"{DVB_TRUE} Worker added successfully! ID: `{newWorker.id}`\nRerun the command to see the list of workers.", ephemeral=True)
+        await self._update_view()
+        await interaction.message.edit(view=self)
+
+    @discord.ui.select(placeholder="Select a worker to delete...", min_values=1, max_values=1, row=1)
+    async def delete_worker_select(self, select: discord.ui.Select, interaction: discord.Interaction):
+        if interaction.user.id != self.initiator_id:
+            return await interaction.response.send_message(
+                f"{DVB_FALSE} Only the person who initiated this command can delete a worker.",
+                ephemeral=True
+            )
+        if select.values:
+            selected_worker_id = int(select.values[0])
+            self.selected_worker = next((w for w in self.workers if w.id == selected_worker_id), None)
+
+            if not self.selected_worker:
+                return await interaction.response.send_message(
+                    f"{DVB_FALSE} Selected worker not found.",
+                    ephemeral=True
+                )
+        self._re_render_delete_button()
+        self._build_options()
+        await interaction.response.edit_message(view=self)
+
+
+
+    @discord.ui.button(label="Delete worker", style=discord.ButtonStyle.red, disabled=True)
+    async def delete_worker_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        if self.selected_worker:
+            deleteResult = await self.amari_import_dao.deleteWorkerById(self.selected_worker.id)
+            if deleteResult:
+                await interaction.response.send_message(f"Worker #{self.selected_worker.id} deleted successfully!", ephemeral=True)
+                await self._update_view()
+            else:
+                await interaction.response.send_message(f"Workker #{self.selected_worker.id} could not be deleted. It may not exist.", ephemeral=True)
+        else:
+            await interaction.response.send_message(f"{DVB_FALSE} No worker selected to delete.", ephemeral=True)
+            await self._update_view()
+        await interaction.message.edit(view=self)
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.initiator_id:
+            await interaction.response.send_message("These buttons aren't for you!", ephemeral=True)
+            return False
+        return True
+
+    def _re_render_delete_button(self):
+        if self.selected_worker:
+            self.delete_worker_button.label = f"Delete worker #{self.selected_worker.id}"
+            self.delete_worker_button.disabled = False
+        else:
+            self.delete_worker_button.label = "Delete worker"
+            self.delete_worker_button.disabled = True
+
+    async def _update_view(self):
+        self.workers = await self.amari_import_dao.fetchAllTaskWorkers()
+        self.selected_worker = None
+        self.delete_worker_select.options = self._build_options()
+        self._re_render_delete_button()
 
 
 class TaskStatusView(discord.ui.View):
@@ -1452,6 +1580,72 @@ class AmariImport(commands.Cog, name="amari_import"):
 
         embed.set_footer(text="Use amaritransfer view <ID> to see more details about a task.")
         await ctx.send(embed=embed)
+
+    @checks.dev()
+    @commands.command(name="amariworkers")
+    async def amariworkers(self, ctx: DVVTcontext):
+        """View the first 10 tasks currently in the Amari transfer queue."""
+        workers = await self.amari_import_dao.fetchAllTaskWorkers()
+
+        async def add_worker_field(embed: discord.Embed, worker: AmariImportWorker, response_ok: Optional[bool] = None, readyAt: Optional[datetime] = None, remarks: Optional[any] = None):
+            worker_creator = await self.client.get_or_fetch_user(worker.creator_user_id)
+            worker_user = await self.client.get_or_fetch_user(worker.worker_user_id)
+            status_emoji = DVB_TYPING_INDICATOR
+            if response_ok is not None:
+                if response_ok is True:
+                    status_emoji = DVB_STATUS_GREEN
+                elif response_ok is False:
+                    status_emoji = DVB_STATUS_YELLOW if remarks else DVB_STATUS_RED
+
+            utpime_str = ""
+            if readyAt is not None:
+                utpime_str = f"Uptime: **{discord.utils.format_dt(readyAt, style='R')}\n**"
+
+            remarks_str = ""
+            if remarks:
+                remarks_str = f"Remarks: {remarks}\n"
+
+            embed.add_field(
+                name=f"#{worker.id} - {worker_user} {status_emoji}",
+                value=(
+                    f"Created at: **{discord.utils.format_dt(worker.created_at, style='F')}**\n"
+                    f"by **{worker_creator}**\n{utpime_str}{remarks_str}"
+                ), inline=False
+            )
+
+
+        embed = discord.Embed(title="Amari Transfer Workers", color=self.client.embed_color)
+        if not workers:
+            embed.description = "No workers are currently registered."
+            embed.color = discord.Color.red()
+        else:
+            for worker in workers:
+                await add_worker_field(embed, worker)
+        msg = await ctx.send(embed=embed, view=AmariWorkerView(workers, self.client, ctx.author.id))
+        embed.clear_fields()
+        async with aiohttp.ClientSession() as session:
+            tasks = [worker.fetch_status(session) for worker in workers]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            for index, (worker, result) in enumerate(zip(workers, results)):
+                if isinstance(result, Exception):
+                    if isinstance(result, asyncio.TimeoutError):
+                        await add_worker_field(embed, worker, response_ok=False, readyAt=None, remarks="Timed out")
+                    elif isinstance(result, aiohttp.ClientConnectorError):
+                        await add_worker_field(embed, worker, response_ok=False, readyAt=None)
+                    elif isinstance(result, aiohttp.ClientResponseError):
+                        await add_worker_field(embed, worker, response_ok=False, readyAt=None,
+                                               remarks=f"HTTP Error {result.status}: {result.message}")
+                    else:
+                        await add_worker_field(embed, worker, response_ok=False, readyAt=None,
+                                               remarks=f"Exception: {str(result)}")
+                else:
+                    if type(result) == dict and "client" in result and result.get("client").get("readyAt",
+                                                                                                None) is not None:
+                        ready_at = datetime.fromisoformat(result["client"]["readyAt"])
+                        await add_worker_field(embed, worker, response_ok=True, readyAt=ready_at)
+                    else:
+                        await add_worker_field(embed, worker, response_ok=False, remarks="Invalid JSON")
+        await msg.edit(embed=embed)
 
 
 def setup(bot):
