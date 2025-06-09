@@ -377,6 +377,20 @@ class TaskManagementView(discord.ui.View):
                 ephemeral=True
             )
 
+    @discord.ui.button(label="Re-queue Task", style=discord.ButtonStyle.grey, emoji="🔄")
+    async def requeue_task_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        try:
+            self.task.status = "PENDING"
+            self.task.stopped_at = None
+            await self.task.update(self.client)
+
+            await interaction.response.send_message(f"Task #{self.task.id} has been re-queued successfully.", ephemeral=True)
+        except Exception as e:
+            await interaction.response.send_message(
+                f"{DVB_FALSE} Error re-queuing task: {str(e)}",
+                ephemeral=True
+            )
+
     async def on_timeout(self):
         for item in self.children:
             item.disabled = True
