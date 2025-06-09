@@ -360,7 +360,7 @@ class AmariImportWorker:
         """, self.host, self.token, self.worker_user_id, self.creator_user_id, self.id)
 
     async def fetch_status(self, aiohttp_client: aiohttp.ClientSession):
-        response = await self.make_request(aiohttp_client, "status")
+        response = await self.make_request(aiohttp_client, "status", timeout=5.0)
         return response
 
     async def give_level(self, aiohttp_client: aiohttp.ClientSession, guild_id: int, channel_id: int, user_id: int, level: int):
@@ -368,7 +368,7 @@ class AmariImportWorker:
             "user_id": str(user_id),
             "level": level
         }
-        response = await self.make_request(aiohttp_client, f"givelevel/{guild_id}/{channel_id}", method="POST", data=data)
+        response = await self.make_request(aiohttp_client, f"givelevel/{guild_id}/{channel_id}", method="POST", data=data, timeout=30.0)
         return response
 
     async def modify_exp(self, aiohttp_client: aiohttp.ClientSession, guild_id: int, channel_id: int, user_id: int, action: Literal['add', 'remove'], exp: int):
@@ -377,10 +377,10 @@ class AmariImportWorker:
             "action": action,
             "exp": exp
         }
-        response = await self.make_request(aiohttp_client, f"modifyexp/{guild_id}/{channel_id}", method="POST", data=data)
+        response = await self.make_request(aiohttp_client, f"modifyexp/{guild_id}/{channel_id}", method="POST", data=data, timeout=30.0)
         return response
 
-    async def make_request(self, aiohttp_client: aiohttp.ClientSession, endpoint: str, method: str = 'GET', data: Optional[dict] = None):
+    async def make_request(self, aiohttp_client: aiohttp.ClientSession, endpoint: str, method: str = 'GET', data: Optional[dict] = None, timeout=5.0):
         host = self.host.rstrip("/")
         endpoint = endpoint.lstrip("/")
         url = f"{host}/{endpoint}"
