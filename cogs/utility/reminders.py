@@ -10,6 +10,7 @@ import asyncio
 
 from main import dvvt
 from utils.buttons import confirm
+from utils.context import DVVTcontext
 from utils.converters import TimedeltaConverter, BetterTimeConverter
 from utils.errors import ArgumentBaseError
 from utils.time import humanize_timedelta, UserFriendlyTime
@@ -201,3 +202,35 @@ class reminders(commands.Cog):
             return await ctx.send("You can't subscribe to your own reminder.")
         reminder_id = await self.add_reminder(ctx.author.id, ctx.guild.id, ctx.channel.id, ctx.message.id, name, remind_time)
         await ctx.send(f"Alright! I have cloned the reminder **{name}**. You will be reminded about it in **{humanize_timedelta(seconds=round(remind_time-time.time()))}** (at <t:{round(remind_time)}:f>).\nThis reminder's ID is `{reminder_id}`.")
+
+    @checks.perm_insensitive_roles()
+    @commands.guild_only()
+    @remind.command(name='edit', aliases=['change'])
+    async def remind_edit(self, ctx: DVVTcontext, reminder_id: OwnReminderConverter, *,
+                     when_and_what_to_remind: UserFriendlyTime(commands.clean_content, default='\u2026', optional_time=True) = None):
+        """Edits a reminder with the specified ID. You can change the time and the message of the reminder.
+        Follow the format allowed by the original "remind" command.
+        Times are in UTC.
+        """
+        reminder: Reminder = reminder_id
+        if reminder is None:
+            return await ctx.send("You need to specify the ID of the reminder that you'd want to repeat.")
+        if when_and_what_to_remind is None:
+            return await ctx.send("Unexpected parsing, please try again later.")
+        new_remind_dt = when_and_what_to_remind.dt
+        new_reminder = when_and_what_to_remind.arg
+
+        if new_remind_dt is None or new_remind_dt == "...":
+            new_remind_dt = reminder.time
+        else:
+            new_remind_dt = new_remind_dt.timestamp()
+
+        if new_reminder is None:
+            new_reminder = reminder.name
+
+            if len(new_reminder) > 256:
+                return await ctx.send("You can only provide a message of up to 256 characters for your reminder.")
+
+        await self.client.db.execute("UPDATE reminders SET time = $1, name = $2 WHERE id = $3", new_remind_dt, new_reminder, reminder.id)
+        return await ctx.maybe_reply(f"Alright! I have updated your reminder (#{reminder.id}) **{reminder.name}** to be in **{humanize_timedelta(seconds=round(new_remind_dt - time.time()))}** (at <t:{round(new_remind_dt)}:f>).")
+
