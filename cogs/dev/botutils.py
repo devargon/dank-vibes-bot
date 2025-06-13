@@ -2,6 +2,8 @@ import discord
 import aiohttp
 from discord.ext import commands
 from utils import checks
+from utils.context import DVVTcontext
+
 
 class BotUtils(commands.Cog):
     def __init__(self, client):
@@ -52,3 +54,25 @@ class BotUtils(commands.Cog):
         else:
             await ctx.checkmark()
             await ctx.send("Profile picture updated <3")
+
+
+    @checks.dev()
+    @set.command(name="profile", hidden=True)
+    async def set_profile(self, ctx: DVVTcontext, state: str):
+        allowed_states = ['prod', 'dev']
+        if state.strip().lower() not in allowed_states:
+            return await ctx.send(
+                "You need to provide one of the following values for the `state`: " + ", ".join(allowed_states))
+        if state.strip().lower() == 'prod':
+            username_to_update = "Dank Vibes Bot"
+            avatar_filepath = "assets/user/production.png"
+        else:
+            username_to_update = None
+            avatar_filepath = "assets/user/development.png"
+        with open(avatar_filepath, 'rb') as f:
+            file_bytes = f.read()
+
+        await self.client.user.edit(avatar=file_bytes)
+        if isinstance(ctx.me, discord.Member):
+            await ctx.me.edit(nick=username_to_update)
+        await ctx.checkmark()
