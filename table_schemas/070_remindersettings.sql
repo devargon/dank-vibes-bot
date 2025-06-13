@@ -28,5 +28,6 @@ create table if not exists remindersettings
     marriage  boolean default false,
     pet       boolean default false,
     m_partner bigint,
-    adventure boolean default false
+    adventure boolean default false,
+    scratch   boolean default false,
 );
