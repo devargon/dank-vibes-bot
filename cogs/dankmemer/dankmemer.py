@@ -843,7 +843,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         Weekly Reminder
         """
         if is_dank_slash_command(message, 'weekly'):
-            member = message.interaction.user
+            member = message.interaction_metadata.user
             today = datetime.date.today()
             days_ahead = 0 - today.weekday()
             if days_ahead <= 0:
@@ -859,7 +859,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         """
         if is_dank_slash_command(message, 'monthly'):
             if len(message.embeds) == 0 or ("You can buy the ability" not in message.embeds[0].description):
-                member = message.interaction.user
+                member = message.interaction_metadata.user
                 now = discord.utils.utcnow()
                 next_monthly_datetime = (now.replace(day=1) + datetime.timedelta(days=32)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
                 nextmonthlytime = next_monthly_datetime.timestamp()
@@ -870,7 +870,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         Lottery reminder
         """
         if is_dank_slash_command(message, "lottery") and len(message.embeds) > 0 and message.embeds[0].title == "Pending Confirmation" and "tryna buy" in message.embeds[0].description:
-            member = message.interaction.user
+            member = message.interaction_metadata.user
             def check_lottery(payload_before, payload_after):
                 return message.id == payload_after.id
             try:
