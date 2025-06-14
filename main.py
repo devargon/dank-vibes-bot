@@ -48,7 +48,6 @@ AVAILABLE_EXTENSIONS = [
     'cogs.utility',
     'cogs.votetracker',
     'cogs.messagetracking',
-    'cogs.grinder',
     'cogs.automod',
     'cogs.giveaways',
     'cogs.dankmemer',
