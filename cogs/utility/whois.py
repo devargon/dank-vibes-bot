@@ -12,6 +12,7 @@ from utils.time import humanize_timedelta
 from utils.format import comma_number
 from time import time
 from main import dvvt
+from custom_emojis import DVB_TRUE, DVB_FALSE
 
 
 def transform_external_url(original_url):
@@ -201,7 +202,7 @@ class Whois(commands.Cog):
         else:
             description.append(f"• Not in server")
         if ctx.author.guild_permissions.kick_members and isinstance(user, discord.Member):
-            description.append(f"• User is verified: {f'<:DVB_False:887589731515392000> They have **{humanize_timedelta(seconds=user.joined_at.timestamp()+86400-round(time()))}** to complete the Membership Screening.' if user.pending else '<:DVB_True:887589686808309791>'}")
+            description.append(f"• User is verified: {f'{DVB_FALSE} They have **{humanize_timedelta(seconds=user.joined_at.timestamp()+86400-round(time()))}** to complete the Membership Screening.' if user.pending else DVB_TRUE}")
         embed = discord.Embed(color=self.client.embed_color)
         embed.set_author(name="{}'s Information".format(user.name), icon_url=user.display_avatar.url)
         a = await self.client.fetch_amari_data(user.id, ctx.guild.id)

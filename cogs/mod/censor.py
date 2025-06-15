@@ -2,6 +2,7 @@ import discord
 from utils import checks
 from discord.ext import commands, menus
 from utils.buttons import *
+from custom_emojis import DVB_TRUE, DVB_FALSE
 
 class censor_list_pagination(menus.ListPageSource):
     def __init__(self, entries, title):
@@ -36,7 +37,7 @@ class censor(commands.Cog):
             await ctx.send(f"`{content}` is already blacklisted.")
         else:
             await self.client.db.execute("INSERT INTO blacklisted_words(string) VALUES ($1)", content)
-            await ctx.send(f"<:DVB_True:887589686808309791> `{content}` has been blacklisted.")
+            await ctx.send(f"{DVB_TRUE} `{content}` has been blacklisted.")
 
     @checks.has_permissions_or_role(manage_roles=True)
     @censor.command(name='list')
@@ -68,7 +69,7 @@ class censor(commands.Cog):
             await ctx.send(f"`{content}` is already blacklisted.")
         else:
             await self.client.db.execute("INSERT INTO blacklisted_words(string) VALUES ($1)", content)
-            await ctx.send(f"<:DVB_True:887589686808309791> `{content}` has been blacklisted.")
+            await ctx.send(f"{DVB_TRUE} `{content}` has been blacklisted.")
 
     @checks.has_permissions_or_role(manage_roles=True)
     @censor.command(name='remove', aliases=['delete', '-'])
@@ -83,6 +84,6 @@ class censor(commands.Cog):
         existing = await self.client.db.fetchval("SELECT string FROM blacklisted_words WHERE string = $1", content)
         if existing:
             await self.client.db.execute("DELETE FROM blacklisted_words WHERE string = $1", content)
-            await ctx.send(f"<:DVB_True:887589686808309791> `{content}` has been removed from the blacklist.")
+            await ctx.send(f"{DVB_TRUE} `{content}` has been removed from the blacklist.")
         else:
             await ctx.send(f"`{content}` is already not blacklisted!")

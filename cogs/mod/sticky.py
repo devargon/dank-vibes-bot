@@ -1,4 +1,6 @@
 import discord
+
+from custom_emojis import DVB_CHECKMARK
 from main import dvvt
 from utils import checks
 from discord.ext import commands, menus
@@ -125,7 +127,7 @@ class Sticky(commands.Cog):
                     return await ctx.send(f"<:DVB_eyeroll:878146268277374976> You entered a JSON code, but Discord was not able to decode it. More details: `{e}`.\nGet the JSON code directly from Carlbot's embed generator: https://cdn.nogra.xyz/core/embed.gif")
                 else:
                     await self.client.db.execute("INSERT INTO stickymessages VALUES($1, $2, $3, $4, $5)", ctx.guild.id, channel.id, message.id, 0, content)
-                    await ctx.send(f"<:DVB_checkmark:955345523139805214> I am now sending a sticky embed message in {channel.mention}.")
+                    await ctx.send(f"{DVB_CHECKMARK} I am now sending a sticky embed message in {channel.mention}.")
                     await self.client.logger.log_sticky_action(action='add', user=ctx.author, target=channel, content=content)
         elif message_type == "text":
             try:
@@ -134,7 +136,7 @@ class Sticky(commands.Cog):
                 return await ctx.send(f"I was not able to add this sticky message. Details: `{e}`")
             else:
                 await self.client.db.execute("INSERT INTO stickymessages VALUES($1, $2, $3, $4, $5)", ctx.guild.id, channel.id, message.id, 1, content)
-                await ctx.send(f"<:DVB_checkmark:955345523139805214> I am now sending a sticky message in {channel.mention}.")
+                await ctx.send(f"{DVB_CHECKMARK} I am now sending a sticky message in {channel.mention}.")
                 await self.client.logger.log_sticky_action(action='add', user=ctx.author, channel=channel, message=content)
 
 
@@ -150,7 +152,7 @@ class Sticky(commands.Cog):
         if len(existing) == 0:
             return await ctx.send(f"You do not have a sticky message set for {channel.mention}.")
         await self.client.db.fetch("DELETE FROM stickymessages WHERE guild_id = $1 and channel_id = $2", ctx.guild.id, channel.id)
-        await ctx.send(f"<:DVB_checkmark:955345523139805214> The sticky message for {channel.mention} has been removed.")
+        await ctx.send(f"{DVB_CHECKMARK} The sticky message for {channel.mention} has been removed.")
         await self.client.logger.log_sticky_action(action='remove', user=ctx.author, channel=channel)
 
     @checks.has_permissions_or_role(manage_roles=True)

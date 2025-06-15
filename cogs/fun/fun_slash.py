@@ -7,6 +7,8 @@ import discord
 from discord import Webhook, Option
 from discord.ext import commands
 import aiohttp
+
+from custom_emojis import DVB_CHECKMARK, DVB_CROSSMARK
 from utils import checks
 from utils.format import box, proper_userf
 from utils.time import humanize_timedelta
@@ -26,7 +28,7 @@ class DMPersistentView(discord.ui.View):
         self.client = client
         super().__init__(timeout=None)
 
-    @discord.ui.button(label='Approve', emoji=discord.PartialEmoji.from_str("<:DVB_checkmark:955345523139805214>"), style=discord.ButtonStyle.green, custom_id="button:approve_dm") #, custom_id='persistent_view:approve')
+    @discord.ui.button(label='Approve', emoji=discord.PartialEmoji.from_str(DVB_CHECKMARK), style=discord.ButtonStyle.green, custom_id="button:approve_dm") #, custom_id='persistent_view:approve')
     async def green(self, button: discord.ui.Button, interaction: discord.Interaction):
         dm_request = await self.client.db.fetchrow("SELECT * FROM dmrequests WHERE messageid = $1", interaction.message.id)
         if dm_request is None:
@@ -87,7 +89,7 @@ class DMPersistentView(discord.ui.View):
         await asyncio.sleep(10)
         await interaction.delete_original_message()
 
-    @discord.ui.button(label='Deny', emoji=discord.PartialEmoji.from_str("<:DVB_crossmark:955345521151737896>"), style=discord.ButtonStyle.red, custom_id="button:deny_dm") #c, custom_id='persistent_view:red')
+    @discord.ui.button(label='Deny', emoji=discord.PartialEmoji.from_str(DVB_CROSSMARK), style=discord.ButtonStyle.red, custom_id="button:deny_dm") #c, custom_id='persistent_view:red')
     async def red(self, button: discord.ui.Button, interaction: discord.Interaction):
         dm_request = await self.client.db.fetchrow("SELECT * FROM dmrequests WHERE messageid = $1", interaction.message.id)
         if dm_request is None:

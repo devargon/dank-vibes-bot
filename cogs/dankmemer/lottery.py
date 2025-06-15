@@ -5,6 +5,8 @@ from typing import Literal, Optional
 import discord
 from discord import SlashCommandGroup
 from discord.ext import commands
+
+from custom_emojis import DVB_TRUE, DVB_FALSE
 from main import dvvt
 from utils import checks
 from utils.buttons import confirm
@@ -42,11 +44,11 @@ class GoldPotTemplateModal(discord.ui.Modal):
             if len(self.children[0].value) == 0:
                 user = None
             else:
-                remarks.append(f"<:DVB_False:887589731515392000> Invalid User: `{self.children[0].value}`")
+                remarks.append(f"{DVB_FALSE} Invalid User: `{self.children[0].value}`")
                 user = None
         else:
             if (user := self.client.get_user(winner_id)) is None:
-                remarks.append(f"<:DVB_False:887589731515392000> Invalid User: `{self.children[0].value}`")
+                remarks.append(f"{DVB_FALSE} Invalid User: `{self.children[0].value}`")
 
         prize = self.children[1].value
         if lottery_type == 'owo':
@@ -171,7 +173,7 @@ class Lottery(commands.Cog):
         if lottery_id is None:
             return await ctx.help()
         if lottery_id > 2147483647 or (lottery_obj := await self.client.db.fetchrow("SELECT * FROM lotteries WHERE lottery_id = $1 AND active = $2", lottery_id, True)) is None:
-            await ctx.send(f"<:DVB_False:887589731515392000> An active lottery with the ID {lottery_id} doesn't exist.")
+            await ctx.send(f"{DVB_FALSE} An active lottery with the ID {lottery_id} doesn't exist.")
             return
         type_of_lottery = lottery_obj.get('lottery_type')
         if type_of_lottery not in accepted_lottery_types:
@@ -196,15 +198,15 @@ class Lottery(commands.Cog):
                 to_commit.append((lottery_id, next_lottery_number, reserved_entry.get('lottery_user')))
                 us = self.client.get_user(reserved_entry.get('lottery_user'))
                 us = str(us) if us is not None else reserved_entry.get('lottery_user')
-                summary.append(f"<:DVB_True:887589686808309791> **{proper_userf(us)}** entered as `{next_lottery_number}` (reserved)")
+                summary.append(f"{DVB_TRUE} **{proper_userf(us)}** entered as `{next_lottery_number}` (reserved)")
                 last_lottery_number = next_lottery_number
                 next_lottery_number += 1
             else:
                 to_commit.append((lottery_id, next_lottery_number, user.id))
                 if user.display_name != user.name:
-                    summary.append(f"<:DVB_True:887589686808309791> **{user.name}** a.k.a. **{user.display_name}** entered as `{next_lottery_number}`")
+                    summary.append(f"{DVB_TRUE} **{user.name}** a.k.a. **{user.display_name}** entered as `{next_lottery_number}`")
                 else:
-                    summary.append(f"<:DVB_True:887589686808309791> **{user.name}** has entered as `{next_lottery_number}`")
+                    summary.append(f"{DVB_TRUE} **{user.name}** has entered as `{next_lottery_number}`")
                 last_lottery_number = next_lottery_number
         await self.client.db.executemany("INSERT INTO lottery_entries(lottery_id, lottery_number, lottery_user) VALUES ($1, $2, $3)", to_commit)
         joined_summary = '\n'.join(summary)
@@ -243,7 +245,7 @@ class Lottery(commands.Cog):
             return await ctx.help()
         lottery_type = lottery_type.lower()
         if lottery_type not in ['dank', 'karuta', 'owo', 'ckaruta']:
-            return await ctx.send("<:DVB_False:887589731515392000> **Invalid lottery type**.\n`type` must be one of `dank`, `karuta`, or `owo`.")
+            return await ctx.send(f"{DVB_FALSE} **Invalid lottery type**.\n`type` must be one of `dank`, `karuta`, or `owo`.")
         embed = discord.Embed(title=entry_fee, description=f"Holder: {ctx.author.mention}\nChannel: <#680002065950703646>\nMaximum Entries: `{max_tickets}`", color=self.client.embed_color)
         if lottery_type == 'owo':
             embed.add_field(name="Entry:", value=f"<a:dv_pointArrowOwO:837656328482062336> Give {ctx.author.mention} `{entry_fee}` in <#859761515761762304> to enter!")
@@ -323,7 +325,7 @@ class Lottery(commands.Cog):
         if lottery_id is None:
             return await ctx.help()
         if lottery_id > 2147483647 or (lottery_db := await self.client.db.fetchrow("SELECT * FROM lotteries WHERE lottery_id = $1 AND active = $2", lottery_id, True)) is None:
-            await ctx.send(f"<:DVB_False:887589731515392000> An active lottery with the ID {lottery_id} doesn't exist.")
+            await ctx.send(f"{DVB_FALSE} An active lottery with the ID {lottery_id} doesn't exist.")
             return
         if user is None:
             embed = discord.Embed(title=f"Reserved entries for {lottery_db.get('lottery_type')} lottery #{lottery_id}", color=self.client.embed_color)
@@ -362,7 +364,7 @@ class Lottery(commands.Cog):
         """
         if lottery_id > 2147483647 or (
         lotto_object := await self.client.db.fetchrow("SELECT * FROM lotteries WHERE lottery_id = $1 AND active = $2", lottery_id, True)) is None:
-            await ctx.send(f"<:DVB_False:887589731515392000> An active lottery with the ID {lottery_id} doesn't exist.")
+            await ctx.send(f"{DVB_FALSE} An active lottery with the ID {lottery_id} doesn't exist.")
             return
 
         if await self.check_non_hoster_consent(ctx, lotto_object.get('starter_id')) is True:
@@ -375,7 +377,7 @@ class Lottery(commands.Cog):
                 return await confirmview.response.edit(embed=confirmembed)
             else:
                 confirmembed.color = discord.Color.green()
-                confirmembed.description += f"\n\n<:DVB_True:887589686808309791> **Success!**"
+                confirmembed.description += f"\n\n{DVB_TRUE} **Success!**"
                 await self.client.db.execute("DELETE FROM lottery_entries WHERE lottery_id = $1 AND lottery_number > $2", lottery_id, count)
             return await confirmview.response.edit(embed=confirmembed)
 
@@ -391,7 +393,7 @@ class Lottery(commands.Cog):
         if lottery_id > 2147483647 or (
         lotto_object := await self.client.db.fetchrow("SELECT * FROM lotteries WHERE lottery_id = $1 AND active = $2",
                                                      lottery_id, True)) is None:
-            await ctx.send(f"<:DVB_False:887589731515392000> An active lottery with the ID {lottery_id} doesn't exist.")
+            await ctx.send(f"{DVB_FALSE} An active lottery with the ID {lottery_id} doesn't exist.")
             return
 
         if await self.check_non_hoster_consent(ctx, lotto_object.get('starter_id')) is True:

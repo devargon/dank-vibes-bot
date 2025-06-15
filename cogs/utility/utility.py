@@ -46,6 +46,7 @@ from .utility_slash import UtilitySlash
 from .customrole import CustomRoleManagement
 from ..mod.donations import UserDonations, format_donation
 from googlesearch import search
+from custom_emojis import DVB_TRUE, DVB_FALSE
 
 class NitroLinkModal(discord.ui.Modal):
     def __init__(self):
@@ -125,7 +126,7 @@ class RequestForNitroLink(discord.ui.View):
             is_valid, response = await check_code(code)
             if not is_valid:
                 result_embed.color = discord.Color.red()
-                result_embed.description = f"<:DVB_False:887589731515392000> Valid Nitro gift: **No**"
+                result_embed.description = f"{DVB_FALSE} Valid Nitro gift: **No**"
                 if response is not None:
                     result_embed.add_field(name="More details", value=box(response))
             else:
@@ -145,11 +146,11 @@ class RequestForNitroLink(discord.ui.View):
                 result_embed.description = f"Gift ID: `{masked_code}`\n"
 
                 if response.get("subscription_plan_id", None) in nitro_ids.keys():
-                    result_embed.description += f"<:DVB_True:887589686808309791> Valid Nitro gift: **Yes**\n"
+                    result_embed.description += f"{DVB_TRUE} Valid Nitro gift: **Yes**\n"
                     gift_type = nitro_ids.get(response.get("subscription_plan_id"))
                     result_embed.description += f"🎁 Gift type: **{gift_type}**\n"
                 else:
-                    result_embed.description += f"<:DVB_False:887589731515392000> Valid Nitro gift: **No**\n"
+                    result_embed.description += f"{DVB_FALSE} Valid Nitro gift: **No**\n"
                     if sku_data.get("slug") == "no-nitro":
                         result_embed.description += f"🎁 Gift type: **Non-Nitro**\n"
 
@@ -173,7 +174,7 @@ class RequestForNitroLink(discord.ui.View):
                     result_embed.color = discord.Color.red()
                     result_embed.description += f"⚠️ Gift link is **fully redeemed** (Used `{uses}`/`{max_uses}` times)"
                 else:
-                    result_embed.description += f"<:DVB_True:887589686808309791> Gift link is **ready for use** (Used `{uses}`/`{max_uses}` times)"
+                    result_embed.description += f"{DVB_TRUE} Gift link is **ready for use** (Used `{uses}`/`{max_uses}` times)"
                 if (thumbnail_data := store_listing_data.get("thumbnail", None)) is not None:
                     file_ext = thumbnail_data.get("mime_type").split("/")[-1]
                     result_embed.set_image(url=f"https://cdn.discordapp.com/app-assets/{response.get('application_id')}/store/{thumbnail_data.get('id')}.{file_ext}")
@@ -186,7 +187,7 @@ class RequestForNitroLink(discord.ui.View):
     async def on_timeout(self):
         self.children[0].style = discord.ButtonStyle.red
         self.children[0].label = "No Nitro link provided"
-        self.children[0].emoji = discord.PartialEmoji.from_str("<:DVB_False:887589731515392000>")
+        self.children[0].emoji = discord.PartialEmoji.from_str(DVB_FALSE)
         self.children[0].disabled = True
         if self.message is not None:
             await self.message.edit(view=self)
@@ -208,9 +209,9 @@ class GetHeistPing(discord.ui.View):
     async def callback(self, button: discord.ui.Button, interaction: discord.Interaction):
         if not discord.utils.get(interaction.user.roles, name="Heist Ping"):
             await interaction.user.add_roles(discord.utils.get(interaction.guild.roles, name="Heist Ping"))
-            await interaction.response.send_message("<:DVB_True:887589686808309791> The <@&758174643814793276> role has been added to you!", ephemeral=True)
+            await interaction.response.send_message(f"{DVB_FALSE} The <@&758174643814793276> role has been added to you!", ephemeral=True)
         else:
-            await interaction.response.send_message("<:DVB_True:887589686808309791> You already have the <@&758174643814793276> role.", ephemeral=True)
+            await interaction.response.send_message(f"{DVB_FALSE} You already have the <@&758174643814793276> role.", ephemeral=True)
 
 
 class MessageLeaderboard(menus.ListPageSource):

@@ -17,14 +17,15 @@ from utils.format import grammarformat, stringtime_duration, proper_userf
 from utils.time import humanize_timedelta
 from utils.menus import CustomMenu
 from time import time
+from custom_emojis import DVB_TRUE, DVB_FALSE, DVB_CHECKMARK
 import os
 
 
 def return_emoji(truefalse: bool):
     if truefalse:
-        return "<:DVB_True:887589686808309791> "
+        return DVB_TRUE
     else:
-        return "<:DVB_False:887589731515392000>"
+        return DVB_FALSE
 
 class Blacklist(menus.ListPageSource):
     def __init__(self, entries, title):
@@ -523,7 +524,7 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
             details = f"Reason: {blacklist.get('reason')}\n"
             if blacklist.get('blacklist_active'):
                 details += f"Until: <t:{blacklist.get('time_until')}:R>\n" if blacklist.get('time_until') != 9223372036854775807 else 'Until: Eternity\n'
-            details += f"Active: {'<:DVB_True:887589686808309791>' if blacklist.get('blacklist_active') else '<:DVB_False:887589731515392000>'}\n"
+            details += f"Active: {DVB_TRUE if blacklist.get('blacklist_active') else DVB_FALSE}\n"
             details += f"Moderator: {moderator} ({moderator.id})" if moderator is not None else f"Moderator: {blacklist.get('moderator_id')}"
             blacklists.append((name, details))
         if len(blacklists) <= 10:
@@ -769,7 +770,7 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
         Resets the state of clowns so no one will change to a clown in any channel.
         """
         self.client.clownmode = {}
-        return await ctx.send("<:DVB_checkmark:955345523139805214> Reset clown mode")
+        return await ctx.send(f"{DVB_CHECKMARK} Reset clown mode")
 
     @checks.has_permissions_or_role(manage_roles=True)
     @dungeon.command(name="bypass")

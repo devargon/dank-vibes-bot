@@ -21,6 +21,7 @@ from time import time
 from datetime import datetime
 import pytz
 from utils.context import DVVTcontext
+from custom_emojis import DVB_TRUE, DVB_FALSE
 
 modcommands_id = 978563862896967681 if os.getenv('state') == '1' else 1376848574247206972
 dankmemerplayerrole_id = 982153033523793950 if os.getenv('state') == '1' else 837594909917708298
@@ -97,9 +98,9 @@ def get_channel_name(channel: discord.abc.GuildChannel):
 
 def return_emoji(truefalse: bool):
     if truefalse:
-        return "<:DVB_True:887589686808309791> "
+        return DVB_TRUE
     else:
-        return "<:DVB_False:887589731515392000>"
+        return DVB_FALSE
 
 class GetDankMemerPlayerRole(discord.ui.Button):
     def __init__(self):
@@ -108,7 +109,7 @@ class GetDankMemerPlayerRole(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         if (role := interaction.guild.get_role(dankmemerplayerrole_id)) is not None:
             await interaction.user.add_roles(role)
-            await interaction.response.send_message(f"<:DVB_True:887589686808309791> Added **{role.name}**!\nNow head to a Dank Memer Bot channel to use the bot.", view=ChannelOnlyView(), ephemeral=True)
+            await interaction.response.send_message(f"{DVB_TRUE} Added **{role.name}**!\nNow head to a Dank Memer Bot channel to use the bot.", view=ChannelOnlyView(), ephemeral=True)
 
 
 class GoToChannel(discord.ui.Button):

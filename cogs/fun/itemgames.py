@@ -20,6 +20,7 @@ from io import BytesIO
 from main import dvvt
 
 from utils.time import humanize_timedelta
+from custom_emojis import DVB_TRUE, DVB_FALSE
 
 
 class DisplayItems(menus.ListPageSource):
@@ -310,7 +311,7 @@ class ItemGames(commands.Cog):
             insquery = ["UPDATE", "INVENTORIES", "SET", itemname, "=", str(count+num), "WHERE", "user_id", "=", str(member.id)]
             modifiedno = count + num
         await self.client.db.execute(' '.join(insquery))
-        return await ctx.send(f"<:DVB_True:887589686808309791> I successfully gave {proper_userf(member)} {num} {itemname}s, they now have {modifiedno} {itemname}s.")
+        return await ctx.send(f"{DVB_TRUE} I successfully gave {proper_userf(member)} {num} {itemname}s, they now have {modifiedno} {itemname}s.")
 
     @inventory.command(name="items")
     async def items(self, ctx):

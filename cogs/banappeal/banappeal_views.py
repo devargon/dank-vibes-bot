@@ -9,6 +9,7 @@ from typing import Optional
 from aiohttp import ClientSession
 
 from cogs.banappeal.banappealdb import BanAppealDB, BanAppeal
+from custom_emojis import DVB_TRUE, DVB_CHECKMARK, DVB_CROSSMARK
 from utils.format import proper_userf, print_exception
 
 server_id = 1200400184748802168 if "preproduction" in os.getenv("APPEALS_SERVER_HOST") else 1288032530569625660 if "banappeal." in os.getenv("APPEALS_SERVER_HOST") else 871734809154707467
@@ -175,8 +176,8 @@ class BanAppealReasonModal(discord.ui.Modal):
                         print_exception("Exception while deleting ping message", e)
                 else:
                     try:
-                        await a.add_reaction("<:DVB_True:887589686808309791>")
-                        await b.add_reaction("<:DVB_True:887589686808309791>")
+                        await a.add_reaction(DVB_TRUE)
+                        await b.add_reaction(DVB_TRUE)
                     except Exception as e:
                         print_exception("Exception while sending ping message", e)
         except asyncio.TimeoutError:
@@ -243,8 +244,8 @@ class BanAppealView(discord.ui.View):
                         return await interaction.response.send_message("An error occured while trying to update this message/ban appeal.", ephemeral=True)
 
 
-        self.green_button = AppealActionButton(label='Approve + Unban', emoji=discord.PartialEmoji.from_str("<:DVB_checkmark:955345523139805214>"), style=discord.ButtonStyle.green, custom_id="appeal:approve")
-        self.red_button = AppealActionButton(label='Deny', emoji=discord.PartialEmoji.from_str("<:DVB_crossmark:955345521151737896>"), style=discord.ButtonStyle.red, custom_id="appeal:deny")
+        self.green_button = AppealActionButton(label='Approve + Unban', emoji=discord.PartialEmoji.from_str(DVB_CHECKMARK), style=discord.ButtonStyle.green, custom_id="appeal:approve")
+        self.red_button = AppealActionButton(label='Deny', emoji=discord.PartialEmoji.from_str(DVB_CROSSMARK), style=discord.ButtonStyle.red, custom_id="appeal:deny")
         self.grey_button = AppealActionButton(label='User ID', style=discord.ButtonStyle.blurple, custom_id="appeal:get_user_id")
 
         if banappeal is not None:
