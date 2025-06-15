@@ -915,7 +915,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 now = discord.utils.utcnow()
                 now = now + datetime.timedelta(hours=1)
                 now = now.replace(minute=0, second=0, microsecond=0)
-                nextlotterytime = round(now.timestamp()) + 30
+                nextlotterytime = round(now.timestamp()) + 60
                 await self.handle_reminder_entry(member.id, 5, message.channel.id, message.guild.id, nextlotterytime)
                 with contextlib.suppress(discord.HTTPException):
                     await clock(newedit)
