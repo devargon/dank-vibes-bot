@@ -903,7 +903,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         """
         Lottery reminder
         """
-        if is_dank_slash_command(message, "lottery") and len(message.embeds) > 0 and message.embeds[0].title == "Pending Confirmation" and "tryna buy" in message.embeds[0].description:
+        if is_dank_slash_command(message, "lottery buy"):
             member = message.interaction_metadata.user
             def check_lottery(payload_before, payload_after):
                 return message.id == payload_after.id
@@ -912,18 +912,13 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             except asyncio.TimeoutError:
                 return await crossmark(message)
             else:
-                if not newedit.embeds[0].title:
-                    return
-                if newedit.embeds[0].title == "Action Canceled" or message.embeds[0].title == "Action Canceled":
-                    return await message.add_reaction(DVB_CROSSMARK)
-                if newedit.embeds[0].title == "Action Confirmed":
-                    now = discord.utils.utcnow()
-                    now = now + datetime.timedelta(hours=1)
-                    now = now.replace(minute=0, second=0, microsecond=0)
-                    nextlotterytime = round(now.timestamp()) + 30
-                    await self.handle_reminder_entry(member.id, 5, message.channel.id, message.guild.id, nextlotterytime)
-                    with contextlib.suppress(discord.HTTPException):
-                        await clock(newedit)
+                now = discord.utils.utcnow()
+                now = now + datetime.timedelta(hours=1)
+                now = now.replace(minute=0, second=0, microsecond=0)
+                nextlotterytime = round(now.timestamp()) + 30
+                await self.handle_reminder_entry(member.id, 5, message.channel.id, message.guild.id, nextlotterytime)
+                with contextlib.suppress(discord.HTTPException):
+                    await clock(newedit)
         """
         Hunting Reminder
         """
@@ -1058,72 +1053,72 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 with contextlib.suppress(discord.HTTPException):
                     await checkmark(aftermsg)
 
-                if beforemsg.embeds[0] and beforemsg.embeds[0].description and aftermsg.embeds[0] and aftermsg.embeds[0].description:
+            if beforemsg.embeds[0].description and aftermsg.embeds[0].description:
 
-                    if beforemsg.embeds[0].description.startswith("Look at each color next to the words closely!"):
-                        description_lines = beforemsg.embeds[0].description.split("\n")
-                        color_words = []
-                        color_word_regex = r"<:([a-zA-Z0-9_]+):\d+>|`([^`]+)`"
-                        for line in description_lines[1:]:
-                            results = re.findall(color_word_regex, line)
-                            if len(results) > 0:
-                                # results is example [('White', ''), ('', 'domestic')]
-                                # We need to convert it to ['White', 'domestic']
-                                color_words.append([results[0][0], results[1][1]])
-                        print(f"Detected the following words: {color_words}")
-                        correct_result = None
-                        for regex_result in color_words:
-                            print(f"Checking if {regex_result[1]} is in {aftermsg.embeds[0].description}")
-                            if regex_result[1] in aftermsg.embeds[0].description:
-                                correct_result = regex_result
-                                break
-                        if correct_result:
-                            print(f"found a correct result: {correct_result}")
-                            view = None
-                            if aftermsg.components:
-                                actionrow1 = aftermsg.components[0]
-                                if isinstance(actionrow1, discord.ActionRow) and actionrow1.children:
-                                    print("Found a view with children. Creating a mock view")
-                                    view = MockShiftView(member)
-                                    for row_item_component in actionrow1.children:
-                                        if isinstance(row_item_component, discord.Button):
-                                            correct_button = row_item_component.label.lower() == correct_result[0].lower()
-                                            new_button = MockShiftButton(
-                                                style=discord.ButtonStyle.green if correct_button else discord.ButtonStyle.grey,
-                                                label=row_item_component.label,
-                                                disabled=not correct_button,
-                                                custom_id=None
-                                            )
-                                            view.add_item(new_button)
-                            await aftermsg.reply(embed=discord.Embed(description=f"Select **{correct_result[0]}**", color=self.client.embed_color), view=view)
-                        else:
-                            print_dev("Result was not found")
-
-                    if beforemsg.embeds[0].description.startswith("Remember words order!") and aftermsg.embeds[0].description.startswith("Click the buttons in correct order!"):
-                        list_of_words = []
-                        word_regex = r"`([^`]+)`"
-                        for line in beforemsg.embeds[0].description.split("\n")[1:]:
-                            results = re.findall(word_regex, line)
-                            if len(results) > 0:
-                                list_of_words.append(results[0].lower())
-                        message_content = ["Correct order:"]
-                        for index, word in enumerate(list_of_words):
-                            message_content.append(f"{index}. **{word}**")
-                        embed = discord.Embed(description="\n".join(message_content), color=self.client.embed_color)
+                if beforemsg.embeds[0].description.startswith("Look at each color next to the words closely!"):
+                    description_lines = beforemsg.embeds[0].description.split("\n")
+                    color_words = []
+                    color_word_regex = r"<:([a-zA-Z0-9_]+):\d+>|`([^`]+)`"
+                    for line in description_lines[1:]:
+                        results = re.findall(color_word_regex, line)
+                        if len(results) > 0:
+                            # results is example [('White', ''), ('', 'domestic')]
+                            # We need to convert it to ['White', 'domestic']
+                            color_words.append([results[0][0], results[1][1]])
+                    print(f"Detected the following words: {color_words}")
+                    correct_result = None
+                    for regex_result in color_words:
+                        print(f"Checking if {regex_result[1]} is in {aftermsg.embeds[0].description}")
+                        if regex_result[1] in aftermsg.embeds[0].description:
+                            correct_result = regex_result
+                            break
+                    if correct_result:
+                        print(f"found a correct result: {correct_result}")
                         view = None
                         if aftermsg.components:
                             actionrow1 = aftermsg.components[0]
                             if isinstance(actionrow1, discord.ActionRow) and actionrow1.children:
+                                print("Found a view with children. Creating a mock view")
                                 view = MockShiftView(member)
                                 for row_item_component in actionrow1.children:
                                     if isinstance(row_item_component, discord.Button):
-                                        is_button_part_of_list = row_item_component.label.lower() in list_of_words
-                                        emoji = number_to_emoji(list_of_words.index(row_item_component.label.lower())+1) if is_button_part_of_list else None
-                                        new_button = MockShiftButton(style=discord.ButtonStyle.grey, label=row_item_component.label, disabled=False, custom_id = None, url = None, emoji = emoji)
+                                        correct_button = row_item_component.label.lower() == correct_result[0].lower()
+                                        new_button = MockShiftButton(
+                                            style=discord.ButtonStyle.green if correct_button else discord.ButtonStyle.grey,
+                                            label=row_item_component.label,
+                                            disabled=not correct_button,
+                                            custom_id=None
+                                        )
                                         view.add_item(new_button)
-                        await aftermsg.reply(embed=embed, view=view)
+                        await aftermsg.reply(embed=discord.Embed(description=f"Select **{correct_result[0]}**", color=self.client.embed_color), view=view)
+                    else:
+                        print_dev("Result was not found")
 
-                    if beforemsg.embeds[0].description.startswith("Look at the emoji closely!"):
+                if beforemsg.embeds[0].description.startswith("Remember words order!") and aftermsg.embeds[0].description.startswith("Click the buttons in correct order!"):
+                    list_of_words = []
+                    word_regex = r"`([^`]+)`"
+                    for line in beforemsg.embeds[0].description.split("\n")[1:]:
+                        results = re.findall(word_regex, line)
+                        if len(results) > 0:
+                            list_of_words.append(results[0].lower())
+                    message_content = ["Correct order:"]
+                    for index, word in enumerate(list_of_words):
+                        message_content.append(f"{index}. **{word}**")
+                    embed = discord.Embed(description="\n".join(message_content), color=self.client.embed_color)
+                    view = None
+                    if aftermsg.components:
+                        actionrow1 = aftermsg.components[0]
+                        if isinstance(actionrow1, discord.ActionRow) and actionrow1.children:
+                            view = MockShiftView(member)
+                            for row_item_component in actionrow1.children:
+                                if isinstance(row_item_component, discord.Button):
+                                    is_button_part_of_list = row_item_component.label.lower() in list_of_words
+                                    emoji = number_to_emoji(list_of_words.index(row_item_component.label.lower())+1) if is_button_part_of_list else None
+                                    new_button = MockShiftButton(style=discord.ButtonStyle.grey, label=row_item_component.label, disabled=False, custom_id = None, url = None, emoji = emoji)
+                                    view.add_item(new_button)
+                    await aftermsg.reply(embed=embed, view=view)
+
+                if beforemsg.embeds[0].description.startswith("Look at the emoji closely!"):
                         lines = beforemsg.embeds[0].description.split("\n")
                         emoji_from_string = lines[1]
                         try:
