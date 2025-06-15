@@ -123,10 +123,10 @@ strings = {
         "title": "warm hug incoming",
         "description": [
             "{invocator} gives {target} a big cozy hug 🤗",
-            "soft hug incoming from {invocator} to {target} 🥰",
+            "soft hug incoming from {invocator} to {target} <a:dv_nyaHugOwO:1318037829678268426>",
             "{target}, you’ve been hugged by {invocator} 💞",
-            "{invocator} wraps {target} in a gentle embrace",
-            "all the snug hugs for {target} from {invocator}",
+            "{invocator} wraps {target} in a gentle embrace <a:dv_pandaHugOwO:1326371157502591027>",
+            "all the snug hugs for {target} from {invocator} <a:dv_pandaHugOwO:1326371157502591027>",
             "{invocator} squeezes {target} just right 🤍",
             "here’s a warm bear hug from {invocator} 🐻"
         ]
@@ -135,11 +135,10 @@ strings = {
         "title": "snuggle time",
         "description": [
             "{invocator} snuggles up with {target} ☁️",
-            "cuddle session starting: {invocator} + {target} 🥺",
-            "feel the warmth—{invocator} cuddles {target}",
+            "feel the warmth—{invocator} cuddles {target} <:dv_bunbunHugOwO:1317980510428991558>",
             "time to nestle: {invocator} and {target} 😊",
-            "fluffy cuddle hug from {invocator}",
-            "{target}, {invocator} is ready for snuggles",
+            "fluffy cuddle hug from {invocator} <:dv_hugOwO:1317966802898391122>",
+            "{target}, {invocator} is ready for snuggles <:dv_nyaHugOwO:1317966811047788586>",
             "cozy blanket snuggle by {invocator} 🛋️"
         ]
     },
@@ -147,24 +146,25 @@ strings = {
         "title": "sweet smooch",
         "description": [
             "{invocator} plants a sweet kiss on {target} 💋",
-            "{target}, you just got kissed by {invocator} 😘",
-            "pucker up for {invocator}’s kiss to {target}",
-            "soft kiss from {invocator} ❤️",
+            "{target}, you just got kissed by {invocator} <a:panda_spamkiss:929302788775739412>",
+            "pucker up for {invocator}’s kiss to {target} <:dv_pepeBlushKissOwO:1317542694641336361>",
+            "soft kiss from {invocator} <a:dv_aKissesOwO:1318037701882282065>",
             "{invocator} sends a gentle smooch 💗",
-            "sweet peck incoming from {invocator} 💕",
-            "tiny peck delivered: {invocator} → {target}"
+            "sweet peck incoming from {invocator} <a:panda_spamkiss:929302788775739412>",
+            "tiny peck delivered: {invocator} → {target} <a:panda_spamkiss:929302788775739412>",
+            "{invocator} leans in and kisses {target} 💕"
         ]
     },
     "pat": {
         "title": "gentle pat",
         "description": [
-            "{invocator} pats {target} 👋",
-            "gentle pat from {invocator} to {target}",
-            "{target}, here’s a friendly pat from {invocator}",
-            "soft pat on the back by {invocator} 🤚",
+            "{invocator} pats {target} <a:dv_pepePatOwO:1318081846793211934>",
+            "gentle pat from {invocator} to {target} <a:dv_patpat:1383734060349788260>",
+            "{target}, here’s a friendly pat from {invocator} <:dv_nekoPatOwO:1317966809764335616>",
+            "soft pat on the back by {invocator} <:dv_aPatOwO:1317966771180802089>",
             "{invocator} gives {target} a reassuring pat 🫶",
-            "tiny pat delivered by {invocator}",
-            "pat of approval from {invocator} 👍"
+            "tiny pat delivered by {invocator} <:dv_kittyPatOwO:1317966805272236172>",
+            "{target} pat-pats {invocator} gently <a:dv_aSitchPatOwO:1318063280089993226>"
         ]
     },
     "feed": {
@@ -223,7 +223,8 @@ strings = {
             "{invocator} smacks {target}—watch out 💥",
             "light slap by {invocator}",
             "{invocator} gives {target} a quick slap",
-            "snap-slap from {invocator}"
+            "snap-slap from {invocator}",
+            "{invocator} slaps {target} across the face! the audacity 😡"
         ]
     },
     "punch": {
@@ -241,7 +242,7 @@ strings = {
     "kick": {
         "title": "firm boot",
         "description": [
-            "boop! {invocator} kicks {target} 🦶",
+            "boop! {invocator} kicks {target}",
             "{invocator} lands a swift kick on {target}",
             "hard kick delivered by {invocator}",
             "{target}, watch that kick from {invocator} 👢",
@@ -265,13 +266,13 @@ strings = {
     "laugh": {
         "title": "burst of laughter",
         "description": [
-            "{invocator} bursts into laughter 😂",
-            "can’t stop laughing—{invocator} 🤣",
-            "{invocator} cracks up hard",
-            "laughter erupts from {invocator}",
-            "{invocator} howls with laughter",
-            "giggle flood by {invocator}",
-            "roaring laugh from {invocator}"
+            "{invocator} bursts into laughter <a:dv_kekKittyLaughOwO:1328568623652012053>",
+            "can’t stop laughing—{invocator} <a:dv_mJerryLaughOwO:1328569103971258398>",
+            "{invocator} cracks up hard <a:dv_kekKittyLaughOwO:1328568623652012053>",
+            "laughter erupts from {invocator} <a:dv_mJerryLaughOwO:1328569103971258398>",
+            "{invocator} howls with laughter <a:dv_mJerryLaughOwO:1328569103971258398>",
+            "giggle flood by {invocator} <a:dv_kekKittyLaughOwO:1328568623652012053>",
+            "roaring laugh from {invocator} <a:dv_mJerryLaughOwO:1328569103971258398>"
         ]
     },
     "cry": {
@@ -279,7 +280,7 @@ strings = {
         "description": [
             "{invocator} starts to tear up 😢💧",
             "soft sobs from {invocator} 🥺",
-            "teary moment for {invocator} 😔",
+            "{invocator} is crying :c",
             "{invocator} can’t hold back the tears 💔",
             "quiet tears by {invocator} 😿",
             "sniffle session: {invocator} 😥",
@@ -289,6 +290,7 @@ strings = {
     "bite": {
         "title": "playful bite",
         "description": [
+            "{invocator} chomps on {target} like a snack. yum~"
             "chomp! {invocator} bites {target}",
             "{invocator} nibbles on {target}",
             "playful bite from {invocator}",
