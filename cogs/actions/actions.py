@@ -297,7 +297,19 @@ strings = {
             "hungry bite delivered by {invocator}",
             "{invocator} takes a friendly bite of {target}"
         ]
-    }
+    },
+    "poke": {
+        "title": "poke time",
+        "description": [
+            "boop! {invocator} pokes {target} to get attention 🤏",
+            "{invocator} gives {target} a little nudge with a poke",
+            "{target}, {invocator} just poked you! ☝️",
+            "{invocator} prods {target} gently",
+            "tap tap—{invocator} pokes {target}",
+            "{invocator} can't resist a quick poke on {target} 🥺",
+            "{invocator} pokes {target} playfully 👈"
+        ]
+    },
 }
 
 def get_members_that_can_view_this_channel(ctx: DVVTcontext):
@@ -584,4 +596,29 @@ class Actions(commands.Cog, name='actions'):
         n_times_display = "once" if new_count == 1 else f"{new_count} times"
         embed = discord.Embed(title=strings.get("bite").get("title"), description=chosen_string, color=color).set_image(url=bite_result.url)
         embed.set_footer(text=f"You and {target.display_name} have bited {n_times_display}!", icon_url=target.display_avatar.url)
+        await ctx.send(embed=embed)
+
+    @checks.perm_insensitive_roles()
+    @commands.guild_only()
+    @commands.command(name="poke", aliases=["boop"])
+    async def action_poke(self, ctx: DVVTcontext, target: discord.Member = None):
+        if target is None:
+            viewable_members = get_members_that_can_view_this_channel(ctx)
+            if not viewable_members:
+                raise commands.BadArgument("You need to specify a member.")
+            await ctx.reply(
+                "Why run this command without mentioning somebody... when you can do it with many members here!",
+                mention_author=False)
+            target = random.choice(viewable_members)
+        poke_result = await self.nekosbest.fetch("poke")
+        chosen_string = random.choice(strings.get("poke").get("description")).format(invocator=ctx.author.mention,
+                                                                                     target=target.mention)
+        color = action_colors.get("poke")
+        new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id,
+                                                                     ctx.author.id, "poke", target.id)
+        n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed = discord.Embed(title=strings.get("poke").get("title"), description=chosen_string, color=color).set_image(
+            url=poke_result.url)
+        embed.set_footer(text=f"You and {target.display_name} have poked each other {n_times_display}!",
+                         icon_url=target.display_avatar.url)
         await ctx.send(embed=embed)
