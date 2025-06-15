@@ -1,6 +1,8 @@
+import json
 import re
 import time
 import asyncio
+from io import BytesIO
 from typing import Tuple
 import os
 
@@ -15,7 +17,7 @@ from main import dvvt
 from utils import checks, buttons
 import datetime
 from discord.ext import commands, tasks, pages
-from utils.format import print_exception, short_time, comma_number, stringnum_toint
+from utils.format import print_exception, short_time, comma_number, stringnum_toint, number_to_emoji
 from utils.buttons import *
 from utils.specialobjects import DankItem
 from .items import DankItems
@@ -97,6 +99,37 @@ def numberswitcher(no):
         return 1
     else:
         return 0
+
+class MockShiftView(discord.ui.View):
+    def __init__(self, user: discord.Member):
+        self.user = user
+        super().__init__(timeout=180, disable_on_timeout=True)
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.user != self.user:
+            return await interaction.response.send_message("not for u", ephemeral=True)
+        return True
+
+class MockShiftButton(discord.ui.Button):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    async def callback(self, interaction: discord.Interaction):
+        self.disabled = True
+
+        await interaction.response.edit_message(view=self.view)
+        await interaction.followup.send("Press **Dank Memer's button**, not me, you turd 😡", ephemeral=True)
+        all_items_disabled = True
+        for component in self.view.children:
+            if isinstance(component, discord.ActionRow):
+                for item in component.children:
+                    if isinstance(item, discord.Button) or isinstance(item, discord.SelectMenu):
+                        all_items_disabled = False
+                        break
+        if all_items_disabled:
+            self.view.stop()
+
+
 class ListOfStreamGames(discord.ui.Select):
     def __init__(self, current):
         self.current: Union[None, int] = current
@@ -1017,12 +1050,109 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         if len(beforemsg.embeds) == 0 or len(aftermsg.embeds) == 0:
             return
         if is_dank_slash_command(beforemsg, 'work shift'):
+            member = aftermsg.interaction_metadata.user
             if type(aftermsg.embeds[0].title) == str and ("Terrible work!" in aftermsg.embeds[0].title or "Great work!" in aftermsg.embeds[0].title):
-                member = aftermsg.interaction_metadata.user
                 nextworktime = round(time.time()) + 3600
                 await self.handle_reminder_entry(member.id, 6, aftermsg.channel.id, aftermsg.guild.id, nextworktime)
                 with contextlib.suppress(discord.HTTPException):
                     await checkmark(aftermsg)
+
+                if beforemsg.embeds[0] and beforemsg.embeds[0].description and aftermsg.embeds[0] and aftermsg.embeds[0].description:
+
+                    if beforemsg.embeds[0].description.startswith("Look at each color next to the words closely!"):
+                        description_lines = beforemsg.embeds[0].description.split("\n")
+                        color_words = []
+                        color_word_regex = r"<:([a-zA-Z0-9_]+):\d+>|`([^`]+)`"
+                        for line in description_lines[1:]:
+                            results = re.findall(color_word_regex, line)
+                            if len(results) > 0:
+                                # results is example [('White', ''), ('', 'domestic')]
+                                # We need to convert it to ['White', 'domestic']
+                                color_words.append([results[0][0], results[1][1]])
+                        print(f"Detected the following words: {color_words}")
+                        correct_result = None
+                        for regex_result in color_words:
+                            print(f"Checking if {regex_result[1]} is in {aftermsg.embeds[0].description}")
+                            if regex_result[1] in aftermsg.embeds[0].description:
+                                correct_result = regex_result
+                                break
+                        if correct_result:
+                            print(f"found a correct result: {correct_result}")
+                            view = None
+                            if aftermsg.components:
+                                actionrow1 = aftermsg.components[0]
+                                if isinstance(actionrow1, discord.ActionRow) and actionrow1.children:
+                                    print("Found a view with children. Creating a mock view")
+                                    view = MockShiftView(member)
+                                    for row_item_component in actionrow1.children:
+                                        if isinstance(row_item_component, discord.Button):
+                                            correct_button = row_item_component.label.lower() == correct_result[0].lower()
+                                            new_button = MockShiftButton(
+                                                style=discord.ButtonStyle.green if correct_button else discord.ButtonStyle.grey,
+                                                label=row_item_component.label,
+                                                disabled=not correct_button,
+                                                custom_id=None
+                                            )
+                                            view.add_item(new_button)
+                            await aftermsg.reply(embed=discord.Embed(description=f"Select **{correct_result[0]}**", color=self.client.embed_color), view=view)
+                        else:
+                            print_dev("Result was not found")
+
+                    if beforemsg.embeds[0].description.startswith("Remember words order!") and aftermsg.embeds[0].description.startswith("Click the buttons in correct order!"):
+                        list_of_words = []
+                        word_regex = r"`([^`]+)`"
+                        for line in beforemsg.embeds[0].description.split("\n")[1:]:
+                            results = re.findall(word_regex, line)
+                            if len(results) > 0:
+                                list_of_words.append(results[0].lower())
+                        message_content = ["Correct order:"]
+                        for index, word in enumerate(list_of_words):
+                            message_content.append(f"{index}. **{word}**")
+                        embed = discord.Embed(description="\n".join(message_content), color=self.client.embed_color)
+                        view = None
+                        if aftermsg.components:
+                            actionrow1 = aftermsg.components[0]
+                            if isinstance(actionrow1, discord.ActionRow) and actionrow1.children:
+                                view = MockShiftView(member)
+                                for row_item_component in actionrow1.children:
+                                    if isinstance(row_item_component, discord.Button):
+                                        is_button_part_of_list = row_item_component.label.lower() in list_of_words
+                                        emoji = number_to_emoji(list_of_words.index(row_item_component.label.lower())+1) if is_button_part_of_list else None
+                                        new_button = MockShiftButton(style=discord.ButtonStyle.grey, label=row_item_component.label, disabled=False, custom_id = None, url = None, emoji = emoji)
+                                        view.add_item(new_button)
+                        await aftermsg.reply(embed=embed, view=view)
+
+                    if beforemsg.embeds[0].description.startswith("Look at the emoji closely!"):
+                        lines = beforemsg.embeds[0].description.split("\n")
+                        emoji_from_string = lines[1]
+                        try:
+                            emoji_converted = emoji_from_string.encode('utf-16', 'surrogatepass').decode('utf-16')
+                        except (ValueError, TypeError, UnicodeEncodeError) as e:
+                            print(f"Conversion failed: {e}")
+                        else:
+                            view = None
+                            embed = discord.Embed(title=emoji_converted, color=self.client.embed_color).set_author(name="Select this emoji!")
+                            if aftermsg.components and len(aftermsg.components) == 2:
+                                view = MockShiftView(member)
+                                for row in aftermsg.components:
+                                    if isinstance(row, discord.ActionRow):
+                                        for row_item_component in row.children:
+                                            if isinstance(row_item_component, discord.Button):
+                                                emoji_name = row_item_component.emoji.name if row_item_component.emoji else None
+                                                correct_button = emoji_name == emoji_converted
+
+                                                new_button = MockShiftButton(
+                                                    style=discord.ButtonStyle.green if correct_button else discord.ButtonStyle.grey,
+                                                    label=row_item_component.label,
+                                                    emoji=row_item_component.emoji,
+                                                    disabled=not correct_button,
+                                                    custom_id=None
+                                                )
+                                                view.add_item(new_button)
+                            await aftermsg.reply(embed=embed, view=view)
+
+
+
 
         """
         Scratch reminder
