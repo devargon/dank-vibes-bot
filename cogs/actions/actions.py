@@ -1,4 +1,5 @@
 import random
+from typing import Union
 
 import discord
 from discord.ext import commands
@@ -34,7 +35,16 @@ action_colors = {
     "bite":  0x2ECC71   # emerald green
 }
 
-
+async def confirm_target(ctx: DVVTcontext, target: Union[discord.Member, None]):
+    if target is None:
+        viewable_members = get_members_that_can_view_this_channel(ctx)
+        if not viewable_members:
+            raise commands.BadArgument("You need to specify a member.")
+        await ctx.reply(
+            "Why run this command without mentioning somebody... when you can do it with many members here!",
+            mention_author=False)
+        target = random.choice(viewable_members)
+    return target
 
 @dataclass
 class ImageResult:
@@ -88,7 +98,7 @@ class NekosBestAPIWrapper:
         self.endpoint = "https://nekos.best/api/v2"
         self.format = "gif"
 
-    async def _fetch(self, action: str) -> ImageResult:
+    async def fetch(self, action: str) -> ImageResult:
         url = f"{self.endpoint}/{action}"
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
@@ -103,10 +113,10 @@ class NekosBestAPIWrapper:
             raise ValueError(f"Unexpected response format: {data}") from e
 
     async def fetch_hug(self) -> ImageResult:
-        return await self._fetch("hug")
+        return await self.fetch("hug")
 
     async def fetch_kiss(self) -> ImageResult:
-        return await self._fetch("kiss")
+        return await self.fetch("kiss")
 
 strings = {
     "hug": {
@@ -189,7 +199,6 @@ strings = {
             "high-five exchange: {invocator} + {target}",
             "hand-slap fun by {invocator} ✋",
             "solid five from {invocator} to {target}",
-            "tap five: {invocator} → {target}",
             "{invocator} slaps five with {target}"
         ]
     },
@@ -268,13 +277,13 @@ strings = {
     "cry": {
         "title": "tears incoming",
         "description": [
-            "{invocator} starts to tear up 😢",
-            "soft sobs from {invocator}",
-            "teary moment for {invocator}",
-            "{invocator} can’t hold back the tears",
-            "quiet tears by {invocator}",
-            "sniffle session: {invocator}",
-            "heartache from {invocator} 😭"
+            "{invocator} starts to tear up 😢💧",
+            "soft sobs from {invocator} 🥺",
+            "teary moment for {invocator} 😔",
+            "{invocator} can’t hold back the tears 💔",
+            "quiet tears by {invocator} 😿",
+            "sniffle session: {invocator} 😥",
+            "heartache from {invocator} 😭💔"
         ]
     },
     "bite": {
@@ -306,11 +315,12 @@ class Actions(commands.Cog, name='actions'):
 
     async def create_action_record_and_return_count(self, guild_id: int, channel_id: int, message_id: int, user_id: int, action: str, target_id: int = None):
         await self.create_action_record(guild_id, channel_id, message_id, user_id, action, target_id)
-        return await self.client.db.fetchval("""
-        SELECT COUNT(*) AS action_count FROM actions WHERE action = $1 AND 
-        ((user_id = $2 AND target_user_id = $3) OR (user_id = $3 AND target_user_id = $2))
-        """, action, user_id, target_id)
-
+        if target_id is not None:
+            sql_query = "SELECT COUNT(*) AS action_count FROM actions WHERE action = $1 AND ((user_id = $2 AND target_user_id = $3) OR (user_id = $3 AND target_user_id = $2))"
+            return await self.client.db.fetchval(sql_query, action, user_id, target_id)
+        else:
+            sql_query = "SELECT COUNT(*) AS action_count FROM actions WHERE action = $1 AND user_id = $2"
+            return await self.client.db.fetchval(sql_query, action, user_id)
 
     async def create_action_record(self, guild_id: int, channel_id: int, message_id: int, user_id: int, action: str, target_id: int = None):
         """Create a record of the action performed by the user."""
@@ -323,115 +333,255 @@ class Actions(commands.Cog, name='actions'):
     @commands.guild_only()
     @commands.command(name="hug")
     async def action_hug(self, ctx: DVVTcontext, target: discord.Member = None):
-        if target is None:
-            viewable_members = get_members_that_can_view_this_channel(ctx)
-            if not viewable_members:
-                raise commands.BadArgument("You need to specify a member.")
-            await ctx.reply("Why run this command without mentioning somebody... when you can do it with many members here!", mention_author=False)
-            target = random.choice(viewable_members)
-        hug_result = await self.nekosbest._fetch("hug")
+        target = await confirm_target(ctx, target)
+        hug_result = await self.nekosbest.fetch("hug")
         chosen_string = random.choice(strings.get("hug").get("description")).format(invocator=ctx.author.mention, target=target.mention)
         color = random.choice(warm_colors)
         embed = discord.Embed(title=strings.get("hug").get("title"), description=chosen_string, color=color).set_image(url=hug_result.url)
         new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "hug", target.id)
         n_times_display = "once" if new_count == 1 else f"{new_count} times"
-        embed.set_footer(text=f"You and {target.display_name} have hugged each other {n_times_display}!", icon_url=target.display_avatar.url)
+        embed.set_footer(text=f"You and {target.display_name} have hugged {n_times_display}!", icon_url=target.display_avatar.url)
         await ctx.send(embed=embed)
 
     @checks.perm_insensitive_roles()
     @commands.guild_only()
     @commands.command(name="cuddle")
-    async def action_cuddle(self, ctx: DVVTcontext):
+    async def action_cuddle(self, ctx: DVVTcontext, target: discord.Member = None):
+        target = await confirm_target(ctx, target)
+        cuddle_result = await self.nekosbest.fetch("cuddle")
+        chosen_string = random.choice(strings.get("cuddle").get("description")).format(invocator=ctx.author.mention, target=target.mention)
+        color = random.choice(warm_colors)
+        embed = discord.Embed(title=strings.get("cuddle").get("title"), description=chosen_string, color=color).set_image(url=cuddle_result.url)
+        new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "cuddle", target.id)
+        n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed.set_footer(text=f"You and {target.display_name} have cuddled {n_times_display}!", icon_url=target.display_avatar.url)
+        await ctx.send(embed=embed)
+
+    @checks.perm_insensitive_roles()
+    @commands.guild_only()
+    @commands.command(name="kiss")
+    async def action_kiss(self, ctx: DVVTcontext, target: discord.Member = None):
         if target is None:
             viewable_members = get_members_that_can_view_this_channel(ctx)
             if not viewable_members:
                 raise commands.BadArgument("You need to specify a member.")
             await ctx.reply("Why run this command without mentioning somebody... when you can do it with many members here!", mention_author=False)
             target = random.choice(viewable_members)
-        hug_result = await self.nekosbest._fetch("hug")
-        chosen_string = random.choice(strings.get("hug").get("description")).format(invocator=ctx.author.mention, target=target.mention)
+        kiss_result = await self.nekosbest.fetch("kiss")
+        chosen_string = random.choice(strings.get("kiss").get("description")).format(invocator=ctx.author.mention, target=target.mention)
         color = random.choice(warm_colors)
-        embed = discord.Embed(title=strings.get("hug").get("title"), description=chosen_string, color=color).set_image(url=hug_result.url)
-        new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "hug", target.id)
+        embed = discord.Embed(title=strings.get("kiss").get("title"), description=chosen_string, color=color).set_image(url=kiss_result.url)
+        new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "kiss", target.id)
         n_times_display = "once" if new_count == 1 else f"{new_count} times"
-        embed.set_footer(text=f"You and {target.display_name} have hugged each other {n_times_display}!", icon_url=target.display_avatar.url)
+        embed.set_footer(text=f"You and {target.display_name} have kissd {n_times_display}!", icon_url=target.display_avatar.url)
         await ctx.send(embed=embed)
-        cuddle_result = await self.nekosbest._fetch("cuddle")
-
-    @checks.perm_insensitive_roles()
-    @commands.guild_only()
-    @commands.command(name="kiss")
-    async def action_kiss(self, ctx: DVVTcontext):
-        kiss_result = await self.nekosbest._fetch("kiss")
 
     @checks.perm_insensitive_roles()
     @commands.guild_only()
     @commands.command(name="pat")
-    async def action_pat(self, ctx: DVVTcontext):
-        pat_result = await self.nekosbest._fetch("pat")
+    async def action_pat(self, ctx: DVVTcontext, target: discord.Member = None):
+        if target is None:
+            viewable_members = get_members_that_can_view_this_channel(ctx)
+            if not viewable_members:
+                raise commands.BadArgument("You need to specify a member.")
+            await ctx.reply("Why run this command without mentioning somebody... when you can do it with many members here!", mention_author=False)
+            target = random.choice(viewable_members)
+        pat_result = await self.nekosbest.fetch("pat")
+        chosen_string = random.choice(strings.get("pat").get("description")).format(invocator=ctx.author.mention, target=target.mention)
+        color = random.choice(warm_colors)
+        embed = discord.Embed(title=strings.get("pat").get("title"), description=chosen_string, color=color).set_image(url=pat_result.url)
+        new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "pat", target.id)
+        n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed.set_footer(text=f"You and {target.display_name} have patted each other {n_times_display}!", icon_url=target.display_avatar.url)
+        await ctx.send(embed=embed)
 
     @checks.perm_insensitive_roles()
     @commands.guild_only()
     @commands.command(name="feed")
-    async def action_feed(self, ctx: DVVTcontext):
-        feed_result = await self.nekosbest._fetch("feed")
+    async def action_feed(self, ctx: DVVTcontext, target: discord.Member = None):
+        if target is None:
+            viewable_members = get_members_that_can_view_this_channel(ctx)
+            if not viewable_members:
+                raise commands.BadArgument("You need to specify a member.")
+            await ctx.reply("Why run this command without mentioning somebody... when you can do it with many members here!", mention_author=False)
+            target = random.choice(viewable_members)
+        feed_result = await self.nekosbest.fetch("feed")
+        chosen_string = random.choice(strings.get("feed").get("description")).format(invocator=ctx.author.mention, target=target.mention)
+        color = random.choice(warm_colors)
+        embed = discord.Embed(title=strings.get("feed").get("title"), description=chosen_string, color=color).set_image(url=feed_result.url)
+        new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "feed", target.id)
+        n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed.set_footer(text=f"You and {target.display_name} have fed each other {n_times_display}!", icon_url=target.display_avatar.url)
+        await ctx.send(embed=embed)
 
     @checks.perm_insensitive_roles()
     @commands.guild_only()
     @commands.command(name="tickle")
-    async def action_tickle(self, ctx: DVVTcontext):
-        tickle_result = await self.nekosbest._fetch("tickle")
+    async def action_tickle(self, ctx: DVVTcontext, target: discord.Member = None):
+        if target is None:
+            viewable_members = get_members_that_can_view_this_channel(ctx)
+            if not viewable_members:
+                raise commands.BadArgument("You need to specify a member.")
+            await ctx.reply("Why run this command without mentioning somebody... when you can do it with many members here!", mention_author=False)
+            target = random.choice(viewable_members)
+        tickle_result = await self.nekosbest.fetch("tickle")
+        chosen_string = random.choice(strings.get("tickle").get("description")).format(invocator=ctx.author.mention, target=target.mention)
+        color = random.choice(warm_colors)
+        embed = discord.Embed(title=strings.get("tickle").get("title"), description=chosen_string, color=color).set_image(url=tickle_result.url)
+        new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "tickle", target.id)
+        n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed.set_footer(text=f"You and {target.display_name} have tickled each other {n_times_display}!", icon_url=target.display_avatar.url)
+        await ctx.send(embed=embed)
 
     @checks.perm_insensitive_roles()
     @commands.guild_only()
     @commands.command(name="highfive")
-    async def action_highfive(self, ctx: DVVTcontext):
-        highfive_result = await self.nekosbest._fetch("highfive")
+    async def action_highfive(self, ctx: DVVTcontext, target: discord.Member = None):
+        if target is None:
+            viewable_members = get_members_that_can_view_this_channel(ctx)
+            if not viewable_members:
+                raise commands.BadArgument("You need to specify a member.")
+            await ctx.reply("Why run this command without mentioning somebody... when you can do it with many members here!", mention_author=False)
+            target = random.choice(viewable_members)
+        highfive_result = await self.nekosbest.fetch("highfive")
+        chosen_string = random.choice(strings.get("highfive").get("description")).format(invocator=ctx.author.mention, target=target.mention)
+        color = random.choice(warm_colors)
+        embed = discord.Embed(title=strings.get("highfive").get("title"), description=chosen_string, color=color).set_image(url=highfive_result.url)
+        new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "highfive", target.id)
+        n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed.set_footer(text=f"You and {target.display_name} have high-fived {n_times_display}!", icon_url=target.display_avatar.url)
+        await ctx.send(embed=embed)
 
     @checks.perm_insensitive_roles()
     @commands.guild_only()
     @commands.command(name="dance")
     async def action_dance(self, ctx: DVVTcontext):
-        dance_result = await self.nekosbest._fetch("dance")
+        dance_result = await self.nekosbest.fetch("dance")
+        chosen_string = random.choice(strings.get("dance").get("description")).format(invocator=ctx.author.mention)
+        color = random.choice(warm_colors)
+        embed = discord.Embed(title=strings.get("dance").get("title"), description=chosen_string, color=color).set_image(url=dance_result.url)
+        new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "dance", None)
+        n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed.set_footer(text=f"You have danced {n_times_display}!", icon_url=ctx.author.display_avatar.url)
+        await ctx.send(embed=embed)
 
     @checks.perm_insensitive_roles()
     @commands.guild_only()
     @commands.command(name="slap")
-    async def action_slap(self, ctx: DVVTcontext):
-        slap_result = await self.nekosbest._fetch("slap")
+    async def action_slap(self, ctx: DVVTcontext, target: discord.Member = None):
+        if target is None:
+            viewable_members = get_members_that_can_view_this_channel(ctx)
+            if not viewable_members:
+                raise commands.BadArgument("You need to specify a member.")
+            await ctx.reply("Why run this command without mentioning somebody... when you can do it with many members here!", mention_author=False)
+            target = random.choice(viewable_members)
+        slap_result = await self.nekosbest.fetch("slap")
+        chosen_string = random.choice(strings.get("slap").get("description")).format(invocator=ctx.author.mention, target=target.mention)
+        color = action_colors.get("slap")
+        embed = discord.Embed(title=strings.get("slap").get("title"), description=chosen_string, color=color).set_image(url=slap_result.url)
+        new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "slap", target.id)
+        n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed.set_footer(text=f"You and {target.display_name} have slapped each other {n_times_display}... 😟", icon_url=target.display_avatar.url)
+        await ctx.send(embed=embed)
 
     @checks.perm_insensitive_roles()
     @commands.guild_only()
     @commands.command(name="punch")
-    async def action_punch(self, ctx: DVVTcontext):
-        punch_result = await self.nekosbest._fetch("punch")
+    async def action_punch(self, ctx: DVVTcontext, target: discord.Member = None):
+        if target is None:
+            viewable_members = get_members_that_can_view_this_channel(ctx)
+            if not viewable_members:
+                raise commands.BadArgument("You need to specify a member.")
+            await ctx.reply("Why run this command without mentioning somebody... when you can do it with many members here!", mention_author=False)
+            target = random.choice(viewable_members)
+        punch_result = await self.nekosbest.fetch("punch")
+        chosen_string = random.choice(strings.get("punch").get("description")).format(invocator=ctx.author.mention, target=target.mention)
+        color = action_colors.get("punch")
+        embed = discord.Embed(title=strings.get("punch").get("title"), description=chosen_string, color=color).set_image(url=punch_result.url)
+        new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "punch", target.id)
+        n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed.set_footer(text=f"You and {target.display_name} have punched each other {n_times_display}... 😟", icon_url=target.display_avatar.url)
+        await ctx.send(embed=embed)
 
     @checks.perm_insensitive_roles()
     @commands.guild_only()
     @commands.command(name="kick")
-    async def action_kick(self, ctx: DVVTcontext):
-        kick_result = await self.nekosbest._fetch("kick")
+    async def action_kick(self, ctx: DVVTcontext, target: discord.Member = None):
+        if target is None:
+            viewable_members = get_members_that_can_view_this_channel(ctx)
+            if not viewable_members:
+                raise commands.BadArgument("You need to specify a member.")
+            await ctx.reply("Why run this command without mentioning somebody... when you can do it with many members here!", mention_author=False)
+            target = random.choice(viewable_members)
+        kick_result = await self.nekosbest.fetch("kick")
+        chosen_string = random.choice(strings.get("kick").get("description")).format(invocator=ctx.author.mention, target=target.mention)
+        color = action_colors.get("kick")
+        embed = discord.Embed(title=strings.get("kick").get("title"), description=chosen_string, color=color).set_image(url=kick_result.url)
+        new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "kick", target.id)
+        n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed.set_footer(text=f"You and {target.display_name} have kicked each other {n_times_display}... 😟", icon_url=target.display_avatar.url)
+        await ctx.send(embed=embed)
 
     @checks.perm_insensitive_roles()
     @commands.guild_only()
     @commands.command(name="yeet")
-    async def action_yeet(self, ctx: DVVTcontext):
-        yeet_result = await self.nekosbest._fetch("yeet")
+    async def action_yeet(self, ctx: DVVTcontext, target: discord.Member = None):
+        if target is None:
+            viewable_members = get_members_that_can_view_this_channel(ctx)
+            if not viewable_members:
+                raise commands.BadArgument("You need to specify a member.")
+            await ctx.reply("Why run this command without mentioning somebody... when you can do it with many members here!", mention_author=False)
+            target = random.choice(viewable_members)
+        yeet_result = await self.nekosbest.fetch("yeet")
+        chosen_string = random.choice(strings.get("yeet").get("description")).format(invocator=ctx.author.mention, target=target.mention)
+        color = action_colors.get("yeet")
+        embed = discord.Embed(title=strings.get("yeet").get("title"), description=chosen_string, color=color).set_image(url=yeet_result.url)
+        new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "yeet", target.id)
+        n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed.set_footer(text=f"You and {target.display_name} have yeeted each other {n_times_display}...", icon_url=target.display_avatar.url)
+        await ctx.send(embed=embed)
 
     @checks.perm_insensitive_roles()
     @commands.guild_only()
     @commands.command(name="laugh")
     async def action_laugh(self, ctx: DVVTcontext):
-        laugh_result = await self.nekosbest._fetch("laugh")
+        laugh_result = await self.nekosbest.fetch("laugh")
+        chosen_string = random.choice(strings.get("laugh").get("description")).format(invocator=ctx.author.mention)
+        color = action_colors.get("laugh")
+        embed = discord.Embed(title=strings.get("laugh").get("title"), description=chosen_string, color=color).set_image(url=laugh_result.url)
+        new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "laugh", None)
+        n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed.set_footer(text=f"You have laughed {n_times_display}! 😂", icon_url=ctx.author.display_avatar.url)
+        await ctx.send(embed=embed)
 
     @checks.perm_insensitive_roles()
     @commands.guild_only()
     @commands.command(name="cry")
     async def action_cry(self, ctx: DVVTcontext):
-        cry_result = await self.nekosbest._fetch("cry")
+        cry_result = await self.nekosbest.fetch("cry")
+        chosen_string = random.choice(strings.get("cry").get("description")).format(invocator=ctx.author.mention)
+        color = action_colors.get("cry")
+        embed = discord.Embed(title=strings.get("cry").get("title"), description=chosen_string, color=color).set_image(url=cry_result.url)
+        new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "cry", None)
+        n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed.set_footer(text=f"You have cried {n_times_display} 😢", icon_url=ctx.author.display_avatar.url)
+        await ctx.send(embed=embed)
 
     @checks.perm_insensitive_roles()
     @commands.guild_only()
     @commands.command(name="bite", aliases=["nom"])
-    async def action_bite(self, ctx: DVVTcontext):
-        bite_result = await self.nekosbest._fetch("bite")
+    async def action_bite(self, ctx: DVVTcontext, target: discord.Member = None):
+        if target is None:
+            viewable_members = get_members_that_can_view_this_channel(ctx)
+            if not viewable_members:
+                raise commands.BadArgument("You need to specify a member.")
+            await ctx.reply("Why run this command without mentioning somebody... when you can do it with many members here!", mention_author=False)
+            target = random.choice(viewable_members)
+        bite_result = await self.nekosbest.fetch("bite")
+        chosen_string = random.choice(strings.get("bite").get("description")).format(invocator=ctx.author.mention, target=target.mention)
+        color = action_colors.get("bite")
+        embed = discord.Embed(title=strings.get("bite").get("title"), description=chosen_string, color=color).set_image(url=bite_result.url)
+        new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "bite", target.id)
+        n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed.set_footer(text=f"You and {target.display_name} have bited {n_times_display}!", icon_url=target.display_avatar.url)
+        await ctx.send(embed=embed)
