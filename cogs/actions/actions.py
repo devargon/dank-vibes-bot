@@ -205,12 +205,12 @@ strings = {
     "dance": {
         "title": "dance party",
         "description": [
-            "{invocator} spins and grooves with {target} 💃",
-            "dance party starting: {invocator} + {target} 🎉",
-            "bust a move! {invocator} invites {target}",
-            "rhythm time: {invocator} dances for {target} 🎶",
-            "boogie alert from {invocator}",
-            "{invocator} and {target} hit the dance floor 🕺",
+            "{invocator} spins and grooves 💃",
+            "dance party starting: {invocator} 🎉",
+            "bust a move! {invocator} is on the floor",
+            "rhythm time: {invocator} shows off those moves 🎶",
+            "boogie alert for {invocator}",
+            "{invocator} hits the dance floor 🕺",
             "shake it out with {invocator}"
         ]
     },
@@ -379,7 +379,7 @@ class Actions(commands.Cog, name='actions'):
                 raise commands.BadArgument("You need to specify a member.")
             await ctx.reply("Why run this command without mentioning somebody... when you can do it with many members here!", mention_author=False)
             target = random.choice(viewable_members)
-        kiss_result = await self.nekosbest.fetch("kiss")
+        kiss_result = await self.nekosbest.fetch(random.choice(["kiss", "peck"]))
         chosen_string = random.choice(strings.get("kiss").get("description")).format(invocator=ctx.author.mention, target=target.mention)
         color = random.choice(warm_colors)
         new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "kiss", target.id)
@@ -595,7 +595,7 @@ class Actions(commands.Cog, name='actions'):
         new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "bite", target.id)
         n_times_display = "once" if new_count == 1 else f"{new_count} times"
         embed = discord.Embed(title=strings.get("bite").get("title"), description=chosen_string, color=color).set_image(url=bite_result.url)
-        embed.set_footer(text=f"You and {target.display_name} have bited {n_times_display}!", icon_url=target.display_avatar.url)
+        embed.set_footer(text=f"You and {target.display_name} have bit each other {n_times_display}!", icon_url=target.display_avatar.url)
         await ctx.send(embed=embed)
 
     @checks.perm_insensitive_roles()
