@@ -3,7 +3,7 @@ import os
 import random
 import typing
 import asyncio
-from collections import Counter
+from collections import Counter, defaultdict
 from time import time
 from datetime import datetime
 
@@ -760,7 +760,7 @@ class GiveawayView(discord.ui.View):
                         if entry_dict['entered_entries'] < entry_dict['allowed_entries']:
                             if entry_dict['role_id'] == 0:
                                 for i in range(entry_dict['allowed_entries'] - entry_dict['entered_entries']):
-                                    entries_to_insert.append((giveawaymessage.id, interaction.user.id, entry_dict['role_id']))
+                                    entries_to_insert.append((interaction.guild.id, interaction.channel.id, giveawaymessage.id, interaction.user.id, entry_dict['role_id']))
                                     newly_entered_entries += 1
                                     entered = True
                                 string = f"{DVB_True} **{entry_dict['entered_entries'] + newly_entered_entries}**/{entry_dict['allowed_entries']} Normal Entry" + (f" (`+{newly_entered_entries}`)" if newly_entered_entries > 0 else "")
@@ -768,7 +768,7 @@ class GiveawayView(discord.ui.View):
                                 role = interaction.guild.get_role(entry_dict['role_id'])
                                 if role in interaction.user.roles:
                                     for i in range(entry_dict['allowed_entries'] - entry_dict['entered_entries']):
-                                        entries_to_insert.append((giveawaymessage.id, interaction.user.id, entry_dict['role_id']))
+                                        entries_to_insert.append((interaction.guild.id, interaction.channel.id, giveawaymessage.id, interaction.user.id, entry_dict['role_id']))
                                         newly_entered_entries += 1
                                         entered = True
                                     string = f"{DVB_True} **{entry_dict['entered_entries'] + newly_entered_entries}**/{entry_dict['allowed_entries']} Entries for being **{role.mention}**" + (f" (`+{newly_entered_entries}`)" if newly_entered_entries > 0 else "")
@@ -798,12 +798,12 @@ class GiveawayView(discord.ui.View):
                     # print('user already entered')
                     summary_embed.description = f"Your total entries: {len(user_entries)}"
                 else:
-                    entries_to_insert.append((giveawaymessage.id, interaction.user.id, 0))
+                    entries_to_insert.append((interaction.guild.id, interaction.channel.id, giveawaymessage.id, interaction.user.id, 0))
                     entered = True
                 summary_embed.description = f"Your total entries: 1"
             if entered is True:
                 content = "You have successfully entered the giveaway!"
-                await self.client.db.executemany("INSERT INTO giveawayentrants VALUES($1, $2, $3)", entries_to_insert)
+                await self.client.db.executemany("INSERT INTO giveawayentrants(guild_id, channel_id, message_id, user_id, entrytype) VALUES($1, $2, $3, $4, $5)", entries_to_insert)
             else:
                 content = "You have already entered the giveaway."
             final_number_of_entries = len(await self.cog.fetch_user_entries(interaction.user.id, giveawaymessage.id))
@@ -858,15 +858,26 @@ class GiveawayView(discord.ui.View):
         if giveawayentry is None:
             await interaction.response.send_message("This giveaway is invalid.", ephemeral=True)
             return
-        users = await self.client.db.fetch("SELECT DISTINCT(user_id) FROM giveawayentrants WHERE message_id = $1", giveawaymessage.id)
+        entries = await self.client.db.fetch("SELECT * FROM giveawayentrants WHERE message_id = $1 ORDER BY created", giveawaymessage.id)
+        users_entries = defaultdict(int)
+        entries_formatted = []
         users_formatted = []
-        for user in users:
-            user_id = user.get('user_id')
+        index = 1
+        for entry in entries:
+            user_id = entry.get('user_id')
+            user = self.client.get_user(user_id)
+            entrytype_formatted = "Normal" if entry.get('entrytype') == 0 else entry.get('entrytype')
+            if user is not None:
+                entries_formatted.append(f"{index}. {proper_userf(user)}: {entrytype_formatted}")
+                index += 1
+            users_entries[entry["user_id"]] += 1
+
+        for user_id, entries_no in users_entries.items():
             user = self.client.get_user(user_id)
             if user is not None:
-                users_formatted.append(f"**{proper_userf(user)}** {user.mention}")
+                users_formatted.append(f"**{proper_userf(user)}** {user.mention} ({entries_no})")
             else:
-                users_formatted.append(f"{user_id}")
+                users_formatted.append(f"{user_id} ({entries_no})")
         page_embeds = []
         if len(users_formatted) > 0:
             chunks = [discord.utils.as_chunks(users_formatted, 20)]
