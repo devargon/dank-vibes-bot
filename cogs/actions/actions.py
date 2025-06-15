@@ -337,9 +337,9 @@ class Actions(commands.Cog, name='actions'):
         hug_result = await self.nekosbest.fetch("hug")
         chosen_string = random.choice(strings.get("hug").get("description")).format(invocator=ctx.author.mention, target=target.mention)
         color = random.choice(warm_colors)
-        embed = discord.Embed(title=strings.get("hug").get("title"), description=chosen_string, color=color).set_image(url=hug_result.url)
         new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "hug", target.id)
         n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed = discord.Embed(title=strings.get("hug").get("title"), description=chosen_string, color=color).set_image(url=hug_result.url)
         embed.set_footer(text=f"You and {target.display_name} have hugged {n_times_display}!", icon_url=target.display_avatar.url)
         await ctx.send(embed=embed)
 
@@ -351,9 +351,9 @@ class Actions(commands.Cog, name='actions'):
         cuddle_result = await self.nekosbest.fetch("cuddle")
         chosen_string = random.choice(strings.get("cuddle").get("description")).format(invocator=ctx.author.mention, target=target.mention)
         color = random.choice(warm_colors)
-        embed = discord.Embed(title=strings.get("cuddle").get("title"), description=chosen_string, color=color).set_image(url=cuddle_result.url)
         new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "cuddle", target.id)
         n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed = discord.Embed(title=strings.get("cuddle").get("title"), description=chosen_string, color=color).set_image(url=cuddle_result.url)
         embed.set_footer(text=f"You and {target.display_name} have cuddled {n_times_display}!", icon_url=target.display_avatar.url)
         await ctx.send(embed=embed)
 
@@ -370,9 +370,9 @@ class Actions(commands.Cog, name='actions'):
         kiss_result = await self.nekosbest.fetch("kiss")
         chosen_string = random.choice(strings.get("kiss").get("description")).format(invocator=ctx.author.mention, target=target.mention)
         color = random.choice(warm_colors)
-        embed = discord.Embed(title=strings.get("kiss").get("title"), description=chosen_string, color=color).set_image(url=kiss_result.url)
         new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "kiss", target.id)
         n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed = discord.Embed(title=strings.get("kiss").get("title"), description=chosen_string, color=color).set_image(url=kiss_result.url)
         embed.set_footer(text=f"You and {target.display_name} have kissd {n_times_display}!", icon_url=target.display_avatar.url)
         await ctx.send(embed=embed)
 
@@ -389,9 +389,9 @@ class Actions(commands.Cog, name='actions'):
         pat_result = await self.nekosbest.fetch("pat")
         chosen_string = random.choice(strings.get("pat").get("description")).format(invocator=ctx.author.mention, target=target.mention)
         color = random.choice(warm_colors)
-        embed = discord.Embed(title=strings.get("pat").get("title"), description=chosen_string, color=color).set_image(url=pat_result.url)
         new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "pat", target.id)
         n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed = discord.Embed(title=strings.get("pat").get("title"), description=chosen_string, color=color).set_image(url=pat_result.url)
         embed.set_footer(text=f"You and {target.display_name} have patted each other {n_times_display}!", icon_url=target.display_avatar.url)
         await ctx.send(embed=embed)
 
@@ -408,9 +408,9 @@ class Actions(commands.Cog, name='actions'):
         feed_result = await self.nekosbest.fetch("feed")
         chosen_string = random.choice(strings.get("feed").get("description")).format(invocator=ctx.author.mention, target=target.mention)
         color = random.choice(warm_colors)
-        embed = discord.Embed(title=strings.get("feed").get("title"), description=chosen_string, color=color).set_image(url=feed_result.url)
         new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "feed", target.id)
         n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed = discord.Embed(title=strings.get("feed").get("title"), description=chosen_string, color=color).set_image(url=feed_result.url)
         embed.set_footer(text=f"You and {target.display_name} have fed each other {n_times_display}!", icon_url=target.display_avatar.url)
         await ctx.send(embed=embed)
 
@@ -427,9 +427,9 @@ class Actions(commands.Cog, name='actions'):
         tickle_result = await self.nekosbest.fetch("tickle")
         chosen_string = random.choice(strings.get("tickle").get("description")).format(invocator=ctx.author.mention, target=target.mention)
         color = random.choice(warm_colors)
-        embed = discord.Embed(title=strings.get("tickle").get("title"), description=chosen_string, color=color).set_image(url=tickle_result.url)
         new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "tickle", target.id)
         n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed = discord.Embed(title=strings.get("tickle").get("title"), description=chosen_string, color=color).set_image(url=tickle_result.url)
         embed.set_footer(text=f"You and {target.display_name} have tickled each other {n_times_display}!", icon_url=target.display_avatar.url)
         await ctx.send(embed=embed)
 
@@ -446,9 +446,9 @@ class Actions(commands.Cog, name='actions'):
         highfive_result = await self.nekosbest.fetch("highfive")
         chosen_string = random.choice(strings.get("highfive").get("description")).format(invocator=ctx.author.mention, target=target.mention)
         color = random.choice(warm_colors)
-        embed = discord.Embed(title=strings.get("highfive").get("title"), description=chosen_string, color=color).set_image(url=highfive_result.url)
         new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "highfive", target.id)
         n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed = discord.Embed(title=strings.get("highfive").get("title"), description=chosen_string, color=color).set_image(url=highfive_result.url)
         embed.set_footer(text=f"You and {target.display_name} have high-fived {n_times_display}!", icon_url=target.display_avatar.url)
         await ctx.send(embed=embed)
 
@@ -459,9 +459,9 @@ class Actions(commands.Cog, name='actions'):
         dance_result = await self.nekosbest.fetch("dance")
         chosen_string = random.choice(strings.get("dance").get("description")).format(invocator=ctx.author.mention)
         color = random.choice(warm_colors)
-        embed = discord.Embed(title=strings.get("dance").get("title"), description=chosen_string, color=color).set_image(url=dance_result.url)
         new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "dance", None)
         n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed = discord.Embed(title=strings.get("dance").get("title"), description=chosen_string, color=color).set_image(url=dance_result.url)
         embed.set_footer(text=f"You have danced {n_times_display}!", icon_url=ctx.author.display_avatar.url)
         await ctx.send(embed=embed)
 
@@ -478,9 +478,9 @@ class Actions(commands.Cog, name='actions'):
         slap_result = await self.nekosbest.fetch("slap")
         chosen_string = random.choice(strings.get("slap").get("description")).format(invocator=ctx.author.mention, target=target.mention)
         color = action_colors.get("slap")
-        embed = discord.Embed(title=strings.get("slap").get("title"), description=chosen_string, color=color).set_image(url=slap_result.url)
         new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "slap", target.id)
         n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed = discord.Embed(title=strings.get("slap").get("title"), description=chosen_string, color=color).set_image(url=slap_result.url)
         embed.set_footer(text=f"You and {target.display_name} have slapped each other {n_times_display}... 😟", icon_url=target.display_avatar.url)
         await ctx.send(embed=embed)
 
@@ -497,9 +497,9 @@ class Actions(commands.Cog, name='actions'):
         punch_result = await self.nekosbest.fetch("punch")
         chosen_string = random.choice(strings.get("punch").get("description")).format(invocator=ctx.author.mention, target=target.mention)
         color = action_colors.get("punch")
-        embed = discord.Embed(title=strings.get("punch").get("title"), description=chosen_string, color=color).set_image(url=punch_result.url)
         new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "punch", target.id)
         n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed = discord.Embed(title=strings.get("punch").get("title"), description=chosen_string, color=color).set_image(url=punch_result.url)
         embed.set_footer(text=f"You and {target.display_name} have punched each other {n_times_display}... 😟", icon_url=target.display_avatar.url)
         await ctx.send(embed=embed)
 
@@ -516,9 +516,9 @@ class Actions(commands.Cog, name='actions'):
         kick_result = await self.nekosbest.fetch("kick")
         chosen_string = random.choice(strings.get("kick").get("description")).format(invocator=ctx.author.mention, target=target.mention)
         color = action_colors.get("kick")
-        embed = discord.Embed(title=strings.get("kick").get("title"), description=chosen_string, color=color).set_image(url=kick_result.url)
         new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "kick", target.id)
         n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed = discord.Embed(title=strings.get("kick").get("title"), description=chosen_string, color=color).set_image(url=kick_result.url)
         embed.set_footer(text=f"You and {target.display_name} have kicked each other {n_times_display}... 😟", icon_url=target.display_avatar.url)
         await ctx.send(embed=embed)
 
@@ -535,9 +535,9 @@ class Actions(commands.Cog, name='actions'):
         yeet_result = await self.nekosbest.fetch("yeet")
         chosen_string = random.choice(strings.get("yeet").get("description")).format(invocator=ctx.author.mention, target=target.mention)
         color = action_colors.get("yeet")
-        embed = discord.Embed(title=strings.get("yeet").get("title"), description=chosen_string, color=color).set_image(url=yeet_result.url)
         new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "yeet", target.id)
         n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed = discord.Embed(title=strings.get("yeet").get("title"), description=chosen_string, color=color).set_image(url=yeet_result.url)
         embed.set_footer(text=f"You and {target.display_name} have yeeted each other {n_times_display}...", icon_url=target.display_avatar.url)
         await ctx.send(embed=embed)
 
@@ -548,9 +548,9 @@ class Actions(commands.Cog, name='actions'):
         laugh_result = await self.nekosbest.fetch("laugh")
         chosen_string = random.choice(strings.get("laugh").get("description")).format(invocator=ctx.author.mention)
         color = action_colors.get("laugh")
-        embed = discord.Embed(title=strings.get("laugh").get("title"), description=chosen_string, color=color).set_image(url=laugh_result.url)
         new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "laugh", None)
         n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed = discord.Embed(title=strings.get("laugh").get("title"), description=chosen_string, color=color).set_image(url=laugh_result.url)
         embed.set_footer(text=f"You have laughed {n_times_display}! 😂", icon_url=ctx.author.display_avatar.url)
         await ctx.send(embed=embed)
 
@@ -561,9 +561,9 @@ class Actions(commands.Cog, name='actions'):
         cry_result = await self.nekosbest.fetch("cry")
         chosen_string = random.choice(strings.get("cry").get("description")).format(invocator=ctx.author.mention)
         color = action_colors.get("cry")
-        embed = discord.Embed(title=strings.get("cry").get("title"), description=chosen_string, color=color).set_image(url=cry_result.url)
         new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "cry", None)
         n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed = discord.Embed(title=strings.get("cry").get("title"), description=chosen_string, color=color).set_image(url=cry_result.url)
         embed.set_footer(text=f"You have cried {n_times_display} 😢", icon_url=ctx.author.display_avatar.url)
         await ctx.send(embed=embed)
 
@@ -580,8 +580,8 @@ class Actions(commands.Cog, name='actions'):
         bite_result = await self.nekosbest.fetch("bite")
         chosen_string = random.choice(strings.get("bite").get("description")).format(invocator=ctx.author.mention, target=target.mention)
         color = action_colors.get("bite")
-        embed = discord.Embed(title=strings.get("bite").get("title"), description=chosen_string, color=color).set_image(url=bite_result.url)
         new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "bite", target.id)
         n_times_display = "once" if new_count == 1 else f"{new_count} times"
+        embed = discord.Embed(title=strings.get("bite").get("title"), description=chosen_string, color=color).set_image(url=bite_result.url)
         embed.set_footer(text=f"You and {target.display_name} have bited {n_times_display}!", icon_url=target.display_avatar.url)
         await ctx.send(embed=embed)
