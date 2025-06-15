@@ -13,6 +13,7 @@ import pytz
 from thefuzz import process
 
 from cogs.dankmemer.lottery import Lottery
+from custom_emojis import DVB_CHECKMARK, DVB_CROSSMARK
 from main import dvvt
 from utils import checks, buttons
 import datetime
@@ -44,7 +45,7 @@ def print_dev(message):
         print(message)
 async def checkmark(message:discord.Message):
     try:
-        await message.add_reaction("<:DVB_checkmark:955345523139805214>")
+        await message.add_reaction(DVB_CHECKMARK)
     except discord.NotFound:
         return None
 
@@ -79,7 +80,7 @@ def truefalse(value):  # shows the enabled or disabled emoji for 0 or 1 values
 
 async def crossmark(msg):
     try:
-        await msg.add_reaction("<:DVB_crossmark:955345521151737896>")
+        await msg.add_reaction(DVB_CROSSMARK)
     except Exception as e:
         pass
 
@@ -914,7 +915,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 if not newedit.embeds[0].title:
                     return
                 if newedit.embeds[0].title == "Action Canceled" or message.embeds[0].title == "Action Canceled":
-                    return await message.add_reaction("<:DVB_crossmark:955345521151737896>")
+                    return await message.add_reaction(DVB_CROSSMARK)
                 if newedit.embeds[0].title == "Action Confirmed":
                     now = discord.utils.utcnow()
                     now = now + datetime.timedelta(hours=1)

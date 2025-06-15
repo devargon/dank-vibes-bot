@@ -5,6 +5,7 @@ import unicodedata
 from datetime import datetime, timedelta
 from main import dvvt
 from utils.context import DVVTcontext
+from custom_emojis import DVB_TRUE, DVB_FALSE
 import stringcase
 import unidecode
 import discord
@@ -99,7 +100,7 @@ class Decancer(commands.Cog):
         new_cool_nick = await self.nick_maker(ctx.guild, m_nick)
         if m_nick != new_cool_nick:
             await user.edit(reason=f"Old name ({m_nick}): contained special characters", nick=new_cool_nick)
-            await ctx.send(f"<:DVB_True:887589686808309791> {proper_userf(user)}'s name **{m_nick}** was changed to **{new_cool_nick}**.")
+            await ctx.send(f"{DVB_TRUE} {proper_userf(user)}'s name **{m_nick}** was changed to **{new_cool_nick}**.")
             guild = ctx.guild
             await self.decancer_log(guild, user, ctx.author, m_nick, new_cool_nick, "Manual Decancer 👷‍♂️")
             try:
@@ -107,4 +108,4 @@ class Decancer(commands.Cog):
             except discord.NotFound:
                 pass
         else:
-            await ctx.send(f"<:DVB_False:887589731515392000> {user.display_name}'s name was already decancered.")
+            await ctx.send(f"{DVB_FALSE} {user.display_name}'s name was already decancered.")

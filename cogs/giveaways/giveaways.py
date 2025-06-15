@@ -25,6 +25,7 @@ from utils.paginator import SingleMenuPaginator
 from utils.specialobjects import AwaitingAmariData, NoAmariData
 from utils.time import humanize_timedelta
 from utils.format import plural, stringtime_duration, grammarformat, human_join, print_exception, proper_userf
+from custom_emojis import DVB_TRUE, DVB_FALSE, DVB_NEUTRAL, DVB_TYPING_INDICATOR
 
 voteid = 874897331252760586 if os.getenv('state') == '1' else 683884762997587998
 elite_gw_channel = 871737332431216661 if os.getenv('state') == '1' else 741254464303923220
@@ -33,11 +34,6 @@ gen_chat_id = 871737314831908974 if os.getenv('state') == '1' else 6084989674746
 gwstaff_id = 983277305889697823  if os.getenv('state') == '1' else 627284965222121482
 gw_ping = 983284295579893790 if os.getenv('state') == '1' else 758175760909074432
 elitegw_ping = 895815588289581096 if os.getenv('state') == '1' else 758174135276142593
-
-
-DVB_True = "<:DVB_True:887589686808309791>"
-DVB_False = "<:DVB_False:887589731515392000>"
-DVB_Neutral = "<:DVB_Neutral:887589643686670366>"
 
 
 class VoteLink(discord.ui.View):
@@ -207,7 +203,7 @@ class GiveawayConfigCategories(discord.ui.View):
                     await input_msg.delete()
                     summary = ""
                     if len(converted_roles) == 0:
-                        summary += "<:DVB_Neutral:887589643686670366> WARNING: You didn't input any valid roles.\n"
+                        summary += f"{DVB_FALSE} WARNING: You didn't input any valid roles.\n"
                     if add_remove_view.value == "add":
                         bypass_roles.extend(converted_roles)
                     elif add_remove_view.value == "remove":
@@ -219,7 +215,7 @@ class GiveawayConfigCategories(discord.ui.View):
                     await self.client.db.execute("INSERT INTO giveawayconfig(guild_id, channel_id, bypass_roles) VALUES($1, $2, $3) ON CONFLICT(channel_id) DO UPDATE SET bypass_roles=$3", self.ctx.guild.id, self.channel.id, bypass_roles)
                     field_value = ", ".join([f"<@&{role}>" for role in bypass_roles_lst])
                     self.original_embed.set_field_at(0, name="Bypass Roles", value=field_value if len(field_value) > 0 else "None")
-                    summary = "<:DVB_True:887589686808309791> **Successfully updated!**\n" + summary
+                    summary = DVB_TRUE + " **Successfully updated!**\n" + summary
                     if len(invalid_roles) > 0:
                         list_of_invalid_roles = "\n".join([f"`{role_name}` - {reason}" for role_name, reason in invalid_roles])
                         summary += f"\nI could not add/remove these roles:\n{list_of_invalid_roles}"
@@ -298,7 +294,7 @@ class GiveawayConfigCategories(discord.ui.View):
                     await input_msg.delete()
                     summary = ""
                     if len(converted_roles) == 0:
-                        summary += "<:DVB_Neutral:887589643686670366> WARNING: You didn't input any valid roles.\n"
+                        summary += f"{DVB_FALSE} WARNING: You didn't input any valid roles.\n"
                     if add_remove_view.value == "add":
                         blacklisted_roles.extend(converted_roles)
                     elif add_remove_view.value == "remove":
@@ -310,7 +306,7 @@ class GiveawayConfigCategories(discord.ui.View):
                     await self.client.db.execute("INSERT INTO giveawayconfig(guild_id, channel_id, blacklisted_roles) VALUES($1, $2, $3) ON CONFLICT(channel_id) DO UPDATE SET blacklisted_roles=$3", self.ctx.guild.id, self.channel.id, blacklisted_roles)
                     field_value = ", ".join([f"<@&{role}>" for role in blacklisted_roles_lst])
                     self.original_embed.set_field_at(1, name="Blacklisted Roles", value=field_value if len(field_value) > 0 else "None")
-                    summary = "<:DVB_True:887589686808309791> **Successfully updated!**\n" + summary
+                    summary = DVB_TRUE + " **Successfully updated!**\n" + summary
                     if len(invalid_roles) > 0:
                         list_of_invalid_roles = "\n".join([f"`{role_name}` - {reason}" for role_name, reason in invalid_roles])
                         summary += f"\nI could not add/remove these roles:\n{list_of_invalid_roles}"
@@ -385,7 +381,7 @@ class GiveawayConfigCategories(discord.ui.View):
                             else:
                                 multi[str(r.id)] = multi_count
                                 await self.client.db.execute("INSERT INTO giveawayconfig (guild_id, channel_id, multi) VALUES ($1, $2, $3) ON CONFLICT (channel_id) DO UPDATE SET multi = $3", self.ctx.guild.id, self.channel.id, json.dumps(multi))
-                                await self.ctx.send("<:DVB_True:887589686808309791> **Successfully updated!**", delete_after=5.0)
+                                await self.ctx.send(DVB_TRUE + " **Successfully updated!**", delete_after=5.0)
                                 with contextlib.suppress(Exception):
                                     await draft_msg.delete()
                                     await m.delete()
@@ -393,7 +389,7 @@ class GiveawayConfigCategories(discord.ui.View):
                 elif choose_edit_or_delete.value == "delete":
                     multi.pop(str(r.id))
                     await self.client.db.execute("INSERT INTO giveawayconfig (guild_id, channel_id, multi) VALUES ($1, $2, $3) ON CONFLICT (channel_id) DO UPDATE SET multi = $3", self.ctx.guild.id, self.channel.id, json.dumps(multi))
-                    await self.ctx.send("<:DVB_True:887589686808309791> **Successfully updated!**", delete_after=5.0)
+                    await self.ctx.send(DVB_TRUE + " **Successfully updated!**", delete_after=5.0)
                 await select_multi_view.response.edit(view=choose_edit_or_delete)
         else:
             if select_multi_view.result == "add_multi":
@@ -438,7 +434,7 @@ class GiveawayConfigCategories(discord.ui.View):
                                     else:
                                         multi[str(r.id)] = multi_count
                                         await self.client.db.execute("INSERT INTO giveawayconfig (guild_id, channel_id, multi) VALUES ($1, $2, $3) ON CONFLICT (channel_id) DO UPDATE SET multi = $3", self.ctx.guild.id, self.channel.id, json.dumps(multi))
-                                        await self.ctx.send(f"<:DVB_True:887589686808309791> **Successfully updated!**", delete_after=5.0)
+                                        await self.ctx.send(f"{DVB_TRUE} **Successfully updated!**", delete_after=5.0)
             with contextlib.suppress(Exception):
                 await draft_msg.delete()
         with contextlib.suppress(Exception):
@@ -590,7 +586,7 @@ class GiveawayView(discord.ui.View):
                             else:
                                 pass
                     if len(missing_roles) > 0:
-                        desc = f"<:DVB_False:887589731515392000> You do not have the following roles to join this giveaway: {', '.join(missing_roles)}"
+                        desc = f"{DVB_FALSE} You do not have the following roles to join this giveaway: {', '.join(missing_roles)}"
                         remarks = []
                         def level_5():
                             if str(678318524933996557) in desc and len(missing_roles) == 1:
@@ -763,7 +759,7 @@ class GiveawayView(discord.ui.View):
                                     entries_to_insert.append((interaction.guild.id, interaction.channel.id, giveawaymessage.id, interaction.user.id, entry_dict['role_id']))
                                     newly_entered_entries += 1
                                     entered = True
-                                string = f"{DVB_True} **{entry_dict['entered_entries'] + newly_entered_entries}**/{entry_dict['allowed_entries']} Normal Entry" + (f" (`+{newly_entered_entries}`)" if newly_entered_entries > 0 else "")
+                                string = f"{DVB_TRUE} **{entry_dict['entered_entries'] + newly_entered_entries}**/{entry_dict['allowed_entries']} Normal Entry" + (f" (`+{newly_entered_entries}`)" if newly_entered_entries > 0 else "")
                             else:
                                 role = interaction.guild.get_role(entry_dict['role_id'])
                                 if role in interaction.user.roles:
@@ -771,23 +767,23 @@ class GiveawayView(discord.ui.View):
                                         entries_to_insert.append((interaction.guild.id, interaction.channel.id, giveawaymessage.id, interaction.user.id, entry_dict['role_id']))
                                         newly_entered_entries += 1
                                         entered = True
-                                    string = f"{DVB_True} **{entry_dict['entered_entries'] + newly_entered_entries}**/{entry_dict['allowed_entries']} Entries for being **{role.mention}**" + (f" (`+{newly_entered_entries}`)" if newly_entered_entries > 0 else "")
+                                    string = f"{DVB_TRUE} **{entry_dict['entered_entries'] + newly_entered_entries}**/{entry_dict['allowed_entries']} Entries for being **{role.mention}**" + (f" (`+{newly_entered_entries}`)" if newly_entered_entries > 0 else "")
                                 else:
-                                    string = f"{DVB_Neutral} **{entry_dict['entered_entries']}**/{entry_dict['allowed_entries']} Entries for being **{role.mention}**"
+                                    string = f"{DVB_NEUTRAL} **{entry_dict['entered_entries']}**/{entry_dict['allowed_entries']} Entries for being **{role.mention}**"
                         else:
                             if entry_dict['allowed_entries'] > 0:
                                 if entry_dict['role_id'] == 0:
-                                    string = f"{DVB_True} **{entry_dict['entered_entries']}**/{entry_dict['allowed_entries']} Normal Entry"
+                                    string = f"{DVB_TRUE} **{entry_dict['entered_entries']}**/{entry_dict['allowed_entries']} Normal Entry"
                                 else:
                                     role = interaction.guild.get_role(entry_dict['role_id'])
                                     if role in interaction.user.roles:
-                                        string = f"{DVB_True} **{entry_dict['entered_entries']}**/{entry_dict['allowed_entries']} Entries for being {role.mention}"
+                                        string = f"{DVB_TRUE} **{entry_dict['entered_entries']}**/{entry_dict['allowed_entries']} Entries for being {role.mention}"
                                     else:
-                                        string = f"{DVB_Neutral} **{entry_dict['entered_entries']}**/{entry_dict['allowed_entries']} Entries for being **{role.name}**"
+                                        string = f"{DVB_NEUTRAL} **{entry_dict['entered_entries']}**/{entry_dict['allowed_entries']} Entries for being **{role.name}**"
                             else:
                                 string = ""
                     else:
-                        string = f"{DVB_False} **{entry_dict['entered_entries']}**/{entry_dict['allowed_entries']} Invalid role ({entry_dict['role_id']})"
+                        string = f"{DVB_FALSE} **{entry_dict['entered_entries']}**/{entry_dict['allowed_entries']} Invalid role ({entry_dict['role_id']})"
                     if len(string) > 0:
                         descriptions.append(string)
                 summary_embed.description = "\n".join(descriptions)
@@ -811,7 +807,7 @@ class GiveawayView(discord.ui.View):
                 text_content = "It is suggested that you be in https://discord.gg/6YgNFh5YHY to claim the prize!"
                 if content != "You have already entered the giveaway.":
                     with contextlib.suppress(Exception):
-                        await interaction.user.send(content=f"<:DVB_True:887589686808309791> Your entry for the giveaway **{giveawayentry.title}** has been counted.\n{text_content}")
+                        await interaction.user.send(content=f"{DVB_TRUE} Your entry for the giveaway **{giveawayentry.title}** has been counted.\n{text_content}")
             else:
                 text_content = ""
             if giveaway_uses_multiple_entries is True:
@@ -1630,7 +1626,7 @@ class giveaways(commands.Cog):
                     by_r_str += " (set by server)"
                 descriptions.append(by_r_str)
         if show_count is not True:
-            descriptions.append("**Hide the entrant count**: <:DVB_True:887589686808309791> **Yes**")
+            descriptions.append(f"**Hide the entrant count**: {DVB_TRUE} **Yes**")
         if len(multi.keys()) > 0:
             multi_stdout = "\n".join([f"{r.mention}: x{m_count}" for r, m_count in multi.items()])
             m_r_str = f"**Multi roles**: {multi_stdout}"
@@ -1664,7 +1660,7 @@ class giveaways(commands.Cog):
             bypass_role_list_str = ",".join([str(role.id) for role in bypass_roles]) if type(bypass_roles) == list and len(bypass_roles) > 0 else None
         else:
             bypass_role_list_str = None
-        giveawaymessage = await channel.send(embed=discord.Embed(title="<a:DVB_Loading:909997219644604447> Initializing giveaway...", color=self.client.embed_color))
+        giveawaymessage = await channel.send(embed=discord.Embed(title=f"{DVB_TYPING_INDICATOR} Initializing giveaway...", color=self.client.embed_color))
         multi = {str(r.id): m_count for r, m_count in multi.items()}
         await self.client.db.execute("INSERT INTO giveaways (guild_id, channel_id, message_id, title, host_id, donor_id, winners, required_roles, blacklisted_roles, amari_level, amari_weekly_xp, bypass_roles, multi, duration, end_time, showentrantcount) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)",
                                      ctx.guild.id, channel.id, giveawaymessage.id, prize, ctx.author.id, donor.id if donor is not None else None, winners, required_role_list_str, blacklisted_role_list_str, amari_level, amari_weekly_xp, bypass_role_list_str, json.dumps(multi), duration, round(time() + duration), show_count)
@@ -1693,7 +1689,7 @@ class giveaways(commands.Cog):
             msg = await channel.send(f"<@&{role_to_ping_id}>\n{msg}", allowed_mentions=discord.AllowedMentions(roles=True, everyone=False))
             await msg.add_reaction('<:dv_wCyanHeartOwO:837700662192111617>')
         if channel != ctx.channel:
-            await ctx.respond(f"{DVB_True} Giveaway started!", ephemeral=True)
+            await ctx.respond(f"{DVB_TRUE} Giveaway started!", ephemeral=True)
         await asyncio.sleep(180.0)
         g_view.children[2].disabled = True
         await giveawaymessage.edit(view=g_view)
@@ -1739,7 +1735,7 @@ class giveaways(commands.Cog):
             return await ctx.send("The giveaway cannot last longer than 30 days.")
         ends_at = round(time()) + duration
         end_at_datetime = datetime.fromtimestamp(ends_at)
-        giveawaymessage = await ctx.channel.send(embed=discord.Embed(title="<a:DVB_Loading:909997219644604447> Initializing giveaway...", color=self.client.embed_color))
+        giveawaymessage = await ctx.channel.send(embed=discord.Embed(title=f"{DVB_TYPING_INDICATOR} Initializing giveaway...", color=self.client.embed_color))
         multi = {
             str(voteid): 1,
             str(level_100id): 1

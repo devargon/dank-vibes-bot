@@ -2,7 +2,10 @@ import asyncio
 import discord
 from datetime import datetime
 from discord.ext import commands
-emojis = ["<:DVB_checkmark:955345523139805214>", "<:DVB_crossmark:955345521151737896>"]
+
+from custom_emojis import DVB_CHECKMARK, DVB_CROSSMARK
+
+emojis = [DVB_CHECKMARK, DVB_CROSSMARK]
 from utils import checks
 from utils.errors import NicknameIsManaged
 from main import dvvt
@@ -12,7 +15,7 @@ class NicknamePersistentView(discord.ui.View):
         self.client: dvvt = client
         super().__init__(timeout=None)
 
-    @discord.ui.button(label='Approve', emoji=discord.PartialEmoji.from_str("<:DVB_checkmark:955345523139805214>"), style=discord.ButtonStyle.green, custom_id="button:approve_nickname") #, custom_id='persistent_view:approve')
+    @discord.ui.button(label='Approve', emoji=discord.PartialEmoji.from_str(DVB_CHECKMARK), style=discord.ButtonStyle.green, custom_id="button:approve_nickname") #, custom_id='persistent_view:approve')
     async def green(self, button: discord.ui.Button, interaction: discord.Interaction):
         config = await self.client.db.fetchrow("SELECT nicknamechannel_id FROM channelconfigs WHERE guild_id = $1", interaction.guild_id)
         if config is None or config.get('nicknamechannel_id') != interaction.channel_id:
@@ -61,7 +64,7 @@ class NicknamePersistentView(discord.ui.View):
         await interaction.delete_original_message()
         await self.client.logger.log_approved_nickname(interaction.user, nicktarget, nickname)
 
-    @discord.ui.button(label='Deny', emoji=discord.PartialEmoji.from_str("<:DVB_crossmark:955345521151737896>"), style=discord.ButtonStyle.red, custom_id="button:deny_nickname") #c, custom_id='persistent_view:red')
+    @discord.ui.button(label='Deny', emoji=discord.PartialEmoji.from_str(DVB_CROSSMARK), style=discord.ButtonStyle.red, custom_id="button:deny_nickname") #c, custom_id='persistent_view:red')
     async def red(self, button: discord.ui.Button, interaction: discord.Interaction):
         config = await self.client.db.fetchrow("SELECT nicknamechannel_id FROM channelconfigs WHERE guild_id = $1", interaction.guild_id)
         if config is None or config.get('nicknamechannel_id') != interaction.channel_id:

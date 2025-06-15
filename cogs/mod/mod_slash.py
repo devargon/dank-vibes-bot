@@ -6,6 +6,8 @@ import discord
 from discord.ext import commands
 from discord import SlashCommandGroup
 from discord import default_permissions
+
+from custom_emojis import DVB_TRUE, DVB_FALSE
 from utils.format import stringtime_duration, human_join, comma_number, generate_loadbar, plural, proper_userf
 from utils.buttons import confirm
 from utils.time import humanize_timedelta
@@ -27,7 +29,7 @@ class ModSlash(commands.Cog):
             await user.send(f"You have received a message from a Moderator in {ctx.guild.name}.", embed=user_embed)
         except discord.Forbidden:
             confirmview = confirm(ctx, self.client, timeout=30)
-            confirmview.response = await ctx.respond(f"<:DVB_False:887589731515392000> **I was unable to DM {proper_userf(user)}.**\nDo you want them to be pinged in <#698462922682138654> with the message instead?", view=confirmview)
+            confirmview.response = await ctx.respond(f"{DVB_FALSE} **I was unable to DM {proper_userf(user)}.**\nDo you want them to be pinged in <#698462922682138654> with the message instead?", view=confirmview)
             await confirmview.wait()
             if confirmview.returning_value is True:
                 bot_lounge = discord.utils.get(ctx.guild.channels, name="╭・bot-lounge")
@@ -56,35 +58,35 @@ class ModSlash(commands.Cog):
                       text_in_name: discord.Option(str, "Bans users that have a specified text in their username") = None,
                       ):
         if joined_after_duration is not None and joined_after_timestamp is not None:
-            await ctx.respond("<:DVB_False:887589731515392000> You can't specify both `joined_after_duration` and `joined_after_timestamp`.")
+            await ctx.respond(DVB_FALSE + " You can't specify both `joined_after_duration` and `joined_after_timestamp`.")
             return
         if joined_before_duration is not None and joined_before_timestamp is not None:
-            await ctx.respond("<:DVB_False:887589731515392000> You can't specify both `joined_before_duration` and `joined_before_timestamp`.")
+            await ctx.respond(DVB_FALSE + " You can't specify both `joined_before_duration` and `joined_before_timestamp`.")
             return
         if joined_after_duration is None and joined_after_timestamp is None and joined_before_duration is None and joined_before_timestamp is None and user_id_startswith is None and text_in_name is None:
-            await ctx.respond("<:DVB_False:887589731515392000> You must specify at least one of the following: `joined_after_duration`, `joined_after_timestamp`, `joined_before_duration`, `joined_before_timestamp`, `user_id_startswith`, or `text_in_name`.")
+            await ctx.respond(DVB_FALSE + " You must specify at least one of the following: `joined_after_duration`, `joined_after_timestamp`, `joined_before_duration`, `joined_before_timestamp`, `user_id_startswith`, or `text_in_name`.")
             return
         if (joined_before_timestamp is not None or joined_before_duration is not None) and (joined_after_timestamp is None and joined_after_duration is None):
-            await ctx.respond("<:DVB_False:887589731515392000> You must specify a `joined_after_timestamp`/`joined_after_duration` if you specify `joined_before_timestamp` or `joined_before_duration`.")
+            await ctx.respond(DVB_FALSE + " You must specify a `joined_after_timestamp`/`joined_after_duration` if you specify `joined_before_timestamp` or `joined_before_duration`.")
             return
         if joined_after_duration is not None:
             try:
                 joined_after_duration: int = stringtime_duration(joined_after_duration)
             except ValueError:
-                await ctx.respond("<:DVB_False:887589731515392000> You didn't provide a proper `joined_after_duration`.", ephemeral=True)
+                await ctx.respond(DVB_FALSE + " You didn't provide a proper `joined_after_duration`.", ephemeral=True)
                 return
             if joined_after_duration is None:
-                await ctx.respond("<:DVB_False:887589731515392000> You didn't provide a proper `joined_after_duration`.", ephemeral=True)
+                await ctx.respond(DVB_FALSE + " You didn't provide a proper `joined_after_duration`.", ephemeral=True)
                 return
             joined_after_timestamp = round(time.time()) - joined_after_duration
         if joined_before_duration is not None:
             try:
                 joined_before_duration: int = stringtime_duration(joined_before_duration)
             except ValueError:
-                await ctx.respond("<:DVB_False:887589731515392000> You didn't provide a proper `joined_before_duration`.", ephemeral=True)
+                await ctx.respond(DVB_FALSE + " You didn't provide a proper `joined_before_duration`.", ephemeral=True)
                 return
             if joined_before_duration is None:
-                await ctx.respond("<:DVB_False:887589731515392000> You didn't provide a proper `joined_before_duration`.", ephemeral=True)
+                await ctx.respond(DVB_FALSE + " You didn't provide a proper `joined_before_duration`.", ephemeral=True)
                 return
             joined_before_timestamp = round(time.time()) - joined_before_duration
         # joined_after cannot be more than 5 days ago
@@ -98,14 +100,14 @@ class ModSlash(commands.Cog):
         else:
             joined_before_dt = None
         if (joined_after_dt is not None and discord.utils.utcnow() < joined_after_dt) or (joined_before_dt is not None and discord.utils.utcnow() < joined_before_dt):
-            return await ctx.respond("<:DVB_False:887589731515392000> You cannot specify a date/time in the future.")
+            return await ctx.respond(DVB_FALSE + " You cannot specify a date/time in the future.")
         two_day_timedelta = datetime.timedelta(days=2)
         if joined_after_dt is not None:
             if discord.utils.utcnow() - joined_after_dt > two_day_timedelta:
-                return await ctx.respond("<:DVB_False:887589731515392000> You cannot specify a date/time more than 2 days ago.")
+                return await ctx.respond(DVB_FALSE + " You cannot specify a date/time more than 2 days ago.")
         if joined_before_dt is not None:
             if discord.utils.utcnow() - joined_before_dt > two_day_timedelta:
-                return await ctx.respond("<:DVB_False:887589731515392000> You cannot specify a date/time more than 2 days ago.")
+                return await ctx.respond(DVB_FALSE + " You cannot specify a date/time more than 2 days ago.")
 
         qualified_members = []
         for member in ctx.guild.members:
@@ -177,7 +179,7 @@ class ModSlash(commands.Cog):
             await ctx.respond(embed=confirm_embed)
             return
         if len(qualified_members) > 3000:
-            confirm_embed.description += "\n<:DVB_False:887589731515392000> You are not allowed to ban more than 3000 members at once.'"
+            confirm_embed.description += f"\n{DVB_FALSE} You are not allowed to ban more than 3000 members at once.'"
             await ctx.respond(embed=confirm_embed, files=files)
         else:
             confirm_embed.description += f"\nPress confirm to proceed to ban users."
@@ -202,7 +204,7 @@ class ModSlash(commands.Cog):
                     try:
                         await member.ban(reason=reason or f"Massban authorized by {ctx.author.name}")
                     except Exception as e:
-                        await ctx.send(f"<:DVB_False:887589731515392000> Unable to ban **{proper_userf(member)}**:\n{str(e)}")
+                        await ctx.send(f"{DVB_FALSE} Unable to ban **{proper_userf(member)}**:\n{str(e)}")
                     if time.time() - time_now > 3:
                         time_now = time.time()
                         status_embed.description = f"`[{index}/{len(qualified_members)}]` {generate_loadbar(index/len(qualified_members), 15)} {round(index/len(qualified_members)*100, 2)}%"
@@ -217,12 +219,12 @@ class ModSlash(commands.Cog):
                     duration_now = time.perf_counter()
 
                 status_embed.description = f"[{len(qualified_members)}/{len(qualified_members)}] {generate_loadbar(1, 15)} 100%"
-                status_embed.set_field_at(-1, name="Time remaining", value=f"<:DVB_True:887589686808309791> Completed at <t:{round(time.time())}>")
+                status_embed.set_field_at(-1, name="Time remaining", value=f"{DVB_TRUE} Completed at <t:{round(time.time())}>")
                 try:
                     await status_msg.edit(embed=status_embed)
                 except discord.NotFound:
                     status_msg = await ctx.send(embed=status_embed)
-                return await ctx.send(f"<:DVB_True:887589686808309791> Massban completed.")
+                return await ctx.send(f"{DVB_TRUE} Massban completed.")
 
 
 

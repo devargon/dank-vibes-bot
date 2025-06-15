@@ -360,13 +360,13 @@ class games(commands.Cog):
                         if interaction.user.id != self.user1.id:
                             await interaction.response.send_message("Agree to the nickname given to you, not this one.", ephemeral=True)
                             return
-                        button.style, button.label, button.disabled, button.emoji = discord.ButtonStyle.green, f"{self.user1.name}'s nick: {self.user1nick}", True, discord.PartialEmoji.from_str("<:DVB_True:887589686808309791>")
+                        button.style, button.label, button.disabled, button.emoji = discord.ButtonStyle.green, f"{self.user1.name}'s nick: {self.user1nick}", True, discord.PartialEmoji.from_str("{DVB_TRUE}")
                         self.agree = self.agree + 1
                     else:
                         if interaction.user.id != self.user2.id:
                             await interaction.response.send_message("Agree to the nickname given to you, not this one.", ephemeral=True)
                             return
-                        button.style, button.label, button.disabled, button.emoji = discord.ButtonStyle.green, f"{self.user2.name}'s nick: {self.user2nick}", True, discord.PartialEmoji.from_str("<:DVB_True:887589686808309791>")
+                        button.style, button.label, button.disabled, button.emoji = discord.ButtonStyle.green, f"{self.user2.name}'s nick: {self.user2nick}", True, discord.PartialEmoji.from_str("{DVB_TRUE}")
                         self.agree = self.agree + 1
                     if self.agree == 2:
                         for b in self.children:

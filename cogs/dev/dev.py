@@ -28,6 +28,7 @@ import traceback
 import contextlib
 from abc import ABC
 
+from custom_emojis import DVB_TRUE, DVB_FALSE, DVB_TYPING_INDICATOR
 from main import dvvt
 from utils import checks
 from utils.helper import upload_file_to_bunnycdn
@@ -618,7 +619,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
         except asyncio.TimeoutError:
             try:
                 await ctx.message.clear_reaction("<a:DVB_NyaTrash:919606179590733944>")
-                await ctx.message.add_reaction("<:DVB_True:887589686808309791>")
+                await ctx.message.add_reaction(DVB_TRUE)
             except:
                 pass
         else:
@@ -947,7 +948,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
         """
         Shows the link to the github repo.
         """
-        embed = discord.Embed(title="<a:DVB_Loading:909997219644604447> Contacting the GitHub server...",
+        embed = discord.Embed(title=f"{DVB_TYPING_INDICATOR} Contacting the GitHub server...",
                               color=self.client.embed_color)
         msg = await ctx.send(embed=embed)
         now = time.perf_counter()
@@ -1014,7 +1015,7 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
                                     value=f"GitHub did not return a 200 status code.\nStatus code: {r.status}",
                                     inline=True)
                 embed.add_field(name="🛠️ Last commit",
-                                value="<a:DVB_Loading:909997219644604447> Contacting the GitHub server...",
+                                value=f"{DVB_TYPING_INDICATOR} Contacting the GitHub server...",
                                 inline=False)
             await msg.edit(content="Initial data retrieved in `{}`ms".format(round((time.perf_counter() - now) * 1000)),
                            embed=embed)
@@ -1270,9 +1271,9 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
     async def export_by_channel_id(self, ctx: DVVTcontext, channel_id: int, limit: int = 50):
         c = await self.client.fetch_channel(channel_id)
         if c.guild is None:
-            return await ctx.send(f"<:DVB_False:887589731515392000> {c.mention} is not part of a guild.")
+            return await ctx.send(f"{DVB_FALSE} {c.mention} is not part of a guild.")
         if not (c.permissions_for(c.guild.me).read_messages and c.permissions_for(c.guild.me).read_message_history and c.permissions_for(c.guild.me).view_channel):
-            return await ctx.send(f"<:DVB_False:887589731515392000> I do not have permissions to see {c.mention} or view its messages.")
+            return await ctx.send(f"{DVB_FALSE} I do not have permissions to see {c.mention} or view its messages.")
         m = await ctx.send(f"<a:DVB_CLoad2:994913353388527668> Found {c.mention}. Exporting messages...")
         a = await self.client.fetch_user_info(ctx.author.id)
 
@@ -1285,14 +1286,14 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
         )
 
         if transcript is None:
-            await m.edit(f"<:DVB_False:887589731515392000> Unable to export messages for {c.mention}.")
+            await m.edit(f"{DVB_FALSE} Unable to export messages for {c.mention}.")
             return
 
         else:
             today = datetime.now()
             await m.edit(f"<a:DVB_CLoad1:994913315442663475> Uploading export to Nogra's CDN...")
             result_url = await upload_file_to_bunnycdn(file=transcript.encode('utf-8'), filename=f"transcript_{c.guild.id}_{c.id}_{today.isoformat()}.html", directory="chat_transcripts")
-            await m.edit(f"<:DVB_True:887589686808309791> Exported messages in {c.mention}. View them at {result_url}")
+            await m.edit(f"{DVB_TRUE} Exported messages in {c.mention}. View them at {result_url}")
             # timenow = discord.utils.utcnow()
             #transcript_file = discord.File(
             #    io.BytesIO(transcript.encode('utf-8')),

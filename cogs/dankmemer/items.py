@@ -4,6 +4,7 @@ from typing import Optional
 
 from thefuzz import process
 
+from custom_emojis import DVB_TRUE, DVB_FALSE
 from utils import checks
 from utils.context import DVVTcontext
 from utils.format import comma_number, stringnum_toint
@@ -27,10 +28,10 @@ class InputItemValue(discord.ui.Modal):
             evaluated_content = stringnum_toint(content)
         except Exception as e:
             self.itemvalue = None
-            await interaction.response.send_message(f"<:DVB_False:887589731515392000> `{content}` is an invalid number. Please try again.", ephemeral=True)
+            await interaction.response.send_message(f"{DVB_FALSE} `{content}` is an invalid number. Please try again.", ephemeral=True)
         else:
             if evaluated_content is None:
-                await interaction.response.send_message(f"<:DVB_False:887589731515392000> `{content}` is an invalid number. Please try again.", ephemeral=True)
+                await interaction.response.send_message(f"{DVB_FALSE} `{content}` is an invalid number. Please try again.", ephemeral=True)
             else:
                 self.itemvalue = evaluated_content
                 await interaction.response.send_message("Value set to **⏣ {}**".format(comma_number(evaluated_content)), ephemeral=True)
@@ -164,7 +165,7 @@ class DankItems(commands.Cog):
                         return
             else:
                 return await ctx.send(
-                    f"<:DVB_False:887589731515392000> I could not find an item with the name `{item}`.")
+                    f"{DVB_FALSE} I could not find an item with the name `{item}`.")
         else:
             if len(items) == 0:
                 return await ctx.send("There are no cached Dank Memer items to display.")
@@ -227,25 +228,25 @@ class DankItems(commands.Cog):
                     else:
                         continue
         if type(item) == str:
-            return await ctx.send(f"<:DVB_False:887589731515392000> I could not find an item with the name `{item}`.")
+            return await ctx.send(f"{DVB_FALSE} I could not find an item with the name `{item}`.")
         processed_value = stringnum_toint(value)
         if processed_value is None:
             if value.lower() == 'none':
                 processed_value = None
             else:
-                return await ctx.send("<:DVB_False:887589731515392000> The value needs to be a number or `none`.")
+                return await ctx.send(f"{DVB_FALSE} The value needs to be a number or `none`.")
         if processed_value is not None:
             await self.client.db.execute(
                 "UPDATE dankitems SET trade_value = $1, overwrite = True, last_updated = $2 WHERE idcode = $3",
                 processed_value, round(time.time()), item.get('idcode'))
             await ctx.send(
-                f"<:DVB_True:887589686808309791> Set the value of **{item.get('name')}** to `⏣ {comma_number(processed_value)}`.\nTo reset it to Dank Memer trade values, use set `none` as the value.")
+                f"{DVB_TRUE} Set the value of **{item.get('name')}** to `⏣ {comma_number(processed_value)}`.\nTo reset it to Dank Memer trade values, use set `none` as the value.")
         else:
             await self.client.db.execute(
                 "UPDATE dankitems SET trade_value = 0, overwrite = False, last_updated = $1 WHERE idcode = $2",
                 round(time.time()), item.get('idcode'))
             await ctx.send(
-                f"<:DVB_True:887589686808309791> Set the value of **{item.get('name')}** to `⏣ 0`.\nPlease run `pls shop {item.get('idcode')}` to update the {item.get('name')} to the current Dank Memer trade value.")
+                f"{DVB_TRUE} Set the value of **{item.get('name')}** to `⏣ 0`.\nPlease run `pls shop {item.get('idcode')}` to update the {item.get('name')} to the current Dank Memer trade value.")
 
     @checks.has_permissions_or_role(manage_roles=True)
     @checks.not_in_gen()

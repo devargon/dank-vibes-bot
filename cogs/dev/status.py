@@ -1,14 +1,15 @@
 import discord
 from utils import checks
 from discord.ext import commands
+from custom_emojis import DVB_STATUS_RED, DVB_STATUS_YELLOW, DVB_STATUS_GREEN, DVB_STATUS_GREY
 
 status_emojis = {
-    discord.Status.dnd: "<:DVB_status_dnd:955345506228392056>",
-    discord.Status.idle: "<:DVB_status_idle:955345504630374400>",
-    discord.Status.online: "<:DVB_status_online:955345501392359454>",
-    discord.Status.offline: "<:DVB_status_offline:955345502868734023>",
-    discord.Status.invisible: "<:DVB_status_offline:955345502868734023>",
-    discord.Status.do_not_disturb: "<:DVB_status_dnd:955345506228392056>",
+    discord.Status.dnd: DVB_STATUS_RED,
+    discord.Status.idle: DVB_STATUS_YELLOW,
+    discord.Status.online: DVB_STATUS_GREEN,
+    discord.Status.offline: DVB_STATUS_GREY,
+    discord.Status.invisible: DVB_STATUS_GREY,
+    discord.Status.do_not_disturb: DVB_STATUS_RED,
 }
 
 class Status(commands.Cog):
