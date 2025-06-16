@@ -96,3 +96,7 @@ class AmariImportDAO:
             return rows_deleted
         else:
             return 0
+
+    async def create_task_log(self, task_id: int, task_status_before: str, task_status_after: str, event: str, event_user_id: int, details: str):
+        await self.client.db.execute("INSERT INTO amari_import_task_log(task_id, status_before, status_after, event, event_user_id, details) VALUES($1, $2, $3, $4, $5, $6)",
+                                     task_id, task_status_before, task_status_after, event, event_user_id, details)

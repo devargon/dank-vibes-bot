@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import json
 import time
 from collections import defaultdict
@@ -395,9 +396,19 @@ class TaskManagementView(discord.ui.View):
     @discord.ui.button(label="Re-queue Task", style=discord.ButtonStyle.grey, emoji="🔄")
     async def requeue_task_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         try:
+            previous_status = copy.copy(self.task.status)
             self.task.status = "PENDING"
             self.task.stopped_at = None
             await self.task.update(self.client)
+
+            await self.amari_import_dao.create_task_log(
+                task_id=self.task.id,
+                task_status_before=previous_status,
+                task_status_after="PENDING",
+                event="task_requeued",
+                event_user_id=interaction.user.id,
+                details="Requeued through dev view"
+            )
 
             await interaction.response.send_message(f"Task #{self.task.id} has been re-queued successfully.", ephemeral=True)
         except Exception as e:
@@ -806,6 +817,16 @@ class AmariRequestTicketManagementView(discord.ui.View):
             # Cancel the task
             rows_changed = await self.amari_import_dao.deleteTaskById(task.id)
             if rows_changed > 0:
+
+                await self.amari_import_dao.create_task_log(
+                    task_id=task.id,
+                    task_status_before="PENDING",
+                    task_status_after="CANCELLED",
+                    event="user_cancelled",
+                    event_user_id=interaction.user.id,
+                    details="cancelled via button"
+                )
+
                 await self._handle_successful_cancellation(interaction, button, task)
             else:
                 raise ValueError(
@@ -1086,6 +1107,14 @@ class AmariRequestView(discord.ui.View):
         resulting_task = await self.amari_import_dao.createAmariImportTask(
             user.id, ticket_channel.guild.id, ticket_channel.id, top_channel_message.id, old_xp, expected_level, resulting_exp
         )
+        await self.amari_import_dao.create_task_log(
+            task_id=resulting_task.id,
+            task_status_before="UNKNOWN",
+            task_status_after=resulting_task.status,  # “PENDING”
+            event="task_created",
+            event_user_id=user.id,
+            details=f"Old XP={old_xp}, starting_position={resulting_task.position}"
+        )
 
         embed_to_edit = EmbedFormatter.format_task_embed(resulting_task)
         await top_channel_message.edit(content=user.mention, embed=embed_to_edit, view=AmariRequestTicketManagementView(self.client))
@@ -1142,6 +1171,14 @@ class TaskProcessor:
                 if task.position <= 3 and not task.notified_near_front:
                     self._debug_print(f"Task {task.id} is near front of queue, sending notification")
                     await self._notify_near_front(task)
+                    await self.amari_import_dao.create_task_log(
+                        task_id=task.id,
+                        task_status_before=task.status,  # “PENDING”
+                        task_status_after=task.status,
+                        event="near_front_notified",
+                        event_user_id=self.client.user.id,
+                        details=f"position={task.position}"
+                    )
 
         self._debug_print("Completed processing cycle")
 
@@ -1194,6 +1231,15 @@ class TaskProcessor:
         self._debug_print("Saving task updates to database")
         await task.update(self.client)
 
+        await self.amari_import_dao.create_task_log(
+            task_id=task.id,
+            task_status_before="PENDING",
+            task_status_after="IN_PROGRESS",
+            event="start_processing",
+            event_user_id=self.client.user.id,
+            details=f"ticket_channel={task.ticket_channel_id}"
+        )
+
         try:
             current_amari_details = await self.amari_data_manager.get_current_amari_data(
                 task.ticket_guild_id, task.user_id
@@ -1235,7 +1281,17 @@ class TaskProcessor:
                         error_message="No worker found",
                         user_friendly_error="I was not able to find a worker to assist this ticket. Please try again later."
                     )
+
                     return
+                await self.amari_import_dao.create_task_log(
+                    task_id=task.id,
+                    task_status_before="IN_PROGRESS",
+                    task_status_after="IN_PROGRESS",
+                    event="worker_assigned",
+                    event_user_id=worker.worker_user_id,
+                    details=f"worker_host={worker.host}"
+                )
+
                 worker_user = await self.client.get_or_fetch_user(current_worker.worker_user_id)
                 await finding_worker_message.edit(content=f"## You are being served by {worker_user.mention}.\n{worker_user} has been online since {discord.utils.format_dt(datetime.fromisoformat(status.get('client').get('readyAt')), 'f')} to assist Amari transfers.")
                 commands_to_run = []
@@ -1334,6 +1390,15 @@ class TaskProcessor:
                 f"# {DVB_TRUE} Completed\n\nYour Amari stats has been successfully transferred.\n\nThank you for sticking around after the mess with the old server.\n\n-# This channel will be deleted by a staff member."
             )
             self._debug_print("Successfully sent completion message")
+            await self.amari_import_dao.create_task_log(
+                task_id=task.id,
+                task_status_before="IN_PROGRESS",
+                task_status_after="COMPLETED",
+                event="mark_completed",
+                event_user_id=self.client.user.id,
+                details=f"loops={task.completed_loops()}"
+            )
+
         except Exception:
             self._debug_print("Failed to send completion message (ignoring error)")
             pass  # Ignore message update errors for completed tasks
@@ -1341,6 +1406,7 @@ class TaskProcessor:
     async def _mark_task_failed(self, task: AmariImportTask, task_ticket_channel: Union[discord.abc.GuildChannel, None], error_message: str, user_friendly_error: str = "This task has failed due to an error."):
         """Mark a task as failed with error message"""
         self._debug_print(f"Marking task {task.id} as failed: {error_message}")
+        previous_status = copy.copy(task.status)
 
         task.error_message = error_message
         task.status = "FAILED"
@@ -1348,6 +1414,15 @@ class TaskProcessor:
         task.ticket_message = user_friendly_error
 
         self._debug_print("Saving failed task to database")
+        await self.amari_import_dao.create_task_log(
+            task_id=task.id,
+            task_status_before=previous_status,  # pass in whatever status it was
+            task_status_after="FAILED",
+            event="mark_failed",
+            event_user_id=self.client.user.id,
+            details=error_message
+        )
+
         await task.update(self.client)
 
         if task_ticket_channel is not None:
@@ -1382,6 +1457,16 @@ class TaskProcessor:
             await task_ticket_channel.get_partial_message(task.ticket_message_id).edit(embed=embed)
             lastUpdatedQueuePositions[task.id] = task.position
             self._debug_print(f"Edit embed message API call")
+            # when you detect a position change and are about to update the embed…
+            await self.amari_import_dao.create_task_log(
+                task_id=task.id,
+                task_status_before=task.status,  # almost always “PENDING”
+                task_status_after=task.status,
+                event="position_updated",
+                event_user_id=self.client.user.id,
+                details=f"moved to position {task.position}"
+            )
+
         except Exception:
             pass
 
