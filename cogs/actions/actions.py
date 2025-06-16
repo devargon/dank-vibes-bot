@@ -347,6 +347,9 @@ class Actions(commands.Cog, name='actions'):
     @commands.guild_only()
     @commands.command(name="hug")
     async def action_hug(self, ctx: DVVTcontext, target: discord.Member = None):
+        """
+        Playfully bite someone to tease them.
+        """
         target = await confirm_target(ctx, target)
         hug_result = await self.nekosbest.fetch("hug")
         chosen_string = random.choice(strings.get("hug").get("description")).format(invocator=ctx.author.mention, target=target.mention)
@@ -361,6 +364,9 @@ class Actions(commands.Cog, name='actions'):
     @commands.guild_only()
     @commands.command(name="cuddle")
     async def action_cuddle(self, ctx: DVVTcontext, target: discord.Member = None):
+        """
+        Cuddle someone with a warm cozy embrace.
+        """
         target = await confirm_target(ctx, target)
         cuddle_result = await self.nekosbest.fetch("cuddle")
         chosen_string = random.choice(strings.get("cuddle").get("description")).format(invocator=ctx.author.mention, target=target.mention)
@@ -375,6 +381,9 @@ class Actions(commands.Cog, name='actions'):
     @commands.guild_only()
     @commands.command(name="kiss")
     async def action_kiss(self, ctx: DVVTcontext, target: discord.Member = None):
+        """
+        Plant a sweet kiss on someone to show affection.
+        """
         if target is None:
             viewable_members = get_members_that_can_view_this_channel(ctx)
             if not viewable_members:
@@ -394,6 +403,9 @@ class Actions(commands.Cog, name='actions'):
     @commands.guild_only()
     @commands.command(name="pat")
     async def action_pat(self, ctx: DVVTcontext, target: discord.Member = None):
+        """
+        Give someone a gentle pat to reassure them.
+        """
         if target is None:
             viewable_members = get_members_that_can_view_this_channel(ctx)
             if not viewable_members:
@@ -413,6 +425,9 @@ class Actions(commands.Cog, name='actions'):
     @commands.guild_only()
     @commands.command(name="feed")
     async def action_feed(self, ctx: DVVTcontext, target: discord.Member = None):
+        """
+        Feed someone food to show you care.
+        """
         if target is None:
             viewable_members = get_members_that_can_view_this_channel(ctx)
             if not viewable_members:
@@ -432,6 +447,9 @@ class Actions(commands.Cog, name='actions'):
     @commands.guild_only()
     @commands.command(name="tickle")
     async def action_tickle(self, ctx: DVVTcontext, target: discord.Member = None):
+        """
+        Tickle someone until they can't help but laugh.
+        """
         if target is None:
             viewable_members = get_members_that_can_view_this_channel(ctx)
             if not viewable_members:
@@ -451,6 +469,9 @@ class Actions(commands.Cog, name='actions'):
     @commands.guild_only()
     @commands.command(name="highfive")
     async def action_highfive(self, ctx: DVVTcontext, target: discord.Member = None):
+        """
+        Share a celebratory high-five to celebrate together.
+        """
         if target is None:
             viewable_members = get_members_that_can_view_this_channel(ctx)
             if not viewable_members:
@@ -470,6 +491,9 @@ class Actions(commands.Cog, name='actions'):
     @commands.guild_only()
     @commands.command(name="dance")
     async def action_dance(self, ctx: DVVTcontext):
+        """
+        Break into a dance party!
+        """
         dance_result = await self.nekosbest.fetch("dance")
         chosen_string = random.choice(strings.get("dance").get("description")).format(invocator=ctx.author.mention)
         color = random.choice(warm_colors)
@@ -483,6 +507,9 @@ class Actions(commands.Cog, name='actions'):
     @commands.guild_only()
     @commands.command(name="slap")
     async def action_slap(self, ctx: DVVTcontext, target: discord.Member = None):
+        """
+        Slap someone to tease them.
+        """
         if target is None:
             viewable_members = get_members_that_can_view_this_channel(ctx)
             if not viewable_members:
@@ -502,6 +529,9 @@ class Actions(commands.Cog, name='actions'):
     @commands.guild_only()
     @commands.command(name="punch")
     async def action_punch(self, ctx: DVVTcontext, target: discord.Member = None):
+        """
+        Deliver a powerful punch to spar with someone.
+        """
         if target is None:
             viewable_members = get_members_that_can_view_this_channel(ctx)
             if not viewable_members:
@@ -521,6 +551,9 @@ class Actions(commands.Cog, name='actions'):
     @commands.guild_only()
     @commands.command(name="kick")
     async def action_kick(self, ctx: DVVTcontext, target: discord.Member = None):
+        """
+        Give someone a swift kick for some playful banter.
+        """
         if target is None:
             viewable_members = get_members_that_can_view_this_channel(ctx)
             if not viewable_members:
@@ -540,6 +573,9 @@ class Actions(commands.Cog, name='actions'):
     @commands.guild_only()
     @commands.command(name="yeet")
     async def action_yeet(self, ctx: DVVTcontext, target: discord.Member = None):
+        """
+        Yeet someone across the screen for dramatic effect.
+        """
         if target is None:
             viewable_members = get_members_that_can_view_this_channel(ctx)
             if not viewable_members:
@@ -559,6 +595,9 @@ class Actions(commands.Cog, name='actions'):
     @commands.guild_only()
     @commands.command(name="laugh")
     async def action_laugh(self, ctx: DVVTcontext):
+        """
+        Let your laughter loose.
+        """
         laugh_result = await self.nekosbest.fetch("laugh")
         chosen_string = random.choice(strings.get("laugh").get("description")).format(invocator=ctx.author.mention)
         color = action_colors.get("laugh")
@@ -572,6 +611,9 @@ class Actions(commands.Cog, name='actions'):
     @commands.guild_only()
     @commands.command(name="cry")
     async def action_cry(self, ctx: DVVTcontext):
+        """
+        Tear up and share a crying reaction when you need comfort.
+        """
         cry_result = await self.nekosbest.fetch("cry")
         chosen_string = random.choice(strings.get("cry").get("description")).format(invocator=ctx.author.mention)
         color = action_colors.get("cry")
@@ -585,6 +627,9 @@ class Actions(commands.Cog, name='actions'):
     @commands.guild_only()
     @commands.command(name="bite", aliases=["nom"])
     async def action_bite(self, ctx: DVVTcontext, target: discord.Member = None):
+        """
+        nom nom nom
+        """
         if target is None:
             viewable_members = get_members_that_can_view_this_channel(ctx)
             if not viewable_members:
@@ -604,6 +649,9 @@ class Actions(commands.Cog, name='actions'):
     @commands.guild_only()
     @commands.command(name="poke", aliases=["boop"])
     async def action_poke(self, ctx: DVVTcontext, target: discord.Member = None):
+        """
+        Prod someone to get their attention.
+        """
         if target is None:
             viewable_members = get_members_that_can_view_this_channel(ctx)
             if not viewable_members:
