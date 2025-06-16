@@ -462,17 +462,22 @@ class AmariWorkerView(discord.ui.View):
         self.initiator_id = initiator_id
 
     def _build_options(self) -> List[discord.SelectOption]:
-        options = []
-        for worker in self.workers:  # Ensure all workers are fetched
-            options.append(discord.SelectOption(
-                label=f"#{worker.id} - {worker.host}",
-                description=f"User ID: {worker.worker_user_id}",
-                value=str(worker.id),
-                default=worker.id == (self.selected_worker.id if self.selected_worker else None)
-            ))
-        self.delete_worker_select.options = options
-        return options
-
+        if not self.workers:
+            return [discord.SelectOption(
+                label="No workers to delete",
+                description="You haven’t added any yet.",
+                value="none",
+                default=True
+            )]
+        return [
+            discord.SelectOption(
+                label=f"#{w.id} – {w.host}",
+                description=f"User ID {w.worker_user_id}",
+                value=str(w.id),
+                default=(self.selected_worker and w.id == self.selected_worker.id)
+            )
+            for w in self.workers
+        ]
 
     @discord.ui.button(label="Add worker", style=discord.ButtonStyle.green, row=0)
     async def add_worker_button(self, button: discord.ui.Button, interaction: discord.Interaction):
@@ -504,7 +509,10 @@ class AmariWorkerView(discord.ui.View):
                 ephemeral=True
             )
         if select.values:
-            selected_worker_id = int(select.values[0])
+            raw_selected_value = select.values[0]
+            if raw_selected_value == "none":
+                return await interaction.response.edit_message(view=self)
+            selected_worker_id = int(raw_selected_value)
             self.selected_worker = next((w for w in self.workers if w.id == selected_worker_id), None)
 
             if not self.selected_worker:
@@ -1695,7 +1703,8 @@ class AmariImport(commands.Cog, name="amari_import"):
         else:
             for worker in workers:
                 await add_worker_field(embed, worker)
-        msg = await ctx.send(embed=embed, view=AmariWorkerView(workers, self.client, ctx.author.id))
+        view = AmariWorkerView(workers, self.client, ctx.author.id)
+        msg = await ctx.send(embed=embed, view=view)
         embed.clear_fields()
         async with aiohttp.ClientSession() as session:
             tasks = [worker.fetch_status(session) for worker in workers]
