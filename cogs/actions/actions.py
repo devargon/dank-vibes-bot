@@ -672,3 +672,326 @@ class Actions(commands.Cog, name='actions'):
         embed.set_footer(text=f"You and {target.display_name} have poked each other {n_times_display}!",
                          icon_url=target.display_avatar.url)
         await ctx.send(embed=embed)
+
+    @commands.group(name='actionstats', invoke_without_command=True)
+    async def actionstats(self, ctx: DVVTcontext, target: str = None):
+        guild_id = ctx.guild.id
+        pool = self.client.db
+
+        prefixes = await self.client.get_prefix(ctx.message)
+        prefix = prefixes[-1] if isinstance(prefixes, (list, tuple)) else prefixes or ""
+
+        if target is None:
+            # ─── Top Actions ─────────────────────────────
+            top_actions = await pool.fetch(
+                """
+                SELECT action, COUNT(*) AS cnt
+                  FROM actions
+                 WHERE guild_id = $1
+                 GROUP BY action
+                 ORDER BY cnt DESC
+                 LIMIT 5
+                """, guild_id
+            )
+            ta_val = "\n".join(f"**{r['action'].capitalize()}**: {r['cnt']}" for r in top_actions) or "No data"
+
+            # ─── Top Channels ────────────────────────────
+            top_channels = await pool.fetch(
+                """
+                SELECT channel_id, COUNT(*) AS cnt
+                  FROM actions
+                 WHERE guild_id = $1
+                 GROUP BY channel_id
+                 ORDER BY cnt DESC
+                 LIMIT 5
+                """, guild_id
+            )
+            if top_channels:
+                tc_lines = []
+                for r in top_channels:
+                    ch = ctx.guild.get_channel(r['channel_id'])
+                    name = ch.mention if ch else "Unknown channel"
+                    tc_lines.append(f"{name}: {r['cnt']}")
+                tc_val = "\n".join(tc_lines)
+            else:
+                tc_val = "No data"
+
+            # ─── Top Users ───────────────────────────────
+            top_users = await pool.fetch(
+                """
+                SELECT user_id, COUNT(*) AS cnt
+                  FROM actions
+                 WHERE guild_id = $1
+                 GROUP BY user_id
+                 ORDER BY cnt DESC
+                 LIMIT 5
+                """, guild_id
+            )
+            if top_users:
+                tu_lines = []
+                for r in top_users:
+                    user = self.client.get_user(r['user_id']) or await self.client.fetch_user(r['user_id'])
+                    name = getattr(user, "display_name", user.name)
+                    tu_lines.append(f"**{name}**: {r['cnt']}")
+                tu_val = "\n".join(tu_lines)
+            else:
+                tu_val = "No data"
+
+            # ─── Your Stats ──────────────────────────────
+            my_stats = await pool.fetch(
+                """
+                SELECT action, COUNT(*) AS cnt
+                  FROM actions
+                 WHERE guild_id = $1 AND user_id = $2
+                 GROUP BY action
+                 ORDER BY cnt DESC
+                 LIMIT 5
+                """, guild_id, ctx.author.id
+            )
+            ms_val = "\n".join(f"**{r['action'].capitalize()}**: {r['cnt']}" for r in my_stats) or "No data"
+
+            # ─── Top Pair ────────────────────────────────
+            top_pair = await pool.fetchrow(
+                """
+                SELECT 
+                  CASE WHEN user_id < target_user_id THEN user_id ELSE target_user_id END AS u1,
+                  CASE WHEN user_id < target_user_id THEN target_user_id ELSE user_id END AS u2,
+                  COUNT(*) AS cnt
+                  FROM actions
+                 WHERE guild_id = $1
+                   AND target_user_id IS NOT NULL
+                 GROUP BY u1, u2
+                 ORDER BY cnt DESC
+                 LIMIT 1
+                """, guild_id
+            )
+            if top_pair:
+                u1 = self.client.get_user(top_pair['u1']) or await self.client.fetch_user(top_pair['u1'])
+                u2 = self.client.get_user(top_pair['u2']) or await self.client.fetch_user(top_pair['u2'])
+                pair_val = f"**{u1.display_name}** & **{u2.display_name}**: {top_pair['cnt']}"
+            else:
+                pair_val = "No data"
+
+            # ─── build embed ─────────────────────────────
+            embed = discord.Embed(
+                title=f"Action Statistics for {ctx.guild.name}",
+                colour=discord.Colour.blurple(),
+                timestamp=discord.utils.utcnow()
+            )
+            if ctx.guild.icon:
+                embed.set_thumbnail(url=ctx.guild.icon.url)
+
+            embed.add_field(name="📊 Top Actions", value=ta_val, inline=True)
+            embed.add_field(name="📍 Top Channels", value=tc_val, inline=True)
+            embed.add_field(name="👑 Top Users", value=tu_val, inline=True)
+            embed.add_field(name=f"📈 {ctx.author.display_name}'s Stats", value=ms_val, inline=True)
+            embed.add_field(name="👥 Top Pair", value=pair_val, inline=True)
+
+            # help hints
+            embed.add_field(
+                name="📖 Commands",
+                value=(
+                    f"`{prefix}actionstats` — server & your stats\n"
+                    f"`{prefix}actionstats <user>` — stats for that user\n"
+                    f"`{prefix}actionstats <action>` — leaderboard for that action\n"
+                    f"`{prefix}actionstats between <user>` — mutual stats"
+                ),
+                inline=False
+            )
+
+            return await ctx.send(embed=embed)
+
+        # Detect if target is a user
+        member = None
+        if ctx.message.mentions:
+            member = ctx.message.mentions[0]
+        else:
+            try:
+                member = await self.client.fetch_user(int(target))
+            except Exception:
+                pass
+
+        if member:
+            rows = await pool.fetch(
+                """
+                SELECT action, COUNT(*) AS cnt
+                  FROM actions
+                 WHERE guild_id = $1 AND user_id = $2
+                 GROUP BY action
+                 ORDER BY cnt DESC
+                 LIMIT 5
+                """, guild_id, member.id
+            )
+            top_targets = await pool.fetch(
+                """
+                SELECT target_user_id, COUNT(*) AS cnt
+                  FROM actions
+                 WHERE guild_id = $1 AND user_id = $2 AND target_user_id IS NOT NULL
+                 GROUP BY target_user_id
+                 ORDER BY cnt DESC
+                 LIMIT 5
+                """, guild_id, member.id
+            )
+            desc = "\n".join(f"**{r['action'].capitalize()}**: {r['cnt']}" for r in rows) or "No data"
+            top_target_val = "No data"
+            if top_targets:
+                lines = []
+                for r in top_targets:
+                    tgt = self.client.get_user(r['target_user_id']) or await self.client.fetch_user(r['target_user_id'])
+                    lines.append(f"**{tgt.display_name}**: {r['cnt']}")
+                top_target_val = "\n".join(lines)
+
+            embed = discord.Embed(
+                title=f"Action Stats for {member.display_name}",
+                colour=discord.Colour.blurple(),
+                timestamp=discord.utils.utcnow()
+            )
+            if ctx.guild.icon:
+                embed.set_thumbnail(url=ctx.guild.icon.url)
+            embed.add_field(name="\U0001f4ca Top Actions", value=desc, inline=False)
+            embed.add_field(name="\U0001f3f9 Top Targets", value=top_target_val, inline=True)
+            if ctx.author.id != member.id:
+                embed.add_field(
+                    name="\U0001f4a1 Tip",
+                    value=f"To see interactions between you and {member.display_name}, use `{prefix}actionstats between @{member.name}`",
+                    inline=False
+                )
+            return await ctx.send(embed=embed)
+
+        # If not a user, assume action
+        action_name = target.lower()
+        total = await pool.fetchval(
+            "SELECT COUNT(*) FROM actions WHERE guild_id=$1 AND action=$2",
+            guild_id, action_name
+        )
+        if total == 0:
+            return await ctx.send(f"No records for action **{target}**.")
+
+        users = await pool.fetch(
+            """
+            SELECT user_id, COUNT(*) AS cnt
+              FROM actions
+             WHERE guild_id=$1 AND action=$2
+             GROUP BY user_id
+             ORDER BY cnt DESC
+             LIMIT 5
+            """, guild_id, action_name
+        )
+        uv = [
+            f"{(self.client.get_user(r['user_id']) or await self.client.fetch_user(r['user_id'])).display_name}: {r['cnt']}"
+            for r in users
+        ]
+        uv_val = "\n".join(uv) or "No data"
+
+        chans = await pool.fetch(
+            """
+            SELECT channel_id, COUNT(*) AS cnt
+              FROM actions
+             WHERE guild_id=$1 AND action=$2
+             GROUP BY channel_id
+             ORDER BY cnt DESC
+             LIMIT 5
+            """, guild_id, action_name
+        )
+        cv = [
+            f"{(ctx.guild.get_channel(r['channel_id']).name if ctx.guild.get_channel(r['channel_id']) else 'Unknown channel')}: {r['cnt']}"
+            for r in chans
+        ]
+        cv_val = "\n".join(cv) or "No data"
+
+        you = await pool.fetchval(
+            "SELECT COUNT(*) FROM actions WHERE guild_id=$1 AND action=$2 AND user_id=$3",
+            guild_id, action_name, ctx.author.id
+        )
+
+        top_targets = await pool.fetch(
+            """
+            SELECT target_user_id, COUNT(*) AS cnt
+              FROM actions
+             WHERE guild_id = $1 AND action = $2 AND target_user_id IS NOT NULL
+             GROUP BY target_user_id
+             ORDER BY cnt DESC
+             LIMIT 5
+            """, guild_id, action_name
+        )
+
+        top_pairs = await pool.fetch(
+            """
+            SELECT user_id, target_user_id, COUNT(*) AS cnt
+              FROM actions
+             WHERE guild_id = $1 AND action = $2 AND target_user_id IS NOT NULL
+             GROUP BY user_id, target_user_id
+             ORDER BY cnt DESC
+             LIMIT 5
+            """, guild_id, action_name
+        )
+
+        embed = discord.Embed(
+            title=f"Stats for `{action_name.capitalize()}`",
+            colour=discord.Colour.blurple(),
+            timestamp=discord.utils.utcnow()
+        )
+        if ctx.guild.icon:
+            embed.set_thumbnail(url=ctx.guild.icon.url)
+
+        embed.add_field(name="\U0001f4ca Total Uses", value=str(total), inline=False)
+        embed.add_field(name="\U0001f451 Top Users", value=uv_val, inline=True)
+        embed.add_field(name="\U0001f4cd Top Channels", value=cv_val, inline=True)
+        embed.add_field(name=f"\U0001f4c8 Your Uses", value=str(you), inline=False)
+
+        if top_targets:
+            lines = []
+            for r in top_targets:
+                tgt = self.client.get_user(r['target_user_id']) or await self.client.fetch_user(r['target_user_id'])
+                lines.append(f"{tgt.display_name}: {r['cnt']}")
+            embed.add_field(name="\U0001f3f9 Top Targeted Users", value="\n".join(lines), inline=True)
+
+        if top_pairs:
+            lines = []
+            for r in top_pairs:
+                u1 = self.client.get_user(r['user_id']) or await self.client.fetch_user(r['user_id'])
+                u2 = self.client.get_user(r['target_user_id']) or await self.client.fetch_user(r['target_user_id'])
+                lines.append(f"{u1.display_name} → {u2.display_name}: {r['cnt']}")
+            embed.add_field(name="\U0001f91d Top Pairs", value="\n".join(lines), inline=False)
+
+        await ctx.send(embed=embed)
+
+    @actionstats.command(name='between')
+    async def actionstats_between(self, ctx: DVVTcontext, user1: discord.User, user2: discord.User = None):
+        """
+        Show mutual action stats between you and another user.
+        """
+        guild_id = ctx.guild.id
+        pool = self.client.db
+
+        if user2 is None:
+            user2 = user1
+            user1 = ctx.author
+
+        rows = await pool.fetch(
+            """
+            SELECT action, COUNT(*) AS cnt
+              FROM actions
+             WHERE guild_id=$1
+               AND ((user_id=$2 AND target_user_id=$3)
+                 OR (user_id=$3 AND target_user_id=$2))
+             GROUP BY action
+             ORDER BY cnt DESC
+             LIMIT 5
+            """, guild_id, user1.id, user2.id
+        )
+        if not rows:
+            return await ctx.send(
+                f"No interactions recorded between **{user1.display_name}** and **{user2.display_name}**.")
+
+        desc = "\n".join(f"{r['action'].capitalize()}: {r['cnt']}" for r in rows)
+        embed = discord.Embed(
+            title=f"Actions Between {user1.display_name} & {user2.display_name}",
+            colour=discord.Colour.blurple(),
+            timestamp=discord.utils.utcnow()
+        )
+        if ctx.guild.icon:
+            embed.set_thumbnail(url=ctx.guild.icon.url)
+        embed.add_field(name="🔄 Top Actions", value=desc, inline=False)
+        await ctx.send(embed=embed)
+
