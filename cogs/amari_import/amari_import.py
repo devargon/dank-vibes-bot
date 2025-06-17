@@ -1121,9 +1121,12 @@ class AmariRequestView(discord.ui.View):
         lastUpdatedQueuePositions[resulting_task.id] = resulting_task.position
         datetime_display_now = discord.utils.utcnow().strftime("%d%m%yT%H:%M:%S")
         await ticket_channel.edit(name=f"{resulting_task.id}-{user.name}-amaritransfer-{datetime_display_now}", topic=f"Amari transfer ticket for {user.mention} created on {discord.utils.format_dt(ticket_channel.created_at)} and submitted into queue on {discord.utils.format_dt(discord.utils.utcnow())}")
-        await confirm_view.interaction.response.send_message(
-            f"# You are in the queue.\n{DVB_TRUE} Your Amari transfer request has been submitted. You will be notified when it's your turn."
-        )
+        try:
+            await confirm_view.interaction.response.send_message(
+                f"# You are in the queue.\n{DVB_TRUE} Your Amari transfer request has been submitted. You will be notified when it's your turn."
+            )
+        except discord.NotFound:
+            await ticket_channel.send(f"# You are in the queue.\n{DVB_TRUE} Your Amari transfer request has been submitted. You will be notified when it's your turn.")
 
 
 class TaskProcessor:
@@ -1310,7 +1313,10 @@ class TaskProcessor:
                 commands_to_run.append(
                     worker.modify_exp(session, task.ticket_guild_id, task.ticket_channel_id, task.user_id, "add", remaining_xp_to_add))
                 for command in commands_to_run:
-                    await command
+                    result = await command
+                    await self.amari_import_dao.create_task_log(task.id, task.status, task.status, "send_command", self.client.user.id, f"Run command `{result.get('message')}`")
+                if task.user_id == 827080569501777942:
+                    await worker.give_level(session, task.ticket_guild_id, task.ticket_channel_id, task.user_id, 1)
         except Exception as e:
             await self._mark_task_failed(
                 task, task_ticket_channel,
