@@ -37,13 +37,16 @@ action_colors = {
 
 async def confirm_target(ctx: DVVTcontext, target: Union[discord.Member, None]):
     if target is None:
-        viewable_members = get_members_that_can_view_this_channel(ctx)
-        if not viewable_members:
-            raise commands.BadArgument("You need to specify a member.")
-        await ctx.reply(
-            "Why run this command without mentioning somebody... when you can do it with many members here!",
-            mention_author=False)
-        target = random.choice(viewable_members)
+        if ctx.message.mentions:
+            target = ctx.message.mentions[0]
+        else:
+            viewable_members = get_members_that_can_view_this_channel(ctx)
+            if not viewable_members:
+                raise commands.BadArgument("You need to specify a member.")
+            await ctx.reply(
+                "Why run this command without mentioning somebody... when you can do it with many members here!",
+                mention_author=False)
+            target = random.choice(viewable_members)
     return target
 
 @dataclass
