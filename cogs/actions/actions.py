@@ -355,7 +355,15 @@ class Actions(commands.Cog, name='actions'):
         """
         target = await confirm_target(ctx, target)
         hug_result = await self.nekosbest.fetch("hug")
-        chosen_string = random.choice(strings.get("hug").get("description")).format(invocator=ctx.author.mention, target=target.mention)
+        if (
+            ctx.author.id == 542905463541465088 and target.id == 1100012514110095361
+        ) or (
+                ctx.author.id == 1100012514110095361 and target.id == 542905463541465088
+        ):
+            chosen_string = "{invocator}'s bulge touches {target} while hugging 😳"
+        else:
+            chosen_string = random.choice(strings.get("hug").get("description"))
+        chosen_string = chosen_string.format(invocator=ctx.author.mention, target=target.mention)
         color = random.choice(warm_colors)
         new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "hug", target.id)
         n_times_display = "once" if new_count == 1 else f"{new_count} times"
