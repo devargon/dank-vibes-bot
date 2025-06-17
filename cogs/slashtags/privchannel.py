@@ -145,5 +145,13 @@ class PrivChannelTags(commands.Cog):
             return await ctx.respond(embed=discord.Embed(title=DVB_FALSE + " Failed", description="You don't own a private channel.", color=discord.Color.red()))
         if channel.edit_name is not True:
             return await ctx.respond(embed=discord.Embed(title=DVB_FALSE + " Failed", description="You are not allowed to edit your private channel's topic. For more information, open a ticket in <#870880772985344010>.", color=discord.Color.red()))
-        await channel.channel.edit(topic=channel_topic)
+        try:
+            await channel.channel.edit(topic=channel_topic)
+        except discord.HTTPException as e:
+            if "Channel topic contains at least one word that is not allowed." in e.text:
+                return await ctx.respond(embed=discord.Embed(title=DVB_FALSE + " failed",
+                                                             description="Your new channel topic contains words not allowed under Discord's Server Discovery Guidelines. Please choose another channel topic.",
+                                                             color=discord.Color.red()))
+            else:
+                raise (e)
         await ctx.respond(embed=discord.Embed(title=DVB_TRUE + " Channel topic changed", description=f"Your private channel {channel.channel.mention}'s topic has been changed.", color=discord.Color.green()))
