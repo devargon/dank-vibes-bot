@@ -12,8 +12,9 @@ from utils.menus import CustomMenu
 import json
 from utils.buttons import *
 from utils.paginator import SingleMenuPaginator
+from custom_emojis import DVB_TRUE, DVB_FALSE, DVB_NEUTRAL, DVB_CHECKMARK, DVB_CROSSMARK
 
-emojis = ["<:DVB_checkmark:955345523139805214>", "<:DVB_crossmark:955345521151737896>"]
+emojis = [DVB_CHECKMARK, DVB_CROSSMARK]
 
 class start_or_end(discord.ui.View):
     def __init__(self, ctx: DVVTcontext, client, timeout):
@@ -97,7 +98,7 @@ class LockdownPagination:
     def format_page(self, page):
         embed = discord.Embed(color=self.client.embed_color, title=self.title, timestamp=discord.utils.utcnow())
         embed.description = "\n".join(page)
-        embed.add_field(name="Legend", value="<:DVB_Neutral:887589643686670366> `-` Unknown\n<:DVB_False:887589731515392000> `-` **Locked** for <@&649499248320184320>\n<:DVB_True:887589686808309791> `-` **Unlocked** for <@&649499248320184320>")
+        embed.add_field(name="Legend", value=f"{DVB_NEUTRAL} `-` Unknown\n{DVB_FALSE} `-` **Locked** for <@&649499248320184320>\n{DVB_TRUE} `-` **Unlocked** for <@&649499248320184320>")
         embed.set_footer(text="The lockdown status may not be 100% accurate.")
         return embed
 
@@ -195,11 +196,11 @@ View the guide on https://docs.dvbot.nogra.xyz/commands/mod/tools/#lockdown-star
                     peepo = ctx.guild.default_role if os.getenv('state') == '1' else ctx.guild.get_role(649499248320184320)
                     able_to_speak = channel.permissions_for(peepo).send_messages
                     if able_to_speak:
-                        emoji = "<:DVB_True:887589686808309791>"
+                        emoji = DVB_TRUE
                     elif able_to_speak == False:
-                        emoji = "<:DVB_False:887589731515392000>"
+                        emoji = DVB_FALSE
                     else:
-                        emoji = "<:DVB_Neutral:887589643686670366>"
+                        emoji = DVB_NEUTRAL
                     channel_list.append(f"{emoji} `|` {channel.mention}")
             if deleted_channels > 0:
                 channel_list.append(
@@ -220,9 +221,9 @@ View the guide on https://docs.dvbot.nogra.xyz/commands/mod/tools/#lockdown-star
             msgcontent = ""
             for profile in profiles:
                 channels = await self.client.db.fetch("SELECT * FROM lockdownprofiles WHERE profile_name = $1 and guild_id = $2", profile, ctx.guild.id)
-                unlocked = "<:DVB_True:887589686808309791>"
-                locked = "<:DVB_False:887589731515392000>"
-                neutral = "<:DVB_Neutral:887589643686670366>"
+                unlocked = DVB_TRUE
+                locked = DVB_FALSE
+                neutral = DVB_NEUTRAL
                 channel_list = {}
                 channel_list[unlocked] = 0
                 channel_list[locked] = 0

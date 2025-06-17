@@ -8,6 +8,7 @@ import asyncio
 from utils.format import plural, proper_userf
 from utils.helper import get_channel_capacity
 from utils.specialobjects import PrivateChannel
+from custom_emojis import DVB_TRUE, DVB_FALSE
 
 
 class PrivChannelTags(commands.Cog):
@@ -34,20 +35,20 @@ class PrivChannelTags(commands.Cog):
         """
         channel = await self.get_owner_channel(ctx.author)
         if channel is None:
-            return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Channel rename failed", description="You don't own a private channel.", color=discord.Color.red()))
+            return await ctx.respond(embed=discord.Embed(title=DVB_FALSE + " Channel rename failed", description="You don't own a private channel.", color=discord.Color.red()))
         if channel.edit_name is not True:
-            return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Channel rename failed", description="You are not allowed to rename your private channel. For more information, open a ticket in <#870880772985344010>.", color=discord.Color.red()))
+            return await ctx.respond(embed=discord.Embed(title=DVB_FALSE + " Channel rename failed", description="You are not allowed to rename your private channel. For more information, open a ticket in <#870880772985344010>.", color=discord.Color.red()))
         old_channel_name = channel.channel.name
         try:
             await channel.channel.edit(name=channel_name)
         except discord.HTTPException as e:
             if "In name: Contains words not allowed for servers in Server Discovery." in e.text:
-                return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Channel rename failed",
+                return await ctx.respond(embed=discord.Embed(title=DVB_FALSE + " Channel rename failed",
                                                          description="Your new channel name contains words not allowed under Discord's Server Discovery Guidelines. Please choose another channel name.",
                                                          color=discord.Color.red()))
             else:
                 raise(e)
-        await ctx.respond(embed=discord.Embed(title="<:DVB_True:887589686808309791> Channel renamed", description=f"Your private channel has been renamed from **{old_channel_name}** to {channel.channel.mention}.", color=discord.Color.green()))
+        await ctx.respond(embed=discord.Embed(title=DVB_TRUE + " Channel renamed", description=f"Your private channel has been renamed from **{old_channel_name}** to {channel.channel.mention}.", color=discord.Color.green()))
 
     @pvcGroup.command(name="add")
     async def add(self, ctx: discord.ApplicationContext, member: discord.Option(discord.Member, "A friend you want to add to your private channel.")):
@@ -56,17 +57,17 @@ class PrivChannelTags(commands.Cog):
         """
         channel = await self.get_owner_channel(ctx.author)
         if channel is None:
-            return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Failed", description="You don't own a private channel.", color=discord.Color.red()))
+            return await ctx.respond(embed=discord.Embed(title=DVB_FALSE + " Failed", description="You don't own a private channel.", color=discord.Color.red()))
         if channel.add_members is not True:
-            return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Failed", description="You are not allowed to add members to your private channel. For more information, open a ticket in <#870880772985344010>.", color=discord.Color.red()))
+            return await ctx.respond(embed=discord.Embed(title=DVB_FALSE + " Failed", description="You are not allowed to add members to your private channel. For more information, open a ticket in <#870880772985344010>.", color=discord.Color.red()))
         if member in channel.channel.overwrites:
-            return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Failed", description=f"{member.mention} is already in your private channel {channel.channel.mention}.", color=discord.Color.red()))
+            return await ctx.respond(embed=discord.Embed(title=DVB_FALSE + " Failed", description=f"{member.mention} is already in your private channel {channel.channel.mention}.", color=discord.Color.red()))
         members = [overwriteobject for overwriteobject in channel.channel.overwrites if isinstance(overwriteobject, discord.Member) and not overwriteobject.bot]
         if ctx.author in members:
             members.remove(ctx.author)
         if len(members) >= get_channel_capacity(ctx.author) and channel.ignore_member_limit is not True:
             minimum_removal = len(members) - get_channel_capacity(ctx.author) + 1
-            return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Failed", description=f"Your private channel {channel.channel.mention} is full.\n\nYou need to remove **{plural(minimum_removal):member}** from your channel via </privchannel remove:1020235323785105418>.\nSee your channel capacity and members via </privchannel view:1020235323785105418>.", color=discord.Color.red()))
+            return await ctx.respond(embed=discord.Embed(title=DVB_FALSE + " Failed", description=f"Your private channel {channel.channel.mention} is full.\n\nYou need to remove **{plural(minimum_removal):member}** from your channel via </privchannel remove:1020235323785105418>.\nSee your channel capacity and members via </privchannel view:1020235323785105418>.", color=discord.Color.red()))
         overwrite = discord.PermissionOverwrite(
             view_channel=True,
             send_messages=True,
@@ -78,7 +79,7 @@ class PrivChannelTags(commands.Cog):
             read_message_history=True
         )
         await channel.channel.set_permissions(member, overwrite=overwrite)
-        await ctx.respond(embed=discord.Embed(title="<:DVB_True:887589686808309791> Success", description=f"{member.mention} has been added to your private channel {channel.channel.mention}.", color=discord.Color.green()))
+        await ctx.respond(embed=discord.Embed(title=DVB_TRUE + " Success", description=f"{member.mention} has been added to your private channel {channel.channel.mention}.", color=discord.Color.green()))
 
     @pvcGroup.command(name="remove")
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -88,13 +89,13 @@ class PrivChannelTags(commands.Cog):
         """
         channel = await self.get_owner_channel(ctx.author)
         if channel is None:
-            return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Failed", description="You don't own a private channel.", color=discord.Color.red()))
+            return await ctx.respond(embed=discord.Embed(title=DVB_FALSE + " Failed", description="You don't own a private channel.", color=discord.Color.red()))
         if channel.remove_members is not True:
-            return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Failed", description="You are not allowed to remove members from your private channel. For more information, open a ticket in <#870880772985344010>.", color=discord.Color.red()))
+            return await ctx.respond(embed=discord.Embed(title=DVB_FALSE + " Failed", description="You are not allowed to remove members from your private channel. For more information, open a ticket in <#870880772985344010>.", color=discord.Color.red()))
         if member not in channel.channel.overwrites:
-            return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Failed", description=f"{member.mention} is not in your private channel {channel.channel.mention}.", color=discord.Color.red()))
+            return await ctx.respond(embed=discord.Embed(title=DVB_FALSE + " Failed", description=f"{member.mention} is not in your private channel {channel.channel.mention}.", color=discord.Color.red()))
         await channel.channel.set_permissions(member, overwrite=None)
-        await ctx.respond(embed=discord.Embed(title="<:DVB_True:887589686808309791> Success", description=f"{member.mention} has been removed from your private channel {channel.channel.mention}.", color=discord.Color.green()))
+        await ctx.respond(embed=discord.Embed(title=DVB_TRUE + " Success", description=f"{member.mention} has been removed from your private channel {channel.channel.mention}.", color=discord.Color.green()))
 
     @pvcGroup.command(name="view")
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -104,7 +105,7 @@ class PrivChannelTags(commands.Cog):
         """
         channel = await self.get_owner_channel(ctx.author)
         if channel is None:
-            return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Failed", description="You don't own a private channel.", color=discord.Color.red()))
+            return await ctx.respond(embed=discord.Embed(title=DVB_FALSE + " Failed", description="You don't own a private channel.", color=discord.Color.red()))
         owner = ctx.author
         members = [overwriteobject for overwriteobject in channel.channel.overwrites if isinstance(overwriteobject, discord.Member) and not overwriteobject.bot] # gets all members who have some sort of overwrite in that channel
         membersin = []
@@ -118,7 +119,7 @@ class PrivChannelTags(commands.Cog):
         if owner is not None:
             owner_str = f"**{owner}** {owner.mention}"
             if not (channel.channel.permissions_for(owner).send_messages and channel.channel.permissions_for(owner).view_channel):
-                owner_str += "\n<:DVB_False:887589731515392000>  Not in channel"
+                owner_str += f"\n{DVB_FALSE} Not in channel"
         else:
             owner_str = "Unknown"
 
@@ -141,8 +142,16 @@ class PrivChannelTags(commands.Cog):
         """
         channel = await self.get_owner_channel(ctx.author)
         if channel is None:
-            return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Failed", description="You don't own a private channel.", color=discord.Color.red()))
+            return await ctx.respond(embed=discord.Embed(title=DVB_FALSE + " Failed", description="You don't own a private channel.", color=discord.Color.red()))
         if channel.edit_name is not True:
-            return await ctx.respond(embed=discord.Embed(title="<:DVB_False:887589731515392000> Failed", description="You are not allowed to edit your private channel's topic. For more information, open a ticket in <#870880772985344010>.", color=discord.Color.red()))
-        await channel.channel.edit(topic=channel_topic)
-        await ctx.respond(embed=discord.Embed(title="<:DVB_True:887589686808309791> Channel topic changed", description=f"Your private channel {channel.channel.mention}'s topic has been changed.", color=discord.Color.green()))
+            return await ctx.respond(embed=discord.Embed(title=DVB_FALSE + " Failed", description="You are not allowed to edit your private channel's topic. For more information, open a ticket in <#870880772985344010>.", color=discord.Color.red()))
+        try:
+            await channel.channel.edit(topic=channel_topic)
+        except discord.HTTPException as e:
+            if "Channel topic contains at least one word that is not allowed." in e.text:
+                return await ctx.respond(embed=discord.Embed(title=DVB_FALSE + " failed",
+                                                             description="Your new channel topic contains words not allowed under Discord's Server Discovery Guidelines. Please choose another channel topic.",
+                                                             color=discord.Color.red()))
+            else:
+                raise (e)
+        await ctx.respond(embed=discord.Embed(title=DVB_TRUE + " Channel topic changed", description=f"Your private channel {channel.channel.mention}'s topic has been changed.", color=discord.Color.green()))

@@ -17,6 +17,7 @@ from openai import AsyncOpenAI
 from openai.types import CompletionUsage
 from openai.types.chat import ChatCompletion
 
+from custom_emojis import DVB_TRUE, DVB_FALSE
 from utils.buttons import SingleURLButton
 from utils.format import human_join, durationdisplay, proper_userf, print_exception
 
@@ -56,9 +57,9 @@ class GPTMessageAnalysisException(Exception):
 
 def return_emoji(truefalse: bool):
     if truefalse:
-        return "<:DVB_True:887589686808309791> "
+        return DVB_TRUE
     else:
-        return "<:DVB_False:887589731515392000>"
+        return DVB_FALSE
 
 
 async def extract_text_from_image(url):

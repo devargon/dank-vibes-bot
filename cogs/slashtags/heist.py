@@ -3,6 +3,8 @@ import math
 import re
 import discord
 from discord.ext import commands
+
+from custom_emojis import DVB_FALSE
 from main import dvvt
 from utils.buttons import SingleURLButton
 from utils.format import human_join, comma_number, plural
@@ -80,9 +82,9 @@ class HeistTags(commands.Cog):
         serverheists_channel = ctx.guild.get_channel(serverheists_channel_id)
         heistannouncements_channel = ctx.guild.get_channel(heistannouncements_channel_id)
         if serverheists_channel is None:
-            return await ctx.respond("**Fatal error**\n<:DVB_False:887589731515392000> The **server heists** channel is not found.", ephemeral=True)
+            return await ctx.respond(f"**Fatal error**\n{DVB_FALSE} The **server heists** channel is not found.", ephemeral=True)
         if heistannouncements_channel is None:
-            return await ctx.respond("**Fatal error**\n<:DVB_False:887589731515392000> The **heist announcements** channel is not found.", ephemeral=True)
+            return await ctx.respond(f"**Fatal error**\n{DVB_FALSE} The **heist announcements** channel is not found.", ephemeral=True)
         await ctx.defer(ephemeral=True)
         # consolidate sponsors into a list if sponsors are not none
         sponsors = [sponsor1, sponsor2, sponsor3, sponsor4, sponsor5, sponsor6, sponsor7, sponsor8, sponsor9, sponsor10]
@@ -91,7 +93,7 @@ class HeistTags(commands.Cog):
             if i is not None and i not in sponsors_filtered:
                 sponsors_filtered.append(i)
         if len(sponsors_filtered) == 0:
-            return await ctx.respond("**Fatal error**\n<:DVB_False:887589731515392000> You must have specified at least 1 sponsor.", ephemeral=True)
+            return await ctx.respond(f"**Fatal error**\n{DVB_FALSE} You must have specified at least 1 sponsor.", ephemeral=True)
         sponsors_str = human_join([f"{sponsor.mention}" for sponsor in sponsors_filtered], final="and")
         requirement_str = requirement.mention if requirement is not None else None
         server_heists_embed = discord.Embed(title=f"{currency} {comma_number(amount)} Heist", description=f"**Requirement:** {requirement_str}\nSponsors: {sponsors_str}", color=self.client.embed_color)
@@ -101,7 +103,7 @@ class HeistTags(commands.Cog):
         try:
             await serverheists_channel.send(embed=server_heists_embed)
         except Exception as e:
-            return await ctx.respond(f"**Fatal error**\n<:DVB_False:887589731515392000> Failed to send the heist embed in `{serverheists_channel}`.\n```py\n# More details\n{e}```", ephemeral=True)
+            return await ctx.respond(f"**Fatal error**\n{DVB_FALSE} Failed to send the heist embed in `{serverheists_channel}`.\n```py\n# More details\n{e}```", ephemeral=True)
 
         info_embed = discord.Embed(title=f"{currency} {comma_number(amount)}", description=f"React with <a:dv_iconOwO:837943874973466664> below\nSponsors: {sponsors_str}\nTimer: □□□□□□□□□□", color=self.client.embed_color)
         info_embed.add_field(name="Requirement", value=f"{requirement_str}", inline=False)
@@ -117,7 +119,7 @@ class HeistTags(commands.Cog):
         try:
             info_message = await heistannouncements_channel.send(ping + "\n🎉 **DANK VIBES HEIST** 🎉", embed=info_embed, allowed_mentions=discord.AllowedMentions(everyone=False, roles=True))
         except Exception as e:
-            return await ctx.respond(f"**Fatal error**\n<:DVB_False:887589731515392000> Failed to send the heist embed in `{heistannouncements_channel}`.\n```py\n# More details\n{e}```", ephemeral=True, view=SafeToDismiss())
+            return await ctx.respond(f"**Fatal error**\n{DVB_FALSE} Failed to send the heist embed in `{heistannouncements_channel}`.\n```py\n# More details\n{e}```", ephemeral=True, view=SafeToDismiss())
         timer = 0
         thx_embed = discord.Embed(title=f"<a:DVpopper:904267438839959553> {currency} {comma_number(amount)} HEIST <a:DVpopper:904267438839959553>", description=f"<:dv_itPepeCrownOwO:857898556487761951> Thank {sponsors_str} for the heist in <#608498967474601995> <:dv_itPepeCrownOwO:857898556487761951>\n\nIf you wish to host a heist run `/hdonate <amount> [optional level req]` in <#786944439360290826> `[Minimum: 10,000,000]`")
         thx_embed.set_thumbnail(url=ctx.guild.icon.with_size(128).url)

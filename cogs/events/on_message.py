@@ -8,6 +8,7 @@ import re
 import textwrap
 
 import typing
+import warnings
 
 import aiohttp
 
@@ -20,6 +21,7 @@ from time import time
 from datetime import datetime
 import pytz
 from utils.context import DVVTcontext
+from custom_emojis import DVB_TRUE, DVB_FALSE
 
 modcommands_id = 978563862896967681 if os.getenv('state') == '1' else 1376848574247206972
 dankmemerplayerrole_id = 982153033523793950 if os.getenv('state') == '1' else 837594909917708298
@@ -96,9 +98,9 @@ def get_channel_name(channel: discord.abc.GuildChannel):
 
 def return_emoji(truefalse: bool):
     if truefalse:
-        return "<:DVB_True:887589686808309791> "
+        return DVB_TRUE
     else:
-        return "<:DVB_False:887589731515392000>"
+        return DVB_FALSE
 
 class GetDankMemerPlayerRole(discord.ui.Button):
     def __init__(self):
@@ -107,7 +109,7 @@ class GetDankMemerPlayerRole(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         if (role := interaction.guild.get_role(dankmemerplayerrole_id)) is not None:
             await interaction.user.add_roles(role)
-            await interaction.response.send_message(f"<:DVB_True:887589686808309791> Added **{role.name}**!\nNow head to a Dank Memer Bot channel to use the bot.", view=ChannelOnlyView(), ephemeral=True)
+            await interaction.response.send_message(f"{DVB_TRUE} Added **{role.name}**!\nNow head to a Dank Memer Bot channel to use the bot.", view=ChannelOnlyView(), ephemeral=True)
 
 
 class GoToChannel(discord.ui.Button):
@@ -142,6 +144,11 @@ class OnMessage(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        # DeprecationWarning: interaction is deprecated since version 2.6,
+        # consider using interaction_metadata instead.
+        # See https://discord.com/developers/docs/change-log#userinstallable-apps-preview for more information.
+        # if message.interaction_metadata is not None and message.interaction.name == "setup" and self.mafia_wait is not True:
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
         try:
             if message.guild is None and message.author.id == self.client.user.id and isinstance(message.channel, discord.DMChannel) and message.webhook_id is None:
                 try:
@@ -265,7 +272,7 @@ class OnMessage(commands.Cog):
                         await message.reply(offender_msg)
                     except Exception as e:
                         await message.channel.send(offender_msg)
-        if message.interaction is not None and message.interaction.name == "setup" and self.mafia_wait is not True:
+        if message._raw_data.get("interaction") is not None and message._raw_data["interaction"].get("name") == "setup" and self.mafia_wait is not True:
             lounge_category = 1288032530569625661 if message.guild.id == 1288032530569625660 else 875316745416617984
             if message.channel.id == 1340040237853839360 or discord.utils.get(message.author.roles, id=735417263968223234) or discord.utils.get(message.author.roles, id=724971657143255170) or message.author.guild_permissions.manage_roles:
                 #         it will treat it as a to be monitored game if it's in events, or user is a modm+/event hoster or event sponsor

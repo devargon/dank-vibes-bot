@@ -20,6 +20,8 @@ from utils.context import DVVTcontext
 from utils.format import plural, box, ordinal, proper_userf
 from utils.paginator import SingleMenuPaginator
 from utils.specialobjects import Contest, ContestSubmission
+from custom_emojis import DVB_TRUE, DVB_FALSE, DVB_CROSSMARK, DVB_CHECKMARK, DVB_LOAD_RED, DVB_LOAD_YELLOW, \
+    DVB_LOAD_GREEN
 
 media_events_id = 978493758427512853 if os.getenv('state') == '1' else 685237146415792128
 
@@ -60,7 +62,7 @@ class RemoveVote(discord.ui.View):
         self.original_message_id = original_message_id
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Remove Vote", disabled=False, style=discord.ButtonStyle.red, emoji=discord.PartialEmoji.from_str('<:DVB_crossmark:955345521151737896>'))
+    @discord.ui.button(label="Remove Vote", disabled=False, style=discord.ButtonStyle.red, emoji=discord.PartialEmoji.from_str(DVB_CROSSMARK))
     async def callback(self, button: discord.ui.Button, interaction: discord.Interaction):
         contest_id = await self.client.db.fetchval("SELECT contest_id FROM contest_submissions WHERE msg_id = $1", self.original_message_id)
         if contest_id is None:
@@ -165,10 +167,12 @@ class interactionconfirm(discord.ui.View):
         self.response = None
         self.client = client
         self.returning_value = None
+        self.interaction = None
         super().__init__(timeout=30.0)
 
     @discord.ui.button(label="Yes", style=discord.ButtonStyle.green)
     async def yes(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.interaction = interaction
         self.returning_value = True
         for b in self.children:
             if b != button:
@@ -182,6 +186,7 @@ class interactionconfirm(discord.ui.View):
 
     @discord.ui.button(label="No", style=discord.ButtonStyle.red)
     async def no(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.interaction = interaction
         self.returning_value = False
         for b in self.children:
             if b != button:
@@ -232,12 +237,12 @@ class VoteView(discord.ui.View):
                     else:
                         return await interaction.followup.send(f"This contest is still in the **submission stage**. Voting will start after Submission of entries are over.", ephemeral=True)
                 successembed = discord.Embed(
-                    title=f"<:DVB_True:887589686808309791> You have voted for Submission #{submission.entry_id}!",
+                    title=f"{DVB_TRUE} You have voted for Submission #{submission.entry_id}!",
                     description="The results of voting will be out when the contest is over.",
                     color=self.view.client.embed_color)
                 if (vote := await self.view.client.db.fetchrow("SELECT * FROM contest_votes WHERE contest_id = $1 AND user_id = $2", submission.contest_id, interaction.user.id)) is not None:
                     if vote.get('entry_id') == submission.entry_id:
-                        successembed.title = f"<:DVB_True:887589686808309791> You already voted for this entry."
+                        successembed.title = f"{DVB_TRUE} You already voted for this entry."
                         return await interaction.followup.send(embed=successembed, view=RemoveVote(self.view.client, interaction.message.id), ephemeral=True)
                     confirmview = interactionconfirm(interaction.user, self.view.client, 30.0)
                     confirmview.response = await interaction.followup.send(f"You have previously voted for [this entry](https://discord.com/channels/{interaction.guild.id}/{contest.contest_channel_id}/{submission.msg_id}).\nAre you sure you want to change your vote?", view=confirmview, wait=True, ephemeral=True)
@@ -246,7 +251,7 @@ class VoteView(discord.ui.View):
                         return
                     await self.view.client.db.execute("DELETE FROM contest_votes WHERE contest_id = $1 AND user_id = $2", submission.contest_id, interaction.user.id)
                 await self.view.client.db.execute("INSERT INTO contest_votes(contest_id, entry_id, user_id) VALUES($1, $2, $3)", contest.contest_id, submission.entry_id, interaction.user.id)
-                successembed = discord.Embed(title=f"<:DVB_True:887589686808309791> You have voted for Submission #{submission.entry_id}!", description="The results of voting will be out when the contest is over.", color=self.view.client.embed_color)
+                successembed = discord.Embed(title=f"{DVB_TRUE} You have voted for Submission #{submission.entry_id}!", description="The results of voting will be out when the contest is over.", color=self.view.client.embed_color)
                 await interaction.followup.send(embed=successembed, view=RemoveVote(self.view.client, interaction.message.id), ephemeral=True)
 
         self.add_item(Vote(style=discord.ButtonStyle.green, emoji=discord.PartialEmoji.from_str("<:DVB_Upvote:977772469945499709>"), custom_id='contestvote', disabled=self.disabled))
@@ -361,8 +366,8 @@ class SubmissionApproval(discord.ui.View):
                 else:
                     await interaction.response.send_message("This submission has no embed.", ephemeral=True)
 
-        self.add_item(item=Approve(custom_id=f"{contest_id}:{entry_id}:{submitter_id}:approve", emoji=discord.PartialEmoji.from_str("<:DVB_checkmark:955345523139805214>"), style=discord.ButtonStyle.green))
-        self.add_item(item=Deny(custom_id=f"{contest_id}:{entry_id}:{submitter_id}:deny", emoji=discord.PartialEmoji.from_str("<:DVB_crossmark:955345521151737896>"), style=discord.ButtonStyle.red))
+        self.add_item(item=Approve(custom_id=f"{contest_id}:{entry_id}:{submitter_id}:approve", emoji=discord.PartialEmoji.from_str(DVB_CHECKMARK), style=discord.ButtonStyle.green))
+        self.add_item(item=Deny(custom_id=f"{contest_id}:{entry_id}:{submitter_id}:deny", emoji=discord.PartialEmoji.from_str(DVB_CROSSMARK), style=discord.ButtonStyle.red))
         self.add_item(item=FixImageButton(custom_id=f"abcdefg", label="Fix Image", style=discord.ButtonStyle.grey))
 
 
@@ -374,9 +379,9 @@ class GetMediaEventsPing(discord.ui.View):
     async def callback(self, button: discord.ui.Button, interaction: discord.Interaction):
         if not discord.utils.get(interaction.user.roles, name="Heist Ping"):
             await interaction.user.add_roles(interaction.guild.get_role(media_events_id))
-            await interaction.response.send_message(f"<:DVB_True:887589686808309791> The <@&{media_events_id}> role has been added to you!", ephemeral=True)
+            await interaction.response.send_message(f"{DVB_TRUE} The <@&{media_events_id}> role has been added to you!", ephemeral=True)
         else:
-            await interaction.response.send_message(f"<:DVB_True:887589686808309791> You already have the <@&{media_events_id}> role.", ephemeral=True)
+            await interaction.response.send_message(f"{DVB_TRUE} You already have the <@&{media_events_id}> role.", ephemeral=True)
 
 class Contests(commands.Cog):
     def __init__(self, client):
@@ -518,7 +523,7 @@ class Contests(commands.Cog):
                 stepsembed.set_footer(text="An error occurred. Your submission was not uploaded, please try again later.")
                 return stepsembed
             step = 0
-            emojis = ["<a:DVB_CLoad3:994913503771111515>", "<a:DVB_CLoad2:994913353388527668>", "<a:DVB_CLoad1:994913315442663475>"]
+            emojis = [DVB_LOAD_RED, DVB_LOAD_YELLOW, DVB_LOAD_GREEN]
             steps = ["Making sure your submission follows the rules...", "Uploading your submission...", "Almost there... <:dv_bunbunWaitOwO:837691330800648262>"]
             stepsembed.description = f"`[{step+1}/3]` {emojis[step]} {steps[step]}"
             contest_obj = Contest(contest_obj)
@@ -539,9 +544,9 @@ class Contests(commands.Cog):
                     filename = submission.filename.split('.')
                     if len(filename) > 1:
                         extension = filename[-1]
-                        stepsembed.description = f"<:DVB_False:887589731515392000> You can only submit a JPEG, PNG, APNG, GIF or WEBP image for the contest.\n\nConvert your submission to a suitable format (such as JPEG or PNG) and try to submit again.\nhttps://www.google.com/search?q={extension}+to+jpeg+png+converter"
+                        stepsembed.description = f"{DVB_FALSE} You can only submit a JPEG, PNG, APNG, GIF or WEBP image for the contest.\n\nConvert your submission to a suitable format (such as JPEG or PNG) and try to submit again.\nhttps://www.google.com/search?q={extension}+to+jpeg+png+converter"
                     else:
-                        stepsembed.description = "<:DVB_False:887589731515392000> You can only submit a JPEG, PNG, APNG, GIF or WEBP image for the contest.\n\nConvert your submission to a suitable format (such as JPEG or PNG) and try to submit again."
+                        stepsembed.description = f"{DVB_FALSE} You can only submit a JPEG, PNG, APNG, GIF or WEBP image for the contest.\n\nConvert your submission to a suitable format (such as JPEG or PNG) and try to submit again."
                     stepsembed = fatal_error_format_embed("Failed to submit: Wrong file format")
                     return await stepsmsg.edit(embed=stepsembed)
                 #Check if previously submitted
@@ -576,7 +581,7 @@ class Contests(commands.Cog):
                 try:
                     final_url, status = await upload_file_to_bunnycdn(submission_content, filename, 'contest_files')
                 except aiohttp.ClientResponseError as e:
-                    stepsembed = fatal_error_format_embed("Failed to submit: Upload Error", f"<:DVB_False:887589731515392000> I failed to upload your file to our image host. Please try again later.\nSorry for the inconvenience!")
+                    stepsembed = fatal_error_format_embed("Failed to submit: Upload Error", f"{DVB_FALSE} I failed to upload your file to our image host. Please try again later.\nSorry for the inconvenience!")
                     error_channel = self.client.get_channel(871737028105109574)
                     if error_channel is not None:
                         descriptions = [
@@ -587,10 +592,10 @@ class Contests(commands.Cog):
                         error_embed = discord.Embed(title="Error uploading submission file to Nogra CDN", description="\n".join(descriptions), color=discord.Color.red())
                         error_embed.add_field(name="Error", value=box(str(e)))
                         await error_channel.send(f"Error uploading file to Nogra CDN", embed=error_embed)
-                        stepsembed.description = f"<:DVB_False:887589731515392000> I failed to upload your file to our image host. The developer has been notified, please try again later.\nSorry for the inconvenience!"
+                        stepsembed.description = f"{DVB_FALSE} I failed to upload your file to our image host. The developer has been notified, please try again later.\nSorry for the inconvenience!"
                     return await stepsmsg.edit(embed=stepsembed)
                 except Exception as e:
-                    stepsembed = fatal_error_format_embed("Failed to submit: Unknown Error", f"<:DVB_False:887589731515392000> I failed to upload your file to our image host. Please try again later.\nSorry for the inconvenience!")
+                    stepsembed = fatal_error_format_embed("Failed to submit: Unknown Error", f"{DVB_FALSE} I failed to upload your file to our image host. Please try again later.\nSorry for the inconvenience!")
                     error_channel = self.client.get_channel(871737028105109574)
                     if error_channel is not None:
                         descriptions = [
@@ -601,7 +606,7 @@ class Contests(commands.Cog):
                                                     description="\n".join(descriptions), color=discord.Color.red())
                         error_embed.add_field(name="Error", value=box(str(e)))
                         await error_channel.send(f"Error uploading file to Nogra CDN", embed=error_embed)
-                        stepsembed.description = f"<:DVB_False:887589731515392000> I failed to upload your file to our image host. The developer has been notified, please try again later.\nSorry for the inconvenience!"
+                        stepsembed.description = f"{DVB_FALSE} I failed to upload your file to our image host. The developer has been notified, please try again later.\nSorry for the inconvenience!"
                     return await stepsmsg.edit(embed=stepsembed)
 
                 #Send to admin chat
@@ -651,7 +656,7 @@ class Contests(commands.Cog):
                     stepsembed.color = discord.Color.green()
                     stepsembed.title = "Successfully submitted!"
                     stepsembed.set_footer(text="Your submission has been processed! You may now close this message and wait for it to be approved. :)")
-                    stepsembed.description = f"<:DVB_True:887589686808309791> **Your submission has been sent to the admins for approval!**\nYou will be DMed about whether your submission is approved or not. Please keep your DMs with {self.client.user.name} open.\n\nAfter it is approved, your submission will appear on <#{contest_obj.contest_channel_id}>."
+                    stepsembed.description = f"{DVB_TRUE} **Your submission has been sent to the admins for approval!**\nYou will be DMed about whether your submission is approved or not. Please keep your DMs with {self.client.user.name} open.\n\nAfter it is approved, your submission will appear on <#{contest_obj.contest_channel_id}>."
                     await stepsmsg.edit(embed=stepsembed)
                 else:
                     await ctx.respond("I could not find a channel to send your entry to await approval.", ephemeral=True)

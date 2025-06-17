@@ -1,17 +1,16 @@
-aiohttp==3.7.4.post0
+aiohttp==3.7.4
 async-timeout==3.0.1
 asyncpg
 colorthief
-cycler==0.12.1
-py-cord==2.4.0
+cycler
+py-cord
 expr.py
 thefuzz[speed]
 humanize
-inflect==6.0.0
-kiwisolver==1.4.5
-matplotlib==3.8.3
+inflect
+googlesearch-python
+matplotlib
 numpy
-olefile==0.46
 pillow
 psutil
 pycparser
@@ -21,7 +20,6 @@ PySocks
 python-dateutil
 python-dotenv
 requests
-rply==0.7.8
 selenium
 six
 topggpy==1.4.0
@@ -31,9 +29,9 @@ wincertstore==0.2
 yarl
 alexflipnote.py
 more-itertools
-googletrans-py @ git+https://github.com/argo0n/googletrans
+googletrans-py @ git+https://github.com/devargon/googletrans
 hyper
-emoji==1.7.0
+emoji
 typing
 stemming
 httpcore==1.0.5
@@ -44,18 +42,15 @@ bugsnag
 amari.py
 python-Levenshtein
 filetype
-stringcase==1.2.0
-unidecode==1.3.4
-Wand==0.6.8
+stringcase
+unidecode
+Wand
 captcha
-stringcase==1.2.0
-unidecode==1.3.4
-Wand==0.6.8
 bleach
 pydantic==1.10.2
-pytesseract==0.3.10
+pytesseract
 openai
 chat_exporter @ git+https://github.com/nogra-xyz/DiscordChatExporterPy@2.8.0
 discord-ext-menus @ git+https://github.com/nogra-xyz/discord-ext-reaction-menus
 alexflipnote.py @ git+https://github.com/nogra-xyz/alexflipnote.py
-dpy-http-server @ git+https://github.com/argo0n/dpy-http-server
+dpy-http-server @ git+https://github.com/nogra-app/dpy-http-server

@@ -26,6 +26,8 @@ from utils.menus import CustomMenu
 from utils.converters import BetterTimeConverter, MemberUserConverter
 from utils.helper import generate_captcha, DynamicUpdater
 
+from custom_emojis import DVB_TRUE, DVB_FALSE
+
 import os
 from selenium import webdriver
 from thefuzz import process
@@ -45,10 +47,10 @@ class InputCaptcha(discord.ui.Modal):
         self.value = input
         self.children[0].value = ""
         if input.lower() == self.captchatext.lower():
-            await interaction.response.send_message("<:DVB_True:887589686808309791> You have successfully completed the captcha.", ephemeral=True)
+            await interaction.response.send_message(DVB_TRUE + " You have successfully completed the captcha.", ephemeral=True)
             self.stop()
         else:
-            await interaction.response.send_message("<:DVB_False:887589731515392000> The text you entered does not match, **please try again**.\nIf you're having trouble completing the captcha, open a ticket in <#870880772985344010>.", ephemeral=True)
+            await interaction.response.send_message(DVB_FALSE + " The text you entered does not match, **please try again**.\nIf you're having trouble completing the captcha, open a ticket in <#870880772985344010>.", ephemeral=True)
             self.stop()
 
 class CaptchaFrontView(discord.ui.View):
@@ -214,9 +216,9 @@ class GetHeistPing(discord.ui.View):
     async def callback(self, button: discord.ui.Button, interaction: discord.Interaction):
         if not discord.utils.get(interaction.user.roles, name="Heist Ping"):
             await interaction.user.add_roles(discord.utils.get(interaction.guild.roles, name="Heist Ping"))
-            await interaction.response.send_message("<:DVB_True:887589686808309791> The <@&758174643814793276> role has been added to you!", ephemeral=True)
+            await interaction.response.send_message(DVB_TRUE + " The <@&758174643814793276> role has been added to you!", ephemeral=True)
         else:
-            await interaction.response.send_message("<:DVB_True:887589686808309791> You already have the <@&758174643814793276> role.", ephemeral=True)
+            await interaction.response.send_message(DVB_TRUE + " You already have the <@&758174643814793276> role.", ephemeral=True)
 
 class PublicVoteView(discord.ui.View):
     def __init__(self):
@@ -225,9 +227,9 @@ class PublicVoteView(discord.ui.View):
     @discord.ui.button(label="See if you can join the heist later!", style=discord.ButtonStyle.green)
     async def callback(self, button: discord.ui.Button, interaction: discord.Interaction):
         if discord.utils.get(interaction.user.roles, name="DV Voter"):
-            await interaction.response.send_message("<:DVB_True:887589686808309791> **You currently have the <@&683884762997587998> role** and can join the heist!\nIf the heist hasn't started, get <@&758174643814793276> to be notified when it starts!", ephemeral=True, view=GetHeistPing())
+            await interaction.response.send_message(DVB_TRUE + " **You currently have the <@&683884762997587998> role** and can join the heist!\nIf the heist hasn't started, get <@&758174643814793276> to be notified when it starts!", ephemeral=True, view=GetHeistPing())
         else:
-            await interaction.response.send_message("<:DVB_False:887589731515392000> **You do not have the <@&683884762997587998> role.**\n` - ` Vote for Dank Vibes at https://top.gg/servers/1288032530569625660/vote, and click on the button again to see if you can join the heist!\n` - ` If you have voted for Dank Vibes but still do not have the role, open a ticket in <#870880772985344010> and inform a Mod there.", ephemeral=True)
+            await interaction.response.send_message(f"{DVB_FALSE} **You do not have the <@&683884762997587998> role.**\n` - ` Vote for Dank Vibes at https://top.gg/servers/1288032530569625660/vote, and click on the button again to see if you can join the heist!\n` - ` If you have voted for Dank Vibes but still do not have the role, open a ticket in <#870880772985344010> and inform a Mod there.", ephemeral=True)
 
 
 class ModlogPagination:
@@ -905,7 +907,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         created = role.created_at
         created = created.strftime("%d/%m/%Y %H:%M:%S")
         desc = [f"Color: **{color}**", f"Hoisted: **{hoisted}**", f"Members with this role: **{members}**",
-                f"Mentionable: **{'<:DVB_True:887589686808309791>' if mentionable else '<:DVB_False:887589731515392000>'}**",
+                f"Mentionable: **{DVB_TRUE if mentionable else DVB_FALSE}**",
                 f"Created on: **{created}**", '']
         icon = role.icon.url if role.icon else None
         if role.is_default():
@@ -1060,7 +1062,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         if await self.client.db.fetchrow("SELECT * FROM watchlist WHERE guild_id = $1 and user_id = $2 and target_id = $3", ctx.guild.id, ctx.author.id, target.id) is not None:
             return await ctx.send(f"**{target}** is already on your watchlist.")
         await self.client.db.execute("INSERT INTO watchlist (guild_id, user_id, target_id, remarks) VALUES ($1, $2, $3, $4)", ctx.guild.id, ctx.author.id, target.id, remarks)
-        await ctx.send(f"<:DVB_True:887589686808309791> Added **{target}** to your watchlist.")
+        await ctx.send(f"{DVB_TRUE} Added **{target}** to your watchlist.")
 
 
 
@@ -1080,7 +1082,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         if await self.client.db.fetchrow("SELECT * FROM watchlist WHERE guild_id = $1 and user_id = $2 and target_id = $3", ctx.guild.id, ctx.author.id, target.id) is not None:
             return await ctx.send(f"**{target}** is already on your watchlist.")
         await self.client.db.execute("INSERT INTO watchlist (guild_id, user_id, target_id, remarks) VALUES ($1, $2, $3, $4)", ctx.guild.id, ctx.author.id, target.id, remarks)
-        await ctx.send(f"<:DVB_True:887589686808309791> Added **{target}** to your watchlist.")
+        await ctx.send(f"{DVB_TRUE} Added **{target}** to your watchlist.")
 
     @checks.has_permissions_or_role(manage_roles=True)
     @watchlist.command(name='remove', aliases=['-'])
@@ -1094,7 +1096,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         if await self.client.db.fetchrow("SELECT * FROM watchlist WHERE guild_id = $1 and user_id = $2 and target_id = $3", ctx.guild.id, ctx.author.id, target.id) is None:
             return await ctx.send(f"**{target}** is not on your watchlist.")
         await self.client.db.execute("DELETE FROM watchlist WHERE guild_id = $1 and user_id = $2 and target_id = $3", ctx.guild.id, ctx.author.id, target.id)
-        await ctx.send(f"<:DVB_True:887589686808309791> Removed **{target}** from your watchlist.")
+        await ctx.send(f"{DVB_TRUE} Removed **{target}** from your watchlist.")
 
     @checks.has_permissions_or_role(manage_roles=True)
     @watchlist.command(name='clear', aliases=['c'])
@@ -1245,9 +1247,9 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         """
         def return_emoji(truefalse: bool):
             if truefalse:
-                return "<:DVB_True:887589686808309791> "
+                return DVB_TRUE
             else:
-                return "<:DVB_False:887589731515392000>"
+                return DVB_FALSE
         qualified_channels = []
         for channel in ctx.guild.channels:
             if isinstance(channel, discord.TextChannel):

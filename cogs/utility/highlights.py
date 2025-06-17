@@ -7,6 +7,9 @@ import discord
 import datetime
 from discord.ext import commands
 import copy
+
+from typing import List
+
 from utils.buttons import confirm, SingleURLButton
 from utils.format import proper_userf, print_exception
 from utils import checks
@@ -40,6 +43,19 @@ class ChannelOrMember(commands.Converter):
             except:
                 return None
 
+class TextOrCategoryChannelOrMember(commands.Converter):
+    async def convert(self, ctx, argument):
+        try:
+            return await commands.TextChannelConverter().convert(ctx, argument)
+        except commands.BadArgument:
+            try:
+                return await commands.CategoryChannelConverter().convert(ctx, argument)
+            except commands.BadArgument:
+                try:
+                    return await commands.MemberConverter().convert(ctx, argument)
+                except:
+                    return None
+
 
 class Highlight(commands.Cog):
     def __init__(self, client):
@@ -48,6 +64,32 @@ class Highlight(commands.Cog):
         self.regex_pattern = re.compile('([^\s\w]|_)+')
         self.website_regex = re.compile("https?://[^\s]*")
         self.blacklist = []
+
+    async def _clean_and_tokenize(self, content: str) -> List[str]:
+        content = self.website_regex.sub('', content.lower())
+        content = self.regex_pattern.sub('', content)
+        return [word for word in content.split() if word]
+
+    async def _fetch_highlights(self, guild_id: int) -> list[tuple[str, int]]:
+        rows = await self.client.db.fetch(
+            "SELECT highlights, user_id FROM highlight WHERE guild_id = $1",
+            guild_id
+        )
+        return [(r['highlights'].lower(), r['user_id']) for r in rows]
+
+    async def _should_ignore(self, member: discord.Member, message: discord.Message) -> bool:
+        ignores = await self.client.db.fetch(
+            "SELECT ignore_type, ignore_id FROM highlight_ignores "
+            "WHERE guild_id = $1 AND user_id = $2",
+            message.guild.id, member.id
+        )
+        for ign in ignores:
+            itype, iid = ign['ignore_type'], ign['ignore_id']
+            if (itype == 'channel' and message.channel.id == iid) or \
+                    (itype == 'category' and message.channel.category_id == iid) or \
+                    (itype == 'member' and message.author.id == iid):
+                return True
+        return False
 
     @checks.perm_insensitive_roles()
     @commands.guild_only()
@@ -131,10 +173,12 @@ class Highlight(commands.Cog):
     @checks.perm_insensitive_roles()
     @commands.guild_only()
     @highlight.command(name="block", aliases=['ignore'])
-    async def highlight_block(self, ctx, argument: ChannelOrMember = None):
+    async def highlight_block(self, ctx, argument: TextOrCategoryChannelOrMember = None):
         """
-        Adds a member or channel to the highlight block list.
-        If a user in this list highlights you, or you were highlighted in a ignored channel, you will not be notified of it.
+        Adds a member, channel or category to the highlight block list.
+        You will not be notified if:
+        - A user in this list notifies you
+        - You were highlighted in an ignored channel/category
         """
         if argument is None:
             return await ctx.send("The argument that you need to specify should be a channel or member.")
@@ -144,6 +188,8 @@ class Highlight(commands.Cog):
                 await self.client.db.execute("INSERT INTO highlight_ignores(guild_id, user_id, ignore_type, ignore_id) VALUES ($1, $2, $3, $4)", ctx.guild.id, ctx.author.id, 'member', argument.id)
             elif isinstance(argument, discord.TextChannel):
                 await self.client.db.execute("INSERT INTO highlight_ignores(guild_id, user_id, ignore_type, ignore_id) VALUES ($1, $2, $3, $4)", ctx.guild.id, ctx.author.id, 'channel', argument.id)
+            elif isinstance(argument, discord.CategoryChannel):
+                await self.client.db.execute("INSERT INTO highlight_ignores(guild_id, user_id, ignore_type, ignore_id) VALUES ($1, $2, $3, $4)", ctx.guild.id, ctx.author.id, 'category', argument.id)
             await ctx.send(f"**{argument.name}** has been added to your highlight block list.")
         else:
             await ctx.send(f"**{argument.name}** is already in your highlight block list.")
@@ -200,12 +246,15 @@ class Highlight(commands.Cog):
         else:
             igsn = []
             for ignore in all_ignores:
-                if ignore.get('ignore_type') == 'channel':
+                if ignore.get('ignore_type') == 'channel' or ignore.get('ignore_type') == 'category':
                     chan = ctx.guild.get_channel(ignore.get('ignore_id'))
                     if chan is None:
                         obj = f"{ignore.get('ignore_id')} (unknown channel)"
                     else:
-                        obj = chan.mention
+                        if isinstance(chan, discord.TextChannel):
+                            obj = f"{chan.mention} (Category)"
+                        else:
+                            obj = chan.mention
                 else:
                     if (member := ctx.guild.get_member(ignore.get('ignore_id'))) is not None:
                         obj = f"{member.mention} ({proper_userf(member)})"
@@ -243,61 +292,82 @@ class Highlight(commands.Cog):
         e = discord.Embed(title=f"**{hl}**", description='\n'.join(fmt[::-1]), color=0xb47eb3, timestamp=discord.utils.utcnow())
         return e
 
+    async def _notify_highlights(self, message: discord.Message):
+        tokens = await self._clean_and_tokenize(message.content)
+        highlights = await self._fetch_highlights(message.guild.id)
+        now = round(time.time())
+        notified_ids = set()
+
+        for phrase, user_id in highlights:
+            if user_id == message.author.id:
+                continue
+
+            last_seen = self.last_seen.get(user_id, self.client.uptime.timestamp())
+            if now - last_seen <= 60:
+                continue
+
+            if phrase not in tokens:
+                continue
+
+            member = message.guild.get_member(user_id)
+            if not member or await self.client.check_blacklisted_user(member):
+                continue
+
+            # check command perms
+            ctx = await self.client.get_context(message)
+            cmd = self.client.get_command('highlight')
+            if cmd:
+                can_run = False
+                try:
+                    # simulate as if the highlighte runs the command
+                    fake_ctx = copy.copy(ctx)
+                    fake_ctx.author = member
+                    can_run = await cmd.can_run(fake_ctx)
+                except:
+                    pass
+                if not can_run:
+                    continue
+
+            if await self._should_ignore(member, message):
+                continue
+
+            if not (message.channel.permissions_for(member).view_channel or
+                    member.id == 312876934755385344):
+                continue
+
+            # build embed & button
+            embed = await self.generate_context(message, phrase)
+            try:
+                await member.send(
+                    f"**{message.author.name}** mentioned “{phrase}” "
+                    f"in **{message.guild.name}**’s **{message.channel.name}**.",
+                    embed=embed,
+                    view=SingleURLButton(
+                        link=message.jump_url,
+                        text="Jump to Message",
+                        emoji="✉️"
+                    )
+                )
+            except Exception:
+                pass
+            else:
+                self.last_seen[user_id] = now + 90
+
+            notified_ids.add(user_id)
+
     @commands.Cog.listener()
     async def on_message(self, message):
-        self.last_seen[message.author.id] = round(time.time()) # Logs the user's last seen timing
-        if message.guild is None:
+        self.last_seen[message.author.id] = round(time.time())
+        if message.guild is None or message.author.bot:
             return
-        if message.author.bot:
+        await self._notify_highlights(message)
+
+    @commands.Cog.listener()
+    async def on_message_edit(self, before, after):
+        # if content really changed:
+        if before.content == after.content:
             return
-        a = await self.client.db.fetch("SELECT highlights, user_id FROM highlight WHERE guild_id = $1", message.guild.id)
-        a = [[hl_entry.get('highlights'), hl_entry.get('user_id')] for hl_entry in a] # gets all the highlights
-
-        final_message = self.website_regex.sub('', message.content.lower())
-        final_message = self.regex_pattern.sub('', final_message)
-        final_message = [x for x in final_message.split()] # formats the mesasge for better parsing
-
-        notified = []
-        for k, v in a:
-            local_last_seen = self.last_seen.get(v, self.client.uptime.timestamp())
-            if (round(time.time()) - local_last_seen) > 60:
-                if k.lower() in final_message and message.author.id != v and v not in notified:
-                    # highlight is in nessage, user not notified yet
-                    if highlighted_member := message.guild.get_member(v):  # user is in the server
-                        if await self.client.check_blacklisted_user(highlighted_member):
-                            notified.append(highlighted_member)
-                            continue
-                        # check if user can run command
-                        ctx = await self.client.get_context(message)
-                        if ctx is not None:
-                            new_ctx = copy.copy(ctx)
-                            new_ctx.author = highlighted_member
-                            cmd: commands.Command = self.client.get_command('highlight')
-                            if cmd is not None:
-                                try:
-                                    can_run = await cmd.can_run(new_ctx)
-                                except:
-                                    can_run = False
-                                if can_run:
-                                    # Check if user has channel or user ignored
-                                    um = await self.client.db.fetch("SELECT ignore_type, ignore_id FROM highlight_ignores WHERE guild_id = $1 AND user_id = $2", message.guild.id, highlighted_member.id)
-                                    is_ignored = False
-                                    for ignore_entry in um:
-                                        if ignore_entry.get('ignore_type') == 'channel':
-                                            if message.channel.id == ignore_entry.get('ignore_id'):
-                                                is_ignored = True
-                                                break
-                                        elif ignore_entry.get('ignore_type') == 'member':
-                                            if message.author.id == ignore_entry.get('ignore_id'):
-                                                is_ignored = True
-                                                break
-                                    if not is_ignored:
-                                        e = await self.generate_context(message, k)
-                                        if highlighted_member is not None and (message.channel.permissions_for(highlighted_member).view_channel or highlighted_member.id == 312876934755385344):
-                                            try:
-                                                await highlighted_member.send(f"**{message.author.name}** mentioned \"{k}\" in **{message.guild.name}**'s **{message.channel.name}**.", embed=e, view=SingleURLButton(link=message.jump_url, text="Jump to Message", emoji="✉️"))
-                                            except Exception as e:
-                                                print_exception("among us", e)
-                                            else:
-                                                self.last_seen[v] = round(time.time()) + 90
-                                        notified.append(highlighted_member.id)
+        self.last_seen[after.author.id] = round(time.time())
+        if after.guild is None or after.author.bot:
+            return
+        await self._notify_highlights(after)

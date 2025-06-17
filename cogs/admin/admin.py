@@ -17,14 +17,15 @@ from utils.format import grammarformat, stringtime_duration, proper_userf
 from utils.time import humanize_timedelta
 from utils.menus import CustomMenu
 from time import time
+from custom_emojis import DVB_TRUE, DVB_FALSE, DVB_CHECKMARK
 import os
 
 
 def return_emoji(truefalse: bool):
     if truefalse:
-        return "<:DVB_True:887589686808309791> "
+        return DVB_TRUE
     else:
-        return "<:DVB_False:887589731515392000>"
+        return DVB_FALSE
 
 class Blacklist(menus.ListPageSource):
     def __init__(self, entries, title):
@@ -170,6 +171,9 @@ class ServerConfigView(discord.ui.View):
                 elif self.custom_id == "serverpool_donation_log":
                     self.serverconfig.serverpool_donation_log = update_bool(self.serverconfig.serverpool_donation_log)
                     self.style = get_style(self.serverconfig.serverpool_donation_log)
+                elif self.custom_id == "enable_amari_transfer":
+                    self.serverconfig.enable_amari_transfer = update_bool(self.serverconfig.enable_amari_transfer)
+                    self.style = get_style(self.serverconfig.enable_amari_transfer)
                 else:
                     await interaction.response.send_message(f"invalid custom id {self.custom_id}", ephemeral=True)
                     await self.serverconfig.update(self.client)
@@ -313,6 +317,7 @@ class ServerConfigView(discord.ui.View):
         self.add_item(BaseToggleButton(self.serverconfig, self.client, label="Status Role", custom_id="statusroleenabled", style=get_style(self.serverconfig.statusroleenabled)))
         self.add_item(BaseToggleButton(self.serverconfig, self.client, label="Mute Lem", custom_id="mute_lem", style=get_style(self.serverconfig.mute_lem)))
         self.add_item(BaseToggleButton(self.serverconfig, self.client, label="Serverpool Log", custom_id="serverpool_donation_log", style=get_style(self.serverconfig.serverpool_donation_log)))
+        self.add_item(BaseToggleButton(self.serverconfig, self.client, label="Amari Transfers", custom_id="enable_amari_transfer", style=get_style(self.serverconfig.enable_amari_transfer)))
         self.add_item(ChangeLoggingChanneL(label="Log channel (Click here to change)"))
         self.add_item(ChangeRoleID(label="Status Reward -> Role ID (Click here to change)"))
         self.add_item(StatusText(label="Status Text (Click here to change)"))
@@ -333,6 +338,7 @@ class ServerConfigView(discord.ui.View):
         embed.add_field(name=f"Status Rewards - {return_emoji(self.serverconfig.statusroleenabled)}", value=f"Whether status role rewards are enabled.")
         embed.add_field(name=f"Mute Lem - {return_emoji(self.serverconfig.mute_lem)}", value=f"Mute Lem whenever he starts typing")
         embed.add_field(name=f"Log Serverpool Donations - {return_emoji(self.serverconfig.serverpool_donation_log)}", value=f"\u200b")
+        embed.add_field(name=f"Amari Transfers - {return_emoji(self.serverconfig.enable_amari_transfer)}", value=f"\u200b")
         embed.add_field(name=f"Status Text - `{self.serverconfig.statustext}`", value=f"The text in a user's status to be able to obtain the role.", inline=False)
         embed.add_field(name=f"Status Role - `{self.ctx.guild.get_role(self.serverconfig.statusroleid) or self.serverconfig.statusroleid}`", value=f"The ID of the role that can be obtained.", inline=False)
         embed.add_field(name=f"Status Matching - `{self.serverconfig.statusmatchtype}`", value=f"How should the status text be matched.\n`Strict`: Must be exactly the same.\n`Contains`: Must contain the text but any other text can be addded.", inline=False)
@@ -518,7 +524,7 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
             details = f"Reason: {blacklist.get('reason')}\n"
             if blacklist.get('blacklist_active'):
                 details += f"Until: <t:{blacklist.get('time_until')}:R>\n" if blacklist.get('time_until') != 9223372036854775807 else 'Until: Eternity\n'
-            details += f"Active: {'<:DVB_True:887589686808309791>' if blacklist.get('blacklist_active') else '<:DVB_False:887589731515392000>'}\n"
+            details += f"Active: {DVB_TRUE if blacklist.get('blacklist_active') else DVB_FALSE}\n"
             details += f"Moderator: {moderator} ({moderator.id})" if moderator is not None else f"Moderator: {blacklist.get('moderator_id')}"
             blacklists.append((name, details))
         if len(blacklists) <= 10:
@@ -583,7 +589,7 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
         Show configurations for nickname and DM requests.
         """
         result = await self.client.db.fetchrow("SELECT * FROM channelconfigs where guild_id = $1", ctx.guild.id)
-        if len(result) == 0:
+        if not result:
             return await ctx.send(f"No configuration for DM and nickname requests have been set yet. ")
         else:
             await ctx.send(embed=discord.Embed(title=f"Configurations for {ctx.guild.name}", description = f"Nickname requests: {ctx.guild.get_channel(result.get('nicknamechannel_id'))}\nDM requests: {ctx.guild.get_channel(result.get('dmchannel_id'))}", color = self.client.embed_color))
@@ -764,7 +770,7 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
         Resets the state of clowns so no one will change to a clown in any channel.
         """
         self.client.clownmode = {}
-        return await ctx.send("<:DVB_checkmark:955345523139805214> Reset clown mode")
+        return await ctx.send(f"{DVB_CHECKMARK} Reset clown mode")
 
     @checks.has_permissions_or_role(manage_roles=True)
     @dungeon.command(name="bypass")

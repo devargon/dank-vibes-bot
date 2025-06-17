@@ -1,6 +1,8 @@
+import json
 import re
 import time
 import asyncio
+from io import BytesIO
 from typing import Tuple
 import os
 
@@ -11,11 +13,12 @@ import pytz
 from thefuzz import process
 
 from cogs.dankmemer.lottery import Lottery
+from custom_emojis import DVB_CHECKMARK, DVB_CROSSMARK
 from main import dvvt
 from utils import checks, buttons
 import datetime
 from discord.ext import commands, tasks, pages
-from utils.format import print_exception, short_time, comma_number, stringnum_toint
+from utils.format import print_exception, short_time, comma_number, stringnum_toint, number_to_emoji
 from utils.buttons import *
 from utils.specialobjects import DankItem
 from .items import DankItems
@@ -38,19 +41,19 @@ cooldown_messages = ["Spam isn't cool fam",
                      ]
 
 def print_dev(message):
-    if os.getenv('state') == '1':
+    if os.getenv('state') == '0':
         print(message)
 async def checkmark(message:discord.Message):
     try:
-        await message.add_reaction("<:DVB_checkmark:955345523139805214>")
+        await message.add_reaction(DVB_CHECKMARK)
     except discord.NotFound:
         return None
 
 def is_dank_slash_command(message: discord.Message, command: str):
     if message.author.id == dank_memer_id:
-        if message.interaction is not None:
-            if message.interaction.type == 2:
-                if message.interaction.name == command:
+        if message._raw_data.get("interaction") is not None:
+            if message._raw_data["interaction"].get("type") == 2:
+                if message._raw_data["interaction"].get("name") == command:
                     return True
     return False
 
@@ -77,7 +80,7 @@ def truefalse(value):  # shows the enabled or disabled emoji for 0 or 1 values
 
 async def crossmark(msg):
     try:
-        await msg.add_reaction("<:DVB_crossmark:955345521151737896>")
+        await msg.add_reaction(DVB_CROSSMARK)
     except Exception as e:
         pass
 
@@ -97,6 +100,37 @@ def numberswitcher(no):
         return 1
     else:
         return 0
+
+class MockShiftView(discord.ui.View):
+    def __init__(self, user: discord.Member):
+        self.user = user
+        super().__init__(timeout=180, disable_on_timeout=True)
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.user != self.user:
+            return await interaction.response.send_message("not for u", ephemeral=True)
+        return True
+
+class MockShiftButton(discord.ui.Button):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    async def callback(self, interaction: discord.Interaction):
+        self.disabled = True
+
+        await interaction.response.edit_message(view=self.view)
+        await interaction.followup.send("Press **Dank Memer's button**, not me, you turd 😡", ephemeral=True)
+        all_items_disabled = True
+        for component in self.view.children:
+            if isinstance(component, discord.ActionRow):
+                for item in component.children:
+                    if isinstance(item, discord.Button) or isinstance(item, discord.SelectMenu):
+                        all_items_disabled = False
+                        break
+        if all_items_disabled:
+            self.view.stop()
+
+
 class ListOfStreamGames(discord.ui.Select):
     def __init__(self, current):
         self.current: Union[None, int] = current
@@ -246,7 +280,7 @@ class VoteSetting(discord.ui.Select):
             await interaction.response.send_message("Got it. You will **not be reminded** for your Dank Memer actions.", ephemeral=True)
 
 class dankreminders(discord.ui.View):
-    def __init__(self, ctx: DVVTcontext, client, rmtimes, timeout, daily, weekly, monthly, lottery, work, hunt, fish, dig, crime, beg, search, horseshoe, pizza, drop, stream, postmeme, pet):
+    def __init__(self, ctx: DVVTcontext, client, rmtimes, timeout, daily, weekly, monthly, lottery, work, hunt, fish, dig, crime, beg, search, scratch, horseshoe, pizza, drop, stream, postmeme, pet):
         self.value = None
         self.timeout = timeout
         self.context = ctx
@@ -261,7 +295,7 @@ class dankreminders(discord.ui.View):
                           "<:DVB_rifle:888404394805186571>", "<:DVB_fishing:888404317638369330>",
                           "<:DVB_shovel:888404340426031126>", "<:DVB_Crime:888404653711192067>",
                           "<:DVB_beg:888404456356610099>", "<:DVB_search:888405048260976660>",
-                            "<:DVB_Horseshoe:888404491647463454>",
+                          "<:DVB_Scratch:1096020186450112512>", "<:DVB_Horseshoe:888404491647463454>",
                           "<:DVB_pizza:888404502280024145>", "<:DVB_sugarskull:904936096436215828>",
                           "🎮", "<:DVB_Laptop:915524266940854303>",
                           "<:DVB_pet:928236242469011476>"]
@@ -271,11 +305,11 @@ class dankreminders(discord.ui.View):
                   "Hunt", "Fish",
                   "Dig", "Crime",
                   "Beg", "Search",
-                  "Use a horseshoe",
+                  "Scratch-Off", "Use a horseshoe",
                   "Use a pizza", "Get drop items",
                   "Interact on stream", "Post memes",
                   "Interact with pet"]
-        is_enabled = [daily, weekly, monthly, lottery, work, hunt, fish, dig, crime, beg, search, horseshoe, pizza, drop, stream, postmeme, pet]
+        is_enabled = [daily, weekly, monthly, lottery, work, hunt, fish, dig, crime, beg, search, scratch, horseshoe, pizza, drop, stream, postmeme, pet]
 
         async def initialise_dank_reminders(user: Union[discord.Member, discord.User]):
             await self.client.db.execute("INSERT INTO remindersettings (member_id, method) VALUES ($1, $2) ON CONFLICT (member_id) DO UPDATE SET method = $2", user.id, 0)
@@ -306,6 +340,8 @@ class dankreminders(discord.ui.View):
                 await self.client.db.execute("UPDATE remindersettings SET search = $1 WHERE member_id = $2", switch_bool(self.result.get('search')), ctx.author.id)
             elif str(emoji) == "🔢":
                 await self.client.db.execute("UPDATE remindersettings SET highlow = $1 WHERE member_id = $2", switch_bool(self.result.get('highlow')), ctx.author.id)
+            elif str(emoji) == "<:DVB_Scratch:1096020186450112512>":
+                await self.client.db.execute("UPDATE remindersettings SET scratch = $1 WHERE member_id = $2", switch_bool(self.result.get('scratch')), ctx.author.id)
             elif str(emoji) == "<:DVB_Horseshoe:888404491647463454>":
                 await self.client.db.execute("UPDATE remindersettings SET horseshoe = $1 WHERE member_id = $2", switch_bool(self.result.get('horseshoe')), ctx.author.id)
             elif str(emoji) == "<:DVB_pizza:888404502280024145>":
@@ -415,6 +451,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             11: "crime",
             12: "beg",
             13: "search",
+            14: "scratch",
             15: "highlow",
             17: "horseshoe",
             18: "pizza",
@@ -550,7 +587,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 else:
                     check_reminder_enabled_index = result.get('remindertype')
 
-                config = await self.client.db.fetchrow("SELECT member_id, method, daily, weekly, monthly, lottery, work, redeem, hunt, fish, dig, crime, beg, search, snakeeyes, highlow, dailybox, horseshoe, pizza, drop, stream, postmeme, marriage, pet, adventure FROM remindersettings WHERE member_id = $1", result.get('member_id')) # get the user's configuration
+                config = await self.client.db.fetchrow("SELECT member_id, method, daily, weekly, monthly, lottery, work, redeem, hunt, fish, dig, crime, beg, search, scratch, highlow, dailybox, horseshoe, pizza, drop, stream, postmeme, marriage, pet, adventure FROM remindersettings WHERE member_id = $1", result.get('member_id')) # get the user's configuration
                 if config is None: # no config means user doesn't even use this reminder system lol
                     pass
                 elif result.get('remindertype') not in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24, 1001, 1002]: # if the reminder type is not a valid one
@@ -586,7 +623,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                         elif reminderaction == 13:
                             return "`/search` <:DVB_search:888405048260976660>"
                         elif reminderaction == 14:
-                            return "`/snakeeyes` <a:DVB_snakeeyes:888404298608812112>"
+                            return "`/scratch` <:DVB_Scratch:1096020186450112512>"
                         elif reminderaction == 15:
                             return "`/highlow` 🔢"
                         elif reminderaction == 17:
@@ -633,7 +670,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                         elif reminderaction == 13:
                             return "</search:1011560371267579935> <:DVB_search:888405048260976660>"
                         elif reminderaction == 14:
-                            return "</snakeeyes:1011560370948800546> <a:DVB_snakeeyes:888404298608812112>"
+                            return "</scratch:1011560371267579934> <:DVB_Scratch:1096020186450112512>"
                         elif reminderaction == 15:
                             return "</highlow:1011560370911072258> 🔢"
                         elif reminderaction == 17:
@@ -663,7 +700,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                         if member is None or channel is None:
                             pass
                         elif config.get('method') == 1:  # DMs or is lottery/daily reminder
-                            if result.get('remindertype') in [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21]:
+                            if result.get('remindertype') in [8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 21]:
                                 try:
                                     await channel.send(f"{member.mention} You can now {ping_message(result.get('remindertype'))}")  # DM
                                 except:
@@ -829,7 +866,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         Daily reminder
         """
         if is_dank_slash_command(message, 'daily'):
-            member = message.interaction.user
+            member = message.interaction_metadata.user
             now = discord.utils.utcnow()
             next_reminder_time = now.replace(hour=0, minute=0, second=0, microsecond=0) + datetime.timedelta(days=1)
             nextdailytime = round(next_reminder_time.timestamp())
@@ -840,7 +877,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         Weekly Reminder
         """
         if is_dank_slash_command(message, 'weekly'):
-            member = message.interaction.user
+            member = message.interaction_metadata.user
             today = datetime.date.today()
             days_ahead = 0 - today.weekday()
             if days_ahead <= 0:
@@ -855,8 +892,8 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         Monthly Reminder
         """
         if is_dank_slash_command(message, 'monthly'):
-            if "You can buy the ability" not in message.embeds[0].description:
-                member = message.interaction.user
+            if len(message.embeds) == 0 or ("You can buy the ability" not in message.embeds[0].description):
+                member = message.interaction_metadata.user
                 now = discord.utils.utcnow()
                 next_monthly_datetime = (now.replace(day=1) + datetime.timedelta(days=32)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
                 nextmonthlytime = next_monthly_datetime.timestamp()
@@ -866,8 +903,8 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         """
         Lottery reminder
         """
-        if is_dank_slash_command(message, "lottery") and len(message.embeds) > 0 and message.embeds[0].title == "Pending Confirmation" and "tryna buy" in message.embeds[0].description:
-            member = message.interaction.user
+        if is_dank_slash_command(message, "lottery buy"):
+            member = message.interaction_metadata.user
             def check_lottery(payload_before, payload_after):
                 return message.id == payload_after.id
             try:
@@ -875,18 +912,13 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             except asyncio.TimeoutError:
                 return await crossmark(message)
             else:
-                if not newedit.embeds[0].title:
-                    return
-                if newedit.embeds[0].title == "Action Canceled" or message.embeds[0].title == "Action Canceled":
-                    return await message.add_reaction("<:DVB_crossmark:955345521151737896>")
-                if newedit.embeds[0].title == "Action Confirmed":
-                    now = discord.utils.utcnow()
-                    now = now + datetime.timedelta(hours=1)
-                    now = now.replace(minute=0, second=0, microsecond=0)
-                    nextlotterytime = round(now.timestamp()) + 30
-                    await self.handle_reminder_entry(member.id, 5, message.channel.id, message.guild.id, nextlotterytime)
-                    with contextlib.suppress(discord.HTTPException):
-                        await clock(newedit)
+                now = discord.utils.utcnow()
+                now = now + datetime.timedelta(hours=1)
+                now = now.replace(minute=0, second=0, microsecond=0)
+                nextlotterytime = round(now.timestamp()) + 60
+                await self.handle_reminder_entry(member.id, 5, message.channel.id, message.guild.id, nextlotterytime)
+                with contextlib.suppress(discord.HTTPException):
+                    await clock(newedit)
         """
         Hunting Reminder
         """
@@ -1004,7 +1036,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
 
 
     @commands.Cog.listener()
-    async def on_message_edit(self, beforemsg, aftermsg):
+    async def on_message_edit(self, beforemsg: discord.Message, aftermsg: discord.Message):
         #
         """
         Work Reminder
@@ -1014,12 +1046,126 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
         if len(beforemsg.embeds) == 0 or len(aftermsg.embeds) == 0:
             return
         if is_dank_slash_command(beforemsg, 'work shift'):
+            member = aftermsg.interaction_metadata.user
             if type(aftermsg.embeds[0].title) == str and ("Terrible work!" in aftermsg.embeds[0].title or "Great work!" in aftermsg.embeds[0].title):
-                member = aftermsg.interaction.user
                 nextworktime = round(time.time()) + 3600
                 await self.handle_reminder_entry(member.id, 6, aftermsg.channel.id, aftermsg.guild.id, nextworktime)
                 with contextlib.suppress(discord.HTTPException):
                     await checkmark(aftermsg)
+
+            if beforemsg.embeds[0].description and aftermsg.embeds[0].description:
+
+                if beforemsg.embeds[0].description.startswith("Look at each color next to the words closely!"):
+                    description_lines = beforemsg.embeds[0].description.split("\n")
+                    color_words = []
+                    color_word_regex = r"<:([a-zA-Z0-9_]+):\d+>|`([^`]+)`"
+                    for line in description_lines[1:]:
+                        results = re.findall(color_word_regex, line)
+                        if len(results) > 0:
+                            # results is example [('White', ''), ('', 'domestic')]
+                            # We need to convert it to ['White', 'domestic']
+                            color_words.append([results[0][0], results[1][1]])
+                    print(f"Detected the following words: {color_words}")
+                    correct_result = None
+                    for regex_result in color_words:
+                        print(f"Checking if {regex_result[1]} is in {aftermsg.embeds[0].description}")
+                        if regex_result[1] in aftermsg.embeds[0].description:
+                            correct_result = regex_result
+                            break
+                    if correct_result:
+                        print(f"found a correct result: {correct_result}")
+                        view = None
+                        if aftermsg.components:
+                            actionrow1 = aftermsg.components[0]
+                            if isinstance(actionrow1, discord.ActionRow) and actionrow1.children:
+                                print("Found a view with children. Creating a mock view")
+                                view = MockShiftView(member)
+                                for row_item_component in actionrow1.children:
+                                    if isinstance(row_item_component, discord.Button):
+                                        correct_button = row_item_component.label.lower() == correct_result[0].lower()
+                                        new_button = MockShiftButton(
+                                            style=discord.ButtonStyle.green if correct_button else discord.ButtonStyle.grey,
+                                            label=row_item_component.label,
+                                            disabled=not correct_button,
+                                            custom_id=None
+                                        )
+                                        view.add_item(new_button)
+                        await aftermsg.reply(embed=discord.Embed(description=f"Select **{correct_result[0]}**", color=self.client.embed_color), view=view)
+                    else:
+                        print_dev("Result was not found")
+
+                if beforemsg.embeds[0].description.startswith("Remember words order!") and aftermsg.embeds[0].description.startswith("Click the buttons in correct order!"):
+                    list_of_words = []
+                    word_regex = r"`([^`]+)`"
+                    for line in beforemsg.embeds[0].description.split("\n")[1:]:
+                        results = re.findall(word_regex, line)
+                        if len(results) > 0:
+                            list_of_words.append(results[0].lower())
+                    message_content = ["Correct order:"]
+                    for index, word in enumerate(list_of_words):
+                        message_content.append(f"{index}. **{word}**")
+                    embed = discord.Embed(description="\n".join(message_content), color=self.client.embed_color)
+                    view = None
+                    if aftermsg.components:
+                        actionrow1 = aftermsg.components[0]
+                        if isinstance(actionrow1, discord.ActionRow) and actionrow1.children:
+                            view = MockShiftView(member)
+                            for row_item_component in actionrow1.children:
+                                if isinstance(row_item_component, discord.Button):
+                                    is_button_part_of_list = row_item_component.label.lower() in list_of_words
+                                    emoji = number_to_emoji(list_of_words.index(row_item_component.label.lower())+1) if is_button_part_of_list else None
+                                    new_button = MockShiftButton(style=discord.ButtonStyle.grey, label=row_item_component.label, disabled=False, custom_id = None, url = None, emoji = emoji)
+                                    view.add_item(new_button)
+                    await aftermsg.reply(embed=embed, view=view)
+
+                if beforemsg.embeds[0].description.startswith("Look at the emoji closely!"):
+                        lines = beforemsg.embeds[0].description.split("\n")
+                        emoji_from_string = lines[1]
+                        try:
+                            emoji_converted = emoji_from_string.encode('utf-16', 'surrogatepass').decode('utf-16')
+                        except (ValueError, TypeError, UnicodeEncodeError) as e:
+                            print(f"Conversion failed: {e}")
+                        else:
+                            view = None
+                            embed = discord.Embed(title=emoji_converted, color=self.client.embed_color).set_author(name="Select this emoji!")
+                            if aftermsg.components and len(aftermsg.components) == 2:
+                                view = MockShiftView(member)
+                                for row in aftermsg.components:
+                                    if isinstance(row, discord.ActionRow):
+                                        for row_item_component in row.children:
+                                            if isinstance(row_item_component, discord.Button):
+                                                emoji_name = row_item_component.emoji.name if row_item_component.emoji else None
+                                                correct_button = emoji_name == emoji_converted
+
+                                                new_button = MockShiftButton(
+                                                    style=discord.ButtonStyle.green if correct_button else discord.ButtonStyle.grey,
+                                                    label=row_item_component.label,
+                                                    emoji=row_item_component.emoji,
+                                                    disabled=not correct_button,
+                                                    custom_id=None
+                                                )
+                                                view.add_item(new_button)
+                            await aftermsg.reply(embed=embed, view=view)
+
+
+
+
+        """
+        Scratch reminder
+        """
+        if is_dank_slash_command(beforemsg, 'scratch'):
+            afterembed = aftermsg.embeds[0]
+            if afterembed.author.name.endswith("Scratch-Off") and afterembed.description:
+                timestamp_pattern = r"<t:(\d+):R>"
+                match = re.search(timestamp_pattern, afterembed.description)
+                if match:
+                    timestamp = int(match.group(1))
+                    nextscratchtime = timestamp + 60
+                    member = aftermsg.interaction.user
+                    await self.handle_reminder_entry(member.id, 14, aftermsg.channel.id, aftermsg.guild.id, nextscratchtime)
+                    with contextlib.suppress(discord.HTTPException):
+                        await checkmark(aftermsg)
+
 
         """
         Stream reminder
@@ -1099,7 +1245,7 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             await self.client.db.execute("INSERT into remindersettings VALUES ($1, $2)", ctx.author.id, 1) # creates new entry for settings
             result = await self.client.db.fetchrow("SELECT * FROM remindersettings WHERE member_id = $1", ctx.author.id)
         reminders = await self.client.db.fetch("SELECT * FROM dankreminders WHERE member_id = $1 and guild_id = $2", ctx.author.id, ctx.guild.id) # gets user's reminders
-        dailytime, lotterytime, worktime, weeklytime, monthlytime, hunttime, fishtime, digtime, searchtime, crimetime, begtime, horseshoetime, pizzatime, droptime, pmtime, streamtime, pettime = None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
+        dailytime, lotterytime, worktime, weeklytime, monthlytime, hunttime, fishtime, digtime, searchtime, crimetime, begtime, scratchtime, horseshoetime, pizzatime, droptime, pmtime, streamtime, pettime = None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
         for reminder in reminders:
             if reminder.get('remindertype') == 2:
                 dailytime = round(reminder.get('time')-time.time()) # time in discord time format
@@ -1123,6 +1269,8 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 begtime = round(reminder.get('time')-time.time())
             if reminder.get('remindertype') == 13:
                 searchtime = round(reminder.get('time')-time.time())
+            if reminder.get('remindertype') == 14:
+                scratchtime = round(reminder.get('time')-time.time())
             if reminder.get('remindertype') == 15:
                 highlowtime = round(reminder.get('time')-time.time())
             if reminder.get('remindertype') == 17:
@@ -1137,8 +1285,8 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                 pettime = round(reminder.get('time')-time.time())
             if reminder.get('remindertype') == 24:
                 adventuretime = round(reminder.get('time')-time.time())
-        remindertimes = [dailytime or None, weeklytime or None, monthlytime or None, lotterytime or None, worktime or None, hunttime or None, fishtime or None, digtime or None, crimetime or None, begtime or None, searchtime or None, horseshoetime or None, pizzatime or None, droptime or None, streamtime or None, pmtime or None, pettime or None]
-        newview = dankreminders(ctx, self.client, remindertimes, 15.0, result.get('daily'), result.get('weekly'), result.get('monthly'), result.get('lottery'), result.get('work'), result.get('hunt'), result.get('fish'), result.get('dig'), result.get('crime'), result.get('beg'), result.get('search'), result.get('horseshoe'), result.get('pizza'), result.get('drop'), result.get('stream'), result.get('postmeme'), result.get('pet'), )
+        remindertimes = [dailytime or None, weeklytime or None, monthlytime or None, lotterytime or None, worktime or None, hunttime or None, fishtime or None, digtime or None, crimetime or None, begtime or None, searchtime or None, scratchtime or None, horseshoetime or None, pizzatime or None, droptime or None, streamtime or None, pmtime or None, pettime or None]
+        newview = dankreminders(ctx, self.client, remindertimes, 15.0, result.get('daily'), result.get('weekly'), result.get('monthly'), result.get('lottery'), result.get('work'), result.get('hunt'), result.get('fish'), result.get('dig'), result.get('crime'), result.get('beg'), result.get('search'), result.get('scratch'), result.get('horseshoe'), result.get('pizza'), result.get('drop'), result.get('stream'), result.get('postmeme'), result.get('pet'))
         message = await ctx.send(f"**{ctx.author}'s Dank Memer Reminders**\nSelect the button that corresponds to the reminder to enable/disable it.\n\nYou're currently {'reminded via **DMs**' if result.get('method') == 1 else 'reminded via **ping**' if result.get('method') == 2 else 'not reminded'} for your reminders.", view=newview)
         newview.response = message
         newview.result = result

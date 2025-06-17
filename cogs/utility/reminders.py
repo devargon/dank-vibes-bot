@@ -10,6 +10,7 @@ import asyncio
 
 from main import dvvt
 from utils.buttons import confirm
+from utils.context import DVVTcontext
 from utils.converters import TimedeltaConverter, BetterTimeConverter
 from utils.errors import ArgumentBaseError
 from utils.time import humanize_timedelta, UserFriendlyTime
@@ -204,71 +205,32 @@ class reminders(commands.Cog):
 
     @checks.perm_insensitive_roles()
     @commands.guild_only()
-    @remind.command(name='import')
-    async def remind_import(self, ctx):
+    @remind.command(name='edit', aliases=['change'])
+    async def remind_edit(self, ctx: DVVTcontext, reminder_id: OwnReminderConverter, *,
+                     when_and_what_to_remind: UserFriendlyTime(commands.clean_content, default='\u2026', optional_time=True) = None):
+        """Edits a reminder with the specified ID. You can change the time and the message of the reminder.
+        Follow the format allowed by the original "remind" command.
+        Times are in UTC.
         """
-        Imports your reminders from Carl-bot.
-        """
-        await ctx.send("**Step 1 of 2**\n**Send `-rm list` within the next 20 seconds. I will read your current Carl-bot reminders.**")
+        reminder: Reminder = reminder_id
+        if reminder is None:
+            return await ctx.send("You need to specify the ID of the reminder that you'd want to repeat.")
+        if when_and_what_to_remind is None:
+            return await ctx.send("Unexpected parsing, please try again later.")
+        new_remind_dt = when_and_what_to_remind.dt
+        new_reminder = when_and_what_to_remind.arg
 
-        def check(m):
-            return m.author.id == ctx.author.id and m.channel.id == ctx.channel.id and m.content.lower() == '-rm list'
-
-        try:
-            msg = await self.client.wait_for('message', check=check, timeout=20)
-        except asyncio.TimeoutError:
-            return await ctx.send("**Timed out.** I could not detect you running `-rm list`, please try again.")
-
-        def check(m):
-            return m.author.id == 235148962103951360 and m.channel.id == ctx.channel.id and (m.content.startswith("User has no reminders") or m.content.startswith('```'))
-
-        try:
-            msg = await self.client.wait_for('message', check=check, timeout=20.0)
-        except asyncio.TimeoutError:
-            return await ctx.send("**Timed out.** I could not detect Carl-bot's response, please try again.")
-        if msg.content.startswith("User has no reminders"):
-            return await ctx.send("**You do not have any reminders in Carl-bot.** As such, there's nothing to import.")
-        if not msg.content.startswith('```'):
-            return await ctx.send("**I detected Carl-bot's response but it is not in the expected format.** As such, there's nothing to import.")
-        raw_text = msg.content[3:-3]
-        arg = raw_text
-        reminders = []
-        for um in arg.split('\n'):
-            if len(um) > 0:
-                um = um.strip()
-                um = um.split(' ')
-                date = ' '.join(um[3:5])
-                rm = ' '.join(um[6:])
-                date_dt = datetime.strptime(date, '%Y-%m-%d %H:%M').replace(tzinfo=timezone.utc)
-                timestamp = round(date_dt.timestamp())
-                reminders.append((timestamp, rm))
-        if len(reminders) < 1:
-            return await ctx.send("**I could not detect any reminders from Carl-bot's message.** As such, there's nothing to import.")
-        embed = discord.Embed(title=f"These are the reminders that will be imported from Carl-bot to {self.client.user.name}.", color=self.client.embed_color)
-        rm_text = []
-        for remind in reminders:
-            rm_text.append(f"<t:{remind[0]}>: {remind[1]}")
-        embed.description = '\n'.join(rm_text)
-        confirmview = confirm(ctx, self.client, 20.0)
-        confirmview.response = await ctx.send("**Step 2 of 2**\n**Confirm that I have read your reminders correctly.** Click `yes` if you've ensured they're imported correctly.", embed=embed, view=confirmview)
-        await confirmview.wait()
-        if confirmview.returning_value is not True:
-            return await ctx.send("**Your reminders will not be imported from Carl-bot.")
+        if new_remind_dt is None or new_remind_dt == "...":
+            new_remind_dt = reminder.time
         else:
-            exising_reminders = await self.client.db.fetch(
-                "SELECT name, time FROM reminders WHERE user_id = $1 AND guild_id = $2", ctx.author.id, ctx.guild.id)
-            if len(exising_reminders) > 0:
-                existing_reminders = [(x.get('time'), x.get('name')) for x in exising_reminders]
-            else:
-                existing_reminders = []
-            to_import = [
-                (ctx.author.id, ctx.guild.id, ctx.channel.id, ctx.message.id, tup[1], tup[0], round(time.time()))
-                for tup in reminders
-                if tup not in existing_reminders]
-            await self.client.db.executemany("INSERT INTO reminders(user_id, guild_id, channel_id, message_id, name, time, created_time) VALUES ($1, $2, $3, $4, $5, $6, $7)", to_import)
-            await ctx.send("**Your reminders have been successfully imported from Carl-bot!**")
+            new_remind_dt = new_remind_dt.timestamp()
 
+        if new_reminder is None:
+            new_reminder = reminder.name
 
+            if len(new_reminder) > 256:
+                return await ctx.send("You can only provide a message of up to 256 characters for your reminder.")
 
-
+        await self.client.db.execute("UPDATE reminders SET time = $1, name = $2 WHERE id = $3", new_remind_dt, new_reminder, reminder.id)
+        return await ctx.maybe_reply(f"Alright! I have updated your reminder (#{reminder.id}) **{reminder.name}** to be in **{humanize_timedelta(seconds=round(new_remind_dt - time.time()))}** (at <t:{round(new_remind_dt)}:f>).")
 

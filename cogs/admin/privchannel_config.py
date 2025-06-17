@@ -5,13 +5,14 @@ from utils import checks
 from utils.context import DVVTcontext
 from utils.specialobjects import PrivateChannel
 from typing import Union, Optional
+from custom_emojis import DVB_TRUE, DVB_FALSE
 
 
 def truefalse(op: bool):
     if op is True:
-        return "<:DVB_True:887589686808309791>"
+        return DVB_TRUE
     else:
-        return "<:DVB_False:887589731515392000>"
+        return DVB_FALSE
 
 class EnableDisable(discord.ui.Button):
     def __init__(self, label, current_setting, custom_id):

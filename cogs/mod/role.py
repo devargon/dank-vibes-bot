@@ -5,12 +5,13 @@ import discord
 from discord.ext import commands
 from thefuzz import process
 
+from custom_emojis import DVB_TRUE
 from utils import checks
 
 import imghdr
 import aiohttp
 from typing import Union
-from emoji import UNICODE_EMOJI
+from emoji import EMOJI_DATA
 from utils.context import DVVTcontext
 import re
 
@@ -119,7 +120,7 @@ class Role(commands.Cog):
             argumenttype = "ATTACHMENT"
             argument = ctx.message.attachments[0]
         elif isinstance(argument, str):
-            if argument in UNICODE_EMOJI['en']:
+            if argument in EMOJI_DATA:
                 argumenttype = "UNICODE"
             elif re.match(regex, argument):
                 argumenttype = "URL"
@@ -214,7 +215,7 @@ class Role(commands.Cog):
                 failembed.description = f"An unexpected error occured: {e}"
                 return await ctx.send(embed=failembed)
             else:
-                content = f"<:DVB_True:887589686808309791> The name of **{old_name}** has been set to **{newrole.name}**."
+                content = f"{DVB_TRUE} The name of **{old_name}** has been set to **{newrole.name}**."
 
                 await ctx.send(content, embed=get_info(newrole))
 
@@ -242,7 +243,7 @@ class Role(commands.Cog):
                 failembed.description = f"An unexpected error occured: {e}"
                 return await ctx.send(embed=failembed)
             else:
-                content = f"<:DVB_True:887589686808309791> **{role.name}**'s color has been changed from **#{old_color}** to **#{((hex(color.value))[2:]).zfill(6)}**."
+                content = f"{DVB_TRUE} **{role.name}**'s color has been changed from **#{old_color}** to **#{((hex(color.value))[2:]).zfill(6)}**."
                 await ctx.send(content, embed=get_info(newrole))
 
 
@@ -272,7 +273,7 @@ class Role(commands.Cog):
                     failembed.description = f"An unexpected error occured: {e}"
                     return await ctx.send(embed=failembed)
                 else:
-                    content = f"<:DVB_True:887589686808309791> **{role.name}** has been reset."
+                    content = f"{DVB_TRUE} **{role.name}** has been reset."
                     await ctx.send(content, embed=get_info(newrole))
                     existing = await self.client.db.fetchrow("SELECT * FROM customroles WHERE guild_id = $1 AND role_id = $2", ctx.guild.id, role.id)
                     if existing is not None:
@@ -331,7 +332,7 @@ class Role(commands.Cog):
             if success % split == 0:
                 embed = generate_embed()
                 await confirmview.response.edit(embed=embed)
-        cont = f"<:DVB_True:887589686808309791> **{role.name}** successfully removed from **{success}** members!"
+        cont = f"{DVB_TRUE} **{role.name}** successfully removed from **{success}** members!"
         if len(failed) > 0:
             str_list = []
             for member, error in failed.items():

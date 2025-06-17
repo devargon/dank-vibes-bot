@@ -12,6 +12,7 @@ from utils.time import humanize_timedelta
 from utils.format import comma_number
 from time import time
 from main import dvvt
+from custom_emojis import DVB_TRUE, DVB_FALSE
 
 
 def transform_external_url(original_url):
@@ -39,11 +40,12 @@ def spotify_embed(member: discord.Member):
     for activity in activitylist:
         if isinstance(activity, discord.Spotify):
             artists = ", ".join(activity.artists)
-            spotify = discord.Embed(title=f"{member.name} is listening to",
-                                    description=f"[{artists} - {activity.title}](https://open.spotify.com/track/{activity.track_id})",
-                                    color=activity.color)
-            spotify.set_author(name=proper_userf(member), icon_url=member.display_avatar.url)
-            spotify.set_footer(text=f"Powered by Spotify®", icon_url="https://i.imgur.com/zNBmzpl.png")
+            spotify = discord.Embed(title=f"{artists} - {activity.title}",
+                                    description=f"{activity.album}",
+                                    color=activity.color,
+                                    url=activity.track_url)
+            spotify.set_author(name=f"{member.display_name} is listening to", icon_url=member.display_avatar.url)
+            spotify.set_footer(text=f"Spotify®", icon_url="https://i.imgur.com/zNBmzpl.png")
             spotify.set_thumbnail(url=activity.album_cover_url)
             listenduration = today - activity.start
             listenduration = round(listenduration.total_seconds())
@@ -51,12 +53,11 @@ def spotify_embed(member: discord.Member):
             position = (listenduration / songend) * 20
             position = round(position)
             duration = "────────────────────"
-            bar = f" ◄◄⠀▐▐⠀►► {durationdisplay(listenduration)} / {durationdisplay(songend)} ───○ 🔊"
+            bar = f" ◄◄⠀▐▐⠀►► {durationdisplay(listenduration)} / {durationdisplay(songend)}"
             duration = list(duration)
             duration.insert(position, "⚪")
             duration = "".join(duration)
             spotify.add_field(name=duration, value=bar, inline=False)
-            spotify.add_field(name="Song album", value=activity.album, inline=False)
             return spotify
     return None
 
@@ -152,10 +153,11 @@ def activity_embed(member: discord.Member):
     return None
 
 class ViewUserProfile(discord.ui.View):
-    def __init__(self, base_embed, spotify_embed, activity_embed):
+    def __init__(self, base_embed, spotify_embed, activity_embed, current_embed=0):
         self.base_embed = base_embed
         self.spotify_embed = spotify_embed
         self.activity_embed = activity_embed
+        self.current_embed = current_embed
         super().__init__(timeout=None)
 
         class Toggle(discord.ui.Button):
@@ -171,9 +173,9 @@ class ViewUserProfile(discord.ui.View):
                         b.style = discord.ButtonStyle.grey
                 await interaction.response.edit_message(embed=self.embed, view=self.view)
 
-        self.add_item(Toggle(self.base_embed, emoji=discord.PartialEmoji.from_str('<:DVB_Profile:983027673209135104>'), style=discord.ButtonStyle.green))
-        self.add_item(Toggle(self.spotify_embed, emoji=discord.PartialEmoji.from_str('<:DVB_Spotify:983025014934741012>')))
-        self.add_item(Toggle(self.activity_embed, emoji=discord.PartialEmoji.from_str('<:DVB_Activity:983025521971568680>')))
+        self.add_item(Toggle(self.base_embed, emoji=discord.PartialEmoji.from_str('<:DVB_Profile:983027673209135104>'), style=discord.ButtonStyle.green if self.current_embed == 0 else discord.ButtonStyle.grey))
+        self.add_item(Toggle(self.spotify_embed, emoji=discord.PartialEmoji.from_str('<:DVB_Spotify:983025014934741012>'), style=discord.ButtonStyle.green if self.current_embed == 1 else discord.ButtonStyle.grey))
+        self.add_item(Toggle(self.activity_embed, emoji=discord.PartialEmoji.from_str('<:DVB_Activity:983025521971568680>'), style=discord.ButtonStyle.green if self.current_embed == 2 else discord.ButtonStyle.grey))
 
 
 class Whois(commands.Cog):
@@ -181,7 +183,7 @@ class Whois(commands.Cog):
         self.client: dvvt = client
 
     @commands.guild_only()
-    @commands.command(name='whois', usage='<user>', aliases=['wi'])
+    @commands.command(name='whois', usage='<user>', aliases=['wi', 'spotify', 'sp', 'activity', 'act'])
     async def whois(self, ctx, *, user: MemberUserConverter = None):
         """
         Get information about a user.
@@ -200,7 +202,7 @@ class Whois(commands.Cog):
         else:
             description.append(f"• Not in server")
         if ctx.author.guild_permissions.kick_members and isinstance(user, discord.Member):
-            description.append(f"• User is verified: {f'<:DVB_False:887589731515392000> They have **{humanize_timedelta(seconds=user.joined_at.timestamp()+86400-round(time()))}** to complete the Membership Screening.' if user.pending else '<:DVB_True:887589686808309791>'}")
+            description.append(f"• User is verified: {f'{DVB_FALSE} They have **{humanize_timedelta(seconds=user.joined_at.timestamp()+86400-round(time()))}** to complete the Membership Screening.' if user.pending else DVB_TRUE}")
         embed = discord.Embed(color=self.client.embed_color)
         embed.set_author(name="{}'s Information".format(user.name), icon_url=user.display_avatar.url)
         a = await self.client.fetch_amari_data(user.id, ctx.guild.id)
@@ -223,8 +225,10 @@ class Whois(commands.Cog):
         else:
             sp_embed = None
             at_embed = None
-        wiview = ViewUserProfile(embed, sp_embed, at_embed)
-        uimessage = await ctx.send(embed=embed, view=wiview)
+        embed_index_to_show = 1 if ctx.invoked_with in ['spotify', 'sp'] and sp_embed else 2 if ctx.invoked_with in ['activity', 'act'] and at_embed else 0
+        wiview = ViewUserProfile(embed, sp_embed, at_embed, embed_index_to_show)
+        which_embed_to_show = sp_embed if embed_index_to_show == 1 else at_embed if embed_index_to_show == 2 else embed
+        uimessage = await ctx.send(embed=which_embed_to_show, view=wiview)
         if discord.utils.get(ctx.author.roles, id=608495204399448066) or discord.utils.get(ctx.author.roles, id=684591962094829569) or ctx.author.guild_permissions.manage_roles:
             past_nicknames = await self.client.db.fetch("SELECT * FROM nickname_changes WHERE member_id = $1 ORDER BY time DESC LIMIT 20", user.id)
             if past_nicknames:
@@ -245,4 +249,5 @@ class Whois(commands.Cog):
             else:
                 embed.set_field_at(-1, name="Usernames", value=f"No records", inline=False)
             wiview.base_embed = embed
-            await uimessage.edit(embed=embed)
+            if embed_index_to_show == 0:
+                await uimessage.edit(embed=embed)

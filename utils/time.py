@@ -198,7 +198,7 @@ def human_timedelta(dt, *, source=None, accuracy=3, brief=False, suffix=True):
 
 class UserFriendlyTime(commands.Converter):
     """That way quotes aren't absolutely necessary."""
-    def __init__(self, converter=None, *, default=None):
+    def __init__(self, converter=None, *, default=None, optional_time=False):
         if isinstance(converter, type) and issubclass(converter, commands.Converter):
             converter = converter()
 
@@ -207,6 +207,7 @@ class UserFriendlyTime(commands.Converter):
 
         self.converter = converter
         self.default = default
+        self.optional_time = optional_time
 
     async def check_constraints(self, ctx, now, remaining):
         if self.dt < now:
@@ -258,6 +259,10 @@ class UserFriendlyTime(commands.Converter):
 
         elements = calendar.nlp(argument, sourceTime=now)
         if elements is None or len(elements) == 0:
+            if self.optional_time:
+                result.dt = None
+                result.arg = argument
+                return result
             raise ArgumentBaseError(message='Invalid time provided, try e.g. "tomorrow" or "3 days".')
 
         # handle the following cases:

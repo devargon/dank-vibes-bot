@@ -17,6 +17,8 @@ from datetime import datetime, timedelta
 
 from utils.specialobjects import DankItem
 
+from custom_emojis import DVB_TRUE, DVB_FALSE, DVB_CHECKMARK
+
 guildid = 871734809154707467 if os.getenv('state') == '1' else 1288032530569625660
 grinderteamID = 896052592797417492 if os.getenv('state') == '1' else 827270880182009956
 grinder5mID = 896052612284166204 if os.getenv('state') == '1' else 859494328422367273
@@ -120,22 +122,22 @@ class Grinderutils(commands.Cog, name='grinderutils'):
         embed.add_field(name='Last Logged', value=f"<t:{result.get('last_dono_time')}>\n[Jump to logged message]({result.get('last_dono_msg')})" if result else "[<t:0>](https://www.youtube.com/watch?v=dQw4w9WgXcQ)", inline=True)
         if self.is_5m_grinder(member):
             if result and result.get('today') >= 35000000:
-                value = f"<:DVB_True:887589686808309791> Yes"
+                value = f"{DVB_TRUE} Yes"
             else:
-                value = f"<:DVB_False:887589731515392000> No\nTo complete your requirement, you have to send `⏣ {comma_number(35000000 - result.get('today') if result else 35000000)}` to {self.client.get_user(holder)}."
+                value = f"{DVB_FALSE} No\nTo complete your requirement, you have to send `⏣ {comma_number(35000000 - result.get('today') if result else 35000000)}` to {self.client.get_user(holder)}."
         elif self.is_3m_grinder(member):
             if result and result.get('today') >= 21000000:
-                value = f"<:DVB_True:887589686808309791> Yes"
+                value = f"{DVB_TRUE} Yes"
             else:
-                value = f"<:DVB_False:887589731515392000> No\nTo complete your requirement, you have to send `⏣ {comma_number(21000000 - result.get('today') if result else 21000000)}` to {self.client.get_user(holder)}."
+                value = f"{DVB_FALSE} No\nTo complete your requirement, you have to send `⏣ {comma_number(21000000 - result.get('today') if result else 21000000)}` to {self.client.get_user(holder)}."
         elif self.is_trial_grinder(member):
             if result and result.get('today') >= 21000000:
                 if result.get('today') >= 5000000:
-                    value = f"<:DVB_True:887589686808309791> Yes"
+                    value = f"{DVB_TRUE} Yes"
                 else:
-                    value = f"<:DVB_True:887589686808309791> Yes **if on 3M Tier**"
+                    value = f"{DVB_TRUE} Yes **if on 3M Tier**"
             else:
-                value=f"<:DVB_False:887589731515392000> No\nTo complete your requirement, you have to send `⏣ {comma_number(35000000-result.get('today') if result else 35000000)}`, or `⏣ {comma_number(21000000-result.get('today') if result else 21000000)}` (if you're on the 3M Tier) to {self.client.get_user(holder)}."
+                value=f"{DVB_FALSE} No\nTo complete your requirement, you have to send `⏣ {comma_number(35000000-result.get('today') if result else 35000000)}`, or `⏣ {comma_number(21000000-result.get('today') if result else 21000000)}` (if you're on the 3M Tier) to {self.client.get_user(holder)}."
         else:
             value = "You are not a Grinder."
         embed.add_field(name='Has fulfilled requirement?', value=value, inline=False)
@@ -167,7 +169,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                 result.get('today') + number, result.get('past_week') + number, result.get('last_week'),
                 result.get('past_month') + number, result.get('all_time') + number, round(time.time()),
                 ctx.message.jump_url, member.id, column='today')
-        await ctx.send(f"<:DVB_checkmark:955345523139805214> `⏣ {comma_number(number)}` successfully logged for **{proper_userf(member)}** ({member.id})!\nNew value: `⏣ {comma_number(today)}`")
+        await ctx.send(f"{DVB_CHECKMARK} `⏣ {comma_number(number)}` successfully logged for **{proper_userf(member)}** ({member.id})!\nNew value: `⏣ {comma_number(today)}`")
         add_donations_cmd = self.client.get_command('adddonations')
         ctx = await self.client.get_context(ctx.message)
         ctx.author = ctx.guild.get_member(264019387009204224)
@@ -321,9 +323,9 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                         has_completed_5m = False
                     if has_completed_3m == True:
                         if has_completed_5m is not True:
-                            msg = f"<:DVB_True:887589686808309791> **You have qualified for the 3M Grinder Tier!**\nThe **3M Grinder Tier role** will be assigned to you by a staff soon. You can now enjoy your perks! <3\n\nYou can still qualify for the **5M Grinder Tier** by donating another **⏣ {comma_number(35000000 - old - amt)}**."
+                            msg = f"{DVB_TRUE} **You have qualified for the 3M Grinder Tier!**\nThe **3M Grinder Tier role** will be assigned to you by a staff soon. You can now enjoy your perks! <3\n\nYou can still qualify for the **5M Grinder Tier** by donating another **⏣ {comma_number(35000000 - old - amt)}**."
                         else:
-                            msg = f"<:DVB_True:887589686808309791> **You have qualified for both the 3M and 5M Grinder Tier!**\nBoth the **3M Grinder Tier** and **5M Grinder Tier** roles will be assigned to you by a staff soon. You can now enjoy your perks! <3"
+                            msg = f"{DVB_TRUE} **You have qualified for both the 3M and 5M Grinder Tier!**\nBoth the **3M Grinder Tier** and **5M Grinder Tier** roles will be assigned to you by a staff soon. You can now enjoy your perks! <3"
                         try:
                             await member.send(msg)
                         except:
@@ -459,7 +461,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                     return '5' if self.is_5m_grinder(grinder_user) else '3' if self.is_3m_grinder(grinder_user) else 'T' if self.is_trial_grinder(grinder_user) else 'U'
 
                 def add_text_to_content(data_tuple):
-                    initial_text = f"\n`{generate_tier_label(data_tuple[0])}` <:DVB_True:887589686808309791> **{dat[0]}** sent `⏣ {comma_number(data_tuple[1])}`"
+                    initial_text = f"\n`{generate_tier_label(data_tuple[0])}` {DVB_TRUE} **{dat[0]}** sent `⏣ {comma_number(data_tuple[1])}`"
                     if data_tuple[2] != "":
                         initial_text += f" ({data_tuple[2]})"
                     return initial_text
@@ -473,7 +475,7 @@ class Grinderutils(commands.Cog, name='grinderutils'):
                         content = add_text_to_content(dat)
 
                 def add_text_to_content(data_tuple):
-                    initial_text = f"\n`{generate_tier_label(data_tuple[0])}` <:DVB_False:887589731515392000> **{dat[0]}** sent `⏣ {comma_number(data_tuple[1])}`"
+                    initial_text = f"\n`{generate_tier_label(data_tuple[0])}` {DVB_FALSE} **{dat[0]}** sent `⏣ {comma_number(data_tuple[1])}`"
                     if data_tuple[4] != "":
                         initial_text += f" ({data_tuple[4]})"
                     return initial_text

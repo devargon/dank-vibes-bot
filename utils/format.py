@@ -27,6 +27,11 @@ def durationdisplay(seconds):
         time.append("0" + str(seconds) if seconds < 10 else str(seconds))
     return ":".join(time)
 
+def number_to_emoji(number: int) -> str:
+    if not (1 <= number <= 9):
+        raise ValueError("Number must be between 1 and 9.")
+    return f"{number}\u20E3"
+
 class plural:
     """
     Auto corrects text to show plural or singular depending on the size number.

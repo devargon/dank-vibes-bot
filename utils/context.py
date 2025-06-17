@@ -3,6 +3,8 @@ import contextlib
 import asyncio
 from typing import Iterable, List, Optional
 from discord.ext import commands
+
+from custom_emojis import DVB_CHECKMARK, DVB_CROSSMARK
 from utils.format import box
 
 class DVVTcontext(commands.Context):
@@ -11,11 +13,11 @@ class DVVTcontext(commands.Context):
 
     async def checkmark(self):
         with contextlib.suppress(discord.HTTPException):
-            await self.message.add_reaction("<:DVB_checkmark:955345523139805214>")
+            await self.message.add_reaction(DVB_CHECKMARK)
 
     async def crossmark(self):
         with contextlib.suppress(discord.HTTPException):
-            await self.message.add_reaction("<:DVB_crossmark:955345521151737896>")
+            await self.message.add_reaction(DVB_CROSSMARK)
 
     async def send_interactive(
         self, messages: Iterable[str], box_lang: str = None, timeout: int = 15
@@ -80,15 +82,15 @@ class DVVTcontext(commands.Context):
             if payload.message_id != msg.id or payload.user_id != self.message.author.id:
                 return False
             emoji = str(payload.emoji)
-            if emoji == '<:DVB_checkmark:955345523139805214>':
+            if emoji == DVB_CHECKMARK:
                 confirm = True
                 return True
-            elif emoji == '<:DVB_crossmark:955345521151737896>':
+            elif emoji == DVB_CROSSMARK:
                 confirm = False
                 return True
             return False
 
-        for emoji in ['<:DVB_checkmark:955345523139805214>','<:DVB_crossmark:955345521151737896>']:
+        for emoji in [DVB_CHECKMARK,DVB_CROSSMARK]:
             await msg.add_reaction(emoji)
         try:
             await self.bot.wait_for('raw_reaction_add', check=check, timeout=timeout)

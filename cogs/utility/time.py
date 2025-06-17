@@ -16,6 +16,7 @@ from utils.time import humanize_timedelta
 from utils.format import comma_number
 from time import time
 from main import dvvt
+from custom_emojis import DVB_TRUE, DVB_FALSE
 
 def get_time_color(hour):
     if 0 <= hour < 4:
@@ -163,15 +164,15 @@ class UserTime(commands.Cog):
         if zone is not None:
             selected_timezone = zone.split(" - ")[0]
             if selected_timezone not in pytz.all_timezones:
-                return await ctx.respond(f"<:DVB_False:887589731515392000> I could not find the timezone **{selected_timezone}**.")
+                return await ctx.respond(f"{DVB_FALSE} I could not find the timezone **{selected_timezone}**.")
 
             local_time = discord.utils.utcnow().astimezone(pytz.timezone(selected_timezone))
             formatted_time = local_time.strftime("%I:%M %p")
 
-            response = f"<:DVB_True:887589686808309791> Your timezone is set to **{selected_timezone}**. The current time there is **{formatted_time}**."
+            response = f"{DVB_TRUE} Your timezone is set to **{selected_timezone}**. The current time there is **{formatted_time}**."
         else:
             selected_timezone = None
-            response = f"<:DVB_False:887589731515392000> Your timezone has been removed."
+            response = f"{DVB_FALSE} Your timezone has been removed."
         ui = await self.client.fetch_user_info(ctx.author.id)
         ui.timezone = selected_timezone
         await self.client.update_user_info(ui)
