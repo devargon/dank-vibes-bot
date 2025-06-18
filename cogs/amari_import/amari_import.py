@@ -1255,12 +1255,15 @@ class TaskProcessor:
             async with aiohttp.ClientSession() as session:
 
                 for worker in workers:
-                    status = await worker.fetch_status(session)
-                    if type(status) == dict:
-                        if status.get("ready", None) is True:
-                            if type(client_data := status.get("client")) == dict:
-                                if client_data.get("ready", None) is True:
-                                    current_worker = worker
+                    try:
+                        status = await worker.fetch_status(session)
+                        if type(status) == dict:
+                            if status.get("ready", None) is True:
+                                if type(client_data := status.get("client")) == dict:
+                                    if client_data.get("ready", None) is True:
+                                        current_worker = worker
+                    except Exception as e:
+                        continue
                 if current_worker is None:
                     commands_to_run_string = []
                     if expected_level <= 200:
