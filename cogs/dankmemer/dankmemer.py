@@ -24,6 +24,8 @@ from utils.specialobjects import DankItem
 from .items import DankItems
 import cogs.dankmemer
 
+dank_memer_work_messages = {}
+
 
 item_name_regex = re.compile(r"^(.+) \([\d,]*\)")
 trade_val_re = re.compile(r"Average Value: \u23e3 ([\d,]*)")
@@ -1050,6 +1052,13 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
             if type(aftermsg.embeds[0].title) == str and ("Terrible work!" in aftermsg.embeds[0].title or "Great work!" in aftermsg.embeds[0].title):
                 nextworktime = round(time.time()) + 3600
                 await self.handle_reminder_entry(member.id, 6, aftermsg.channel.id, aftermsg.guild.id, nextworktime)
+                if dank_memer_work_messages.get(aftermsg.id, None) is not None:
+                    try:
+                        assistance_message_id: Union[int, None] = dank_memer_work_messages.pop(aftermsg.id, None)
+                        if assistance_message_id is not None:
+                            await aftermsg.channel.get_partial_message(assistance_message_id).delete()
+                    except Exception as e:
+                        pass
                 with contextlib.suppress(discord.HTTPException):
                     await checkmark(aftermsg)
 
@@ -1090,7 +1099,8 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                                             custom_id=None
                                         )
                                         view.add_item(new_button)
-                        await aftermsg.reply(embed=discord.Embed(description=f"Select **{correct_result[0]}**", color=self.client.embed_color), view=view)
+                        assistance_message = await aftermsg.reply(embed=discord.Embed(description=f"Select **{correct_result[0]}**", color=self.client.embed_color), view=view)
+                        dank_memer_work_messages[aftermsg.id] = assistance_message.id
                     else:
                         print_dev("Result was not found")
 
@@ -1116,7 +1126,8 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                                     emoji = number_to_emoji(list_of_words.index(row_item_component.label.lower())+1) if is_button_part_of_list else None
                                     new_button = MockShiftButton(style=discord.ButtonStyle.grey, label=row_item_component.label, disabled=False, custom_id = None, url = None, emoji = emoji)
                                     view.add_item(new_button)
-                    await aftermsg.reply(embed=embed, view=view)
+                    assistance_message = await aftermsg.reply(embed=embed, view=view)
+                    dank_memer_work_messages[aftermsg.id] = assistance_message.id
 
                 if beforemsg.embeds[0].description.startswith("Look at the emoji closely!"):
                         lines = beforemsg.embeds[0].description.split("\n")
@@ -1145,7 +1156,8 @@ class DankMemer(DankItems, Lottery, commands.Cog, name='dankmemer'):
                                                     custom_id=None
                                                 )
                                                 view.add_item(new_button)
-                            await aftermsg.reply(embed=embed, view=view)
+                            assistance_message = await aftermsg.reply(embed=embed, view=view)
+                            dank_memer_work_messages[aftermsg.id] = assistance_message.id
 
 
 
