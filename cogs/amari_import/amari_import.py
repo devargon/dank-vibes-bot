@@ -1481,7 +1481,7 @@ class AmariImport(commands.Cog, name="amari_import"):
     def __init__(self, client: dvvt):
         self.client = client
         self.amari_import_dao = AmariImportDAO(client)
-        self.task_processor = TaskProcessor(client, self.amari_import_dao, debug_mode=True)
+        self.task_processor = TaskProcessor(client, self.amari_import_dao, debug_mode=False)
 
     @commands.Cog.listener()
     async def on_ready(self):
