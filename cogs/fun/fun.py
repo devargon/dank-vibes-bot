@@ -119,7 +119,7 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, n
         """
         Mute people for a random duration between 30 to 120 seconds.
         """
-        if self.gen_is_muted and ctx.channel.id == 608498967474601995:
+        if self.gen_is_muted and ctx.channel.id == 1288032530569625663:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("Wait until the lockdown from `dv.lockgen` is over.")
         if member is None:
@@ -417,7 +417,7 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, n
         """
         Locks specified channel for 5 seconds
         """
-        genchatid = 608498967474601995 # DV's genchat: 608498967474601995
+        genchatid = 1288032530569625663 # DV's genchat: 1288032530569625663
         genchat = self.client.get_channel(genchatid)
         if genchat is None:
             ctx.command.reset_cooldown(ctx)

@@ -30,7 +30,7 @@ from custom_emojis import DVB_TRUE, DVB_FALSE, DVB_NEUTRAL, DVB_TYPING_INDICATOR
 voteid = 874897331252760586 if os.getenv('state') == '1' else 683884762997587998
 elite_gw_channel = 871737332431216661 if os.getenv('state') == '1' else 741254464303923220
 level_100id = 943883531573157889 if os.getenv('state') == '1' else 717120742512394323
-gen_chat_id = 871737314831908974 if os.getenv('state') == '1' else 608498967474601995
+gen_chat_id = 871737314831908974 if os.getenv('state') == '1' else 1288032530569625663
 gwstaff_id = 983277305889697823  if os.getenv('state') == '1' else 627284965222121482
 gw_ping = 983284295579893790 if os.getenv('state') == '1' else 758175760909074432
 elitegw_ping = 895815588289581096 if os.getenv('state') == '1' else 758174135276142593
@@ -659,7 +659,7 @@ class GiveawayView(discord.ui.View):
                         elif donator100m():
                             remarks.append(f"You can get <@&769491608189927434> by donating **⏣ 100,000,000** worth of Dank Memer items/coins in <#652729093649072168>, <#786944439360290826>, or <#722874833540481054>.")
                         elif (req := msg_250() or msg_1000() or msg_500()):
-                            remarks.append(f"You can get <@&{req[1]}> by chatting in <#608498967474601995> and reaching **{req[2]} messages sent** in `dv.mymessages`.")
+                            remarks.append(f"You can get <@&{req[1]}> by chatting in <#1288032530569625663> and reaching **{req[2]} messages sent** in `dv.mymessages`.")
                         elif elite_giveaway_ping():
                             remarks.append(f"You can get <@&758174135276142593> by running `-rank elite giveaway ping` in <#698462922682138654>, or selecting the **Elite Giveaway Ping** role under **Dank Pings** in <#782586550486695936>.")
                         if gway_only_requires_voting():

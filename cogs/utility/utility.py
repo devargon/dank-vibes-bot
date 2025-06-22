@@ -532,13 +532,13 @@ class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight
     @commands.command(name="mymessages", aliases=["messagecount", "mym"])
     async def messagecount(self, ctx, member:discord.Member = None):
         """
-        Shows the number of messages a member has sent in <#608498967474601995>.
+        Shows the number of messages a member has sent in <#1288032530569625663>.
         """
         if member is None:
             member = ctx.author
         user = await self.client.db.fetchrow("SELECT * FROM messagelog WHERE user_id = $1", member.id)
         if user is None:
-            return await ctx.send("Hmm... it appears that you have not sent a message in <#608498967474601995>. Contact a mod if you think this is wrong.")
+            return await ctx.send("Hmm... it appears that you have not sent a message in <#1288032530569625663>. Contact a mod if you think this is wrong.")
         all = await self.client.db.fetch("SELECT user_id FROM messagelog ORDER BY messagecount DESC")
         user2 = await self.client.db.fetchrow("SELECT user_id FROM messagelog WHERE user_id = $1", member.id)
         position = ordinal(all.index(user2)+1)

@@ -148,7 +148,7 @@ def is_bav_or_mystic() -> Callable:
 
 def not_in_gen():
     async def predicate(ctx: DVVTcontext):
-        channel_id = 608498967474601995
+        channel_id = 1288032530569625663
         if ctx.guild:
             if not ctx.author.guild_permissions.manage_roles or await ctx.is_bot_dev():
                 if ctx.channel.id == channel_id:
