@@ -32,22 +32,12 @@ class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banapp
     """
     def __init__(self, client):
         self.client: dvvt = client
-        self.server = server.HTTPServer(
-            bot=self.client,
-            host="0.0.0.0",
-            port=5003,
-        )
-        self.client.loop.create_task(self._start_server())
+        self.server = client.server
         self.discordBanAppealPostQueue: typing.List[BanAppeal] = []
         self.discordBanAppealUpdateQueue: typing.List[BanAppeal] = []
         self.notifyUpdateQueueStarted = False
         self.notifyPostQueueStarted = False
         self.notifyDeadlineAppealsStarted = False
-
-    async def _start_server(self):
-        await self.client.wait_until_ready()
-        print("Starting custom Web Server for port 5003")
-        await self.server.start()
 
     async def generate_embed(self, appeal: BanAppeal):
         embed = discord.Embed(title=f"Ban Appeal #{appeal.appeal_id}")

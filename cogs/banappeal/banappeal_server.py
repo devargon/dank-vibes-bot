@@ -30,14 +30,9 @@ ban_cache = {}
 
 
 class BanAppealServer(commands.Cog):
-    def __init__(self, client):
+    def __init__(self, client: dvvt):
         self.client: dvvt = client
-        self.server = server.HTTPServer(
-            bot=self.client,
-            host="0.0.0.0",
-            port=5003,
-        )
-        self.client.loop.create_task(self._start_server())
+        self.server = client.server
 
     @commands.Cog.listener()
     async def on_member_ban(self, guild: discord.Guild, user: discord.User):
@@ -58,12 +53,6 @@ class BanAppealServer(commands.Cog):
         if guild.id not in ban_cache:
             ban_cache[guild.id] = {}
         ban_cache[guild.id][user.id] = ({"is_banned": False}, current_time)
-
-
-    async def _start_server(self):
-        await self.client.wait_until_ready()
-        print("Starting custom Web Server for port 5003")
-        await self.server.start()
 
     @server.add_route(path="/api/user", method="GET", cog="BanAppeal")
     async def get_user_details(self: dvvt, request: web.Request):

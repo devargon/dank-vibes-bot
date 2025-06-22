@@ -16,6 +16,7 @@ from utils.format import print_exception, proper_userf
 from utils.specialobjects import MISSING, ServerConfiguration, AwaitingAmariData, NoAmariData, UserInfo
 from utils.errors import AmariUserNotFound, AmariDataNotFound, AmariError, AmariDeveloperError
 from utils.botlogger import BotLogger
+import server
 
 
 class EditContent:
@@ -101,10 +102,21 @@ class dvvt(commands.Bot):
         self.clown_duration = 180
         self.logger = BotLogger(self)
         self.logstrf = strfformat
+        self.server = server.HTTPServer(
+            bot=self,
+            host="0.0.0.0",
+            port=5003,
+        )
+        self.loop.create_task(self._start_server())
         for ext in self.available_extensions:
             self.load_extension(ext, store=False)
             print(f"{get_display_time_now()} | Loaded {ext}")
         self.add_check(self.check_application_command_validity)
+
+    async def _start_server(self):
+        await self.wait_until_ready()
+        print("Starting custom Web Server for port 5003")
+        await self.server.start()
 
     async def fetch_amari_data(self, user_id: int, guild_id: int) -> Tuple[Union[None, api.User, AwaitingAmariData, NoAmariData], int, Exception]:
         guild_data = self.amari_data.get(guild_id, None)
