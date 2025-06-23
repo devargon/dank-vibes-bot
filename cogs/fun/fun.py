@@ -5,6 +5,7 @@ from discord import Webhook
 from discord.commands import Option
 from discord.ext import commands
 
+from main import dvvt
 from utils.context import DVVTcontext
 
 import os
@@ -23,6 +24,7 @@ from utils import checks
 from utils.time import humanize_timedelta
 from utils.errors import ArgumentBaseError, NicknameIsManaged
 from utils.format import generate_loadbar, proper_userf
+from .apple_shortcuts import AppleShortcuts
 
 from .dm import dm
 from .snipe import snipe
@@ -37,11 +39,11 @@ tenorAPI = os.getenv('tenorAPI')
 
 RandomColorID = 943530953110880327 if os.getenv('state') == '1' else 1317873362994987018
 
-class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, name='fun'):
+class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, AppleShortcuts, commands.Cog, name='fun'):
     """
     Fun commands
     """
-    def __init__(self, client):
+    def __init__(self, client: dvvt):
         self.client = client
         self.dmconfig = {}
         self.mutedusers = {}
@@ -61,6 +63,7 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, commands.Cog, n
         self.alex_api = alexflipnote.Client()
         self.rantimes = {}
         self.session = aiohttp.ClientSession()
+        self.server = client.server
         with open('assets/localization/dumbfight_statements.json', 'r') as f:
             self.dumbfight_statements = json.load(f)
 
