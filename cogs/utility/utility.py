@@ -529,8 +529,8 @@ class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight
         await ctx.send(con, embed=embed)
 
     @checks.not_in_gen()
-    @commands.command(name="mymessages", aliases=["messagecount", "mym"])
-    async def messagecount(self, ctx, member:discord.Member = None):
+    @commands.command(name="mymessages", aliases=["mym"])
+    async def mymessages(self, ctx, member:discord.Member = None):
         """
         Shows the number of messages a member has sent in <#1288032530569625663>.
         """
