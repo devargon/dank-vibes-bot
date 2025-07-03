@@ -114,7 +114,7 @@ class PrivchannelConfig(commands.Cog):
 
 
     @checks.has_permissions_or_role(manage_roles=True)
-    @commands.command(name="cpvc")
+    @commands.command(name="pvcconfig")
     async def privchannel_config(self, ctx: DVVTcontext, owner: Optional[discord.Member] = None, channel: Optional[discord.TextChannel] = None):
         if owner is None and channel is None:
             return await ctx.send("You need to specify a channel or channel owner.")
