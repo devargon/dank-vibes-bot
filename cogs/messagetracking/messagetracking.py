@@ -21,6 +21,8 @@ class MessageTracking(commands.Cog, name='MessageTracking'):
             return
         if message.webhook_id:
             return
+        if message.channel.id != 1288032530569625663:
+            return
         if len(str(message.content)) == 1:
             return
         self.queue.append(message.author)
