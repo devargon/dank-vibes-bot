@@ -610,25 +610,21 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
         """
 
         class editCountButton(discord.ui.Button):
-            def __init__(self, client: dvvt, invocating_member: discord.Member, member: discord.Member, initial_number: int, action: int):
+            def __init__(self, client: dvvt, initial_number: int, action: int):
                 super().__init__(label=f"{action:+d}", style=discord.ButtonStyle.primary, disabled=(initial_number + action) < 0)
                 self.action = action
                 self.client = client
-                self.invocating_member = invocating_member
-                self.member = member
 
             async def callback(self, interaction: discord.Interaction):
                 view: editMessageCountView = self.view
-                if interaction.user.id != self.invocating_member.id:
-                    return await interaction.response.send_message("not 4 u", ephemeral=True)
-                await view.add_or_remove_from_message_count(self.action)
+                await view.add_or_remove_from_message_count(self.action, interaction.channel_id, interaction.message.id)
                 view.update_buttons()
                 await interaction.response.edit_message(view=view)
 
 
         class editMessageCountView(discord.ui.View):
             def __init__(self, client: dvvt, invocating_member: discord.Member, member: discord.Member, initial_count: int):
-                super().__init__(timeout=60.0)
+                super().__init__(timeout=30.0, disable_on_timeout=True)
                 self.client: dvvt = client
                 self.invocating_member = invocating_member
                 self.member = member
@@ -638,7 +634,7 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
 
             async def interaction_check(self, interaction: discord.Interaction):
                 if interaction.user.id != self.invocating_member.id:
-                    await interaction.response.send_message("You cannot edit this user's message count.", ephemeral=True)
+                    await interaction.response.send_message("not 4 u", ephemeral=True)
                     return False
                 return True
 
@@ -650,8 +646,9 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
                 else:
                     current_count = current_count_record.get("mcount")
                 new_count = current_count + action
-                await self.client.db.execute("UPDATE messagelog SET messagecount = $1 WHERE user_id = $2", new_count, self.member.id)
                 await self.client.db.execute("UPDATE messagecount SET mcount = $1 WHERE guild_id = $2 AND user_id = $3", new_count, self.member.guild.id, self.member.id)
+                await self.client.db.execute("INSERT INTO messagecount_logs (user_id, performed_by_user_id, change, before, after, guild_id, channel_id, message_id, reason) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+                                             self.member.id, self.invocating_member.id, action, current_count, new_count, self.member.guild.id, channel_id, message_id, "MANUAL_ADMIN")
                 self.count = new_count
                 return current_count, new_count
 
@@ -661,10 +658,11 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
                     existing_count = 0
                     await self.client.db.execute("INSERT INTO messagecount(guild_id, user_id, mcount) VALUES($1, $2, $3)", self.member.guild.id, self.member.id, count)
                 else:
-                    existing_count = messagecount_record.get("messagecount")
-                    await self.client.db.execute("UPDATE messagelog SET messagecount = $1 WHERE user_id = $2", new_count, self.member.id)
                     existing_count = messagecount_record.get("mcount")
                 await self.client.db.execute("UPDATE messagecount SET mcount = $1 WHERE guild_id = $2 AND user_id = $3", new_count, self.member.guild.id, self.member.id)
+                difference = new_count - existing_count
+                await self.client.db.execute("INSERT INTO messagecount_logs (user_id, performed_by_user_id, change, before, after, guild_id, channel_id, message_id, reason) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+                                             self.member.id, self.invocating_member.id, difference, existing_count, new_count, self.member.guild.id, channel_id, message_id, "MANUAL_ADMIN")
                 self.count = new_count
                 return existing_count, new_count
 
@@ -679,16 +677,20 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
 
 
 
-        existing_entry = await self.client.db.fetchrow("SELECT * FROM messagelog WHERE user_id = $1", member.id)
+        existing_entry = await self.client.db.fetchrow("SELECT * FROM messagecount WHERE guild_id = $1 AND user_id = $2", member.guild.id, member.id)
         if existing_entry is None:
             existing_count = 0
-            await self.client.db.execute("INSERT INTO messagelog(user_id, messagecount) VALUES($1, $2)", member.id, 0)
+            await self.client.db.execute("INSERT INTO messagecount(guild_id, user_id, mcount) VALUES($1, $2, $3)", member.guild.id, member.id, 0)
         else:
-            existing_count = existing_entry.get("messagecount")
+            existing_count = existing_entry.get("mcount")
 
         if count is not None:
-            await self.client.db.execute("UPDATE messagelog SET messagecount = $1 WHERE user_id = $2", count, member.id)
             await self.client.db.execute("UPDATE messagecount SET mcount = $1 WHERE guild_id = $2 AND user_id = $3", count, member.guild.id, member.id)
+            difference = count - existing_count
+            await self.client.db.execute(
+                "INSERT INTO messagecount_logs (user_id, performed_by_user_id, change, before, after, guild_id, channel_id, message_id, reason) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+                member.id, ctx.author.id, difference, existing_count, count, ctx.guild.id,
+                ctx.channel.id, ctx.message.id, "MANUAL_ADMIN")
             await ctx.send(f"Updated **{member}**'s message count from {existing_count} to {count}.")
         else:
             view = editMessageCountView(self.client, ctx.author, member, existing_count)
