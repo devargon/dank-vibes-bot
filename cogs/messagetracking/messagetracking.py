@@ -25,18 +25,21 @@ class MessageTracking(commands.Cog, name='MessageTracking'):
         if len(str(message.content)) == 1:
             return
         self.queue.append(message.author)
-        result = await self.client.db.fetchrow("SELECT * FROM messagelog WHERE user_id = $1", message.author.id)
+        result = await self.client.db.fetchrow("SELECT * FROM messagecount WHERE user_id = $1 AND guild_id = $2", message.author.id, message.guild.id)
         if result is None:
-            await self.client.db.execute("INSERT INTO messagelog VALUES($1, $2)", message.author.id, 1)
-            existing_count = 1
+            await self.client.db.execute("INSERT INTO messagecount (guild_id, user_id, mcount) VALUES($1, $2, $3)", message.guild.id, message.author.id, 0)
+            existing_count = 0
         else:
             existing_count = result.get('messagecount')
             await self.client.db.execute("UPDATE messagelog SET messagecount = $1 WHERE user_id = $2", existing_count+1, message.author.id)
         milestones = await self.client.db.fetch("SELECT * FROM messagemilestones")
+            existing_count = result.get('mcount')
+        new_count = existing_count + add_message_count
+        await self.client.db.execute("UPDATE messagecount SET mcount = $1 WHERE guild_id = $2 AND user_id = $3", new_count, message.guild.id, message.author.id)
         if len(milestones) != 0:  # there are settings for milestones
             rolesummary = ""
             for milestone in milestones:
-                role = message.guild.get_role(milestone.get('roleid'))  # gets the milestone role
+                role = message.guild.get_role(milestone.get('role_id'))  # gets the milestone role
                 if (
                         role is not None
                         and existing_count+1 >= milestone.get('messagecount')
