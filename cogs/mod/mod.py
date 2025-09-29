@@ -803,7 +803,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         else:
             auditreason = reason + f" | Requested by {proper_userf(ctx.author)} ({ctx.author.id}"
         if isinstance(member, discord.Member):
-            embed = discord.Embed(title="You were banned by a Karuta Senpai!", description=f"Reason: **{reason}**\n\n> If you would like to appeal against your ban, submit an appeal [here](https://dankvibes.banappeal.nogra.xyz). Specify that you were banned by a Karuta Senpai in the `Other` question.", timestamp=discord.utils.utcnow(), color=discord.Color.red()).set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url, url="https://discord.gg/dankmemer")
+            embed = discord.Embed(title="You were banned by a Karuta Senpai!", description=f"Reason: **{reason}**\n\n> If you would like to appeal against your ban, submit an appeal [here](https://dankvibes.banappeal.nogra.app). Specify that you were banned by a Karuta Senpai in the `Other` question.", timestamp=discord.utils.utcnow(), color=discord.Color.red()).set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url, url="https://discord.gg/dankmemer")
             try:
                 await member.send(embed=embed)
             except Exception as e:
@@ -1476,7 +1476,7 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         embed1 = discord.Embed(title="Ban Appeals Guide (for MODMS+)", color=0x58b9ff)
         embed1.add_field(
             name="Basic Information",
-            value="- A ban appeal is posted in <#1345459131204505691> whenever a user creates an appeal on the [ban appeal site](https://dankvibes.banappeal.nogra.xyz).\n- A banned user can only make an appeal if;\n- They are banned from DV (obviously)\n- They are not blacklisted from using the site (not implemented yet)\n- They have not made a ban appeal in the past 30 days\n- They don\'t have a pending appeal",
+            value="- A ban appeal is posted in <#1345459131204505691> whenever a user creates an appeal on the [ban appeal site](https://dankvibes.banappeal.nogra.app).\n- A banned user can only make an appeal if;\n- They are banned from DV (obviously)\n- They are not blacklisted from using the site (not implemented yet)\n- They have not made a ban appeal in the past 30 days\n- They don\'t have a pending appeal",
             inline=False
         )
         embed1.add_field(

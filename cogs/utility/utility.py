@@ -381,7 +381,7 @@ class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight
         embed = discord.Embed(color=self.client.embed_color, timestamp=discord.utils.utcnow())
         embed.add_field(name="Uptime", value=uptime_str, inline=False)
         embed.add_field(name='Since', value=since, inline=False)
-        embed.add_field(name="Having issues?", value="Check the status page at https://status.nogra.xyz/status/dv", inline=False)
+        embed.add_field(name="Having issues?", value="Check the status page at https://status.nogra.app/status/dv", inline=False)
         embed.set_author(name=ctx.me.name)
         await ctx.send(embed=embed)
 
@@ -397,7 +397,7 @@ class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight
         totalping = round((end - start) * 1000)
         embed = discord.Embed(title='Pong!', color=self.client.embed_color)
         embed.description = f"**API:** `{round(self.client.latency * 1000)}` ms\n**RoundTrip:** `{totalping}` ms"
-        embed.add_field(name="Having issues?", value="Check the status page at https://status.nogra.xyz/status/dv",
+        embed.add_field(name="Having issues?", value="Check the status page at https://status.nogra.app/status/dv",
                         inline=False)
         try:
             await message.edit(content=None, embed=embed)
@@ -458,7 +458,7 @@ class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight
         embed.add_field(name='Versions', value=f"<:DVB_python:955345550193078272> `{py_version}`\n<:DVB_PyCord:937351289514385428> `{dpy_version}`", inline=True)
         embed.add_field(name='Developers', value=f"{str(self.client.get_user(312876934755385344))}", inline=True)
         embed.add_field(name="Thanks To", value=f"{str(await self.client.fetch_user(727498137232736306))}\n{self.client.get_user(321892489470410763)}", inline=True)
-        embed.add_field(name="Important Links", value="[Status Page](https://status.nogra.xyz/status/dv)\n[Terms of Service](https://docs.dvbot.nogra.xyz/legal/terms/) and [Privacy Policy](https://docs.dvbot.nogra.xyz/legal/privacy/)", inline=False)
+        embed.add_field(name="Important Links", value="[Status Page](https://status.nogra.app/status/dv)\n[Terms of Service](https://nogra.app/terms) and [Privacy Policy](https://nogra.app/privacy)", inline=False)
         if ctx.author.id in [312876934755385344, 515725341910892555, 321892489470410763]:
             loop = asyncio.get_event_loop()
             def get_advanced_details():
