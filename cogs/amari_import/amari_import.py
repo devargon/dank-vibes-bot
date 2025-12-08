@@ -1255,68 +1255,25 @@ class TaskProcessor:
             workers = await self.amari_import_dao.fetchAllTaskWorkers()
             current_worker = None
             status = None
-            async with aiohttp.ClientSession() as session:
-
-                for worker in workers:
-                    status = await worker.fetch_status(session)
-                    if type(status) == dict:
-                        if status.get("ready", None) is True:
-                            if type(client_data := status.get("client")) == dict:
-                                if client_data.get("ready", None) is True:
-                                    current_worker = worker
-                if current_worker is None:
-                    commands_to_run_string = []
-                    if expected_level <= 200:
-                        commands_to_run_string.append(f"*givelevel {task.user_id} {expected_level}")
-                        level_from_which_to_add_xp_after = expected_level
-                    else:
-                        commands_to_run_string.append(f"*givelevel {task.user_id} 200")
-                        level_from_which_to_add_xp_after = 200
-                    current_xp_added = self.amari_data_manager.get_xp_for_level(level_from_which_to_add_xp_after)
-                    remaining_xp_to_add = resultingexp - current_xp_added
-                    while remaining_xp_to_add > 100000:
-                        commands_to_run_string.append(f"*modifyexp add 100000 {task.user_id}")
-                        remaining_xp_to_add -= 100000
-                    commands_to_run_string.append(f"*modifyexp add {remaining_xp_to_add} {task.user_id}")
-                    await task_ticket_channel.send(f"<@&1381501781556727859> I could not find a worker to assist this ticket. Please run the commands below manually:\n\n" + "\n".join(commands_to_run_string), allowed_mentions=discord.AllowedMentions(roles=True))
-                    await self._mark_task_failed(
-                        task, task_ticket_channel,
-                        error_message="No worker found",
-                        user_friendly_error="I was not able to find a worker to assist this ticket. Please try again later."
-                    )
-
-                    return
-                await self.amari_import_dao.create_task_log(
-                    task_id=task.id,
-                    task_status_before="IN_PROGRESS",
-                    task_status_after="IN_PROGRESS",
-                    event="worker_assigned",
-                    event_user_id=worker.worker_user_id,
-                    details=f"worker_host={worker.host}"
-                )
-
-                worker_user = await self.client.get_or_fetch_user(current_worker.worker_user_id)
-                await finding_worker_message.edit(content=f"## You are being served by {worker_user.mention}.\n{worker_user} has been online since {discord.utils.format_dt(datetime.fromisoformat(status.get('client').get('readyAt')), 'f')} to assist Amari transfers.")
-                commands_to_run = []
-                if expected_level <= 200:
-                    commands_to_run.append(worker.give_level(session, task.ticket_guild_id, task.ticket_channel_id, task.user_id, expected_level))
-                    level_from_which_to_add_xp_after = expected_level
-
-                else:
-                    commands_to_run.append(worker.give_level(session, task.ticket_guild_id, task.ticket_channel_id, task.user_id, 200))
-                    level_from_which_to_add_xp_after = 200
-                current_xp_added = self.amari_data_manager.get_xp_for_level(level_from_which_to_add_xp_after)
-                remaining_xp_to_add = resultingexp - current_xp_added
-                while remaining_xp_to_add > 100000:
-                    commands_to_run.append(worker.modify_exp(session, task.ticket_guild_id, task.ticket_channel_id, task.user_id, "add", 100000))
-                    remaining_xp_to_add -= 100000
-                commands_to_run.append(
-                    worker.modify_exp(session, task.ticket_guild_id, task.ticket_channel_id, task.user_id, "add", remaining_xp_to_add))
-                for command in commands_to_run:
-                    result = await command
-                    await self.amari_import_dao.create_task_log(task.id, task.status, task.status, "send_command", self.client.user.id, f"Run command `{result.get('message')}`")
-                if task.user_id == 827080569501777942:
-                    await worker.give_level(session, task.ticket_guild_id, task.ticket_channel_id, task.user_id, 1)
+            commands_to_run_string = []
+            if expected_level <= 200:
+                commands_to_run_string.append(f"*givelevel {task.user_id} {expected_level}")
+                level_from_which_to_add_xp_after = expected_level
+            else:
+                commands_to_run_string.append(f"*givelevel {task.user_id} 200")
+                level_from_which_to_add_xp_after = 200
+            current_xp_added = self.amari_data_manager.get_xp_for_level(level_from_which_to_add_xp_after)
+            remaining_xp_to_add = resultingexp - current_xp_added
+            while remaining_xp_to_add > 100000:
+                commands_to_run_string.append(f"*modifyexp add 100000 {task.user_id}")
+                remaining_xp_to_add -= 100000
+            commands_to_run_string.append(f"*modifyexp add {remaining_xp_to_add} {task.user_id}")
+            await task_ticket_channel.send(f"<@&1381501781556727859> Please run the commands below manually:\n\n" + "\n".join(commands_to_run_string), allowed_mentions=discord.AllowedMentions(roles=True))
+            await self._mark_task_failed(
+                task, task_ticket_channel,
+                error_message="No worker found",
+                user_friendly_error="I was not able to find a worker to assist this ticket. Please try again later."
+            )
         except Exception as e:
             await self._mark_task_failed(
                 task, task_ticket_channel,
