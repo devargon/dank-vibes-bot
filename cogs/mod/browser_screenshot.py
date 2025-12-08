@@ -83,7 +83,7 @@ class BrowserScreenshot(commands.Cog):
 
                     service = Service(executable_path=driver_path)
 
-                    browser = webdriver.Chrome(options=options, executable_path=driver_path)
+                    browser = webdriver.Chrome(service=service, options=options)
 
                 except SessionNotCreatedException as e:
                     return f"Could not start browser: {str(e)}"
