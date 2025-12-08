@@ -121,7 +121,7 @@ class HeistTags(commands.Cog):
         except Exception as e:
             return await ctx.respond(f"**Fatal error**\n{DVB_FALSE} Failed to send the heist embed in `{heistannouncements_channel}`.\n```py\n# More details\n{e}```", ephemeral=True, view=SafeToDismiss())
         timer = 0
-        thx_embed = discord.Embed(title=f"<a:DVpopper:904267438839959553> {currency} {comma_number(amount)} HEIST <a:DVpopper:904267438839959553>", description=f"<:dv_itPepeCrownOwO:857898556487761951> Thank {sponsors_str} for the heist in <#608498967474601995> <:dv_itPepeCrownOwO:857898556487761951>\n\nIf you wish to host a heist run `/hdonate <amount> [optional level req]` in <#786944439360290826> `[Minimum: 10,000,000]`")
+        thx_embed = discord.Embed(title=f"<a:DVpopper:904267438839959553> {currency} {comma_number(amount)} HEIST <a:DVpopper:904267438839959553>", description=f"<:dv_itPepeCrownOwO:857898556487761951> Thank {sponsors_str} for the heist in <#1288032530569625663> <:dv_itPepeCrownOwO:857898556487761951>\n\nIf you wish to host a heist run `/hdonate <amount> [optional level req]` in <#786944439360290826> `[Minimum: 10,000,000]`")
         thx_embed.set_thumbnail(url=ctx.guild.icon.with_size(128).url)
         heistutil_view = HeistUtils(heistannouncements_channel, serverheists_channel, thx_embed)
         heistutil_view.message = await ctx.respond("Heist Started!\n**DO NOT dismiss this message until the heist is over.**", view=heistutil_view, ephemeral=True)

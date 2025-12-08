@@ -109,7 +109,7 @@ class Events(GuildChannelDelete, RawTyping, GuildChannelCreate, MemberJoin, Stat
                             if allow_bypass is True:
                                 continue
                             else:
-                                msg = f"Welcome to {member.guild.name}, {member.name}!\nAs we do not allow alts in this server, **all new accounts are automatically banned**. \n\nIf you were wrongfully banned, feel free to appeal at this link: https://dankvibes.banappeal.nogra.xyz\nAllow a few days for a response."
+                                msg = f"Welcome to {member.guild.name}, {member.name}!\nAs we do not allow alts in this server, **all new accounts are automatically banned**. \n\nIf you were wrongfully banned, feel free to appeal at this link: https://dankvibes.banappeal.nogra.app\nAllow a few days for a response."
                                 try:
                                     await member.send(msg)
                                 except Exception as e:

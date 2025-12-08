@@ -34,7 +34,7 @@ class MemberJoin(commands.Cog):
                     if log_channel is not None:
                         await log_channel.send(f"{proper_userf(member)} ({member.id}) was allowed to bypass the Auto-ban and allowed into the server.")
                 else:
-                    msg = f"Welcome to {member.guild.name}, {member.name}!\nAs we do not allow alts in this server, **all new accounts are automatically banned**. \n\nIf you were wrongfully banned, feel free to appeal at this link: https://dankvibes.banappeal.nogra.xyz\nAllow a few days for a response."
+                    msg = f"Welcome to {member.guild.name}, {member.name}!\nAs we do not allow alts in this server, **all new accounts are automatically banned**. \n\nIf you were wrongfully banned, feel free to appeal at this link: https://dankvibes.banappeal.nogra.app\nAllow a few days for a response."
                     try:
                         await member.send(msg)
                     except Exception as e:

@@ -1,5 +1,6 @@
 create table if not exists messagemilestones
 (
-    messagecount integer,
-    roleid       bigint
+    guild_id bigint not null,
+    role_id bigint not null,
+    messagecount integer not null
 );

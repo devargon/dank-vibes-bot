@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS shortcuts_devices(
+    id SERIAL PRIMARY KEY,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    device_name VARCHAR(255) NOT NULL,
+    device_model VARCHAR(255) NOT NULL,
+    guild_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ
+);

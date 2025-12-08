@@ -381,7 +381,7 @@ class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight
         embed = discord.Embed(color=self.client.embed_color, timestamp=discord.utils.utcnow())
         embed.add_field(name="Uptime", value=uptime_str, inline=False)
         embed.add_field(name='Since', value=since, inline=False)
-        embed.add_field(name="Having issues?", value="Check the status page at https://status.nogra.xyz/status/dv", inline=False)
+        embed.add_field(name="Having issues?", value="Check the status page at https://status.nogra.app/status/dv", inline=False)
         embed.set_author(name=ctx.me.name)
         await ctx.send(embed=embed)
 
@@ -397,7 +397,7 @@ class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight
         totalping = round((end - start) * 1000)
         embed = discord.Embed(title='Pong!', color=self.client.embed_color)
         embed.description = f"**API:** `{round(self.client.latency * 1000)}` ms\n**RoundTrip:** `{totalping}` ms"
-        embed.add_field(name="Having issues?", value="Check the status page at https://status.nogra.xyz/status/dv",
+        embed.add_field(name="Having issues?", value="Check the status page at https://status.nogra.app/status/dv",
                         inline=False)
         try:
             await message.edit(content=None, embed=embed)
@@ -458,7 +458,7 @@ class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight
         embed.add_field(name='Versions', value=f"<:DVB_python:955345550193078272> `{py_version}`\n<:DVB_PyCord:937351289514385428> `{dpy_version}`", inline=True)
         embed.add_field(name='Developers', value=f"{str(self.client.get_user(312876934755385344))}", inline=True)
         embed.add_field(name="Thanks To", value=f"{str(await self.client.fetch_user(727498137232736306))}\n{self.client.get_user(321892489470410763)}", inline=True)
-        embed.add_field(name="Important Links", value="[Status Page](https://status.nogra.xyz/status/dv)\n[Terms of Service](https://docs.dvbot.nogra.xyz/legal/terms/) and [Privacy Policy](https://docs.dvbot.nogra.xyz/legal/privacy/)", inline=False)
+        embed.add_field(name="Important Links", value="[Status Page](https://status.nogra.app/status/dv)\n[Terms of Service](https://nogra.app/terms) and [Privacy Policy](https://nogra.app/privacy)", inline=False)
         if ctx.author.id in [312876934755385344, 515725341910892555, 321892489470410763]:
             loop = asyncio.get_event_loop()
             def get_advanced_details():
@@ -529,22 +529,22 @@ class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight
         await ctx.send(con, embed=embed)
 
     @checks.not_in_gen()
-    @commands.command(name="mymessages", aliases=["messagecount", "mym"])
-    async def messagecount(self, ctx, member:discord.Member = None):
+    @commands.command(name="mymessages", aliases=["mym"])
+    async def mymessages(self, ctx, member:discord.Member = None):
         """
-        Shows the number of messages a member has sent in <#608498967474601995>.
+        Shows the number of messages a member has sent in <#1288032530569625663>.
         """
         if member is None:
             member = ctx.author
-        user = await self.client.db.fetchrow("SELECT * FROM messagelog WHERE user_id = $1", member.id)
+        user = await self.client.db.fetchrow("SELECT * FROM messagecount WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, member.id)
         if user is None:
-            return await ctx.send("Hmm... it appears that you have not sent a message in <#608498967474601995>. Contact a mod if you think this is wrong.")
-        all = await self.client.db.fetch("SELECT user_id FROM messagelog ORDER BY messagecount DESC")
-        user2 = await self.client.db.fetchrow("SELECT user_id FROM messagelog WHERE user_id = $1", member.id)
+            return await ctx.send("Hmm... it appears that you have not sent a message in <#1288032530569625663>. Contact a mod if you think this is wrong.")
+        all = await self.client.db.fetch("SELECT user_id FROM messagecount WHERE guild_id = $1 ORDER BY mcount DESC", ctx.guild.id)
+        user2 = await self.client.db.fetchrow("SELECT user_id FROM messagecount WHERE guild_id = $1 AND user_id = $2", ctx.guild.id, member.id)
         position = ordinal(all.index(user2)+1)
         embed = discord.Embed(title="Your number of messages sent in #general-chat", color=self.client.embed_color, timestamp=discord.utils.utcnow())
         embed.set_author(name=member, icon_url=member.display_avatar.url)
-        embed.add_field(name="Message count", value=user.get('messagecount'), inline=True)
+        embed.add_field(name="Message count", value=user.get('mcount'), inline=True)
         embed.add_field(name="Position", value=f"{position} {'🏆' if all.index(user2) < 10 else ''}", inline=True)
         try:
             await ctx.reply(embed=embed)
@@ -554,8 +554,8 @@ class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight
     @checks.not_in_gen()
     @commands.command(name="messageleaderboard", aliases=["mlb"])
     async def messageleaderboard(self, ctx):
-        query = "SELECT user_id, messagecount FROM messagelog ORDER BY messagecount DESC LIMIT 5"
-        leaderboard = await self.client.db.fetch(query)
+        query = "SELECT user_id, mcount FROM messagecount WHERE guild_id = $1 ORDER BY mcount DESC LIMIT 5"
+        leaderboard = await self.client.db.fetch(query, ctx.guild.id)
         if len(leaderboard) == 0:
             return await ctx.send("No one has said anything to show up on the message leaderboard.")
         else:
@@ -563,10 +563,11 @@ class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight
             messages = []
             for i, entry in enumerate(leaderboard):
                 if i < 100:
-                    member = proper_userf(ctx.guild.get_member(entry.get('user_id'))) or entry.get('user_id')
-                    value = comma_number(entry.get('messagecount'))
-                    messages.append((f"{i+1}. {member}", value))
-            footer = f"{len(leaderboard)} users have sent a total of {comma_number(sum([entry.get('messagecount') for entry in leaderboard]))} messages"
+                    member = ctx.guild.get_member(entry.get('user_id'))
+                    member_str = proper_userf(member) if member else str(entry.get("user_id"))
+                    value = comma_number(entry.get('mcount'))
+                    messages.append((f"{i+1}. {member_str}", value))
+            footer = f"{len(leaderboard)} users have sent a total of {comma_number(sum([entry.get('mcount') for entry in leaderboard]))} messages"
             if len(messages) <= 10:
                 leaderboard_embed = discord.Embed(title=title, color=self.client.embed_color).set_footer(text=footer)
                 for member, value in messages:

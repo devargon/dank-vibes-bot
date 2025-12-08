@@ -595,16 +595,119 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
             await ctx.send(embed=discord.Embed(title=f"Configurations for {ctx.guild.name}", description = f"Nickname requests: {ctx.guild.get_channel(result.get('nicknamechannel_id'))}\nDM requests: {ctx.guild.get_channel(result.get('dmchannel_id'))}", color = self.client.embed_color))
 
     @checks.has_permissions_or_role(manage_roles=True)
-    @commands.command(name="messagereset", aliases=["mreset"], invoke_without_command=True)
-    async def messagelog(self, ctx):
+    @commands.group(name="messagecount", aliases=["mcount"], invoke_without_command=True)
+    async def messagecount_group(self, ctx: DVVTcontext):
+        """
+        Manage/configure message count
+        """
+        return await ctx.help()
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @messagecount_group.command(name="edit")
+    async def messagecount_edit(self, ctx: DVVTcontext, member: discord.Member, count: int = None):
+        """
+        Edit the message count of a user.
+        """
+
+        class editCountButton(discord.ui.Button):
+            def __init__(self, client: dvvt, initial_number: int, action: int):
+                super().__init__(label=f"{action:+d}", style=discord.ButtonStyle.primary, disabled=(initial_number + action) < 0)
+                self.action = action
+                self.client = client
+
+            async def callback(self, interaction: discord.Interaction):
+                view: editMessageCountView = self.view
+                await view.add_or_remove_from_message_count(self.action, interaction.channel_id, interaction.message.id)
+                view.update_buttons()
+                await interaction.response.edit_message(view=view)
+
+
+        class editMessageCountView(discord.ui.View):
+            def __init__(self, client: dvvt, invocating_member: discord.Member, member: discord.Member, initial_count: int):
+                super().__init__(timeout=30.0, disable_on_timeout=True)
+                self.client: dvvt = client
+                self.invocating_member = invocating_member
+                self.member = member
+                self.count = initial_count
+                self.negative_actions = [-5, -1]
+                self.positive_actions = [1, 5]
+
+            async def interaction_check(self, interaction: discord.Interaction):
+                if interaction.user.id != self.invocating_member.id:
+                    await interaction.response.send_message("not 4 u", ephemeral=True)
+                    return False
+                return True
+
+            async def add_or_remove_from_message_count(self, action: int, channel_id, message_id) -> tuple[int, int]:
+                current_count_record = await self.client.db.fetchrow("SELECT * FROM messagecount WHERE guild_id = $1 AND user_id = $2", self.member.guild.id, self.member.id)
+                if current_count_record is None:
+                    current_count = 0
+                    await self.client.db.execute("INSERT INTO messagecount(guild_id, user_id, mcount) VALUES ($1, $2, $3)", self.member.guild.id, self.member.id, current_count)
+                else:
+                    current_count = current_count_record.get("mcount")
+                new_count = current_count + action
+                await self.client.db.execute("UPDATE messagecount SET mcount = $1 WHERE guild_id = $2 AND user_id = $3", new_count, self.member.guild.id, self.member.id)
+                await self.client.db.execute("INSERT INTO messagecount_logs (user_id, performed_by_user_id, change, before, after, guild_id, channel_id, message_id, reason) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+                                             self.member.id, self.invocating_member.id, action, current_count, new_count, self.member.guild.id, channel_id, message_id, "MANUAL_ADMIN")
+                self.count = new_count
+                return current_count, new_count
+
+            async def update_message_count(self, new_count: int, channel_id, message_id) -> tuple[int, int]:
+                messagecount_record = await self.client.db.fetchrow("SELECT * FROM messagecount WHERE guild_id = $1 AND user_id = $2", self.member.guild.id, self.member.id)
+                if messagecount_record is None:
+                    existing_count = 0
+                    await self.client.db.execute("INSERT INTO messagecount(guild_id, user_id, mcount) VALUES($1, $2, $3)", self.member.guild.id, self.member.id, count)
+                else:
+                    existing_count = messagecount_record.get("mcount")
+                await self.client.db.execute("UPDATE messagecount SET mcount = $1 WHERE guild_id = $2 AND user_id = $3", new_count, self.member.guild.id, self.member.id)
+                difference = new_count - existing_count
+                await self.client.db.execute("INSERT INTO messagecount_logs (user_id, performed_by_user_id, change, before, after, guild_id, channel_id, message_id, reason) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+                                             self.member.id, self.invocating_member.id, difference, existing_count, new_count, self.member.guild.id, channel_id, message_id, "MANUAL_ADMIN")
+                self.count = new_count
+                return existing_count, new_count
+
+            def update_buttons(self):
+                self.clear_items()
+                for negative_action in self.negative_actions:
+                    self.add_item(editCountButton(self.client, self.count, negative_action))
+                self.add_item(discord.ui.Button(label=str(self.count), style=discord.ButtonStyle.grey, disabled=True))
+                for positive_action in self.positive_actions:
+                    self.add_item(editCountButton(self.client, self.count, positive_action))
+
+
+
+
+        existing_entry = await self.client.db.fetchrow("SELECT * FROM messagecount WHERE guild_id = $1 AND user_id = $2", member.guild.id, member.id)
+        if existing_entry is None:
+            existing_count = 0
+            await self.client.db.execute("INSERT INTO messagecount(guild_id, user_id, mcount) VALUES($1, $2, $3)", member.guild.id, member.id, 0)
+        else:
+            existing_count = existing_entry.get("mcount")
+
+        if count is not None:
+            await self.client.db.execute("UPDATE messagecount SET mcount = $1 WHERE guild_id = $2 AND user_id = $3", count, member.guild.id, member.id)
+            difference = count - existing_count
+            await self.client.db.execute(
+                "INSERT INTO messagecount_logs (user_id, performed_by_user_id, change, before, after, guild_id, channel_id, message_id, reason) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+                member.id, ctx.author.id, difference, existing_count, count, ctx.guild.id,
+                ctx.channel.id, ctx.message.id, "MANUAL_ADMIN")
+            await ctx.send(f"Updated **{member}**'s message count from {existing_count} to {count}.")
+        else:
+            view = editMessageCountView(self.client, ctx.author, member, existing_count)
+            view.update_buttons()
+            await ctx.send(content=f"# Edit **{member}**'s message count", view=view)
+
+    @checks.has_permissions_or_role(manage_roles=True)
+    @messagecount_group.command(name="reset")
+    async def messagecount_reset(self, ctx: DVVTcontext):
         """
         Resets the database for counting messages sent.
         """
         confirm_view = confirm(ctx, self.client, 30.0)
-        messagecount = await self.client.db.fetch("SELECT * FROM messagelog")
+        messagecount = await self.client.db.fetch("SELECT * FROM messagecount WHERE guild_id = $1", ctx.guild.id)
         if len(messagecount) == 0:  # if there's nothing to be deleted
             return await ctx.send("There's no message count to be removed.")
-        totalvote = sum(userentry.get('messagecount') for userentry in messagecount)
+        totalvote = sum(userentry.get('mcount') for userentry in messagecount)
         embed = discord.Embed(title="Action awaiting confirmation", description=f"There are {len(messagecount)} people who have chatted, amounting to a total of {totalvote} messages. Are you sure you want to reset the message count?", color=self.client.embed_color, timestamp=discord.utils.utcnow())
         try:
             msg = await ctx.reply(embed=embed, view=confirm_view)
@@ -619,13 +722,13 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
             embed.color, embed.description = discord.Color.red(), "Action cancelled."
             return await msg.edit(embed=embed)
         if confirm_view.returning_value == True:
-            await self.client.db.execute("DELETE FROM messagelog")
+            await self.client.db.execute("DELETE FROM messagecount WHERE guild_id = $1", ctx.guild.id)
             embed.color, embed.description = discord.Color.green(), "The message count has been cleared."
             await msg.edit(embed=embed)
 
-    @commands.group(invoke_without_command=True, name="messageroles")
+    @messagecount_group.group(invoke_without_command=True, name="roles")
     @commands.has_guild_permissions(manage_roles=True)
-    async def messageroles(self, ctx):
+    async def messagecount_roles(self, ctx: DVVTcontext):
         """
         Configure the milestones for the roles.
         """
@@ -636,13 +739,13 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
         embed.set_footer(text="Roles can be stated via a name, mention or ID.")
         await ctx.send(embed=embed)
 
-    @messageroles.command(name="list", aliases = ["show"])
+    @messagecount_roles.command(name="list", aliases = ["show"])
     @commands.has_guild_permissions(manage_roles=True)
     async def mrolelist(self, ctx):
         """
         Lists milestones for message count roles.
         """
-        messagemilestones = await self.client.db.fetch("SELECT * FROM messagemilestones")
+        messagemilestones = await self.client.db.fetch("SELECT * FROM messagemilestones WHERE guild_id = $1", ctx.guild.id)
         if len(messagemilestones) == 0:
             embed = discord.Embed(title = "Message count milestones", description = "There are no milestones set for now. Use `messageroles add [messagecount] [role]` to add one.", color=self.client.embed_color) # there are no milestones set
             return await ctx.send(embed=embed)
@@ -651,14 +754,14 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
             if len(output) >= 3780:
                 embed = discord.Embed(title="Message count milestones", description=output, color=self.client.embed_color)
                 await ctx.send(embed=embed)
-            role = ctx.guild.get_role(row.get('roleid'))
+            role = ctx.guild.get_role(row.get('role_id'))
             rolemention = role.mention if role is not None else "unknown-or-deleted-role"
             output += f"**{row.get('messagecount')} messagess: **{rolemention}\n"
         embed = discord.Embed(title="Message count milestones", description=output, color=self.client.embed_color, timestamp=discord.utils.utcnow())
         embed.set_footer(text="To edit the milestones, use the subcommands `add` and `remove`.")
         await ctx.send(embed=embed)
 
-    @messageroles.command(name="add", aliases=["create"])
+    @messagecount_roles.command(name="add", aliases=["create"])
     @commands.has_guild_permissions(manage_roles=True)
     async def roleadd(self, ctx, messagecount = None, role:discord.Role = None):
         """
@@ -670,14 +773,14 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
             messagecount = int(messagecount)
         except ValueError:
             return await ctx.send("`messagecount` is not a valid number.")
-        existing_milestones = await self.client.db.fetch("SELECT * FROM messagemilestones WHERE messagecount = $1", messagecount)
+        existing_milestones = await self.client.db.fetch("SELECT * FROM messagemilestones WHERE guild_id = $1 AND messagecount = $2", ctx.guild.id, messagecount)
         if len(existing_milestones) > 0:
             await ctx.send(f"You have already set a milestone for **{messagecount} messages**. To set a new role, remove this milestone and add it again.")
             return
-        await self.client.db.execute("INSERT INTO messagemilestones VALUES($1, $2)", messagecount, role.id)
+        await self.client.db.execute("INSERT INTO messagemilestones(guild_id, role_id, messagecount) VALUES($1, $2, $3)", ctx.guild.id, role.id, messagecount)
         await ctx.send(f"**Done**\n**{role.name}** will be added to a member when they have sent a message **{messagecount} time(s)**.")
 
-    @messageroles.command(name="remove", aliases=["delete"])
+    @messagecount_roles.command(name="remove", aliases=["delete"])
     @commands.has_guild_permissions(manage_roles=True)
     async def roleremove(self, ctx, messagecount=None):
         """
@@ -689,11 +792,11 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
             messagecount = int(messagecount)
         except ValueError:
             return await ctx.send(f"`{messagecount}` as the messagecount is not a valid number.")
-        existing_milestones = await self.client.db.fetch("SELECT * FROM messagemilestones WHERE messagecount = $1", messagecount)
+        existing_milestones = await self.client.db.fetch("SELECT * FROM messagemilestones WHERE guild_id = $1 AND messagecount = $2", ctx.guild.id, messagecount)
         if len(existing_milestones) == 0:
             return await ctx.send(
                 f"You do not have a milestone set for {messagecount} messages. Use `messageroles add [messagecount] [role]` to add one.")
-        await self.client.db.execute("DELETE FROM messagemilestones WHERE messagecount = $1", messagecount) # Removes the milestone rule
+        await self.client.db.execute("DELETE FROM messagemilestones WHERE guild_id = $1 AND messagecount = $2", ctx.guild.id, messagecount) # Removes the milestone rule
         await ctx.send(f"**Done**\nThe milestone for having sent a message **{messagecount} time(s)** has been removed.")
 
     @checks.has_permissions_or_role(manage_roles=True)

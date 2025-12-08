@@ -359,8 +359,8 @@ class AmariImportWorker:
             WHERE id = $5
         """, self.host, self.token, self.worker_user_id, self.creator_user_id, self.id)
 
-    async def fetch_status(self, aiohttp_client: aiohttp.ClientSession):
-        response = await self.make_request(aiohttp_client, "status", timeout=5.0)
+    async def fetch_status(self, aiohttp_client: aiohttp.ClientSession, raise_for_status: bool = True):
+        response = await self.make_request(aiohttp_client, "status", timeout=5.0, raise_for_status=raise_for_status)
         return response
 
     async def give_level(self, aiohttp_client: aiohttp.ClientSession, guild_id: int, channel_id: int, user_id: int, level: int):
@@ -380,7 +380,7 @@ class AmariImportWorker:
         response = await self.make_request(aiohttp_client, f"modifyexp/{guild_id}/{channel_id}", method="POST", data=data, timeout=30.0)
         return response
 
-    async def make_request(self, aiohttp_client: aiohttp.ClientSession, endpoint: str, method: str = 'GET', data: Optional[dict] = None, timeout=5.0):
+    async def make_request(self, aiohttp_client: aiohttp.ClientSession, endpoint: str, method: str = 'GET', data: Optional[dict] = None, timeout=5.0, raise_for_status: bool = True):
         host = self.host.rstrip("/")
         endpoint = endpoint.lstrip("/")
         url = f"{host}/{endpoint}"
@@ -395,7 +395,8 @@ class AmariImportWorker:
                 elif response.status == 200:
                     return await response.json()
                 else:
-                    response.raise_for_status()  # Raises an exception for 4xx/5xx errors
+                    if raise_for_status:
+                        response.raise_for_status()  # Raises an exception for 4xx/5xx errors
         else:
             print(f"[AmariImportWorker] GET {url}")
             async with aiohttp_client.get(url, headers=headers) as response:
