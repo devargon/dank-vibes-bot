@@ -285,8 +285,10 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
         self.op.add_argument('--ignore-certificate-errors')
         self.op.add_argument('--disable-dev-shm-usage')
         if sys.platform.startswith("win32"):
+            print("[WEBDRIVER] Windows system detected")
             self.op.binary_location = r"C:\Users\laiye\Downloads\chromedriver.exe"
         elif sys.platform.startswith("linux"):
+            print("[WEBDRIVER] Linux system detected")
             chromedriver_location = shutil.which("chromedriver")
             if chromedriver_location:
                 self.op.binary_location = chromedriver_location

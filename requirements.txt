@@ -20,7 +20,7 @@ PySocks
 python-dateutil
 python-dotenv
 requests
-selenium
+selenium==4.39.0
 six
 topggpy==1.4.0
 typing-extensions
