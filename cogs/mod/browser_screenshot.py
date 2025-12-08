@@ -1,7 +1,12 @@
 import json
+import shutil
+
 import discord
 import selenium
 from selenium import webdriver
+from selenium.common import SessionNotCreatedException
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 import os
 import ssl, socket
@@ -47,10 +52,40 @@ class BrowserScreenshot(commands.Cog):
         async with ctx.typing():
             def open_browser():
                 try:
-                    #asyncio.run(msgsend(ctx, "Starting web browser..."))
-                    #WGET THE CHROME DRIVER OR IT WILL NOT WORK
-                    browser = webdriver.Chrome(options=self.op)
-                except selenium.common.exceptions.SessionNotCreatedException as e:
+                    options = Options()
+                    options.add_argument('--no-sandbox')
+                    options.add_argument('--disable-gpu')
+                    options.add_argument('--headless=new')
+                    options.add_argument("--window-size=1920,1080")
+                    options.add_argument('--allow-running-insecure-content')
+                    options.add_argument('--ignore-certificate-errors')
+                    options.add_argument('--disable-dev-shm-usage')
+
+                    driver_path = None
+
+                    if sys.platform.startswith("win32"):
+                        print("[WEBDRIVER] Windows system detected")
+                        # FIX: this must be the CHROME executable, not chromedriver
+                        options.binary_location = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+                        driver_path = r"C:\Users\laiye\Downloads\chromedriver.exe"
+
+                    else: # elif sys.platform.startswith("linux"):
+                        print("[WEBDRIVER] Linux or OTHER system detected")
+                        chrome_path = shutil.which("chromium-browser") or shutil.which("chromium") or shutil.which(
+                            "google-chrome")
+                        driver_path = shutil.which("chromedriver")
+
+                        if chrome_path:
+                            options.binary_location = chrome_path
+
+                    prefs = {"download_restrictions": 3}
+                    options.add_experimental_option("prefs", prefs)
+
+                    service = Service(executable_path=driver_path)
+
+                    browser = webdriver.Chrome(options=options, executable_path=driver_path)
+
+                except SessionNotCreatedException as e:
                     return f"Could not start browser: {str(e)}"
                 else:
                     return browser
