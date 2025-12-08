@@ -289,9 +289,11 @@ class Mod(donations, Decancer, ChannelUtils, ModSlash, Role, Sticky, censor, Bro
             self.op.binary_location = r"C:\Users\laiye\Downloads\chromedriver.exe"
         elif sys.platform.startswith("linux"):
             print("[WEBDRIVER] Linux system detected")
+            chromebinary_location = shutil.which("chromium-browser") or shutil.which("chromium") or shutil.which("google-chrome")
             chromedriver_location = shutil.which("chromedriver")
-            if chromedriver_location:
-                self.op.binary_location = chromedriver_location
+            if chromebinary_location and chromedriver_location:
+                self.op.binary_location = chromebinary_location
+                self.op.driver_path = chromedriver_location
         #self.op.add_argument(' --user-agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36"')
         #self.op.add_argument('--proxy-server=%s' % PROXY)
         self.client: dvvt = client
