@@ -12,6 +12,7 @@ from io import BytesIO
 import asyncio
 import time
 from utils import checks
+import sys
 
 #Checking if provided link is indeed a link
 regex = re.compile(
@@ -48,13 +49,9 @@ class BrowserScreenshot(commands.Cog):
                 try:
                     #asyncio.run(msgsend(ctx, "Starting web browser..."))
                     #WGET THE CHROME DRIVER OR IT WILL NOT WORK
-                    if os.getenv('state') == '1':
-                        browser = webdriver.Chrome(r"C:\Users\laiye\Downloads\chromedriver.exe", options=self.op)
-                    else:
-                        browser = webdriver.Chrome(options=self.op)
+                    browser = webdriver.Chrome(options=self.op)
                 except selenium.common.exceptions.SessionNotCreatedException as e:
-                    if "This version of ChromeDriver only supports" in str(e):
-                        return "The version of Chrome used on this device is not matched with ChromeDriver. Please notify the developer about this."
+                    return f"Could not start browser: {str(e)}"
                 else:
                     return browser
             browser = await loop.run_in_executor(None, open_browser)
