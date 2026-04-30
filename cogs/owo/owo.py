@@ -173,7 +173,7 @@ class OwO(commands.Cog, name='owo'):
                 query = "SELECT member_id, weekly_count FROM owocount ORDER BY weekly_count DESC LIMIT $1"
                 embed = await self.get_leaderboard(guild, query, top=5)
                 embed.title = "This week's OwO leaderboard"
-                weeklychan = self.client.get_channel(937236577673945109)
+                weeklychan = self.client.get_channel(owo_announcement)
                 if weeklychan is not None:
                     with contextlib.suppress(discord.HTTPException):
                         await weeklychan.send(embed=embed)
