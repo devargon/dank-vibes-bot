@@ -163,48 +163,164 @@ class OwO(commands.Cog, name='owo'):
 
     @tasks.loop(hours=24)
     async def daily_owo_reset(self):
-        guild = self.client.get_guild(1288032530569625660)
-        channel = guild.get_channel(owo_announcement)
-        owo50 = guild.get_role(owo50_id)
-        owo100 = guild.get_role(owo100_id)
-        self.active = False
-        if discord.utils.utcnow().weekday() == 6:
-            if (await self.client.get_guild_settings(guild.id)).owoweeklylb is True:
-                query = "SELECT member_id, weekly_count FROM owocount ORDER BY weekly_count DESC LIMIT $1"
+        print("[daily_owo_reset] Task started")
+
+        try:
+            guild_id = 1288032530569625660
+            guild = self.client.get_guild(guild_id)
+            print(f"[daily_owo_reset] guild lookup: guild_id={guild_id}, guild={guild!r}")
+
+            if guild is None:
+                print(
+                    "[daily_owo_reset] ERROR: guild is None. Bot may not be in guild, cache not ready, or wrong guild ID.")
+                return
+
+            channel = guild.get_channel(owo_announcement)
+            print(f"[daily_owo_reset] announcement channel lookup: channel_id={owo_announcement}, channel={channel!r}")
+
+            owo50 = guild.get_role(owo50_id)
+            owo100 = guild.get_role(owo100_id)
+            print(f"[daily_owo_reset] role lookup: owo50_id={owo50_id}, owo50={owo50!r}")
+            print(f"[daily_owo_reset] role lookup: owo100_id={owo100_id}, owo100={owo100!r}")
+
+            self.active = False
+            print("[daily_owo_reset] self.active set to False")
+
+            now = discord.utils.utcnow()
+            print(f"[daily_owo_reset] utcnow={now!r}, weekday={now.weekday()}")
+
+            settings = await self.client.get_guild_settings(guild.id)
+            print(
+                "[daily_owo_reset] settings loaded: "
+                f"owoweeklylb={getattr(settings, 'owoweeklylb', None)}, "
+                f"owodailylb={getattr(settings, 'owodailylb', None)}"
+            )
+
+            if now.weekday() == 6:
+                print("[daily_owo_reset] Weekly reset branch entered")
+
+                if settings.owoweeklylb is True:
+                    print("[daily_owo_reset] Weekly leaderboard enabled")
+
+                    query = "SELECT member_id, weekly_count FROM owocount ORDER BY weekly_count DESC LIMIT $1"
+                    print(f"[daily_owo_reset] Building weekly leaderboard with query={query!r}")
+
+                    embed = await self.get_leaderboard(guild, query, top=5)
+                    embed.title = "This week's OwO leaderboard"
+                    print("[daily_owo_reset] Weekly leaderboard embed built")
+
+                    weeklychan = self.client.get_channel(owo_announcement)
+                    print(
+                        f"[daily_owo_reset] weekly channel lookup via client: channel_id={owo_announcement}, weeklychan={weeklychan!r}")
+
+                    if weeklychan is not None:
+                        try:
+                            await weeklychan.send(embed=embed)
+                            print("[daily_owo_reset] Weekly leaderboard sent")
+                        except discord.HTTPException as e:
+                            print(f"[daily_owo_reset] ERROR sending weekly leaderboard: {type(e).__name__}: {e}")
+                    else:
+                        print("[daily_owo_reset] Weekly channel is None; skipping weekly leaderboard send")
+                else:
+                    print("[daily_owo_reset] Weekly leaderboard disabled")
+
+                print("[daily_owo_reset] Fetching weekly counts")
+                weekly_res = await self.client.db.fetch("SELECT member_id, weekly_count FROM owocount")
+                print(f"[daily_owo_reset] weekly rows fetched: {len(weekly_res)}")
+
+                reset_values = []
+                for res in weekly_res:
+                    reset_values.append((0, res.get("weekly_count"), res.get("member_id")))
+
+                print(f"[daily_owo_reset] weekly reset values prepared: {len(reset_values)}")
+
+                await self.client.db.executemany(
+                    "UPDATE owocount SET weekly_count=$1, last_week=$2 WHERE member_id=$3",
+                    reset_values
+                )
+                print("[daily_owo_reset] Weekly counts reset")
+            else:
+                print("[daily_owo_reset] Not Sunday UTC; skipping weekly reset branch")
+
+            if settings.owodailylb is True:
+                print("[daily_owo_reset] Daily leaderboard enabled")
+
+                query = "SELECT member_id, daily_count FROM owocount ORDER BY daily_count DESC LIMIT $1"
+                print(f"[daily_owo_reset] Building daily leaderboard with query={query!r}")
+
                 embed = await self.get_leaderboard(guild, query, top=5)
-                embed.title = "This week's OwO leaderboard"
-                weeklychan = self.client.get_channel(owo_announcement)
-                if weeklychan is not None:
-                    with contextlib.suppress(discord.HTTPException):
-                        await weeklychan.send(embed=embed)
-            weekly_res = await self.client.db.fetch("SELECT member_id, weekly_count FROM owocount")
+                embed.title = "Today's OwO leaderboard"
+                print("[daily_owo_reset] Daily leaderboard embed built")
+
+                if channel is not None:
+                    try:
+                        await channel.send(embed=embed)
+                        print("[daily_owo_reset] Daily leaderboard sent")
+                    except discord.HTTPException as e:
+                        print(f"[daily_owo_reset] ERROR sending daily leaderboard: {type(e).__name__}: {e}")
+                else:
+                    print("[daily_owo_reset] Announcement channel is None; skipping daily leaderboard send")
+            else:
+                print("[daily_owo_reset] Daily leaderboard disabled")
+
+            print("[daily_owo_reset] Fetching daily counts")
+            daily_res = await self.client.db.fetch("SELECT member_id, daily_count FROM owocount")
+            print(f"[daily_owo_reset] daily rows fetched: {len(daily_res)}")
+
             reset_values = []
-            for res in weekly_res:
-                reset_values.append((0, res.get('weekly_count'), res.get('member_id')))
-            await self.client.db.executemany("UPDATE owocount SET weekly_count=$1, last_week=$2 WHERE member_id=$3", reset_values)
-        if (await self.client.get_guild_settings(guild.id)).owodailylb is True:
-            query = "SELECT member_id, daily_count FROM owocount ORDER BY daily_count DESC LIMIT $1"
-            embed = await self.get_leaderboard(guild, query, top=5)
-            embed.title = "Today's OwO leaderboard"
-            if channel is not None:
-                with contextlib.suppress(discord.HTTPException):
-                    await channel.send(embed=embed)
-        daily_res = await self.client.db.fetch("SELECT member_id, daily_count FROM owocount")
-        reset_values = []
-        for res in daily_res:
-            reset_values.append((0, res.get('daily_count'), res.get('member_id')))
-        await self.client.db.executemany("UPDATE owocount SET daily_count=$1, yesterday=$2 WHERE member_id=$3", reset_values)
-        self.active = True
-        if owo50 is not None:
-            for member in owo50.members:
-                with contextlib.suppress(discord.Forbidden):
-                    await member.remove_roles(owo50, reason="OwO count has been reset.")
-                    await asyncio.sleep(0.1)
-        if owo100 is not None:
-            for member in owo100.members:
-                with contextlib.suppress(discord.Forbidden):
-                    await member.remove_roles(owo100, reason="OwO count has been reset.")
-                    await asyncio.sleep(0.1)
+            for res in daily_res:
+                reset_values.append((0, res.get("daily_count"), res.get("member_id")))
+
+            print(f"[daily_owo_reset] daily reset values prepared: {len(reset_values)}")
+
+            await self.client.db.executemany(
+                "UPDATE owocount SET daily_count=$1, yesterday=$2 WHERE member_id=$3",
+                reset_values
+            )
+            print("[daily_owo_reset] Daily counts reset")
+
+            self.active = True
+            print("[daily_owo_reset] self.active set to True")
+
+            if owo50 is not None:
+                print(f"[daily_owo_reset] Removing owo50 role from {len(owo50.members)} members")
+                for member in owo50.members:
+                    try:
+                        await member.remove_roles(owo50, reason="OwO count has been reset.")
+                        print(f"[daily_owo_reset] Removed owo50 from member_id={member.id}")
+                        await asyncio.sleep(0.1)
+                    except discord.Forbidden as e:
+                        print(f"[daily_owo_reset] FORBIDDEN removing owo50 from member_id={member.id}: {e}")
+                    except discord.HTTPException as e:
+                        print(
+                            f"[daily_owo_reset] HTTP ERROR removing owo50 from member_id={member.id}: {type(e).__name__}: {e}")
+            else:
+                print("[daily_owo_reset] owo50 role is None; skipping owo50 removals")
+
+            if owo100 is not None:
+                print(f"[daily_owo_reset] Removing owo100 role from {len(owo100.members)} members")
+                for member in owo100.members:
+                    try:
+                        await member.remove_roles(owo100, reason="OwO count has been reset.")
+                        print(f"[daily_owo_reset] Removed owo100 from member_id={member.id}")
+                        await asyncio.sleep(0.1)
+                    except discord.Forbidden as e:
+                        print(f"[daily_owo_reset] FORBIDDEN removing owo100 from member_id={member.id}: {e}")
+                    except discord.HTTPException as e:
+                        print(
+                            f"[daily_owo_reset] HTTP ERROR removing owo100 from member_id={member.id}: {type(e).__name__}: {e}")
+            else:
+                print("[daily_owo_reset] owo100 role is None; skipping owo100 removals")
+
+            print("[daily_owo_reset] Task finished successfully")
+
+        except Exception as e:
+            print(f"[daily_owo_reset] FATAL ERROR: {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
+
+            # Optional: re-raise while debugging so discord.py logs the task exception too.
+            # raise
 
     @daily_owo_reset.before_loop
     async def wait_until_8am(self):
