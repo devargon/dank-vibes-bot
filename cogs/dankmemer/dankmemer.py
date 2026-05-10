@@ -43,7 +43,7 @@ cooldown_messages = ["Spam isn't cool fam",
                      ]
 
 def print_dev(message):
-    if os.getenv('state') == '0':
+    if os.getenv('state') == '1':
         print(message)
 async def checkmark(message:discord.Message):
     try:
