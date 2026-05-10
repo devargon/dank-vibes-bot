@@ -51,6 +51,6 @@ pydantic==1.10.2
 pytesseract
 openai
 chat_exporter @ git+https://github.com/nogra-xyz/DiscordChatExporterPy@2.8.0
-discord-ext-menus @ git+https://github.com/nogra-xyz/discord-ext-reaction-menus
-alexflipnote.py @ git+https://github.com/nogra-xyz/alexflipnote.py
+discord-ext-menus @ git+https://github.com/nogra-app/discord-ext-reaction-menus
+alexflipnote.py @ git+https://github.com/nogra-app/alexflipnote.py
 dpy-http-server @ git+https://github.com/nogra-app/dpy-http-server
