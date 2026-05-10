@@ -288,10 +288,11 @@ class reminders(commands.Cog):
         if len(reminder) > 256:
             return await ctx.send("You can only provide a message of up to 256 characters for your reminder.")
         rm_id = await self.add_reminder(ctx.author.id, ctx.guild.id, ctx.channel.id, ctx.message.id, reminder, remind_dt.timestamp())
+        view = ReminderCreatedView(self.client, ctx, rm_id, reminder, remind_dt.timestamp())
         try:
-            await ctx.message.reply(f"Alright! I'll remind you about **{reminder}** in **{humanize_timedelta(seconds=round(remind_dt.timestamp()-time.time()))}** (on <t:{round(remind_dt.timestamp())}:f>).\nThis reminder's ID is `{rm_id}`.")
+            await ctx.message.reply(view=view)
         except Exception as e:
-            await ctx.send(f"Alright! I'll remind you about **{reminder}** in **{humanize_timedelta(seconds=round(remind_dt.timestamp() - time.time()))}** (on <t:{round(remind_dt.timestamp())}:f>).\nThis reminder's ID is `{rm_id}`.")
+            await ctx.send(view=view)
 
     @checks.perm_insensitive_roles()
     @commands.guild_only()
