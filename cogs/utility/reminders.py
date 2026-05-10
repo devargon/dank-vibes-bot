@@ -183,6 +183,54 @@ class RemindersView(discord.ui.DesignerView):
         await self.message.edit(view=self)
 
 
+class ReminderCreatedView(discord.ui.DesignerView):
+    def __init__(self, client, ctx, reminder_id: int, reminder_name: str, remind_time: int):
+        self.ctx: DVVTcontext = ctx
+        self.client: dvvt = client
+        self.reminder_id = reminder_id
+        self.reminder_name = reminder_name
+        self.remind_time = remind_time
+        super().__init__(timeout=30, disable_on_timeout=True)
+
+        self.add_item(discord.ui.Container(
+            discord.ui.TextDisplay(f"## {DVB_TRUE} Reminder #{reminder_id} Created!\nI will remind you about **{reminder_name}** in **{humanize_timedelta(seconds=round(remind_time - time.time()))}** (at <t:{round(remind_time)}:f>)."),
+            discord.ui.ActionRow(DeleteReminderButton(reminder_id=reminder_id, label="Delete Reminder")),
+            color=discord.Color.green(),
+        ))
+
+    async def initiate_delete_reminder(self, interaction: discord.Interaction, reminder_id: int):
+        confirmview = InteractionConfirm(interaction.user, self.client, 30.0)
+        confirmembed = discord.Embed(
+            description=f"Are you sure you want to delete reminder **#{reminder_id}**? This action is irreversible!",
+            color=discord.Color.orange())
+        confirmview.response = await interaction.response.send_message(embed=confirmembed, view=confirmview)
+        await confirmview.wait()
+        if confirmview.returning_value is not True:
+            if confirmview.interaction:
+                confirmembed.color = discord.Color.red()
+                confirmembed.description = "Deletion cancelled."
+                await confirmview.interaction.edit_original_response(embed=confirmembed, view=confirmview)
+            return
+
+        reminder = await self.client.db.fetchrow(
+            "SELECT * FROM reminders WHERE id=$1 AND user_id=$2 AND guild_id=$3",
+            reminder_id, self.ctx.author.id, self.ctx.guild.id)
+        if not reminder:
+            confirmembed.color = discord.Color.red()
+            confirmembed.description = "You don't have a reminder with that ID. It may have already been deleted."
+            await confirmview.interaction.edit_original_response(embed=confirmembed, view=confirmview)
+            return
+
+        await self.client.db.execute("DELETE FROM reminders WHERE id=$1 AND user_id=$2 AND guild_id=$3",
+                                     reminder_id,
+                                     self.ctx.author.id, self.ctx.guild.id)
+        confirmembed.color = discord.Color.green()
+        confirmembed.description += f"\n\n{DVB_TRUE} **Success!**"
+        await confirmview.interaction.edit_original_response(embed=confirmembed, view=confirmview)
+        self.disable_all_items()
+        await self.message.edit(view=self)
+        self.stop()
+
 
 class reminders(commands.Cog):
     def __init__(self, client):
@@ -324,7 +372,7 @@ class reminders(commands.Cog):
         message_id = reminder.message
         url = f"https://discord.com/channels/{ctx.guild.id}/{channel_id}/{message_id}"
         embed = discord.Embed(title=f"{reminder.name}", description=f"In **{humanize_timedelta(seconds=round(reminder.time - time.time()))}**\nAt **<t:{reminder.time}:d> <t:{reminder.time}:t>**\n<:Reply:871808167011549244> [Jump to message]({url})", color=self.client.embed_color, timestamp=datetime.utcfromtimestamp(reminder.created_time))
-        embed.set_author(icon_url=ctx.author.avatar.url, name=f"{ctx.author.name}'s Reminder (ID: {reminder.id})")
+        embed.set_author(icon_url=ctx.author.avatar.url, name=f"{ctx.author.name}'s Reminder #{reminder.id}")
         embed.set_footer(text="Reminder created")
         await ctx.send(embed=embed)
 
