@@ -181,7 +181,7 @@ class interactionconfirm(discord.ui.View):
         if isinstance(self.response, discord.Message) or isinstance(self.response, discord.WebhookMessage):
             await self.response.edit(view=self)
         elif isinstance(self.response, discord.Interaction):
-            await self.response.edit_original_message(view=self)
+            await self.response.edit_original_response(view=self)
         self.stop()
 
     @discord.ui.button(label="No", style=discord.ButtonStyle.red)
@@ -195,7 +195,7 @@ class interactionconfirm(discord.ui.View):
         if isinstance(self.response, discord.Message) or isinstance(self.response, discord.WebhookMessage):
             await self.response.edit(view=self)
         elif isinstance(self.response, discord.Interaction):
-            await self.response.edit_original_message(view=self)
+            await self.response.edit_original_response(view=self)
         self.stop()
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
@@ -212,7 +212,7 @@ class interactionconfirm(discord.ui.View):
         if isinstance(self.response, discord.Message) or isinstance(self.response, discord.WebhookMessage):
             await self.response.edit(view=self)
         elif isinstance(self.response, discord.Interaction):
-            await self.response.edit_original_message(view=self)
+            await self.response.edit_original_response(view=self)
 
 class VoteView(discord.ui.View):
     def __init__(self, client, disabled):
@@ -351,7 +351,7 @@ class SubmissionApproval(discord.ui.View):
                     for b in self.view.children:
                         b.disabled = True
                     self.view.submission_handled = True
-                    await interaction.edit_original_message(embed=embed, view=self.view, delete_after=10.0)
+                    await interaction.edit_original_response(embed=embed, view=self.view, delete_after=10.0)
                     await get_reason_modal.interaction.response.send_message(f"You have disqualified the entry for {submission.second_media_link or submission.media_link}. {'The submitter has been notified.' if dm_successful else 'I was unable to DM the submitter.'}", ephemeral=True)
                 else:
                     return await interaction.response.send_message('umm', ephemeral=True)

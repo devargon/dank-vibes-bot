@@ -1718,8 +1718,8 @@ class AmariImport(commands.Cog, name="amari_import"):
         workers = await self.amari_import_dao.fetchAllTaskWorkers()
 
         async def add_worker_field(embed: discord.Embed, worker: AmariImportWorker, response_ok: Optional[bool] = None, readyAt: Optional[datetime] = None, remarks: Optional[any] = None):
-            worker_creator = await self.client.get_or_fetch_user(worker.creator_user_id)
-            worker_user = await self.client.get_or_fetch_user(worker.worker_user_id)
+            worker_creator = await self.client.get_or_fetch(discord.User, worker.creator_user_id)
+            worker_user = await self.client.get_or_fetch(discord.User, worker.worker_user_id)
             status_emoji = DVB_TYPING_INDICATOR
             if response_ok is not None:
                 if response_ok is True:

@@ -189,7 +189,7 @@ class ModSlash(commands.Cog):
             if confirmview.returning_value is not True:
                 confirm_embed.color = discord.Color.red()
                 confirm_embed.description.replace("Press confirm to proceed to ban users.", "No action was taken.")
-                return await confirmview.response.edit_original_message(embed=confirm_embed)
+                return await confirmview.response.edit_original_response(embed=confirm_embed)
             else:
                 durations = []
                 time_now = time.time()

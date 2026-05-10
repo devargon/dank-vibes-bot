@@ -92,7 +92,7 @@ class UpdateValue(discord.ui.Select):
                 self.options[1].label = f"Manually set (⏣ {comma_number(self.item.celeb_overwrite_value)})"
                 self.options[0].default = False
                 self.options[1].default = True
-                await interaction.edit_original_message(view=self.view)
+                await interaction.edit_original_response(view=self.view)
                 #await interaction.followup.send(f"**{self.item.name}**'s donation value is set to **⏣ {comma_number(get_celeb_value(self.item))}**.", ephemeral=True)
 
 class UpdateCelebItem(discord.ui.View):

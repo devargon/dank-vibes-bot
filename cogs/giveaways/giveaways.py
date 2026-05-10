@@ -711,7 +711,7 @@ class GiveawayView(discord.ui.View):
                                     failembed.description = "**AmariBot is having problems.**\nI am unable to contact AmariBot until their servers are back online."
                                 else:
                                     failembed.description = f"**There was an error while talking to AmariBot.**\n```{error}\n```"
-                        return await interaction.edit_original_message(embed=failembed)
+                        return await interaction.edit_original_response(embed=failembed)
                     else:
                         if user_amari_details is None:
                             # print('obj was none')
@@ -738,7 +738,7 @@ class GiveawayView(discord.ui.View):
                                 em.add_field(name="Note",
                                              value=f"I detected an issue while trying to talk to AmariBot. This may affect your ability to join the giveaway.\n\nDetails: ```\n{error}```")
 
-                            return await interaction.edit_original_message(embed=em)
+                            return await interaction.edit_original_response(embed=em)
             if giveaway_uses_multiple_entries:
                 entries = Counter(entry.get('entrytype') for entry in user_entries)
                 entry_list = [
@@ -817,7 +817,7 @@ class GiveawayView(discord.ui.View):
                 summary_embed.title = content
                 summary_embed.set_footer(text=f"Your total entries: {final_number_of_entries}")
                 if edit_final is True:
-                    await interaction.edit_original_message(content=text_content, embed=embed, view=MultiEntryView(giveawaymessage.id, self.cog, self.client, summary_embed))
+                    await interaction.edit_original_response(content=text_content, embed=embed, view=MultiEntryView(giveawaymessage.id, self.cog, self.client, summary_embed))
                 else:
                     await interaction.response.send_message(content=text_content, embed=embed, view=MultiEntryView(giveawaymessage.id, self.cog, self.client, summary_embed), ephemeral=True)
             else:
@@ -825,7 +825,7 @@ class GiveawayView(discord.ui.View):
                 summary_embed.description = f"Your total entries: {final_number_of_entries}"
                 summary_embed.color = discord.Color.green()
                 if edit_final is True:
-                    await interaction.edit_original_message(content=text_content, embed=summary_embed, view=SingleEntryView(giveawaymessage.id, self.cog, self.client))
+                    await interaction.edit_original_response(content=text_content, embed=summary_embed, view=SingleEntryView(giveawaymessage.id, self.cog, self.client))
                 else:
                     await interaction.response.send_message(content=text_content, embed=summary_embed, view=SingleEntryView(giveawaymessage.id, self.cog, self.client), ephemeral=True)
         else:
@@ -1653,7 +1653,7 @@ class giveaways(commands.Cog):
                 embed.description += "\n\n__Timeout__\nYou didn't respond in time. The giveaway has been cancelled."
             elif confirmview.returning_value is False:
                 embed.description += "\n\n__Cancelled__\nYou cancelled the giveaway."
-            return await confirmview.response.edit_original_message(embed=embed)
+            return await confirmview.response.edit_original_response(embed=embed)
         required_role_list_str = ",".join([str(role.id) for role in required_roles]) if len(required_roles) > 0 else None
         blacklisted_role_list_str = ",".join([str(role.id) for role in blacklisted_roles]) if type(blacklisted_roles) == list and len(blacklisted_roles) > 0 else None
         if required_roles:

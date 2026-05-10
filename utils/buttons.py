@@ -49,7 +49,7 @@ class confirm(discord.ui.View):
         if isinstance(self.response, discord.Message):
             await interaction.response.edit_message(view=self)
         elif isinstance(self.response, discord.Interaction):
-            await self.response.edit_original_message(view=self)
+            await self.response.edit_original_response(view=self)
         self.stop()
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
@@ -67,7 +67,7 @@ class confirm(discord.ui.View):
         if isinstance(self.response, discord.Message):
             await self.response.edit(view=self)
         elif isinstance(self.response, discord.Interaction):
-            await self.response.edit_original_message(view=self)
+            await self.response.edit_original_response(view=self)
 
 
 

@@ -57,12 +57,12 @@ class BanAppealReasonModal(discord.ui.Modal):
             return await interaction.response.send_message(embed=result_embed, ephemeral=True)
         if banappeal.appeal_status == 1 or banappeal.appeal_status == 2:
             if banappeal.reviewer_id is not None:
-                reviewer = await interaction.client.get_or_fetch_user(banappeal.reviewer_id)
+                reviewer = await interaction.client.get_or_fetch(discord.User, banappeal.reviewer_id)
             else:
                 reviewer = discord.NotFound
             result_embed.description = f"This ban appeal was already " + ("**Denied**" if banappeal.appeal_status == 1 else "**Approved**") + " by " + ("Unknown" if reviewer == discord.NotFound else f"{reviewer.mention} ({reviewer.id})" if reviewer is not None else str(banappeal.reviewer_id) + ".")
             return await interaction.response.send_message(embed=result_embed, ephemeral=True)
-        appealer = await interaction.client.get_or_fetch_user(banappeal.user_id)
+        appealer = await interaction.client.get_or_fetch(discord.User, banappeal.user_id)
         appealer_text = f"**{proper_userf(appealer)}** ({appealer.id})" if appealer is not None else str(banappeal.user_id)
         banned_guild = interaction.client.get_guild(banappeal.guild_id)
         err = None
@@ -210,7 +210,7 @@ class BanAppealView(discord.ui.View):
                                             color=discord.Color.red()), ephemeral=True)
                 if self.custom_id == "appeal:approve":
                     if appeal.version == 2:
-                        appealer = await interaction.client.get_or_fetch_user(appeal.user_id)
+                        appealer = await interaction.client.get_or_fetch(discord.User, appeal.user_id)
                         if appealer is not None and appealer.id != 1376832460356321311:
                             if discord.utils.utcnow() - appealer.created_at < timedelta(days=10):
                                 return await interaction.response.send_message(
@@ -221,7 +221,7 @@ class BanAppealView(discord.ui.View):
                     return await interaction.response.send_modal(modal=modal)
                 elif self.custom_id == "appeal:deny":
                     if appeal.version == 2:
-                        appealer = await interaction.client.get_or_fetch_user(appeal.user_id)
+                        appealer = await interaction.client.get_or_fetch(discord.User, appeal.user_id)
                         if appealer is not None:
                             if discord.utils.utcnow() - appealer.created_at < timedelta(days=10):
                                 return await interaction.response.send_message(

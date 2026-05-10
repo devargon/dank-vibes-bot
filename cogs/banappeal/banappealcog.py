@@ -45,7 +45,7 @@ class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banapp
             if appeal.version == 2:
                 embed.title += " (Dungeon ban appeal)"
             embed.color = discord.Color.green() if appeal.appeal_status == 2 else discord.Color.red() if appeal.appeal_status == 1 else discord.Color.light_gray()
-            appealing_user = await self.client.get_or_fetch_user(appeal.user_id)
+            appealing_user = await self.client.get_or_fetch(discord.User, appeal.user_id)
             if appealing_user:
                 ap_user_disp = (f"@{appealing_user.name}" if appealing_user.discriminator == "0" else f"{appealing_user.name}#{appealing_user.discriminator}") + f" ({appealing_user.id})"
             else:
@@ -63,7 +63,7 @@ class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banapp
                 embed.set_footer(text=status_str)
                 embed.timestamp = appeal.reviewed_timestamp
                 if appeal.reviewer_id:
-                    reviewer_moderator = await self.client.get_or_fetch_user(appeal.reviewer_id)
+                    reviewer_moderator = await self.client.get_or_fetch(discord.User, appeal.reviewer_id)
                     if reviewer_moderator:
                         embed.set_footer(text=embed.footer.text, icon_url=reviewer_moderator.display_avatar.with_size(32).url)
                     reviewer_disp = f"{reviewer_moderator.mention} ({reviewer_moderator.id})" if reviewer_moderator else f"{appeal.user_id}"
@@ -188,7 +188,7 @@ class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banapp
                 channel = self.client.get_channel(appeal.channel_id)
 
                 if appeal.version == 2 and appeal.dungeon_over_reminder is not True:
-                    appealer = await self.client.get_or_fetch_user(appeal.user_id)
+                    appealer = await self.client.get_or_fetch(discord.User, appeal.user_id)
                     if appealer is not None:
                         if discord.utils.utcnow() - appealer.created_at > timedelta(days=10):
                             if channel is not None:
@@ -237,7 +237,7 @@ class BanAppealCog(BanAppealServer, BanAppealDiscord, commands.Cog, name='banapp
                     appeal.appeal_status = 1
                     appeal.reviewed_timestamp = discord.utils.utcnow()
                     appeal.updated = False
-                    appealer = await self.client.get_or_fetch_user(appeal.user_id)
+                    appealer = await self.client.get_or_fetch(discord.User, appeal.user_id)
                     await banappealdb.update_ban_appeal(appeal)
                     self.discordBanAppealUpdateQueue.append(appeal)
                     if appeal.email is not None:

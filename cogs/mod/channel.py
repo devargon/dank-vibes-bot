@@ -60,7 +60,7 @@ class ConfirmChannelName(discord.ui.Button):
         else:
             await interaction.response.send_message(f"The channel **{old_name}**'s name has been edited to {new_channel.mention}.")
         self.view.disable_all_items()
-        await interaction.edit_original_message(view=self.view)
+        await interaction.edit_original_response(view=self.view)
 
 class ChooseSymbol(discord.ui.View):
     def __init__(self, author, channel, new_channel_name):
@@ -453,7 +453,7 @@ class Confirm(discord.ui.Button):
         self.format()
         self.view.format_items()
         await interaction.followup.send(statusmsg)
-        await interaction.edit_original_message(embed=self.view.embed, view=self.view)
+        await interaction.edit_original_response(embed=self.view.embed, view=self.view)
 
 
 class ChannelView(discord.ui.View):

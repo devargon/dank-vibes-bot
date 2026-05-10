@@ -202,7 +202,7 @@ class ServerConfigView(discord.ui.View):
                         else:
                             self.view.serverconfig.statusroleid = modal.role_id
                             await self.view.serverconfig.update(self.view.client)
-                            await interaction.edit_original_message(embed=self.view.get_embed(), view=self.view)
+                            await interaction.edit_original_response(embed=self.view.get_embed(), view=self.view)
                             if modal.interaction.response.is_done():
                                 await modal.interaction.followup.send(f"Status role has been changed to **{role.name}**.", ephemeral=True)
                             else:
@@ -234,7 +234,7 @@ class ServerConfigView(discord.ui.View):
                         else:
                             self.view.serverconfig.log_channel = modal.channel_id
                             await self.view.serverconfig.update(self.view.client)
-                            await interaction.edit_original_message(embed=self.view.get_embed(), view=self.view)
+                            await interaction.edit_original_response(embed=self.view.get_embed(), view=self.view)
                             if modal.interaction.response.is_done():
                                 await modal.interaction.followup.send(f"Log channel has been changed to **{channel.mention}**.", ephemeral=True)
                             else:
@@ -257,7 +257,7 @@ class ServerConfigView(discord.ui.View):
                     await modal.interaction.followup.send(summary, ephemeral=True)
                 else:
                     await modal.interaction.response.send_message(summary, ephemeral=True)
-                await interaction.edit_original_message(embed=self.view.get_embed(), view=self.view)
+                await interaction.edit_original_response(embed=self.view.get_embed(), view=self.view)
 
         class StatusText(discord.ui.Button):
             async def callback(self, interaction: discord.Interaction):
@@ -275,7 +275,7 @@ class ServerConfigView(discord.ui.View):
                     await modal.interaction.followup.send(summary, ephemeral=True)
                 else:
                     await modal.interaction.response.send_message(summary, ephemeral=True)
-                await interaction.edit_original_message(embed=self.view.get_embed(), view=self.view)
+                await interaction.edit_original_response(embed=self.view.get_embed(), view=self.view)
 
         class ChangeStatusMatchType(discord.ui.Select):
             def __init__(self, current):

@@ -87,7 +87,7 @@ class DMPersistentView(discord.ui.View):
             except discord.Forbidden:
                 pass
         await asyncio.sleep(10)
-        await interaction.delete_original_message()
+        await interaction.delete_original_response()
 
     @discord.ui.button(label='Deny', emoji=discord.PartialEmoji.from_str(DVB_CROSSMARK), style=discord.ButtonStyle.red, custom_id="button:deny_dm") #c, custom_id='persistent_view:red')
     async def red(self, button: discord.ui.Button, interaction: discord.Interaction):
@@ -132,7 +132,7 @@ class DMPersistentView(discord.ui.View):
             except discord.Forbidden:
                 pass
         await asyncio.sleep(10)
-        await interaction.delete_original_message()
+        await interaction.delete_original_response()
 
 class FunSlash(commands.Cog):
     def __init__(self, client):

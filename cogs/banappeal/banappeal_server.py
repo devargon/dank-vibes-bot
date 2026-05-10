@@ -212,7 +212,7 @@ class BanAppealServer(commands.Cog):
                 return status_400(data={
                     "error": "You've recently submitted an appeal. You can make a new appeal 30 days after your previous one.",
                     "next_appeal_dt": (most_recent_appeal.appeal_timestamp + timedelta(days=30)).isoformat()})
-        appealer = await self.get_or_fetch_user(user_id)
+        appealer = await self.get_or_fetch(discord.User, user_id)
         guild = self.get_guild(server_id)
         if guild is None:
             status_500(data={"error": "INTERNAL SERVER ERROR"})

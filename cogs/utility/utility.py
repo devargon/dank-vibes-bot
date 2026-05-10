@@ -162,7 +162,7 @@ class RequestForNitroLink(discord.ui.View):
 
                 user_data = response.get("user")
                 if user_data is not None:
-                    gift_owner = await interaction.client.get_or_fetch_user(user_data.get("id"))
+                    gift_owner = await interaction.client.get_or_fetch(discord.User, user_data.get("id"))
                     if gift_owner is None:
                         result_embed.description += f"🧑 Owner: **Unknown** ({user_data.get('id')})\n"
                     else:
