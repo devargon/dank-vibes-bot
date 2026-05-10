@@ -3,7 +3,7 @@ async-timeout==3.0.1
 asyncpg
 colorthief
 cycler
-py-cord
+py-cord==2.8.0rc2
 expr.py
 thefuzz[speed]
 humanize
