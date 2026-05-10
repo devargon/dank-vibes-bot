@@ -62,7 +62,7 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, AppleShortcuts,
         self.rcdata = ""
         self.alex_api = alexflipnote.Client()
         self.rantimes = {}
-        self.session = aiohttp.ClientSession()
+        self.session = None
         self.server = client.server
         with open('assets/localization/dumbfight_statements.json', 'r') as f:
             self.dumbfight_statements = json.load(f)
@@ -780,5 +780,9 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, AppleShortcuts,
             if author != ctx.message.author:
                 await ctx.send(f"- {author.mention}")
 
+    async def cog_load(self):
+        self.session = aiohttp.ClientSession()
+
     def cog_unload(self):
-        self.bot.loop.create_task(self.session.close())
+        if self.session and not self.session.closed:
+            self.bot.loop.create_task(self.session.close())
