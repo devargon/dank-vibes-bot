@@ -307,7 +307,7 @@ class reminders(commands.Cog):
         if reminder is None:
             return await ctx.send("You need to specify the ID of the reminder that you'd want to repeat.")
         if repeating_interval is None:
-            repeating_interval = reminder.time - reminder.created_time
+            repeating_interval = reminder.time - reminder.created_time + 1
         if isinstance(repeating_interval, int) and repeating_interval == -1:
             await self.client.db.execute("UPDATE reminders SET repeat = $1, interval = $2 WHERE id = $3", False, 0, reminder.id)
             return await ctx.send(f"Alright, I won't repeat this reminder (**{reminder.name}**) anymore.")
