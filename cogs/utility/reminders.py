@@ -1,13 +1,16 @@
 import os
 from typing import Optional, Union
 
+import asyncpg
 import discord
+import typing
 from discord.ext import commands
 
 import time
 from datetime import datetime, timezone
 import asyncio
 
+from custom_emojis import DVB_TRUE
 from main import dvvt
 from utils.buttons import confirm
 from utils.context import DVVTcontext
@@ -16,6 +19,169 @@ from utils.errors import ArgumentBaseError
 from utils.time import humanize_timedelta, UserFriendlyTime
 from utils import checks
 from utils.specialobjects import Reminder
+
+class RemindersViewModeSelect(discord.ui.Select):
+    def __init__(self, selected_mode: typing.Literal['all', 'repeating'] = "all"):
+        options = [
+            discord.SelectOption(label="All reminders", value="all", emoji="⏰", default=selected_mode == "all"),
+            discord.SelectOption(label="Repeating reminders", value="repeating", emoji="🔁", default=selected_mode == "repeating")
+        ]
+
+        super().__init__(placeholder="Show...", min_values=1, max_values=1, options=options, custom_id="reminders_view_mode_select")
+
+    async def callback(self, interaction: discord.Interaction):
+        view: RemindersView = self.view
+        if view is None:
+            return await interaction.response.send_message("An error occurred while processing this interaction. Please try again.", ephemeral=True)
+        selected_value = self.values[0]
+        view.list_mode = selected_value
+        view.page_num = 0
+        await view.render_layout()
+        await interaction.response.edit_message(view=view)
+
+class DeleteReminderButton(discord.ui.Button):
+    def __init__(self, reminder_id: int, emoji="🗑️", label=None):
+        super().__init__(
+            emoji=emoji,
+            label=label,
+            style=discord.ButtonStyle.danger,
+            custom_id=f"reminders:delete:{reminder_id}",
+        )
+
+        self.reminder_id = reminder_id
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view: RemindersView = self.view
+        await self.view.initiate_delete_reminder(interaction, self.reminder_id)
+
+class InteractionConfirm(discord.ui.View):
+    def __init__(self, author: Union[discord.User, discord.Member], client, timeout):
+        self.timeout = timeout
+        self.author = author
+        self.response = None
+        self.client = client
+        self.returning_value = None
+        self.interaction = None
+        super().__init__(timeout=30.0)
+
+    @discord.ui.button(label="Yes", style=discord.ButtonStyle.green)
+    async def yes(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.interaction = interaction
+        self.returning_value = True
+        for b in self.children:
+            if b != button:
+                b.style = discord.ButtonStyle.grey
+            b.disabled = True
+        await interaction.response.defer()
+        self.stop()
+
+    @discord.ui.button(label="No", style=discord.ButtonStyle.red)
+    async def no(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.interaction = interaction
+        self.returning_value = False
+        for b in self.children:
+            if b != button:
+                b.style = discord.ButtonStyle.grey
+            b.disabled = True
+        await interaction.response.defer()
+        self.stop()
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        author = self.author
+        if interaction.user != author:
+            await interaction.response.send_message("These buttons aren't for you!", ephemeral=True)
+            return False
+        return True
+
+    async def on_timeout(self) -> None:
+        self.returning_value = None
+        for b in self.children:
+            b.disabled = True
+        if isinstance(self.response, discord.Message) or isinstance(self.response, discord.WebhookMessage):
+            await self.response.edit(view=self)
+        elif isinstance(self.response, discord.Interaction):
+            await self.response.edit_original_response(view=self)
+
+class RemindersView(discord.ui.DesignerView):
+    def __init__(self, client, ctx):
+        self.ctx: DVVTcontext = ctx
+        self.client: dvvt = client
+        self.list_mode: typing.Literal['all', 'repeating'] = "all"
+        self.page_num = 0
+        self.reminders_per_page = 7
+        super().__init__(timeout=60, disable_on_timeout=True)
+
+    async def fetch_reminders(self):
+        # fetch based on self.page_num, and self.reminders_per_page
+        offset = self.page_num * self.reminders_per_page
+        if self.list_mode == "all":
+            reminders = await self.client.db.fetch("SELECT * FROM reminders WHERE user_id=$1 AND guild_id=$2 ORDER BY time LIMIT $3 OFFSET $4", self.ctx.author.id, self.ctx.guild.id, self.reminders_per_page, offset)
+        else:
+            reminders = await self.client.db.fetch("SELECT * FROM reminders WHERE user_id=$1 AND guild_id=$2 AND repeat=true ORDER BY time LIMIT $3 OFFSET $4", self.ctx.author.id, self.ctx.guild.id, self.reminders_per_page, offset)
+        return reminders
+
+    async def render_layout(self):
+        reminders = await self.fetch_reminders()
+        self.clear_items()
+        container = discord.ui.Container(
+            discord.ui.TextDisplay(f"## Your Reminders\nPage {self.page_num+1}"),
+            discord.ui.ActionRow(RemindersViewModeSelect(selected_mode=self.list_mode)),
+            discord.ui.Separator(divider=True, spacing=discord.SeparatorSpacingSize.small),
+            color=self.client.embed_color
+        )
+        for reminder in reminders:
+            container.add_item(self.build_reminder(reminder))
+
+        self.add_item(container)
+
+    def build_reminder(self, reminder: asyncpg.Record):
+        reminder_id = reminder.get('id')
+        guild_id = reminder.get('guild_id')
+        channel_id = reminder.get('channel_id')
+        message_id = reminder.get('message_id')
+        name = reminder.get('name')
+        time = reminder.get('time')
+        repeating = reminder.get('repeat')
+        repeating_interval = reminder.get('interval')
+        url = f"https://discord.com/channels/{guild_id}/{channel_id}/{message_id}"
+
+        text = f"**#{reminder_id}**: {name}\n<t:{time}:f>"
+        if repeating:
+            text += f"\n-# 🔁 Repeats every **{humanize_timedelta(seconds=repeating_interval)}**"
+
+        row = discord.ui.Section(discord.ui.TextDisplay(text), accessory=DeleteReminderButton(reminder_id=reminder_id))
+        return row
+
+    async def initiate_delete_reminder(self, interaction: discord.Interaction, reminder_id: int):
+        confirmview = InteractionConfirm(interaction.user, self.client, 30.0)
+        confirmembed = discord.Embed(
+            description=f"Are you sure you want to delete reminder **#{reminder_id}**? This action is irreversible!",
+            color=discord.Color.orange())
+        confirmview.response = await interaction.response.send_message(embed=confirmembed, view=confirmview)
+        await confirmview.wait()
+        if confirmview.returning_value is not True:
+            if confirmview.interaction:
+                confirmembed.color = discord.Color.red()
+                confirmembed.description = "Deletion cancelled."
+                await confirmview.interaction.edit_original_response(embed=confirmembed, view=confirmview)
+            return
+
+        reminder = await self.client.db.fetchrow("SELECT * FROM reminders WHERE id=$1 AND user_id=$2 AND guild_id=$3",
+                                                 reminder_id, self.ctx.author.id, self.ctx.guild.id)
+        if not reminder:
+            confirmembed.color = discord.Color.red()
+            confirmembed.description = "You don't have a reminder with that ID. It may have already been deleted."
+            await confirmview.interaction.edit_original_response(embed=confirmembed, view=confirmview)
+            return
+
+        await self.client.db.execute("DELETE FROM reminders WHERE id=$1 AND user_id=$2 AND guild_id=$3", reminder_id,
+                                     self.ctx.author.id, self.ctx.guild.id)
+        confirmembed.color = discord.Color.green()
+        confirmembed.description += f"\n\n{DVB_TRUE} **Success!**"
+        await confirmview.interaction.edit_original_response(embed=confirmembed, view=confirmview)
+        await self.render_layout()
+        await self.message.edit(view=self)
+
 
 
 class reminders(commands.Cog):
@@ -109,33 +275,9 @@ class reminders(commands.Cog):
     @remind.command(name='list', aliases=['mine', 'show', 'display'])
     async def remind_list(self, ctx):
         """Lists all of your reminders."""
-        reminders = await self.client.db.fetch("SELECT id, channel_id, message_id, name, time FROM reminders WHERE user_id=$1 AND guild_id=$2 ORDER BY time", ctx.author.id, ctx.guild.id)
-        if not reminders:
-            return await ctx.send("You don't have any reminders set.")
-        reminder_list = []
-        for rm in reminders:
-            reminder_id = rm.get('id')
-            channel_id = rm.get('channel_id')
-            message_id = rm.get('message_id')
-            name = rm.get('name')
-            time = rm.get('time')
-            url = f"https://discord.com/channels/{ctx.guild.id}/{channel_id}/{message_id}"
-            reminder_list.append(f"ID: `{reminder_id}`, <t:{time}:d> <t:{time}:t> | {name}")
-        current = len(reminder_list)
-        deleted = 0
-        if len('\n'.join(reminder_list)) > 2000:
-            while len('\n'.join(reminder_list)) > 2000:
-                reminder_list = reminder_list[:-1]
-                deleted += 1
-            final = '\n'.join(reminder_list)
-        else:
-            final = '\n'.join(reminder_list)
-        embed = discord.Embed(title="Your reminders", description=final, color=self.client.embed_color)
-        footertext = f"You have {current} active reminders."
-        if deleted > 0:
-            footertext += f" {deleted} reminders were not shown due to the character limit."
-        embed.set_footer(text=footertext)
-        await ctx.send(embed=embed)
+        view = RemindersView(self.client, ctx=ctx)
+        await view.render_layout()
+        view.message = await ctx.send(view=view)
 
     @checks.perm_insensitive_roles()
     @commands.guild_only()
