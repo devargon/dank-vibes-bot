@@ -390,7 +390,7 @@ class Actions(commands.Cog, name='actions'):
 
     @checks.perm_insensitive_roles()
     @commands.guild_only()
-    @commands.command(name="kiss")
+    @commands.command(name="kiss", aliases=["smooch"])
     async def action_kiss(self, ctx: DVVTcontext, target: discord.Member = None):
         """
         Plant a sweet kiss on someone to show affection.
