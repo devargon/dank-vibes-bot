@@ -39,6 +39,68 @@ tenorAPI = os.getenv('tenorAPI')
 
 RandomColorID = 943530953110880327 if os.getenv('state') == '1' else 1317873362994987018
 
+_DUMBFIGHT_ACTIONS = [
+    "{winmen} reported the impostor {losemen}.",
+    "{winmen} fought {losemen}.",
+    "{winmen} farted on {losemen}.",
+    "{winmen} rickrolled {losemen}.",
+    "{winmen} took a huge dump on {losemen}.",
+    "{winmen} landed a soft punch on {losemen}.",
+    "{winmen} kicked {losemen} in *that* area.",
+    "{winmen} didn't need to do anything; {losemen} saw the simps in this server and fainted.",
+    "{winmen} used the 6 Infinity Stones to fight {losemen}.",
+    "{winmen} was a coward and got Thanos to fight {losemen}.",
+    "{losemen} cheated on {winmen} and lost the court case.",
+    "{winmen} freeze-rayed {losemen}.",
+    "{winmen} won a game of Fortnite against {losemen}.",
+    "{losemen} lagged and took the W.",
+    "{losemen} saw {winmen} vent and die.",
+    "{winmen} did {losemen}'s mom.",
+    "{losemen} slipped on {winmen}'s banana.",
+    "{winmen} caught {losemen} in 4K while fighting. 😳",
+    "{winmen} turned hacks on.",
+    "{winmen} fed {losemen} foot lettuce and {losemen} died.",
+    "{winmen} made {losemen} look at the mirror.",
+    "{winmen} told {losemen} that their dad went out to get milk.",
+    "{winmen} exposed {losemen}'s speedrun.",
+    "{losemen} tried to ratio {winmen}.",
+    "{winmen} told {losemen} that their Discord kitten doesn't love them.",
+    "{winmen} touched grass and became a god.",
+    "{winmen} said {losemen}'s memes suck.",
+    "{winmen} scammed {losemen} out of their life insurance.",
+    "{losemen} got head-shot by {winmen}.",
+    "{losemen} looked at {winmen}'s search history.",
+    "{losemen} tried insulting {winmen}'s grandma.",
+    "> {winmen}: We don't talk about {losemen}, no, no, no!",
+    "{winmen} forced {losemen} to sleep.",
+    "{losemen} got stuck in the backrooms.",
+    "{losemen} ate a fishbone and died.",
+    "{losemen} tried making out with {winmen}'s wife.",
+    "{losemen} took a shower after 3 years.",
+    "{losemen} thought they were cool and tried hitting on {winmen}.",
+    "{losemen} put milk before cereal in front of {winmen}.",
+    "{winmen} EMOTIONALLY DAMAGED {losemen}.",
+    "{losemen} raged over a game because {winmen} tilted them so bad.",
+    "{losemen} tried listening to to {winmen}'s instructions and breathe but died.",
+    "{losemen} became a Discord Mod.",
+    "{losemen} raged over video games while playing with {winmen}.",
+    "{losemen} sent sus images to {winmen}. 🤨",
+    "{losemen} leaned too much on the chair.",
+    "{losemen} missed the ender pearl shot because {winmen} distracted them.",
+    "{losemen} put their socks in water in front of {winmen}.",
+    "{losemen} mined straight into the desert temple as they were distracted by {winmen}.",
+    "{winmen} told {losemen} to mine straight down in Minecraft.",
+    "{losemen} tried to crack 90s in front of {winmen} and died.",
+]
+
+_DUMBFIGHT_SELF_ACTIONS = [
+    'punched themselves in the face',
+    'kicked themselves in the knee',
+    'stepped on their own feet',
+    'punched themselves in the stomach',
+    "tickled themselves until they couldn't take it",
+]
+
 class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, AppleShortcuts, commands.Cog, name='fun'):
     """
     Fun commands
@@ -115,6 +177,55 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, AppleShortcuts,
                 raise ArgumentBaseError(message="You have the **No Tags** role and can't use any commands in the **Fun** category. <:dv_pepeHahaUSuckOwO:837653798313918475>")
         return True
 
+    def _determine_base_winner(self, won_count: int, lost_count: int) -> bool:
+        if lost_count == 0:
+            return random.choice([True, False])
+        ratio = won_count / lost_count
+        if ratio == 0 or 0.7 <= ratio <= 1.5:
+            return random.choice([True, False])
+        return ratio < 0.7  # losing a lot → give author a win; winning a lot → give author a loss
+
+    async def _get_active_potion(self, user_id: int):
+        row = await self.client.db.fetchrow(
+            "SELECT dumbfight_result, dumbfight_rig_duration FROM userconfig WHERE user_id = $1", user_id
+        )
+        if (row is not None
+                and row.get('dumbfight_rig_duration') is not None
+                and row.get('dumbfight_rig_duration') > round(time.time())):
+            return row.get('dumbfight_result')
+        return None
+
+    def _resolve_potion_outcome(self, doesauthorwin: bool, author_potion, target_potion, author, member):
+        extra_info = None
+        if author_potion is not None:
+            if target_potion is not None:
+                if author_potion == target_potion:
+                    doesauthorwin = random.choice([True, False])
+                    extra_info = (f"Both {proper_userf(author)} and {proper_userf(member)} have drank a "
+                                  f"dumbfight shield potion, so the result was randomly decided.")
+                else:
+                    if target_potion is True:
+                        doesauthorwin = False
+                        extra_info = f"{proper_userf(member)} has drank a dumbfight shield potion to make them win."
+                    elif author_potion is False:
+                        doesauthorwin = False
+                        extra_info = f"{proper_userf(author)} has drank a dumbfight shield potion to make them lose."
+                    elif target_potion is False:
+                        doesauthorwin = True
+                        extra_info = f"{proper_userf(member)} has drank a dumbfight shield potion to make them lose."
+                    elif author_potion is True:
+                        doesauthorwin = True
+                        extra_info = f"{proper_userf(author)} has drank a dumbfight shield potion to make them win."
+            else:
+                doesauthorwin = author_potion is True
+                action = "win" if author_potion is True else "lose"
+                extra_info = f"{proper_userf(author)} has drank a dumbfight shield potion to make them {action}."
+        elif target_potion is not None:
+            doesauthorwin = target_potion is False
+            action = "win" if target_potion is True else "lose"
+            extra_info = f"{proper_userf(member)} has drank a dumbfight shield potion to make them {action}."
+        return doesauthorwin, extra_info
+
     @checks.perm_insensitive_roles()
     @commands.dynamic_cooldown(lowered_cooldown, commands.BucketType.user)
     @commands.group(name="dumbfight", aliases = ["df"], invoke_without_command=True)
@@ -133,175 +244,82 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, AppleShortcuts,
                 return await ctx.send(f"Here we have a human AKA {ctx.author.mention} showing you that they are able to dumbfight you, although they could've just done it already. <:dv_pepeHahaUSuckOwO:837653798313918475>")
         if ctx.channel.id in self.mutedusers and member.id in self.mutedusers[ctx.channel.id]:
             ctx.command.reset_cooldown(ctx)
-            return await ctx.send(
-                f"**{member.name}** is currently muted in a dumbfight. Wait a few moments before using this command.")
+            return await ctx.send(f"**{member.name}** is currently muted in a dumbfight. Wait a few moments before using this command.")
         if member.bot:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("This is a **dumb**fight. Use it on dumb people and back off the bots.")
         if member == ctx.me:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("How do you expect me to mute myself?")
-        if ctx.channel.id in [748758938836795653, 735477033949462578] or "mafia" in ctx.channel.name: # events or mafia
+        if ctx.channel.id in [748758938836795653, 735477033949462578] or "mafia" in ctx.channel.name:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("You cannot use dumbfights in events or mafia channels.")
+        if isinstance(ctx.channel, discord.Thread):
+            ctx.command.reset_cooldown(ctx)
+            return await ctx.send("Dumbfight is not supported in threads yet. Sorry >.<")
 
         duration = random.randint(30, 120)
+
         won_dumbfights = await self.client.db.fetch(
             "SELECT * FROM dumbfightlog where did_win = $1 and invoker_id = $2", 1, ctx.author.id)
         lost_dumbfights = await self.client.db.fetch(
             "SELECT * FROM dumbfightlog where did_win = $1 and invoker_id = $2", 0, ctx.author.id)
-        try:
-            wonlossratio = len(won_dumbfights) / len(lost_dumbfights)
-        except ZeroDivisionError:
-            doesauthorwin = random.choice([True, False])
-        else:
-            if wonlossratio == 0 or wonlossratio >= 0.7 and wonlossratio <= 1.5:
-                doesauthorwin = random.choice([True, False])
-            elif wonlossratio < 0.7:
-                doesauthorwin = True
-            else:
-                doesauthorwin = False
-        author_df_details = await self.client.db.fetchrow("SELECT dumbfight_result, dumbfight_rig_duration FROM userconfig WHERE user_id = $1", ctx.author.id)
-        if author_df_details is not None and author_df_details.get('dumbfight_rig_duration') is not None and author_df_details.get('dumbfight_rig_duration') > round(time.time()):
-            author_has_shield_potion = author_df_details.get('dumbfight_result')
-        else:
-            author_has_shield_potion = None
-        target_df_details = await self.client.db.fetchrow("SELECT dumbfight_result, dumbfight_rig_duration FROM userconfig WHERE user_id = $1", member.id)
-        if target_df_details is not None and target_df_details.get('dumbfight_rig_duration') is not None and target_df_details.get('dumbfight_rig_duration') > round(time.time()):
-            target_has_shield_potion = target_df_details.get('dumbfight_result')
-        else:
-            target_has_shield_potion = None
-        extra_info = None
-        if author_has_shield_potion is not None:
-            if target_has_shield_potion is not None:
-                if author_has_shield_potion == target_has_shield_potion:
-                    doesauthorwin = random.choice([True, False])
-                    extra_info = f"Both {proper_userf(ctx.author)} and {proper_userf(member)} have drank a dumbfight shield potion, so the result was randomly decided."
-                else:
-                    if target_has_shield_potion is True:
-                        extra_info = f"{proper_userf(member)} has drank a dumbfight shield potion to make them win."
-                        doesauthorwin = False
-                    elif author_has_shield_potion is False:
-                        extra_info = f"{proper_userf(ctx.author)} has drank a dumbfight shield potion to make them lose."
-                        doesauthorwin = False
-                    elif target_has_shield_potion is False:
-                        extra_info = f"{proper_userf(member)} has drank a dumbfight shield potion to make them lose."
-                        doesauthorwin = True
-                    elif author_has_shield_potion is True:
-                        extra_info = f"{proper_userf(ctx.author)} has drank a dumbfight shield potion to make them win."
-                        doesauthorwin = True
-            else:
-                if author_has_shield_potion is True:
-                    extra_info = f"{ctx.author} has drank a dumbfight shield potion to make them win."
-                    doesauthorwin = True
-                else:
-                    extra_info = f"{ctx.author} has drank a dumbfight shield potion to make them lose."
-                    doesauthorwin = False
-        else:
-            if target_has_shield_potion is not None:
-                if target_has_shield_potion is True:
-                    extra_info = f"{proper_userf(member)} has drank a dumbfight shield potion to make them win."
-                    doesauthorwin = False
-                else:
-                    extra_info = f"{proper_userf(member)} has drank a dumbfight shield potion to make them lose."
-                    doesauthorwin = True
+        doesauthorwin = self._determine_base_winner(len(won_dumbfights), len(lost_dumbfights))
 
-            if ctx.author.id == 312876934755385344 and ctx.message.content.lower().endswith('win'):
+        author_potion = await self._get_active_potion(ctx.author.id)
+        target_potion = await self._get_active_potion(member.id)
+        doesauthorwin, extra_info = self._resolve_potion_outcome(
+            doesauthorwin, author_potion, target_potion, ctx.author, member)
+
+        if author_potion is None and ctx.author.id == 312876934755385344:
+            content_lower = ctx.message.content.lower()
+            if content_lower.endswith('win'):
                 doesauthorwin = True
-            if ctx.author.id == 312876934755385344 and ctx.message.content.lower().endswith('lose'):
+            elif content_lower.endswith('lose'):
                 doesauthorwin = False
-        channel = ctx.channel
-        if isinstance(channel, discord.Thread):
-            ctx.command.reset_cooldown(ctx)
-            return await ctx.send("Dumbfight is not supported in threads yet. Sorry >.<")
+
         if doesauthorwin:
-            muted = member
-            winmen = ctx.author.mention
-            losemen = muted.mention
-            color = 0x00ff00
-            str = "and won against"
-
-
-
+            muted, winner, loser = member, ctx.author.mention, member.mention
+            embed_color = 0x00ff00
         else:
-            muted = ctx.author
-            color = 0xff0000
-            str = "and lost against"
-            winmen = member.mention
-            losemen = muted.mention
-        action = random.choice([f"{winmen} reported the impostor {losemen}.",
-                                f"{winmen} fought {losemen}.", f"{winmen} farted on {losemen}.",
-                                f"{winmen} rickrolled {losemen}.", f"{winmen} took a huge dump on {losemen}.",
-                                f"{winmen} landed a soft punch on {losemen}.",
-                                f"{winmen} kicked {losemen} in *that* area.",
-                                f"{winmen} didn't need to do anything; {losemen} saw the simps in this server and fainted.",
-                                f"{winmen} used the 6 Infinity Stones to fight {losemen}.",
-                                f"{winmen} was a coward and got Thanos to fight {losemen}.",
-                                f"{losemen} cheated on {winmen} and lost the court case.",
-                                f"{winmen} freeze-rayed {losemen}.",
-                                f"{winmen} won a game of Fortnite against {losemen}.",
-                                f"{losemen} lagged and took the W.",
-                                f"{losemen} saw {winmen} vent and die.", f"{winmen} did {losemen}'s mom.",
-                                f"{losemen} slipped on {winmen}'s banana.",
-                                f"{winmen} caught {losemen} in 4K while fighting. 😳",
-                                f"{winmen} turned hacks on.",
-                                f"{winmen} fed {losemen} foot lettuce and {losemen} died.",
-                                f"{winmen} made {losemen} look at the mirror.",
-                                f"{winmen} told {losemen} that their dad went out to get milk.",
-                                f"{winmen} exposed {losemen}'s speedrun.", f"{losemen} tried to ratio {winmen}.",
-                                f"{winmen} told {losemen} that their Discord kitten doesn't love them.",
-                                f"{winmen} touched grass and became a god.", f"{winmen} said {losemen}'s memes suck.",
-                                f"{winmen} scammed {losemen} out of their life insurance.",
-                                f"{losemen} got head-shot by {winmen}.",
-                                f"{losemen} looked at {winmen}'s search history.",
-                                f"{losemen} tried insulting {winmen}'s grandma.",
-                                f"> {winmen}: We don't talk about {losemen}, no, no, no!",
-                                f"{winmen} forced {losemen} to sleep.",
-                                f"{losemen} got stuck in the backrooms.",
-                                f"{losemen} ate a fishbone and died.",
-                                f"{losemen} tried making out with {winmen}'s wife.",
-                                f"{losemen} took a shower after 3 years.",
-                                f"{losemen} thought they were cool and tried hitting on {winmen}.",
-                                f"{losemen} put milk before cereal in front of {winmen}.",
-                                f"{winmen} EMOTIONALLY DAMAGED {losemen}.",
-                                f"{losemen} raged over a game because {winmen} tilted them so bad.",
-                                f"{losemen} tried listening to to {winmen}'s instructions and breathe but died.",
-                                f"{losemen} became a Discord Mod.",
-                                f"{losemen} raged over video games while playing with {winmen}.",
-                                f"{losemen} sent sus images to {winmen}. 🤨",
-                                f"{losemen} leaned too much on the chair.",
-                                f"{losemen} missed the ender pearl shot because {winmen} distracted them.",
-                                f"{losemen} put their socks in water in front of {winmen}.",
-                                f"{losemen} mined straight into the desert temple as they were distracted by {winmen}.",
-                                f"{winmen} told {losemen} to mine straight down in Minecraft.",
-                                f"{losemen} tried to crack 90s in front of {winmen} and died."])
+            muted, winner, loser = ctx.author, member.mention, ctx.author.mention
+            embed_color = 0xff0000
+
+        if ctx.author == member:
+            description = (f"{muted.mention} {random.choice(_DUMBFIGHT_SELF_ACTIONS)}.\n"
+                           f"{muted.mention} is now muted for {duration} seconds.")
+        else:
+            action = random.choice(_DUMBFIGHT_ACTIONS).format(winmen=winner, losemen=loser)
+            description = f"{action}\n{muted.mention} lost and is now muted for {duration} seconds."
+
         if extra_info is None:
-            await self.client.db.execute("INSERT INTO dumbfightlog values($1, $2, $3)", ctx.author.id, member.id, 1 if doesauthorwin is True else 0)
-        originaloverwrite = channel.overwrites_for(muted) if muted in channel.overwrites else None
-        tempoverwrite = channel.overwrites_for(muted) if muted in channel.overwrites else discord.PermissionOverwrite()
-        tempoverwrite.send_messages = False
-        await channel.set_permissions(muted, overwrite=tempoverwrite)
+            await self.client.db.execute(
+                "INSERT INTO dumbfightlog values($1, $2, $3)", ctx.author.id, member.id, 1 if doesauthorwin else 0)
+
+        channel = ctx.channel
+        original_overwrite = channel.overwrites_for(muted) if muted in channel.overwrites else None
+        temp_overwrite = channel.overwrites_for(muted) if muted in channel.overwrites else discord.PermissionOverwrite()
+        temp_overwrite.send_messages = False
+        await channel.set_permissions(muted, overwrite=temp_overwrite)
+
         if ctx.channel.id in self.mutedusers:
-            self.mutedusers[ctx.channel.id] = self.mutedusers[ctx.channel.id] + [muted.id]
+            self.mutedusers[ctx.channel.id].append(muted.id)
         else:
             self.mutedusers[ctx.channel.id] = [muted.id]
-        if ctx.author == member:
-            lst = ['punched themselves in the face', 'kicked themselves in the knee', 'stepped on their own feet', 'punched themselves in the stomach', 'tickled themselves until they couldn\'t take it']
-            embed = discord.Embed(title="Get muted!", description=f"{muted.mention} {random.choice(lst)}.\n{muted.mention} is now muted for {duration} seconds.", colour=color)
-        else:
-            embed = discord.Embed(title="Get muted!", description=f"{action}\n{muted.mention} lost and is now muted for {duration} seconds.", colour=color)
+
+        embed = discord.Embed(title="Get muted!", description=description, colour=embed_color)
         if extra_info is not None:
             embed.set_footer(text=extra_info, icon_url="https://cdn.discordapp.com/emojis/944226900988026890.webp?size=96&quality=lossless")
         await ctx.send(embed=embed)
+
         await asyncio.sleep(duration)
-        await channel.set_permissions(muted, overwrite=originaloverwrite)
-        if muted.id in self.mutedusers[ctx.channel.id]:
-            if len(self.mutedusers[ctx.channel.id]) == 1:
+        await channel.set_permissions(muted, overwrite=original_overwrite)
+        if muted.id in self.mutedusers.get(ctx.channel.id, []):
+            channel_muted = self.mutedusers[ctx.channel.id]
+            if len(channel_muted) == 1:
                 del self.mutedusers[ctx.channel.id]
             else:
-                lst = self.mutedusers[ctx.channel.id]
-                lst.remove(muted.id)
-                self.mutedusers[ctx.channel.id] = lst
+                channel_muted.remove(muted.id)
 
 
     @checks.dev()
