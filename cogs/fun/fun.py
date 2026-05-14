@@ -294,23 +294,14 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, AppleShortcuts,
             embed.set_footer(text=extra_info, icon_url="https://cdn.discordapp.com/emojis/944226900988026890.webp?size=96&quality=lossless")
         await ctx.send(embed=embed)
         await asyncio.sleep(duration)
-        if muted.id != 781764427287756841:
-            await channel.set_permissions(muted, overwrite=originaloverwrite)
-            if muted.id in self.mutedusers[ctx.channel.id]:
-                if len(self.mutedusers[ctx.channel.id]) == 1:
-                    del self.mutedusers[ctx.channel.id]
-                else:
-                    lst = self.mutedusers[ctx.channel.id]
-                    lst.remove(muted.id)
-                    self.mutedusers[ctx.channel.id] = lst
-
-        else:
-            error = f"discord.InvalidData: User {muted} ({muted.id}) received invalid data: \nSWYgeW91IHJlYWQgdGhpcyB5b3UncmUgc21hcnQ="
-            embed = discord.Embed(title="⚠️ Oh no!",
-                                  description="Something terribly went wrong when this command was used.\n\nThe developers have been notified and it'll fixed soon.",
-                                  color=discord.Color.red())
-            embed.add_field(name="Error", value=f"```prolog\n{error}\n```\n<#871737028105109574>")
-            return await ctx.send(embed=embed)
+        await channel.set_permissions(muted, overwrite=originaloverwrite)
+        if muted.id in self.mutedusers[ctx.channel.id]:
+            if len(self.mutedusers[ctx.channel.id]) == 1:
+                del self.mutedusers[ctx.channel.id]
+            else:
+                lst = self.mutedusers[ctx.channel.id]
+                lst.remove(muted.id)
+                self.mutedusers[ctx.channel.id] = lst
 
 
     @checks.dev()
