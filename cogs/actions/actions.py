@@ -407,7 +407,7 @@ class Actions(commands.Cog, name='actions'):
         new_count = await self.create_action_record_and_return_count(ctx.guild.id, ctx.channel.id, ctx.message.id, ctx.author.id, "kiss", target.id)
         n_times_display = "once" if new_count == 1 else f"{new_count} times"
         embed = discord.Embed(title=strings.get("kiss").get("title"), description=chosen_string, color=color).set_image(url=kiss_result.url)
-        embed.set_footer(text=f"You and {target.display_name} have kissd {n_times_display}!", icon_url=target.display_avatar.url)
+        embed.set_footer(text=f"You and {target.display_name} have kissed {n_times_display}!", icon_url=target.display_avatar.url)
         await ctx.send(embed=embed)
 
     @checks.perm_insensitive_roles()
