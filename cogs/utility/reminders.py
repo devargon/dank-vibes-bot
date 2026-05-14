@@ -12,7 +12,7 @@ import asyncio
 
 from custom_emojis import DVB_TRUE
 from main import dvvt
-from utils.buttons import confirm
+from utils.buttons import confirm, generate_action_row_pagination
 from utils.context import DVVTcontext
 from utils.converters import TimedeltaConverter, BetterTimeConverter
 from utils.errors import ArgumentBaseError
@@ -109,7 +109,34 @@ class RemindersView(discord.ui.DesignerView):
         self.list_mode: typing.Literal['all', 'repeating'] = "all"
         self.page_num = 0
         self.reminders_per_page = 7
+        self.reminder_filter_select = RemindersViewModeSelect(selected_mode=self.list_mode)
+        self.reminder_counts = {}
         super().__init__(timeout=60, disable_on_timeout=True)
+
+    async def count_reminder_modes(self) -> dict[str, int]:
+        row = await self.client.db.fetchrow(
+            """
+            SELECT
+                COUNT(*) AS all_count,
+                COUNT(*) FILTER (WHERE repeat = true) AS repeating_count
+            FROM reminders
+            WHERE user_id = $1
+              AND guild_id = $2
+            """,
+            self.ctx.author.id,
+            self.ctx.guild.id,
+        )
+
+        self.reminder_counts = {
+            "all": row["all_count"],
+            "repeating": row["repeating_count"],
+        }
+
+    def get_max_pages(self):
+        focused_number_of_reminders = self.reminder_counts[self.list_mode]
+        max_pages = (max(1, (focused_number_of_reminders - 1) // self.reminders_per_page + 1))
+        return max_pages
+
 
     async def fetch_reminders(self):
         # fetch based on self.page_num, and self.reminders_per_page
@@ -121,18 +148,52 @@ class RemindersView(discord.ui.DesignerView):
         return reminders
 
     async def render_layout(self):
-        reminders = await self.fetch_reminders()
         self.clear_items()
+        await self.count_reminder_modes()
+
+        focused_number_of_reminders = self.reminder_counts[self.list_mode]
+
+        if focused_number_of_reminders == 0:
+            self.page_num = 0
+
+        if self.page_num * self.reminders_per_page >= focused_number_of_reminders and self.page_num != 0:
+            self.page_num = max(0, self.page_num - 1)
+
+        for option in self.reminder_filter_select.options:
+            match option.value:
+                case "all":
+                    option.label = f"All reminders ({self.reminder_counts['all']})"
+                    option.default = self.list_mode == "all"
+
+                case "repeating":
+                    option.label = f"Repeating reminders ({self.reminder_counts['repeating']})"
+                    option.default = self.list_mode == "repeating"
+
         container = discord.ui.Container(
-            discord.ui.TextDisplay(f"## Your Reminders\nPage {self.page_num+1}"),
-            discord.ui.ActionRow(RemindersViewModeSelect(selected_mode=self.list_mode)),
+            discord.ui.TextDisplay(f"## Your Reminders\nPage {self.page_num + 1} of {self.get_max_pages()}"),
+            discord.ui.ActionRow(self.reminder_filter_select),
             discord.ui.Separator(divider=True, spacing=discord.SeparatorSpacingSize.small),
             color=self.client.embed_color
         )
-        for reminder in reminders:
-            container.add_item(self.build_reminder(reminder))
+
+        if focused_number_of_reminders == 0:
+            container.add_item(discord.ui.TextDisplay(f"You have no reminders.\nUse `{self.client.get_guild_prefix}remind` command to create one."))
+        else:
+
+            reminders = await self.fetch_reminders()
+
+            for reminder in reminders:
+                container.add_item(self.build_reminder(reminder))
 
         self.add_item(container)
+        self.add_item(generate_action_row_pagination())
+
+
+
+    async def update_page(self, interaction: discord.Interaction):
+        await self.render_layout()
+        await interaction.response.edit_message(view=self)
+
 
     def build_reminder(self, reminder: asyncpg.Record):
         reminder_id = reminder.get('id')

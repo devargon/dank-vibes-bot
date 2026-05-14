@@ -6,6 +6,8 @@ import contextlib
 from discord import ui
 from typing import Optional, Any, Union, Dict, Type, Iterable
 from functools import partial
+
+from custom_emojis import DVB_FIRST_CHECK, DVB_PREV_CHECK, DVB_LAST_CHECK, DVB_NEXT_CHECK
 from utils.context import DVVTcontext
 from discord.ext import commands
 from utils.context import DVVTcontext
@@ -217,3 +219,34 @@ class MenuViewBase(ViewIterationAuthor):
         for b in self.children:
             b.disabled = True
         await message.edit(view=self)
+
+class PaginatorButton(discord.ui.Button):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        if "get_max_pages" in dir(self.view) and "page_num" in dir(self.view) and "update_page" in dir(self.view):
+            max_pages = self.view.get_max_pages()
+            page_num = self.view.page_num
+            match self.custom_id:
+                case "first":
+                    page_num = 0
+                case "last":
+                    page_num = max_pages - 1
+                case "prev":
+                    page_num -= 1
+                case "next":
+                    page_num += 1
+            page_num = max(0, min(page_num, max_pages - 1))
+            self.view.page_num = page_num
+            await self.view.update_page(interaction)
+        else:
+            raise ValueError("The view must have 'get_max_pages', 'page_num', and 'update_page' methods/attributes for pagination buttons to work.")
+
+def generate_action_row_pagination():
+    actionrow = discord.ui.ActionRow()
+    actionrow.add_item(PaginatorButton(emoji=discord.PartialEmoji.from_str(DVB_FIRST_CHECK), style=discord.ButtonStyle.secondary, custom_id="first"))
+    actionrow.add_item(PaginatorButton(emoji=discord.PartialEmoji.from_str(DVB_PREV_CHECK), style=discord.ButtonStyle.secondary, custom_id="prev"))
+    actionrow.add_item(PaginatorButton(emoji=discord.PartialEmoji.from_str(DVB_NEXT_CHECK), style=discord.ButtonStyle.secondary, custom_id="next"))
+    actionrow.add_item(PaginatorButton(emoji=discord.PartialEmoji.from_str(DVB_LAST_CHECK), style=discord.ButtonStyle.secondary, custom_id="last"))
+    return actionrow
