@@ -1,4 +1,6 @@
 import random
+
+from custom_emojis import DVB_TRUE
 from utils.context import DVVTcontext
 import discord
 from discord.ext import commands
@@ -352,27 +354,31 @@ class games(commands.Cog):
                 self.user1nick = user1nick
                 self.user2 = user2
                 self.user2nick = user2nick
-                self.agree = 0
+                self.user1_agreed = False
+                self.user2_agreed = False
                 self.response = None
                 super().__init__(timeout=30.0)
+
                 async def update_agree(interaction: discord.Interaction, button: discord.ui.Button):
-                    if self.children.index(button) == 0:
+                    is_user1_button = self.children.index(button) == 0
+                    if is_user1_button:
                         if interaction.user.id != self.user1.id:
                             await interaction.response.send_message("Agree to the nickname given to you, not this one.", ephemeral=True)
                             return
-                        button.style, button.label, button.disabled, button.emoji = discord.ButtonStyle.green, f"{self.user1.name}'s nick: {self.user1nick}", True, discord.PartialEmoji.from_str("{DVB_TRUE}")
-                        self.agree = self.agree + 1
+                        self.user1_agreed = True
+                        button.style, button.label, button.disabled, button.emoji = discord.ButtonStyle.green, f"{self.user1.name}'s nick: {self.user1nick}", True, discord.PartialEmoji.from_str(f"{DVB_TRUE}")
                     else:
                         if interaction.user.id != self.user2.id:
                             await interaction.response.send_message("Agree to the nickname given to you, not this one.", ephemeral=True)
                             return
-                        button.style, button.label, button.disabled, button.emoji = discord.ButtonStyle.green, f"{self.user2.name}'s nick: {self.user2nick}", True, discord.PartialEmoji.from_str("{DVB_TRUE}")
-                        self.agree = self.agree + 1
-                    if self.agree == 2:
+                        self.user2_agreed = True
+                        button.style, button.label, button.disabled, button.emoji = discord.ButtonStyle.green, f"{self.user2.name}'s nick: {self.user2nick}", True, discord.PartialEmoji.from_str(f"{DVB_TRUE}")
+                    both_agreed = self.user1_agreed and self.user2_agreed
+                    if both_agreed:
                         for b in self.children:
                             b.disabled = True
                     await interaction.response.edit_message(view=self)
-                    if self.agree == 2:
+                    if both_agreed:
                         self.stop()
 
                 class button0(discord.ui.Button):
@@ -391,7 +397,7 @@ class games(commands.Cog):
             view = AgreeToNames(ctx.author, authornick, member, membernick)
             view.response = await ctx.send(f"Agree to the nickname given to you by pressing the button with your name. {ctx.author.mention}{member.mention}", view=view)
             await view.wait()
-            if view.agree != 2:
+            if not (view.user1_agreed and view.user2_agreed):
                 try:
                     await view.response.reply("This nickbet has been cancelled as both of you have not agreed to the given nicknames.")
                 except Exception as e:
