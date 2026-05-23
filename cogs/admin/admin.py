@@ -1,4 +1,5 @@
 from abc import ABC
+from textwrap import dedent
 from typing import Literal
 
 from discord.ext import menus
@@ -7,6 +8,7 @@ from main import dvvt
 from utils.converters import BetterInt, BetterTimeConverter, BetterRoles
 from utils.specialobjects import ServerConfiguration
 from .contests import Contests
+from .dumbfightsuggest import DumbfightSuggest, InitiateDumbfightSuggestionView
 from .privchannel_config import PrivchannelConfig
 from .serverrule import ServerRule
 from .joining import Joining
@@ -370,7 +372,7 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
 
 
-class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, commands.Cog, name='admin', metaclass=CompositeMetaClass):
+class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, DumbfightSuggest, commands.Cog, name='admin', metaclass=CompositeMetaClass):
     """
     Server Commands
     """
@@ -892,3 +894,5 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, c
         else:
             await ctx.send(f"{proper_userf(user)} ({user.id}) will NOT be able to bypass the auto ban if their account age is less than the set specified age.")
 
+    async def on_ready(self):
+        self.client.add_view(InitiateDumbfightSuggestionView())
