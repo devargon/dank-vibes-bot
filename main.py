@@ -33,7 +33,7 @@ class EditContent:
 strfformat = "%d-%m-%y %H:%M:%S"
 
 def get_display_time_now():
-    return datetime.datetime.utcnow().strftime(strfformat)
+    return datetime.datetime.now(datetime.UTC).strftime(strfformat)
 
 
 AVAILABLE_EXTENSIONS = [
