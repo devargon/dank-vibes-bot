@@ -3,7 +3,7 @@ async-timeout==3.0.1
 asyncpg
 colorthief
 cycler
-py-cord==2.8.0rc2
+py-cord==2.8.0
 expr.py
 thefuzz[speed]
 humanize
@@ -33,7 +33,7 @@ hyper
 emoji
 typing
 stemming
-httpcore==1.0.5
+httpcore
 pytz
 parsedatetime
 owoify-py
@@ -46,10 +46,10 @@ unidecode
 Wand
 captcha
 bleach
-pydantic==1.10.2
+pydantic
 pytesseract
 openai
-chat_exporter @ git+https://github.com/nogra-xyz/DiscordChatExporterPy@2.8.0
+chat_exporter
 discord-ext-menus @ git+https://github.com/nogra-app/discord-ext-reaction-menus
 alexflipnote.py @ git+https://github.com/nogra-app/alexflipnote.py
 dpy-http-server @ git+https://github.com/nogra-app/dpy-http-server
