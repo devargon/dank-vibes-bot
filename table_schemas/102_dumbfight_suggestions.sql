@@ -5,5 +5,6 @@ CREATE TABLE IF NOT EXISTS dumbfight_suggestions(
     message      TEXT NOT NULL,
     status      VARCHAR(20) NOT NULL DEFAULT 'pending_approval',
     actioned_by BIGINT,
+    action_reason VARCHAR(255),
     created_at   TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 )
