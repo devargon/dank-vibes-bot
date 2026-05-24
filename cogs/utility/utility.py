@@ -275,8 +275,8 @@ class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight
         self.translator = Translator()
         self.views_added = False
         self.last_seen = {}
-        self.regex_pattern = re.compile('([^\s\w]|_)+')
-        self.website_regex = re.compile("https?:\/\/[^\s]*")
+        self.regex_pattern = re.compile(r'([^\s\w]|_)+')
+        self.website_regex = re.compile(r'https?://[^\s]*')
         self.alex_api = alexflipnote.Client()
         self.blacklist = []
 

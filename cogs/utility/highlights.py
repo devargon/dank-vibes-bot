@@ -61,8 +61,8 @@ class Highlight(commands.Cog):
     def __init__(self, client):
         self.client: dvvt = client
         self.last_seen = {}
-        self.regex_pattern = re.compile('([^\s\w]|_)+')
-        self.website_regex = re.compile("https?://[^\s]*")
+        self.regex_pattern = re.compile(r'([^\s\w]|_)+')
+        self.website_regex = re.compile(r'https?://[^\s]*')
         self.blacklist = []
 
     async def _clean_and_tokenize(self, content: str) -> List[str]:
