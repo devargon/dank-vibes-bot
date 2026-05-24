@@ -1,4 +1,3 @@
-import imghdr
 import math
 import re
 
@@ -14,7 +13,7 @@ import numpy as np
 import random
 import os
 
-from utils.format import proper_userf
+from utils.format import proper_userf, image_type
 from utils.errors import ArgumentBaseError
 
 url_regex = re.compile(
@@ -230,7 +229,7 @@ class ImgenSlash(commands.Cog):
                         if resp.status != 200:
                             return await ctx.respond("The URL you provided is not valid.", ephemeral=True)
                         imagebytes = await resp.read()
-                imagetype = imghdr.what(None, imagebytes)
+                imagetype = image_type(imagebytes)
                 if imagetype is None:
                     return await ctx.respond("The URL you provided is not an image.", ephemeral=True)
             else:
@@ -239,7 +238,7 @@ class ImgenSlash(commands.Cog):
             imagebytes = await base_argument.display_avatar.with_format("png").read()
         elif isinstance(base_argument, discord.Attachment):
             imagebytes = await base_argument.read()
-            imagetype = imghdr.what(None, imagebytes)
+            imagetype = image_type(imagebytes)
             if imagetype is None:
                 return await ctx.respond("The image you provided is not valid.", ephemeral=True)
         else:

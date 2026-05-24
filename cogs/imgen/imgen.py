@@ -1,4 +1,3 @@
-import imghdr
 import math
 import random
 import re
@@ -16,7 +15,7 @@ import numpy as np
 import os
 import alexflipnote
 
-from utils.format import proper_userf
+from utils.format import proper_userf, image_type
 from utils.errors import ArgumentBaseError
 from .imgen_slash import ImgenSlash
 url_regex = re.compile(
@@ -280,7 +279,7 @@ class Imgen(ImgenSlash, commands.Cog, name='imgen'):
                         if resp.status != 200:
                             return await ctx.send("The URL you provided is not valid.")
                         imagebytes = await resp.read()
-                imagetype = imghdr.what(None, imagebytes)
+                imagetype = image_type(imagebytes)
                 if imagetype is None:
                     return await ctx.send("The URL you provided is not an image.")
             else:
@@ -289,7 +288,7 @@ class Imgen(ImgenSlash, commands.Cog, name='imgen'):
             imagebytes = await argument.read()
         else:
             imagebytes = await argument.display_avatar.with_format("png").read()
-        imagetype = imghdr.what(None, imagebytes)
+        imagetype = image_type(imagebytes)
         if imagetype is None:
             return await ctx.send("The image you provided is not valid.")
         def generate():

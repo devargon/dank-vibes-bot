@@ -1,9 +1,12 @@
+import io
 import sys
 
 import discord
 import traceback
 from io import BytesIO
 from typing import Sequence, Iterator, Literal, Optional, Union
+
+import puremagic
 from discord.ext import commands
 import inflect
 import math
@@ -385,3 +388,16 @@ def generate_loadbar(percentage: float, length: Optional[int] = 20):
                 return StartLoad + MiddleLoad * (rounded - 1 - 1) + aMiddleLoad  + eMiddleLoad * (length - rounded - 1) + eEndLoad
             else:
                 return aStartLoad + eMiddleLoad * (length - 1 - 1) + eEndLoad
+
+def image_type(data: bytes) -> str | None:
+    matches = puremagic.magic_stream(io.BytesIO(data))
+
+    if not matches:
+        return None
+
+    ext = matches[0].extension.lower().lstrip(".")
+
+    if ext in {"jpg", "jpeg", "png", "gif", "webp", "bmp"}:
+        return "jpeg" if ext == "jpg" else ext
+
+    return None

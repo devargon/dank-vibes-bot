@@ -8,7 +8,6 @@ from thefuzz import process
 from custom_emojis import DVB_TRUE
 from utils import checks
 
-import imghdr
 import aiohttp
 from typing import Union
 from emoji import EMOJI_DATA
@@ -17,7 +16,7 @@ import re
 
 from utils.buttons import confirm
 from utils.converters import BetterColor, BetterBetterRoles
-from utils.format import generate_loadbar, proper_userf
+from utils.format import generate_loadbar, proper_userf, image_type
 from utils.time import humanize_timedelta
 
 regex = re.compile(
@@ -147,7 +146,7 @@ class Role(commands.Cog):
                 if argument.size > 262144:
                     return await ctx.send("The attachment is too big for me to read. The maximum file size of a role icon is 256 KB.")
                 imagebytes = await argument.read()
-                imagetype = imghdr.what(None, imagebytes)
+                imagetype = image_type(imagebytes)
                 if imagetype is None:
                     return await ctx.send("The attachment is not an image.")
                 elif imagetype not in ['png', 'jpeg', 'jpg', 'webp']:
@@ -157,7 +156,7 @@ class Role(commands.Cog):
 
             elif argumenttype == "EMOJI":
                 imagebytes = await argument.read()
-                imagetype = imghdr.what(None, imagebytes)
+                imagetype = image_type(imagebytes)
                 if imagetype is None:
                     return await ctx.send("The emoji you provided is not valid.")
                 elif imagetype not in ['png', 'jpeg', 'jpg', 'webp']:
@@ -171,7 +170,7 @@ class Role(commands.Cog):
                         if resp.status != 200:
                             return await ctx.send("The URL you provided is not valid.")
                         imagebytes = await resp.read()
-                imagetype = imghdr.what(None, imagebytes)
+                imagetype = image_type(imagebytes)
                 if imagetype is None:
                     return await ctx.send("The URL you provided is not valid.")
                 elif imagetype not in ['png', 'jpeg', 'jpg', 'webp']:
