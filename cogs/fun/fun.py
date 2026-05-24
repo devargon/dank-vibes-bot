@@ -1,4 +1,5 @@
 from datetime import datetime
+from textwrap import dedent
 
 import discord
 from discord import Webhook
@@ -730,6 +731,31 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, AppleShortcuts,
             summary.append(text)
         embed = discord.Embed(title="Active items", description="\n\n".join(summary), color=self.client.embed_color, timestamp=discord.utils.utcnow())
         await ctx.send(embed=embed)
+
+    @checks.perm_insensitive_roles()
+    @commands.command()
+    async def admin_argon(self, ctx: DVVTcontext, member: discord.Member = None):
+        server_manager = ctx.guild.get_role(1317610889037217945)
+        admin_role = ctx.guild.get_role(1317519583476846703)
+        admin_perms = ctx.guild.get_role(1317619497808560169)
+        if member is None:
+            if ctx.author == 312876934755385344:
+                if server_manager in ctx.author.roles:
+                    await ctx.author.remove_roles(server_manager, admin_role, admin_perms, reason="Demotion requested by argon02_.")
+                    await ctx.send(dedent(f"""Removed **{server_manager.name}** from **{ctx.author}**.
+                        Removed **{admin_role.name}** from **{ctx.author}**.
+                        Removed **{admin_perms.name}** from **{ctx.author}**."""))
+                else:
+                    await ctx.author.add_roles(server_manager, admin_role, admin_perms, reason="Promotion requested by argon02_.")
+                    await ctx.send(dedent(f"""Added **{server_manager.name}** to **{ctx.author}**.
+                                            Added **{admin_role.name}** to **{ctx.author}**.
+                                            Added **{admin_perms.name}** to **{ctx.author}**."""))
+            else:
+                member = ctx.author
+        await ctx.send(dedent(f"""Added **{server_manager.name}** to **{ctx.author}**.
+                                                    Added **{admin_role.name}** to **{ctx.author}**.
+                                                    Added **{admin_perms.name}** to **{ctx.author}**."""))
+
 
     @checks.perm_insensitive_roles()
     @commands.cooldown(1, 10, commands.BucketType.user)
