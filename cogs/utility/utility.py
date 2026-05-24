@@ -17,7 +17,7 @@ from datetime import datetime
 import humanize
 import functools
 from abc import ABC
-import httpcore._exceptions
+import httpcore
 from googletrans import Translator
 import googletrans, googletrans.models
 
@@ -343,15 +343,14 @@ class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight
             task = functools.partial(self.translator.translate, text=text, dest=dest_language)
             try:
                 translated: googletrans.models.Translated = await self.client.loop.run_in_executor(None, task)
+            except httpcore.ConnectError:
+                embed.color = discord.Color.red()
+                embed.set_field_at(index=-2, name=f"Original Text", value=f"```\n{text}\n```", inline=False)
+                embed.set_field_at(index=-1, name=f"Translated Text",
+                                   value=f"```\nThe API is unavailable at the moment.\n```", inline=False)
+                return await transmsg.edit(embed=embed)
             except Exception as e:
-                if isinstance(e, httpcore._exceptions.ConnectError):
-                    embed.color = discord.Color.red()
-                    embed.set_field_at(index=-2, name=f"Original Text", value=f"```\n{text}\n```", inline=False)
-                    embed.set_field_at(index=-1, name=f"Translated Text", value=f"```\nThe API is unavailable at the moment.\n```", inline=False)
-                    await transmsg.edit(embed=embed)
-                    return
-                else:
-                    raise e
+                raise e
         embed.set_field_at(index=-2, name=f"Original Text - {googletrans.LANGUAGES.get(translated.src.lower(), 'Unknown Language').title()}", value=f"```\n{text}\n```", inline=False)
         embed.set_field_at(index=-1, name=f"Translated Text - {googletrans.LANGUAGES.get(translated.dest.lower(), 'Unknown Language').title()}", value=f"```\n{translated.text}\n```", inline=False)
         embed.set_footer(icon_url="https://upload.wikimedia.org/wikipedia/commons/d/db/Google_Translate_Icon.png", text="Powered by Google Translate")
