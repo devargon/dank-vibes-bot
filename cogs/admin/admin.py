@@ -895,4 +895,4 @@ class Admin(PrivchannelConfig, Contests, BetterSelfroles, Joining, ServerRule, D
             await ctx.send(f"{proper_userf(user)} ({user.id}) will NOT be able to bypass the auto ban if their account age is less than the set specified age.")
 
     async def on_ready(self):
-        self.client.add_view(InitiateDumbfightSuggestionView())
+        self.client.add_view(InitiateDumbfightSuggestionView(self.client))
