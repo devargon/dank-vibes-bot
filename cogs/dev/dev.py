@@ -1269,31 +1269,32 @@ class Developer(Logging, BotUtils, CogManager, Maintenance, Status, commands.Cog
     @checks.dev()
     @exportchat_base.command(name="channelid", hidden=True)
     async def export_by_channel_id(self, ctx: DVVTcontext, channel_id: int, limit: int = 50):
-        c = await self.client.fetch_channel(channel_id)
-        if c.guild is None:
-            return await ctx.send(f"{DVB_FALSE} {c.mention} is not part of a guild.")
-        if not (c.permissions_for(c.guild.me).read_messages and c.permissions_for(c.guild.me).read_message_history and c.permissions_for(c.guild.me).view_channel):
-            return await ctx.send(f"{DVB_FALSE} I do not have permissions to see {c.mention} or view its messages.")
-        m = await ctx.send(f"<a:DVB_CLoad2:994913353388527668> Found {c.mention}. Exporting messages...")
-        a = await self.client.fetch_user_info(ctx.author.id)
-
-        transcript = await chat_exporter.export(
-            c,
-            limit=50,
-            tz_info=(a.timezone if a is not None else "UTC") or "UTC",
-            military_time=True,
-            bot=self.client,
-        )
-
-        if transcript is None:
-            await m.edit(f"{DVB_FALSE} Unable to export messages for {c.mention}.")
-            return
-
-        else:
-            today = datetime.now()
-            await m.edit(f"<a:DVB_CLoad1:994913315442663475> Uploading export to Nogra's CDN...")
-            result_url = await upload_file_to_bunnycdn(file=transcript.encode('utf-8'), filename=f"transcript_{c.guild.id}_{c.id}_{today.isoformat()}.html", directory="chat_transcripts")
-            await m.edit(f"{DVB_TRUE} Exported messages in {c.mention}. View them at {result_url}")
+        pass
+        # c = await self.client.fetch_channel(channel_id)
+        # if c.guild is None:
+        #     return await ctx.send(f"{DVB_FALSE} {c.mention} is not part of a guild.")
+        # if not (c.permissions_for(c.guild.me).read_messages and c.permissions_for(c.guild.me).read_message_history and c.permissions_for(c.guild.me).view_channel):
+        #     return await ctx.send(f"{DVB_FALSE} I do not have permissions to see {c.mention} or view its messages.")
+        # m = await ctx.send(f"<a:DVB_CLoad2:994913353388527668> Found {c.mention}. Exporting messages...")
+        # a = await self.client.fetch_user_info(ctx.author.id)
+        #
+        # transcript = await chat_exporter.export(
+        #     c,
+        #     limit=50,
+        #     tz_info=(a.timezone if a is not None else "UTC") or "UTC",
+        #     military_time=True,
+        #     bot=self.client,
+        # )
+        #
+        # if transcript is None:
+        #     await m.edit(f"{DVB_FALSE} Unable to export messages for {c.mention}.")
+        #     return
+        #
+        # else:
+        #     today = datetime.now()
+        #     await m.edit(f"<a:DVB_CLoad1:994913315442663475> Uploading export to Nogra's CDN...")
+        #     result_url = await upload_file_to_bunnycdn(file=transcript.encode('utf-8'), filename=f"transcript_{c.guild.id}_{c.id}_{today.isoformat()}.html", directory="chat_transcripts")
+        #     await m.edit(f"{DVB_TRUE} Exported messages in {c.mention}. View them at {result_url}")
             # timenow = discord.utils.utcnow()
             #transcript_file = discord.File(
             #    io.BytesIO(transcript.encode('utf-8')),
