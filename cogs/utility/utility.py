@@ -45,7 +45,6 @@ from .reminders import reminders
 from .utility_slash import UtilitySlash
 from .customrole import CustomRoleManagement
 from ..mod.donations import UserDonations, format_donation
-from googlesearch import search
 from custom_emojis import DVB_TRUE, DVB_FALSE
 
 class NitroLinkModal(discord.ui.Modal):
@@ -841,26 +840,6 @@ class Utility(UserTime, CustomRoleManagement, UtilitySlash, reminders, Highlight
                 pass
         paginator = SingleMenuPaginator(pag_pages, author_check=True)
         await paginator.send(ctx)
-
-    @commands.command(name="google")
-    async def google_search(self, ctx: DVVTcontext, *, search_term: str):
-        """Perform a Google search and display results."""
-        # Perform the search (limiting to 5 results)
-        results = search(search_term, num_results=6, advanced=True)
-
-        # Create an embed to display the results
-        embed = discord.Embed(title=f"Search Results for: {search_term}", color=discord.Color.blue())
-        embed.set_thumbnail(
-            url="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_160x56dp.png")
-
-        # Add each result to the embed
-        for i, result in enumerate(results, start=1):
-            print(result)
-            embed.add_field(name=f"\u200b", value=f"**[{result.title}]({result.url})**\n{result.description}",
-                            inline=False)
-
-        # Send the embed
-        await ctx.send(embed=embed)
 
     @commands.command(name="mydonations", aliases=['myd'])
     async def mydonations(self, ctx):
