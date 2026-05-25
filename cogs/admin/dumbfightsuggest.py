@@ -53,16 +53,38 @@ class SuggestDumbfightModal(discord.ui.DesignerModal):
         else:
             member = await interaction.guild.get_or_fetch(discord.Member, 312876934755385344)
             target_and_winner = member.mention if member else "<@312876934755385344>"
+        fight_message_example = fight_message.replace("{winner}", target_and_winner).replace("{loser}", "**@Frenzy**")
         view = discord.ui.DesignerView(
             discord.ui.TextDisplay(content=f"**Please check the below to ensure the dumbfight message is as you want it.**"),
             discord.ui.Separator(divider=True, spacing=discord.SeparatorSpacingSize.small),
             discord.ui.TextDisplay(content=f"## <:DVB_DF_FRENZY:1508080750195376169> Frenzy\ndv.df {target_and_winner}"),
             discord.ui.Separator(divider=False, spacing=discord.SeparatorSpacingSize.large),
             discord.ui.TextDisplay(content=f"## <:DVB_DF_DVB:1508080709762289725> {self.client.user.name}"),
-            discord.ui.Container(discord.ui.TextDisplay(content=f"**@Frenzy** lost to {target_and_winner}.\n**@Frenzy** lost and is now muted for 120 seconds."),color=0xff0000),
-            discord.ui.ActionRow(discord.ui.Button(style=discord.ButtonStyle.green, label="Correct, no change"), TriggerDumbfightSuggestionModalButton(self.client, fight_type=self.fight_type, existing_input=fight_message, style=discord.ButtonStyle.red, label="Edit"), discord.ui.Button(style=discord.ButtonStyle.grey, label="Cancel")),
+            discord.ui.Container(discord.ui.TextDisplay(content=f"{fight_message_example}\n**@Frenzy** lost and is now muted for 120 seconds."),color=0xff0000),
+            discord.ui.ActionRow(SubmitDumbfightSuggestionButton(self.client, self.fight_type, fight_message), TriggerDumbfightSuggestionModalButton(self.client, fight_type=self.fight_type, existing_input=fight_message, style=discord.ButtonStyle.red, label="Edit"), discord.ui.Button(style=discord.ButtonStyle.grey, label="Cancel")),
             timeout=30, disable_on_timeout=True)
         return await interaction.response.send_message(view=view, ephemeral=True)
+
+class SubmitDumbfightSuggestionButton(discord.ui.Button):
+    def __init__(self, client: dvvt, fight_type: str, dumbfight_message: str):
+        super().__init__(
+            style=discord.ButtonStyle.green, label="Correct, no change"
+        )
+        self.client = client
+        self.fight_type = fight_type
+        self.dumbfight_message = dumbfight_message
+    async def callback(self, interaction: discord.Interaction):
+        if self.fight_type not in ['other', 'self']:
+            print(self.fight_type, type(self.fight_type))
+            cont = discord.ui.Container(discord.ui.TextDisplay(content=f"### Dumbfight suggestion Not Submitted\nDumbfight suggestion type was not 'other' or 'self'. Please try again later."), color=discord.Color.red())
+        else:
+            await self.client.db.execute("INSERT INTO dumbfight_suggestions(user_id, fight_type, message) VALUES($1, $2, $3)", interaction.user.id, self.fight_type, self.dumbfight_message)
+            cont = discord.ui.Container(discord.ui.TextDisplay(content=f"### Dumbfight suggestion Submitted! {DVB_TRUE}\n-# You may submit another one below if you wish to.\nFight type: `{self.fight_type}`\n```\n{self.dumbfight_message}\n```"), color=discord.Color.green())
+        view = discord.ui.DesignerView(cont, discord.ui.ActionRow(InitiateDumbfightSuggestionButton(self.client)), timeout=1, disable_on_timeout=True)
+        await interaction.response.edit_message(view=view)
+
+
+
 
 
 class InitiateDumbfightSuggestionButton(discord.ui.Button):
@@ -131,7 +153,7 @@ class InitiateDumbfightSuggestionView(discord.ui.View):
 
 
 class TriggerDumbfightSuggestionModalButton(discord.ui.Button):
-    def __init__(self, client: dvvt, fight_type, existing_input: Union[str, None] = None, style: discord.ButtonStyle = discord.ButtonStyle.primary, label: str = "Suggest", ):
+    def __init__(self, client: dvvt, fight_type: str, existing_input: Union[str, None] = None, style: discord.ButtonStyle = discord.ButtonStyle.primary, label: str = "Suggest", ):
         self.client = client
         super().__init__(
             style=style,  # Discord style 1
@@ -139,7 +161,7 @@ class TriggerDumbfightSuggestionModalButton(discord.ui.Button):
             custom_id=f"suggest:{fight_type}",
             disabled=False,
         )
-        self.fight_type=fight_type,
+        self.fight_type=fight_type
         self.existing_input = existing_input
 
     async def callback(self, interaction: discord.Interaction):
