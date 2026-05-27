@@ -678,7 +678,7 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, AppleShortcuts,
             print('nooo')
 
     @checks.perm_insensitive_roles()
-    @commands.cooldown(1, 3600, commands.BucketType.guild)
+    @commands.cooldown(1, 2700, commands.BucketType.guild) # 45 minutes
     @commands.command(name="randomcolor", aliases=['rc'])
     async def randomcolor(self, ctx: DVVTcontext):
         timenow = round(time.time())
