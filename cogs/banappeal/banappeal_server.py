@@ -108,7 +108,7 @@ class BanAppealServer(commands.Cog):
         print(data)
         return web.json_response(data=data, status=200)
 
-    @server.add_route(path="/api/appeals/{user_id:\d+}/{appeal_id:\d+}", method="GET", cog="BanAppeal")
+    @server.add_route(path=r"/api/appeals/{user_id:\d+}/{appeal_id:\d+}", method="GET", cog="BanAppeal")
     async def get_an_appeal(self: dvvt, request: web.Request):
         if request.headers.get("authorization") != os.getenv("APPEALS_SHARED_SECRET"):
             return web.json_response(data={"error": "Unauthorized request"}, status=401)
@@ -127,7 +127,7 @@ class BanAppealServer(commands.Cog):
             return web.json_response(status=404, data={"Error": f"Ban appeal with ID {appeal_id} not found"})
         return web.json_response(data=banappeal.to_presentable_format(), status=200)
 
-    @server.add_route(path="/api/appeal/{appeal_id:\d+}", method="PUT", cog="BanAppeal")
+    @server.add_route(path=r"/api/appeal/{appeal_id:\d+}", method="PUT", cog="BanAppeal")
     async def update_appeal(self: dvvt, request: web.Request):
         if request.headers.get("authorization") != os.getenv("APPEALS_SHARED_SECRET"):
             return web.json_response(data={"error": "Unauthorized request"}, status=401)

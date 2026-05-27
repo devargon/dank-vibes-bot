@@ -400,7 +400,7 @@ class GiveawayConfigCategories(discord.ui.View):
             await select_multi_view.response.edit(embed=embed, view=select_multi_view)
             def check(m: discord.Message):
                 return m.author == self.ctx.author and m.channel == self.ctx.channel
-            draft_msg = await self.ctx.send("Please **enter the role** (like how you would do with `dv.roleinfo` and the **multi as a number**, separated by **a comma**.\nExample: `rolename, 1`, `\<@&12345678>, 2`, `12345678, 3`")
+            draft_msg = await self.ctx.send("Please **enter the role** (like how you would do with `dv.roleinfo` and the **multi as a number**, separated by **a comma**.\nExample: `rolename, 1`, `<@&12345678>, 2`, `12345678, 3`")
             try:
                 response_msg = await self.client.wait_for('message', check=check, timeout=60)
             except asyncio.TimeoutError:

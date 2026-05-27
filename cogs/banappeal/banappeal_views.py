@@ -18,7 +18,7 @@ banappeal_chn_id = constants.banappeal_chn_id
 modlog_chn_id = constants.modlog_chn_id
 
 def get_appeal_no_from_embed(embed):
-    appeal_match = re.match("Ban Appeal #(\d+)", embed.title)
+    appeal_match = re.match(r"Ban Appeal #(\d+)", embed.title)
     if appeal_match:
         try:
             appeal_no = int(appeal_match.group(1))
@@ -151,9 +151,9 @@ class BanAppealReasonModal(discord.ui.Modal):
 
         try:
             message = await interaction.client.wait_for("message", check=check_carlbot_unban_message, timeout=10.0)
-            case_match = re.match("unban \| case (\d+)", message.embeds[0].title)
+            case_match = re.match(r"unban \| case (\d+)", message.embeds[0].title)
             case_number = int(case_match.group(1))
-            cmd = f"!reason {case_number} Ban appeal #{banappeal.appeal_id} was approved by \`{proper_userf(interaction.user, show_at_symbol=False)}\`  ({interaction.user.id})"
+            cmd = f"!reason {case_number} Ban appeal #{banappeal.appeal_id} was approved by \\`{proper_userf(interaction.user, show_at_symbol=False)}\\`  ({interaction.user.id})"
             alt_cmd = f"!reason {case_number} Ban appeal #{banappeal.appeal_id} was approved by `{proper_userf(interaction.user, show_at_symbol=False)}`  ({interaction.user.id})"
             msg_to_send = f"{interaction.user.mention} **copy the message below and send it**, to add this unban to Carl-bot's modlog.\n(Carl-bot tracks unbans in the modlog but does not include the reason.)"
             user_sent_msg = None
