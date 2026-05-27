@@ -166,7 +166,7 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, AppleShortcuts,
         elif discord.utils.get(message.author.roles, id=931174008970444800): # weekly top grinder
             return commands.Cooldown(1, 450)
         elif discord.utils.get(message.author.roles, name="Server Booster"): # previously investor
-            return commands.Cooldown(1, 600)
+            return commands.Cooldown(1, 1200)
         else:
             return commands.Cooldown(1, 1800)
 
