@@ -323,7 +323,7 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, AppleShortcuts,
                 channel_muted.remove(muted.id)
 
 
-    @checks.dev()
+    @checks.perm_insensitive_roles()
     @dumbfight.command(name="statistics", aliases = ["stats"])
     async def dfstatistics(self, ctx, member:discord.Member=None):
         if member is None:
