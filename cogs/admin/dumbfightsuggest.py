@@ -12,6 +12,14 @@ from main import dvvt
 from utils import checks
 from utils.context import DVVTcontext
 
+class CancelViewButton(discord.ui.Button):
+    def __init__(self, label="Cancel", style=discord.ButtonStyle.red):
+        super().__init__(style=style, label=label)
+
+    async def callback(self, interaction: Interaction):
+        await interaction.delete_original_response()
+        self.view.stop()
+
 class SuggestDumbfightModal(discord.ui.DesignerModal):
     def __init__(self, client: dvvt, dumbfight_type, existing_input: Union[str, None] = None):
         title="Suggest Dumbfight Message"
@@ -35,40 +43,52 @@ class SuggestDumbfightModal(discord.ui.DesignerModal):
     async def callback(self, interaction: discord.Interaction):
         fight_message = self.children[0].item.value
         # Validation
-        if "{loser}" not in fight_message:
+        validation_passed = True
+        embed = False
+        if self.fight_type == "other" and ("{loser}" not in fight_message or "{winner}" not in fight_message):
             embed = discord.Embed(
                 title="Your submission does not fulfil the following requirements:",
-                description="The dumbfight message **MUST** include either `{winner}` or `{loser}` to let the user know who won or lost." + f"\n```\n{fight_message}\n```",
+                description="The dumbfight message **MUST** include either `{winner}` or `{loser}` so the winner or loser can be shown." + f"\n```\n{fight_message}\n```",
                 color=discord.Color.red()
             )
+            validation_passed = False
+        elif self.fight_type == "self" and "{loser}" not in fight_message:
+            embed = discord.Embed(
+                title="Your submission does not fulfil the following requirements:",
+                description="The dumbfight message **MUST** include either `{winner}` or `{loser}` so the winner or loser can be shown." + f"\n```\n{fight_message}\n```",
+                color=discord.Color.red()
+            )
+            validation_passed = False
+        if not validation_passed:
             return await interaction.response.send_message(
                 embed=embed,
                 view=discord.ui.View(TriggerDumbfightSuggestionModalButton(self.client, self.fight_type, fight_message, style=discord.ButtonStyle.red, label="Try again"),
                                      timeout=30, disable_on_timeout=True), ephemeral=True
             )
 
-
-        if interaction.user.id != 560251854399733760:
+        if self.fight_type == "self":
+            target_and_winner = "**@Frenzy**"
+        elif interaction.user.id != 560251854399733760:
             target_and_winner = interaction.user.mention
         else:
             member = await interaction.guild.get_or_fetch(discord.Member, 312876934755385344)
             target_and_winner = member.mention if member else "<@312876934755385344>"
         fight_message_example = fight_message.replace("{winner}", target_and_winner).replace("{loser}", "**@Frenzy**")
         view = discord.ui.DesignerView(
-            discord.ui.TextDisplay(content=f"**Please check the below to ensure the dumbfight message is as you want it.**"),
+            discord.ui.TextDisplay(content=f"**Please check below to make sure the dumbfight message looks right.**"),
             discord.ui.Separator(divider=True, spacing=discord.SeparatorSpacingSize.small),
             discord.ui.TextDisplay(content=f"## <:DVB_DF_FRENZY:1508080750195376169> Frenzy\ndv.df {target_and_winner}"),
             discord.ui.Separator(divider=False, spacing=discord.SeparatorSpacingSize.large),
             discord.ui.TextDisplay(content=f"## <:DVB_DF_DVB:1508080709762289725> {self.client.user.name}"),
             discord.ui.Container(discord.ui.TextDisplay(content=f"{fight_message_example}\n**@Frenzy** lost and is now muted for 120 seconds."),color=0xff0000),
-            discord.ui.ActionRow(SubmitDumbfightSuggestionButton(self.client, self.fight_type, fight_message), TriggerDumbfightSuggestionModalButton(self.client, fight_type=self.fight_type, existing_input=fight_message, style=discord.ButtonStyle.red, label="Edit"), discord.ui.Button(style=discord.ButtonStyle.grey, label="Cancel")),
+            discord.ui.ActionRow(SubmitDumbfightSuggestionButton(self.client, self.fight_type, fight_message), TriggerDumbfightSuggestionModalButton(self.client, fight_type=self.fight_type, existing_input=fight_message, style=discord.ButtonStyle.red, label="Edit"), CancelViewButton("Cancel", discord.ButtonStyle.grey)),
             timeout=30, disable_on_timeout=True)
         return await interaction.response.send_message(view=view, ephemeral=True)
 
 class SubmitDumbfightSuggestionButton(discord.ui.Button):
     def __init__(self, client: dvvt, fight_type: str, dumbfight_message: str):
         super().__init__(
-            style=discord.ButtonStyle.green, label="Correct, no change"
+            style=discord.ButtonStyle.green, label="Looks good - Submit"
         )
         self.client = client
         self.fight_type = fight_type
@@ -90,7 +110,7 @@ class SubmitDumbfightSuggestionButton(discord.ui.Button):
 class InitiateDumbfightSuggestionButton(discord.ui.Button):
     def __init__(self, client: dvvt):
         super().__init__(
-            style=discord.ButtonStyle.primary,  # Discord style 1
+            style=discord.ButtonStyle.green,  # Discord style 1
             label="Suggest",
             custom_id="initiate_dumbfight_suggestion",
             emoji="✍️",
@@ -104,18 +124,25 @@ class InitiateDumbfightSuggestionButton(discord.ui.Button):
             ephemeral=True,
         )
 
-class InitiateDumbfightSuggestionView(discord.ui.View):
-    def __init__(self, client: dvvt):
-        super().__init__(timeout=None)
-        self.client = client
-        self.add_item(InitiateDumbfightSuggestionButton(client))
 
-    @discord.ui.button(label="View your submissions", custom_id="view_dumbfight_submissions", style=discord.ButtonStyle.grey, row=0)
-    async def view_submissions_button(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_submissions = await self.client.db.fetch("SELECT * FROM dumbfight_suggestions WHERE user_id = $1", interaction.user.id)
+class ViewDumbfightSuggestionsButton(discord.ui.Button):
+    def __init__(self, client: dvvt):
+        super().__init__(
+            style = discord.ButtonStyle.grey,
+            label = "View your submissions",
+            custom_id="view_dumbfight_submissions"
+        )
+        self.client = client
+
+    async def callback(self, interaction: discord.Interaction):
+        user_submissions = await self.client.db.fetch("SELECT * FROM dumbfight_suggestions WHERE user_id = $1",
+                                                      interaction.user.id)
         if not user_submissions:
-            embed = discord.Embed(title="Your submissions", description="You have no submissions. Click the Suggest button below to make one.", color=self.client.embed_color)
-            view = discord.ui.View(timeout=30, disable_on_timeout=True).add_item(InitiateDumbfightSuggestionButton(self.client))
+            embed = discord.Embed(title="Your submissions",
+                                  description="You have no submissions. Click the Suggest button below to make one.",
+                                  color=self.client.embed_color)
+            view = discord.ui.View(timeout=30, disable_on_timeout=True).add_item(
+                InitiateDumbfightSuggestionButton(self.client))
             await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
         else:
             pages = []
@@ -126,8 +153,11 @@ class InitiateDumbfightSuggestionView(discord.ui.View):
                 descriptions = []
                 for submission in submissions:
                     submission_id = submission.get('id')
-                    message = submission.get('message').replace("{winner}", "**@Argon**").replace("{loser}", "**@Frenzy**")
-                    fight_type = "Fighting others" if submission.get('fight_type') == "other" else "Fighting yourself" if submission.get('fight_type') == "self" else submission.get('fight_type')
+                    message = submission.get('message').replace("{winner}", "**@Argon**").replace("{loser}",
+                                                                                                  "**@Frenzy**")
+                    fight_type = "Fighting others" if submission.get(
+                        'fight_type') == "other" else "Fighting yourself" if submission.get(
+                        'fight_type') == "self" else submission.get('fight_type')
                     status = submission.get('status')
                     status_emoji = DVB_STATUS_GREY
                     status_name = "Unknown"
@@ -141,7 +171,6 @@ class InitiateDumbfightSuggestionView(discord.ui.View):
                         status_emoji = DVB_STATUS_RED
                         status_name = "Rejected"
 
-
                     descriptions.append(f"#{submission_id}. {message}")
                     descriptions.append(f"-# {status_emoji} {status_name} | {fight_type}")
                     descriptions.append("")
@@ -150,6 +179,66 @@ class InitiateDumbfightSuggestionView(discord.ui.View):
 
             paginator = SingleMenuPaginator(pages=pages, author_check=True, timeout=30)
             await paginator.respond(interaction=interaction, ephemeral=True)
+
+
+class ViewDumbfightExamplesButton(discord.ui.Button):
+    def __init__(self, client):
+        self.client = client
+
+        super().__init__(
+            label="View examples",
+            style=discord.ButtonStyle.secondary,
+            emoji="📋",
+            custom_id="view_dumbfight_examples",
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        embed = discord.Embed(
+            title="Dumbfight Message Examples",
+            description=(
+                "These are only examples. Use your creativity to suggest new ones!"
+            ),
+            color=self.client.embed_color,
+        )
+
+        embed.set_author(
+            name=self.client.user.name,
+            icon_url=self.client.user.display_avatar.url,
+        )
+
+        embed.add_field(
+            name="Dumbfighting someone else",
+            value=(
+                "• `{winner}` EMOTIONALLY DAMAGED `{loser}`.\n"
+                "• `{winner}` told `{loser}` to mine straight down in Minecraft.\n"
+                "• `{winner}` told `{loser}` that their Discord kitten doesn't love them.\n"
+                "• `{loser}` became a Discord Mod.\n"
+                "• `{loser}` put milk before cereal in front of `{winner}`."
+            ),
+            inline=False,
+        )
+
+        embed.add_field(
+            name="Dumbfighting yourself",
+            value=(
+                "• `{loser}` punched themselves in the face.\n"
+                "• `{loser}` stepped on their own feet.\n"
+                "• `{loser}` tickled themselves until they couldn't take it."
+            ),
+            inline=False,
+        )
+
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+
+class InitiateDumbfightSuggestionView(discord.ui.View):
+    def __init__(self, client: dvvt):
+        super().__init__(timeout=None)
+        self.client = client
+        self.add_item(InitiateDumbfightSuggestionButton(client))
+        self.add_item(ViewDumbfightSuggestionsButton(client))
+        self.add_item(ViewDumbfightExamplesButton(client))
+
 
 
 class TriggerDumbfightSuggestionModalButton(discord.ui.Button):
