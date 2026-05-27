@@ -266,7 +266,7 @@ class DumbfightDesignerView(discord.ui.DesignerView):
 
         container = discord.ui.Container(color=196599, spoiler=False)
 
-        container.add_text("## What kind of dumbfight are you suggesting?")
+        container.add_text("## What kind of dumbfight are you suggesting?\n-# 🎥 Play the videos to show how this feature works.")
 
         container.add_separator(divider=True, spacing=discord.SeparatorSpacingSize.large)
 
@@ -275,7 +275,7 @@ class DumbfightDesignerView(discord.ui.DesignerView):
             accessory=TriggerDumbfightSuggestionModalButton(client, fight_type="self"),
         )
 
-        container.add_gallery(discord.MediaGalleryItem("https://cataas.com/cat?width=400&height=200", description=None, spoiler=False))
+        container.add_gallery(discord.MediaGalleryItem("https://dvbot-media.nogra.app/core/dfsuggestions/dumbfight_self_se.mp4", description=None, spoiler=False))
 
         container.add_separator(divider=True,spacing=discord.SeparatorSpacingSize.small)
 
@@ -285,7 +285,7 @@ class DumbfightDesignerView(discord.ui.DesignerView):
         )
 
         container.add_gallery(
-            discord.MediaGalleryItem("https://cataas.com/cat?width=400&height=200", description=None, spoiler=False)
+            discord.MediaGalleryItem("https://dvbot-media.nogra.app/core/dfsuggestions/dumbfight_others_se.mp4", description=None, spoiler=False)
         )
 
         self.add_item(container)
