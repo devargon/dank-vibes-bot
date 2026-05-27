@@ -162,13 +162,13 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, AppleShortcuts,
 
     def lowered_cooldown(message: discord.Message):
         if discord.utils.get(message.author.roles, id=874833402052878396): # Contributor 24T
-            return commands.Cooldown(1, 900)
+            return commands.Cooldown(1, 450)
         elif discord.utils.get(message.author.roles, id=931174008970444800): # weekly top grinder
-            return commands.Cooldown(1, 900)
-        elif discord.utils.get(message.author.roles, name="Vibing Investor"):
-            return commands.Cooldown(1, 1800)
+            return commands.Cooldown(1, 450)
+        elif discord.utils.get(message.author.roles, name="Server Booster"): # previously investor
+            return commands.Cooldown(1, 600)
         else:
-            return commands.Cooldown(1, 3600)
+            return commands.Cooldown(1, 1800)
 
     async def cog_check(self, ctx):
         if ctx.author.id == 312876934755385344 or ctx.author.guild_permissions.administrator == True:
