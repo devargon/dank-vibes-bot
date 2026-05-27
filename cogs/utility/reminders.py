@@ -177,7 +177,7 @@ class RemindersView(discord.ui.DesignerView):
         )
 
         if focused_number_of_reminders == 0:
-            container.add_item(discord.ui.TextDisplay(f"You have no reminders.\nUse `{self.client.get_guild_prefix}remind` command to create one."))
+            container.add_item(discord.ui.TextDisplay(f"You have no reminders.\nUse `{self.client.get_guild_prefix(self.ctx.guild)}remind` command to create one."))
         else:
 
             reminders = await self.fetch_reminders()
