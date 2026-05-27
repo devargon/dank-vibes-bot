@@ -1,5 +1,6 @@
 import contextlib
 
+import alexflipnote
 import discord
 from datetime import datetime
 from utils.time import humanize_timedelta
@@ -25,6 +26,7 @@ class ErrorHandler(commands.Cog):
     """
     def __init__(self, client):
         self.client = client
+        self.alex_api = alexflipnote.Client()
 
     @commands.Cog.listener()
     async def on_application_command_error(self, ctx, error):
@@ -137,6 +139,7 @@ class ErrorHandler(commands.Cog):
             await send_error("Oops!, looks like you don't have enough permission to use this command.", delete_after=5)
         elif isinstance(error, commands.CommandOnCooldown):
             enabled = await ctx.bot.db.fetchval("SELECT enabled FROM devmode WHERE user_id = $1", ctx.author.id)
+            file = None
             if enabled == True:
                 return await ctx.reinvoke()
             message = f"You're on cooldown. Try again in **{humanize_timedelta(seconds=error.retry_after)}**."
@@ -144,7 +147,12 @@ class ErrorHandler(commands.Cog):
                 message += "\nPeople with **Vibing Investor** will have a cooldown of only **30 minutes**!"
             if ctx.command.name == "lockgen" or ctx.command.name == 'randomcolor':
                 message = f"This command is currently under a global cooldown of **{humanize_timedelta(seconds=error.retry_after)}** to prevent abuse.\n"
-            await send_error(message)
+                alexflipnotefirsttext = "dv.rc" if ctx.command.name == "randomcolor" else ctx.command.name
+                didyoumeanimage = await self.alex_api.butgodsaid(alexflipnotefirsttext, message)
+                image_bytes = await didyoumeanimage.read()
+                file=discord.File(fp=image_bytes, filename="cooldown.png")
+                message = None
+            await send_error(content=message, file=file)
         elif isinstance(error, commands.MemberNotFound):
             ctx.command.reset_cooldown(ctx)
             await send_error("I couldn't find a member called {}.".format(error.argument))
