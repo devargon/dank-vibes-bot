@@ -45,7 +45,7 @@ class SuggestDumbfightModal(discord.ui.DesignerModal):
         # Validation
         validation_passed = True
         embed = False
-        if self.fight_type == "other" and ("{loser}" not in fight_message or "{winner}" not in fight_message):
+        if self.fight_type == "other" and ("{loser}" not in fight_message and "{winner}" not in fight_message):
             embed = discord.Embed(
                 title="Your submission does not fulfil the following requirements:",
                 description="The dumbfight message **MUST** include either `{winner}` or `{loser}` so the winner or loser can be shown." + f"\n```\n{fight_message}\n```",
