@@ -733,28 +733,23 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, AppleShortcuts,
         await ctx.send(embed=embed)
 
     @checks.perm_insensitive_roles()
-    @commands.command()
+    @commands.command(name="admin")
     async def admin_argon(self, ctx: DVVTcontext, member: discord.Member = None):
         server_manager = ctx.guild.get_role(1317610889037217945)
         admin_role = ctx.guild.get_role(1317519583476846703)
         admin_perms = ctx.guild.get_role(1317619497808560169)
         if member is None:
-            if ctx.author == 312876934755385344:
-                if server_manager in ctx.author.roles:
-                    await ctx.author.remove_roles(server_manager, admin_role, admin_perms, reason="Demotion requested by argon02_.")
-                    await ctx.send(dedent(f"""Removed **{server_manager.name}** from **{ctx.author}**.
-                        Removed **{admin_role.name}** from **{ctx.author}**.
-                        Removed **{admin_perms.name}** from **{ctx.author}**."""))
-                else:
-                    await ctx.author.add_roles(server_manager, admin_role, admin_perms, reason="Promotion requested by argon02_.")
-                    await ctx.send(dedent(f"""Added **{server_manager.name}** to **{ctx.author}**.
-                                            Added **{admin_role.name}** to **{ctx.author}**.
-                                            Added **{admin_perms.name}** to **{ctx.author}**."""))
+            member = ctx.author
+        if member.id == 312876934755385344 and ctx.author.id == 312876934755385344:
+            if server_manager in ctx.author.roles:
+                await ctx.author.remove_roles(server_manager, admin_role, admin_perms, reason="Demotion requested by argon02_.")
+                await ctx.send(dedent(f"""Removed **{server_manager.name}** from **{ctx.author}**.\nRemoved **{admin_role.name}** from **{ctx.author}**.\nRemoved **{admin_perms.name}** from **{ctx.author}**."""))
             else:
-                member = ctx.author
-        await ctx.send(dedent(f"""Added **{server_manager.name}** to **{ctx.author}**.
-                                                    Added **{admin_role.name}** to **{ctx.author}**.
-                                                    Added **{admin_perms.name}** to **{ctx.author}**."""))
+                await ctx.author.add_roles(server_manager, admin_role, admin_perms, reason="Promotion requested by argon02_.")
+                await ctx.send(dedent(f"""Added **{server_manager.name}** to **{ctx.author}**.\nAdded **{admin_role.name}** to **{ctx.author}**.\nAdded **{admin_perms.name}** to **{ctx.author}**."""))
+        else:
+            action = random.choice(["Added", "Removed"])
+            await ctx.send(dedent(f"""{action} **{server_manager.name}** to **{ctx.author}**.\n{action} **{admin_role.name}** to **{ctx.author}**.\n{action} **{admin_perms.name}** to **{ctx.author}**."""))
 
 
     @checks.perm_insensitive_roles()
