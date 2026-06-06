@@ -35,6 +35,17 @@ def number_to_emoji(number: int) -> str:
         raise ValueError("Number must be between 1 and 9.")
     return f"{number}\u20E3"
 
+def truncate_text(text: str, max_chars: int, suffix: str = "...") -> str:
+    text = str(text)
+
+    if len(text) <= max_chars:
+        return text
+
+    if max_chars <= len(suffix):
+        return suffix[:max_chars]
+
+    return text[:max_chars - len(suffix)] + suffix
+
 class plural:
     """
     Auto corrects text to show plural or singular depending on the size number.

@@ -19,12 +19,15 @@ import operator
 import alexflipnote
 from typing import Union, Optional
 import matplotlib.pyplot as plt
+from palettable.tableau import Tableau_20
+from matplotlib import font_manager
+from matplotlib.font_manager import FontProperties
 from itertools import islice
 
 from utils import checks
 from utils.time import humanize_timedelta
 from utils.errors import ArgumentBaseError, NicknameIsManaged
-from utils.format import generate_loadbar, proper_userf
+from utils.format import generate_loadbar, proper_userf, truncate_text
 from .apple_shortcuts import AppleShortcuts
 
 from .dm import dm
@@ -34,6 +37,12 @@ from .games import games
 from .color import color
 from .fun_slash import FunSlash
 from .bigmoji import Bigmoji
+
+CALSANSUI_GEOBOLD = "assets/fonts/CalSansUI-GeoBold.otf"
+CALSANSUI_UISEMIBOLD = "assets/fonts/CalSansUI-UISemiBold.otf"
+
+TITLE_FONT = FontProperties(fname=CALSANSUI_GEOBOLD)
+LEGEND_FONT = FontProperties(fname=CALSANSUI_UISEMIBOLD)
 
 alexflipnoteAPI = os.getenv('alexflipnoteAPI')
 tenorAPI = os.getenv('tenorAPI')
@@ -546,11 +555,13 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, AppleShortcuts,
     @checks.perm_insensitive_roles()
     @commands.cooldown(1200, 1, commands.BucketType.user)
     @commands.command(name="chatchart", aliases=['cc'])
-    async def chatchart(self, ctx, channel: Union[discord.TextChannel, str] = None):
+    async def chatchart(self, ctx: DVVTcontext, channel: Union[discord.TextChannel, str] = None):
         """
         Shows the percentage of messages sent by various members.
         Add the --bots flag to include bots in the chatchart.
         """
+        MAX_ENTRIES_TO_SHOW = 20
+        LABEL_MAX_LENGTH = 35
         if self.chatchart_is_running == True:
             ctx.command.reset_cooldown(ctx)
             return await ctx.send("This command is being run by another user at the moment. To prevent API spam, please try again later.")
@@ -562,76 +573,74 @@ class Fun(Bigmoji, FunSlash, color, games, ItemGames, snipe, dm, AppleShortcuts,
         messagecount = 0
         self.chatchart_is_running = True
         async for message in channel.history(limit=5000):
-            if isinstance(message.author, discord.Member):
-                if discord.utils.get(message.author.roles, name="No Tags"):
-                    pass
-                else:
-                    authorid = message.author.id
-                    if message.author.bot:
-                        if ctx.message.content.endswith("--bots"):
-                            if authorid not in data:
-                                data[authorid] = 1
-                            else:
-                                data[authorid] += 1
-                    else:
-                        if authorid not in data:
-                            data[authorid] = 1
-                        else:
-                            data[authorid] += 1
             messagecount += 1
             if messagecount %500 == 0:
-                embed=discord.Embed(title=f"Shuffling through #{channel}'s message history...", description=f"**{messagecount}** of the last **5000** messages scanned.\n\n{generate_loadbar(messagecount/5000, 10)}", color=self.client.embed_color)
+                embed.description=f"**{messagecount}** of the last **5000** messages scanned.\n\n{generate_loadbar(messagecount/5000, 10)}"
                 try:
                     await statusmessage.edit(embed=embed)
                 except:
                     statusmessage = await ctx.send(embed=embed)
+            if isinstance(message.author, discord.Member):
+                if discord.utils.get(message.author.roles, name="No Tags"):
+                    continue
+                else:
+                    authorid = message.author.id
+                    if message.author.bot and not ctx.message.content.endswith("--bots"):
+                        continue
+                    if authorid not in data:
+                        data[authorid] = 1
+                    else:
+                        data[authorid] += 1
         counted = sorted(data.items(), key=operator.itemgetter(1), reverse=True)
-        """
-        This removes the extra authors from the earlier dictionary so it's only 19 authors and 1 others
-        """
-        if len(counted) > 20:
-            others_element = ("Others", 0)
-            counted.append(others_element)
-            while len(counted) > 20:
-                counted.pop(19)
-                counted.remove(others_element)
-                others_element = ("Others", others_element[1] + 1)
-                counted.append(others_element)
+        # This removes the extra authors from the earlier dictionary so it's only 19 authors and 1 others
+        if len(counted) > MAX_ENTRIES_TO_SHOW:
+            first_n = MAX_ENTRIES_TO_SHOW - 1
+            top = counted[:first_n]
+            others_total = sum(count for _, count in counted[first_n:])
+            counted = top + [("Others", others_total)]
         labels = []
         sizes = []
-        for entry in counted:
-            if entry[0] == "Others":
+        for user_id_or_label, count in counted:
+            if user_id_or_label == "Others":
                 labels.append("Others")
             else:
-                member = self.client.get_user(entry[0])
-                if member is None:
-                    pass
+                server_user = None
+                server_member = ctx.guild.get_member(user_id_or_label)
+                if server_member is None:
+                    server_user = self.client.get_user(user_id_or_label)
+                if server_member:
+                    labels.append(truncate_text(server_member.display_name, LABEL_MAX_LENGTH))
+                elif server_user:
+                    labels.append(truncate_text(server_user.display_name, LABEL_MAX_LENGTH))
                 else:
-                    if len(member.name) > 15:
-                        if member.discriminator != 0:
-                            name = f"{member.name[0:15]}...#{member.discriminator}"
-                        else:
-                            name = f"@{member.name[0:15]}..."
-                    else:
-                        name = f"@{member.name}"
-                    labels.append(name)
-            sizes.append(entry[1])
+                    labels.append("Unknown user")
+            sizes.append(count)
         if len(labels) == 0:
             await statusmessage.delete()
             await ctx.send("There were no entries to display in chatchart. This can happen as: \n    • No one had talked in the channel.\n    • `--nobots` was used but there're only bots talking.\n    • I do not have `Read Message History` permissions.")
             return
-        plt.figure(figsize=plt.figaspect(1))
+
+        fig, ax = plt.subplots(figsize=plt.figaspect(1), facecolor="#323339")
+        ax.set_facecolor("#323339")
         newlabels = []
-        for l, s in zip(labels, sizes):
-            s = s / sum(sizes) * 100
-            s = round(s, 1)
-            newlabels.append(f"{l}, {s}%")
-        plt.title(f"Messages in #{channel.name}", color='w')
-        colors = ['#3d405b', '#005f73', '#0a9396', '#94d2bd', '#e9d8a6', '#ee9b00', '#ca6702', '#bb3e03', '#ae2012', '#9b2226', '#3d405b', '#005f73', '#0a9396', '#94d2bd', '#e9d8a6', '#ee9b00', '#ca6702', '#bb3e03', '#ae2012', 'grey']
-        plt.pie(sizes, colors=colors)
-        plt.legend(bbox_to_anchor=(1, 0.5), loc='center left', labels=newlabels, facecolor="gray", edgecolor="white")
-        filename = f"temp/{random.randint(0,9999999)}.png"
-        plt.savefig(filename, bbox_inches="tight", pad_inches=0.1, transparent=True)
+        for place, (l, s) in enumerate(zip(labels, sizes), start=1):
+            front_emoji = f"{place}. "
+            if len(front_emoji) == 3:
+                front_emoji = "\u2009" + front_emoji
+            p = s / sum(sizes) * 100
+            print(p, s, sum(sizes))
+            p = round(s, 1)
+            newlabels.append(f"{front_emoji}{l}, {s} ({p}%)")
+
+        ax.set_title(f"Messages in #{channel.name}", color="white", fontproperties=TITLE_FONT, fontsize=16)
+        colors = Tableau_20.mpl_colors
+        ax.pie(sizes,colors=colors)
+        legend = ax.legend(bbox_to_anchor=(1, 0.5), loc="center left", labels=newlabels, frameon=False, prop=LEGEND_FONT)
+        for text in legend.get_texts():
+            text.set_color("white")
+        filename = f"temp/{random.randint(0, 9999999)}.png"
+        plt.savefig(filename, bbox_inches="tight", pad_inches=0.1, facecolor=fig.get_facecolor(), transparent=False)
+        plt.close(fig)
         embed = discord.Embed(title=f"Sending chatchart for #{channel}...", color=self.client.embed_color)
         embed.set_thumbnail(
             url="https://cdn.discordapp.com/attachments/871737314831908974/880374020267212830/discord_loading.gif")
