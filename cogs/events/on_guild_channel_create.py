@@ -22,6 +22,9 @@ class GuildChannelCreate(commands.Cog):
         if len(message.mentions) < 1:
             return await ctx.respond("I could not find the owner of this channel.", ephemeral=True)
         owner = message.mentions[0]
+        existing_channels = await self.client.db.fetch("SELECT * FROM channels WHERE channel_id = $1", message.channel.id)
+        if len(existing_channels) > 1:
+            await ctx.respond(f"This channel is already registered as a private channel for {existing_channels[0].get('owner_id')}", ephemeral=True)
         await self.client.db.execute(
             "INSERT INTO channels(guild_id, channel_id, owner_id, active, last_used) VALUES($1, $2, $3, $4, $5)",
             message.guild.id, message.channel.id, owner.id, True, round(time()))
