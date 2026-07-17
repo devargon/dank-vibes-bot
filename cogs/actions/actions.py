@@ -103,8 +103,12 @@ class NekosBestAPIWrapper:
 
     async def fetch(self, action: str) -> ImageResult:
         url = f"{self.endpoint}/{action}"
+        headers = {"User-Agent": "Dank Vibes Bot Discord (https://nogra.app)"}
         async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
+            async with session.get(url, headers=headers) as response:
+                print(session)
+                print(response)
+                print(url)
                 if response.status != 200:
                     session.raise_for_status()
                 data = await response.json()
